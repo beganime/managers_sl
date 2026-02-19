@@ -1,0 +1,173 @@
+{% extends 'unfold/layouts/base_simple.html' %}
+{% load i18n unfold %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block content %}
+    {% include "unfold/helpers/messages.html" %}
+
+    {% if kpi %}
+    <div class="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2 lg:grid-cols-3">
+        {% for card in kpi %}
+            <div class="flex flex-col p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-900 dark:border-gray-800">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                        {{ card.title }}
+                    </h3>
+                    {% if card.icon %}
+                    <span class="material-symbols-outlined text-gray-400 text-2xl">
+                        {{ card.icon }}
+                    </span>
+                    {% endif %}
+                </div>
+                
+                <div class="flex items-baseline text-3xl font-bold text-gray-900 dark:text-white">
+                    {{ card.metric }}
+                </div>
+
+                {% if card.footer %}
+                <div class="mt-4 flex items-center text-sm">
+                    {% if card.color == 'success' %}
+                        <span class="flex items-center text-green-600 dark:text-green-400 font-medium bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
+                            {{ card.footer }}
+                        </span>
+                    {% elif card.color == 'warning' %}
+                        <span class="flex items-center text-yellow-600 dark:text-yellow-400 font-medium bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 rounded">
+                            {{ card.footer }}
+                        </span>
+                    {% elif card.color == 'danger' %}
+                        <span class="flex items-center text-red-600 dark:text-red-400 font-medium bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded">
+                            {{ card.footer }}
+                        </span>
+                    {% else %}
+                        <span class="flex items-center text-blue-600 dark:text-blue-400 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                            {{ card.footer }}
+                        </span>
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if chart %}
+    <div class="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-900 dark:border-gray-800">
+        <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">{{ chart.name }}</h3>
+        <div class="relative h-64 w-full">
+            <canvas id="dashboardChart"></canvas>
+        </div>
+        
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const ctx = document.getElementById('dashboardChart').getContext('2d');
+                new Chart(ctx, {
+                    type: '{{ chart.type }}',
+                    data: {
+                        labels: {{ chart.labels|safe }},
+                        datasets: {{ chart.datasets|safe }}
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(156, 163, 175, 0.1)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+        </script>
+    </div>
+    {% endif %}
+
+    {% if progress %}
+    <div class="grid grid-cols-1 gap-6 mb-6">
+        {% for prog in progress %}
+        <div class="p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-900 dark:border-gray-800">
+            <div class="flex justify-between mb-2">
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ prog.title }}</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ prog.value }}%</span>
+            </div>
+            
+            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+                <div class="{% if prog.color == 'success' %}bg-green-600{% else %}bg-blue-600{% endif %} h-2.5 rounded-full" 
+                     style="width: {{ prog.value }}%"></div>
+            </div>
+            
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+                {{ prog.description }}
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if custom_clients_table %}
+        <div class="flex flex-col mb-6">
+            <h3 class="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">
+                Мои последние клиенты
+            </h3>
+            
+            <div class="overflow-x-auto shadow-sm rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Клиент</th>
+                            <th scope="col" class="px-6 py-3">Статус</th>
+                            <th scope="col" class="px-6 py-3">Город</th>
+                            <th scope="col" class="px-6 py-3">Телефон</th>
+                            <th scope="col" class="px-6 py-3 text-right">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for client in custom_clients_table %}
+                        <tr class="bg-white border-b dark:bg-gray-900 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
+                                {{ client.full_name }}
+                                {% if client.is_priority %}⭐{% endif %}
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                                    {{ client.get_status_display }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                {{ client.city }}
+                            </td>
+                            <td class="px-6 py-4">
+                                {{ client.phone }}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{% url 'admin:clients_client_change' client.id %}" class="font-medium text-primary-600 dark:text-primary-500 hover:underline">
+                                    Открыть
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% if not custom_clients_table %}
+                    <div class="p-6 text-center text-gray-500">
+                        У вас пока нет клиентов.
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+{% endblock %}

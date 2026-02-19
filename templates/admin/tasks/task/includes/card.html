@@ -1,0 +1,53 @@
+<div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 hover:shadow-md hover:border-primary-500 dark:hover:border-primary-500 transition-all cursor-grab active:cursor-grabbing group relative" 
+     data-id="{{ task.id }}"
+     ondblclick="window.location.href='{% url 'admin:tasks_task_change' task.id %}'">
+    
+    <div class="flex justify-between items-start mb-3">
+        {% if task.priority == 'high' %}
+            <span class="text-[9px] font-black uppercase tracking-tighter text-red-600 bg-red-50 dark:bg-red-900/30 dark:text-red-400 px-2 py-0.5 rounded-md border border-red-100 dark:border-red-800/50">Срочно</span>
+        {% elif task.priority == 'medium' %}
+            <span class="text-[9px] font-black uppercase tracking-tighter text-yellow-600 bg-yellow-50 dark:bg-yellow-900/30 dark:text-yellow-400 px-2 py-0.5 rounded-md border border-yellow-100 dark:border-yellow-800/50">Важно</span>
+        {% else %}
+            <span class="text-[9px] font-black uppercase tracking-tighter text-green-600 bg-green-50 dark:bg-green-900/30 dark:text-green-400 px-2 py-0.5 rounded-md border border-green-100 dark:border-green-800/50">Низкий</span>
+        {% endif %}
+        
+        <a href="{% url 'admin:tasks_task_change' task.id %}" class="text-gray-300 dark:text-gray-600 hover:text-primary-500 transition-colors">
+            <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+        </a>
+    </div>
+
+    <h3 class="font-bold text-gray-800 dark:text-gray-100 mb-1 text-sm leading-snug group-hover:text-primary-600 dark:group-hover:text-primary-400 transition-colors">
+        {{ task.title }}
+    </h3>
+    
+    <div class="text-[11px] text-gray-500 dark:text-gray-400 mb-4 line-clamp-2">
+        {{ task.description|striptags|default:"Нет описания" }}
+    </div>
+
+    <div class="flex justify-between items-center pt-3 border-t border-gray-50 dark:border-gray-700/50 mt-auto">
+        <div class="flex items-center gap-2">
+            {% if task.assigned_to.avatar %}
+                <img src="{{ task.assigned_to.avatar.url }}" class="w-6 h-6 rounded-full object-cover border border-gray-200 dark:border-gray-700 shadow-sm" title="{{ task.assigned_to.get_full_name|default:task.assigned_to.email }}">
+            {% else %}
+                <div class="w-6 h-6 rounded-full bg-primary-100 dark:bg-primary-900/50 flex items-center justify-center text-[9px] font-black text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800">
+                    {# Фикс NoneType: используем slice вместо first и проверяем сначала имя, потом email #}
+                    {% if task.assigned_to.first_name %}
+                        {{ task.assigned_to.first_name|slice:":1"|upper }}
+                    {% else %}
+                        {{ task.assigned_to.email|slice:":1"|upper }}
+                    {% endif %}
+                </div>
+            {% endif %}
+            <span class="text-[10px] font-medium text-gray-600 dark:text-gray-400 truncate max-w-[70px]">
+                {{ task.assigned_to.first_name|default:task.assigned_to.email|truncatechars:10 }}
+            </span>
+        </div>
+
+        {% if task.deadline %}
+            <div class="flex items-center text-[10px] font-bold {% if task.status != 'done' %}text-orange-500{% else %}text-gray-400{% endif %}">
+                <span class="material-symbols-outlined text-[12px] mr-1">calendar_today</span>
+                {{ task.deadline|date:"d.m" }}
+            </div>
+        {% endif %}
+    </div>
+</div>

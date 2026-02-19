@@ -1,0 +1,26 @@
+<div class="bg-gray-100/80 dark:bg-gray-900/40 rounded-xl p-3 border border-gray-200 dark:border-gray-800 flex flex-col h-full min-h-[500px]">
+    
+    <div class="flex justify-between items-center mb-4 px-1">
+        <div class="flex items-center gap-2">
+            <div class="w-2 h-6 rounded-full {{ border_color|default:'bg-gray-400' }}"></div>
+            <span class="font-bold text-gray-700 dark:text-gray-300 text-xs uppercase tracking-widest">
+                {{ title }}
+            </span>
+        </div>
+        <span class="bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded-md text-[10px] font-black shadow-sm border border-gray-100 dark:border-gray-700">
+            {{ items.count }}
+        </span>
+    </div>
+
+    <div class="kanban-column-items flex-1 space-y-3 min-h-[150px]" data-status="{{ status }}">
+        {% for task in items %}
+            {% include "admin/tasks/task/includes/card.html" with task=task %}
+        {% endfor %}
+        
+        {% if items.count == 0 %}
+            <div class="no-drag h-24 border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-xl flex items-center justify-center text-gray-400 dark:text-gray-600 text-xs italic">
+                Перетащите сюда
+            </div>
+        {% endif %}
+    </div>
+</div>

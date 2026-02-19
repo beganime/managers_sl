@@ -1,0 +1,91 @@
+{% extends "unfold/layouts/base.html" %}
+{% load i18n static %}
+
+{% block content %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+
+{% csrf_token %}
+
+<div class="flex flex-col h-full p-4">
+    <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+            <span class="material-symbols-outlined text-primary-600">view_kanban</span>
+            Задачи (Канбан)
+        </h1>
+        <div class="flex gap-2">
+            <a href="{% url 'admin:tasks_task_add' %}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition shadow-sm flex items-center text-sm font-medium">
+                <span class="material-symbols-outlined mr-2 text-sm">add</span> Новая задача
+            </a>
+            <a href="{% url 'admin:tasks_task_changelist' %}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center text-sm font-medium">
+                <span class="material-symbols-outlined mr-2 text-sm">list</span> Список
+            </a>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-start pb-10">
+        
+        {% include "admin/tasks/task/includes/column.html" with title="Нужно сделать" status="todo" items=columns.todo border_color="border-gray-400 dark:border-gray-500" %}
+
+        {% include "admin/tasks/task/includes/column.html" with title="В работе" status="process" items=columns.process border_color="border-blue-500" %}
+
+        {% include "admin/tasks/task/includes/column.html" with title="На проверке" status="review" items=columns.review border_color="border-orange-500" %}
+
+        {% include "admin/tasks/task/includes/column.html" with title="Готово" status="done" items=columns.done border_color="border-green-500" %}
+
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const columns = document.querySelectorAll('.kanban-column-items');
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        
+        columns.forEach(column => {
+            new Sortable(column, {
+                group: 'tasks_kanban',
+                animation: 200,
+                delay: 0,
+                ghostClass: 'bg-primary-50',
+                dragClass: 'rotate-2',
+                // Разрешаем перетаскивание, исключая пустую заглушку
+                filter: '.no-drag',
+                onEnd: function (evt) {
+                    const itemEl = evt.item;
+                    const newStatus = evt.to.getAttribute('data-status');
+                    const taskId = itemEl.getAttribute('data-id');
+
+                    // Если колонка не поменялась, ничего не делаем
+                    if (evt.from === evt.to) return;
+
+                    // Обновляем счетчики (визуально)
+                    location.reload(); // Для простоты обновляем страницу, чтобы подтянулись правильные счетчики
+
+                    fetch('{% url "admin:task_update_status" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify({
+                            task_id: taskId,
+                            status: newStatus
+                        })
+                    })
+                    .then(response => {
+                        if (!response.ok) alert('Ошибка при сохранении статуса');
+                    })
+                    .catch(error => console.error('Error:', error));
+                }
+            });
+        });
+    });
+</script>
+
+<style>
+    /* Плавный скролл для колонок на мобилках */
+    .kanban-column-items {
+        scrollbar-width: thin;
+        scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+    }
+</style>
+{% endblock %}

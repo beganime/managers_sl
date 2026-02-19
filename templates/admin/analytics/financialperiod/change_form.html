@@ -1,0 +1,92 @@
+{% extends "admin/change_form.html" %}
+{% load i18n admin_urls static humanize %}
+
+{% block before_field_sets %}
+{% if report_stats %}
+<div class="mb-8 space-y-6">
+    
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-blue-500">
+            <h3 class="text-xs uppercase font-bold text-gray-500 dark:text-gray-400">Общая выручка</h3>
+            <p class="text-2xl font-bold text-gray-800 dark:text-white mt-1">${{ report_stats.calc_revenue|intcomma }}</p>
+        </div>
+        
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-red-500">
+            <h3 class="text-xs uppercase font-bold text-gray-500 dark:text-gray-400">Расходы</h3>
+            <p class="text-2xl font-bold text-red-600 dark:text-red-400 mt-1">-${{ report_stats.calc_expenses|intcomma }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-yellow-500">
+            <h3 class="text-xs uppercase font-bold text-gray-500 dark:text-gray-400">Новых клиентов</h3>
+            <p class="text-2xl font-bold text-yellow-600 dark:text-yellow-400 mt-1">{{ report_stats.total_new_clients }}</p>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 border-l-4 border-l-green-600">
+            <h3 class="text-xs uppercase font-bold text-gray-500 dark:text-gray-400">🔥 Чистая прибыль</h3>
+            <p class="text-3xl font-bold text-green-600 dark:text-green-400 mt-1">${{ report_stats.final_profit|intcomma }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50 flex justify-between items-center">
+            <h3 class="font-bold text-gray-700 dark:text-gray-200 flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary-500">analytics</span>
+                📊 Детализация по сотрудникам
+            </h3>
+            <span class="text-[10px] uppercase tracking-wider text-gray-400 font-bold">Сортировка по выручке</span>
+        </div>
+        
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm text-gray-600 dark:text-gray-300">
+                <thead class="bg-gray-50 dark:bg-gray-700/50 text-[11px] uppercase font-bold text-gray-500 dark:text-gray-400">
+                    <tr>
+                        <th class="px-6 py-3">Сотрудник</th>
+                        <th class="px-6 py-3 text-center">Клиентов</th>
+                        <th class="px-6 py-3 text-center">Сделок</th>
+                        <th class="px-6 py-3 text-right">Выручка (USD)</th>
+                        <th class="px-6 py-3 text-right">Чистый доход (USD)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-700">
+                    {% for item in report_stats.leaderboard %}
+                    <tr class="hover:bg-gray-50/80 dark:hover:bg-gray-700/30 transition-colors">
+                        <td class="px-6 py-3 font-semibold text-gray-900 dark:text-white">
+                            {{ item.name }}
+                        </td>
+                        <td class="px-6 py-3 text-center">
+                            {% if item.clients_count > 0 %}
+                                <span class="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded text-[10px] font-black">{{ item.clients_count }}</span>
+                            {% else %}
+                                <span class="text-gray-300 dark:text-gray-600">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-6 py-3 text-center font-medium">
+                            {{ item.deals_count }}
+                        </td>
+                        <td class="px-6 py-3 text-right font-bold text-gray-800 dark:text-gray-200">
+                            ${{ item.total_raised|intcomma }}
+                        </td>
+                        <td class="px-6 py-3 text-right text-green-600 dark:text-green-400 font-black text-base">
+                            +${{ item.net_income|intcomma }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-gray-400 dark:text-gray-600 italic">
+                            За выбранный период активности не найдено
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% else %}
+<div class="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800 flex items-center gap-3">
+    <span class="material-symbols-outlined">info</span>
+    <span class="font-medium">Выберите даты и сохраните отчет, чтобы рассчитать финансовые показатели.</span>
+</div>
+{% endif %}
+{% endblock %}
