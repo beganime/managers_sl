@@ -9,7 +9,8 @@ urlpatterns = [
     path('', RedirectView.as_view(url='/admin/', permanent=False)),
     
     path('admin/', admin.site.urls),
-    
+    path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'logo.ico', permanent=True)),
+    path('', include('leads.urls')),
     # Пути для PWA (manifest.json, service-worker)
     path('', include('pwa.urls')),
 ]

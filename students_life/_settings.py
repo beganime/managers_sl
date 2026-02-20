@@ -8,6 +8,7 @@ SECRET_KEY = 'django-insecure-!rqdvi^b78eoq6ya$ltzt0a5ohyiz5n*az!cdoc5wcnmv3s621
 DEBUG = True
 ALLOWED_HOSTS = ['*']
 
+# --- APPS ---
 INSTALLED_APPS = [
     # 1. UI & PWA
     'unfold',
@@ -29,6 +30,8 @@ INSTALLED_APPS = [
     'django_cleanup',
     'import_export',
     'smart_selects',
+    'corsheaders',      
+    'rest_framework',   
 
     # 4. My Apps
     'users',
@@ -39,9 +42,15 @@ INSTALLED_APPS = [
     'gamification',
     'tasks',
     'documents',
+    'leads',
 ]
 
+CORS_ALLOW_ALL_ORIGINS = True
+
+LEADS_API_KEY = "super_secret_key_manager_sl_2026"
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

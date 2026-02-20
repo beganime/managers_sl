@@ -32,6 +32,8 @@ INSTALLED_APPS = [
     'django_cleanup',
     'import_export',
     'smart_selects',
+    'corsheaders',      
+    'rest_framework',   
 
     # 4. My Apps
     'users',
@@ -42,10 +44,13 @@ INSTALLED_APPS = [
     'gamification',
     'tasks',
     'documents',
+    'leads',
 ]
 
-# --- MIDDLEWARE ---
+CORS_ALLOW_ALL_ORIGINS = True
+
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -99,6 +104,8 @@ else:
 
 # --- AUTH ---
 AUTH_USER_MODEL = 'users.User'
+
+LEADS_API_KEY = "super_secret_key_manager_sl_2026"
 
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
@@ -154,7 +161,7 @@ PWA_APP_ICONS_APPLE = [
 ]
 PWA_APP_SPLASH_SCREEN = [
     {
-        'src': '/static/logo.png',
+        'src': '/static/logo.ico',
         'media': '(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)'
     }
 ]
@@ -290,6 +297,11 @@ UNFOLD = {
                 "title": "Работа с клиентами",
                 "separator": True,
                 "items": [
+                    {
+                        "title": "Новые заявки", # <--- НОВАЯ ССЫЛКА
+                        "icon": "mail",
+                        "link": "/admin/leads/lead/",
+                    },
                     {
                         "title": "Клиенты",
                         "icon": "people",
