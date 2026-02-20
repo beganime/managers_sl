@@ -1,29 +1,30 @@
-# students_life/dashboard.py
+# dashboard.py
 
 from django.utils import timezone
-from django.db.models import Sum, Count
+from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncDay
 from datetime import timedelta
 
-# Импорт моделей
+# Импортируй свои модели из нужных аппок (поправь пути импортов под свою структуру)
 from users.models import User, ManagerSalary
 from clients.models import Client
 from analytics.models import Payment, Deal, FinancialPeriod
+from catalog.models import University, Program
+# from tasks.models import Task  <-- Раскомментируй и поправь путь к модели Task
 
 def dashboard_callback(request, context):
     """
-    Функция для генерации данных на главной странице админки.
-    Возвращает словарь с конфигурацией графиков, KPI и прогресс-баров.
+    Генерация данных для главной страницы Unfold Admin.
     """
-    
+    user = request.user
+
     # ---------------------------------------------------------
-    # 1. ЛОГИКА ДЛЯ СУПЕРПОЛЬЗОВАТЕЛЯ (АДМИНА)
+    # 1. СУПЕРПОЛЬЗОВАТЕЛЬ (ДИРЕКТОР / ФИНАНСЫ)
     # ---------------------------------------------------------
-    if request.user.is_superuser:
-        # --- Данные для графиков (Последние 7 дней) ---
+    if user.is_superuser:
         last_week = timezone.now() - timedelta(days=7)
         
-        # Группируем платежи по дням
+        # График платежей
         payments_data = (
             Payment.objects.filter(payment_date__gte=last_week, is_confirmed=True)
             .annotate(day=TruncDay('payment_date'))
@@ -32,15 +33,16 @@ def dashboard_callback(request, context):
             .order_by('day')
         )
 
-        # Подготовка данных для Chart.js
         days = [p['day'].strftime('%d.%m') for p in payments_data]
         amounts = [float(p['total']) for p in payments_data]
 
-        # --- KPI (Карточки сверху) ---
-        # Текущий период (берем из твоей логики FinancialPeriod)
+        # Финансы
         period = FinancialPeriod.objects.filter(is_closed=False).last()
         total_revenue = period.total_revenue if period else 0
         net_profit = period.net_profit if period else 0
+        
+        # Обобщенная стата
+        total_clients = Client.objects.count()
         active_deals = Deal.objects.filter(payment_status__in=['process', 'waiting_payment']).count()
 
         context.update({
@@ -54,66 +56,99 @@ def dashboard_callback(request, context):
                 {
                     "title": "Чистая прибыль",
                     "metric": f"${net_profit:,.2f}",
-                    "footer": "До вычета зарплат",
+                    "footer": "Свободные деньги компании",
                     "color": "success",
                 },
                 {
                     "title": "Активные сделки",
                     "metric": active_deals,
-                    "footer": "В работе",
+                    "footer": "Деньги в пути",
                     "color": "warning",
+                },
+                {
+                    "title": "Всего клиентов",
+                    "metric": total_clients,
+                    "footer": "Общая база",
+                    "color": "info",
                 },
             ],
             "chart": {
-                "name": "Динамика доходов (7 дней)",
-                "type": "line",  # line, bar, area
+                "name": "Динамика подтвержденных доходов (7 дней)",
+                "type": "line",
                 "labels": days,
                 "datasets": [
                     {
                         "label": "Выручка (USD)",
                         "data": amounts,
-                        "borderColor": "#4F46E5",
-                        "backgroundColor": "rgba(79, 70, 229, 0.1)",
+                        "borderColor": "#10B981", # Зеленый цвет
+                        "backgroundColor": "rgba(16, 185, 129, 0.1)",
                     }
                 ],
             },
         })
 
     # ---------------------------------------------------------
-    # 2. ЛОГИКА ДЛЯ МЕНЕДЖЕРА
+    # 2. МЕНЕДЖЕР ПО ПАРТНЕРСТВАМ
+    # ---------------------------------------------------------
+    elif user.groups.filter(name='Менеджер по партнерствам').exists():
+        total_unis = University.objects.count()
+        active_programs = Program.objects.filter(is_active=True, is_deleted=False).count()
+        
+        # Передаем последние добавленные вузы для вывода в таблицу
+        context['recent_unis'] = University.objects.order_by('-id')[:5]
+
+        context.update({
+            "kpi": [
+                {
+                    "title": "Университеты в базе",
+                    "metric": total_unis,
+                    "footer": "Доступно для продаж",
+                    "color": "primary",
+                },
+                {
+                    "title": "Активные программы",
+                    "metric": active_programs,
+                    "footer": "Открыт набор",
+                    "color": "success",
+                },
+            ]
+        })
+
+    # ---------------------------------------------------------
+    # 3. МЕНЕДЖЕР ПО ПРОДАЖАМ
     # ---------------------------------------------------------
     else:
-        # Получаем профиль зарплаты
-        salary_profile = getattr(request.user, 'managersalary', None)
-        
-        current_balance = 0
-        plan = 1000
-        revenue = 0
-        percent_complete = 0
+        # Зарплата и KPI
+        salary_profile = getattr(user, 'managersalary', None)
+        current_balance, plan, revenue, percent_complete = 0, 1000, 0, 0
 
         if salary_profile:
             current_balance = salary_profile.current_balance
             plan = salary_profile.monthly_plan
             revenue = salary_profile.current_month_revenue
-            
             if plan > 0:
-                percent_complete = int((revenue / plan) * 100)
-                if percent_complete > 100: percent_complete = 100
+                percent_complete = min(int((revenue / plan) * 100), 100)
 
-        # Получаем клиентов менеджера (для таблицы)
-        my_clients = Client.objects.filter(manager=request.user).order_by('-created_at')[:10]
-
-        # Добавляем клиентов прямо в контекст шаблона (не в KPI)
-        context['custom_clients_table'] = my_clients
+        # Вытаскиваем понемногу из каждой таблицы
+        my_clients = Client.objects.filter(manager=user).order_by('-created_at')[:5]
+        my_deals = Deal.objects.filter(manager=user).order_by('-updated_at')[:5]
+        
+        # Берем задачи, которые не 'done' и сортируем по ближайшему дедлайну
+        # Если модель Task импортирована корректно:
+        # my_tasks = Task.objects.filter(assigned_to=user).exclude(status='done').order_by('deadline')[:5]
+        
+        # Прокидываем в контекст (чтобы потом отрисовать в HTML)
+        context['my_clients'] = my_clients
+        context['my_deals'] = my_deals
+        # context['my_tasks'] = my_tasks
 
         context.update({
-            # Карточки KPI
             "kpi": [
                 {
                     "title": "Мой Баланс",
                     "metric": f"${current_balance:,.2f}",
                     "footer": "Доступно к выплате",
-                    "color": "success", # Зеленый
+                    "color": "success",
                 },
                 {
                     "title": "Выручка за месяц",
@@ -122,7 +157,6 @@ def dashboard_callback(request, context):
                     "color": "primary",
                 },
             ],
-            # Прогресс бар выполнения плана
             "progress": [
                 {
                     "title": "Выполнение плана",

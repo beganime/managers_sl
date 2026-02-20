@@ -6,41 +6,76 @@
 {% block content %}
     {% include "unfold/helpers/messages.html" %}
 
+    <style>
+        /* Стили карточек */
+        html.dark .custom-card {
+            background-color: #111827 !important; /* Темно-синий/серый фон Unfold */
+            border-color: #1f2937 !important;
+            color: #f9fafb !important;
+        }
+        /* Стили приглушенного текста */
+        html.dark .custom-text-muted {
+            color: #9ca3af !important;
+        }
+        /* Стили таблиц */
+        html.dark .custom-table-bg {
+            background-color: #111827 !important;
+            border-color: #1f2937 !important;
+        }
+        html.dark .custom-table-header {
+            background-color: #1f2937 !important;
+            border-bottom-color: #374151 !important;
+            color: #9ca3af !important;
+        }
+        html.dark .custom-table-row {
+            background-color: #111827 !important;
+            border-bottom-color: #1f2937 !important;
+            color: #e5e7eb !important;
+        }
+        html.dark .custom-table-row:hover {
+            background-color: #1f2937 !important;
+        }
+        /* Прогресс бар */
+        html.dark .custom-progress-bg {
+            background-color: #374151 !important;
+        }
+    </style>
+
     {% if kpi %}
-    <div class="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2 lg:grid-cols-3">
+    <div class="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2 lg:grid-cols-4">
         {% for card in kpi %}
-            <div class="flex flex-col p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-900 dark:border-gray-800">
+            <div class="custom-card flex flex-col p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">
+                    <h3 class="custom-text-muted text-sm font-medium text-gray-500">
                         {{ card.title }}
                     </h3>
                     {% if card.icon %}
-                    <span class="material-symbols-outlined text-gray-400 text-2xl">
+                    <span class="custom-text-muted material-symbols-outlined text-gray-400 text-2xl">
                         {{ card.icon }}
                     </span>
                     {% endif %}
                 </div>
                 
-                <div class="flex items-baseline text-3xl font-bold text-gray-900 dark:text-white">
+                <div class="flex items-baseline text-3xl font-bold text-gray-900">
                     {{ card.metric }}
                 </div>
 
                 {% if card.footer %}
                 <div class="mt-4 flex items-center text-sm">
                     {% if card.color == 'success' %}
-                        <span class="flex items-center text-green-600 dark:text-green-400 font-medium bg-green-100 dark:bg-green-900/30 px-2 py-0.5 rounded">
+                        <span class="flex items-center text-green-700 font-medium bg-green-100 px-2 py-0.5 rounded" style="background-color: rgba(16, 185, 129, 0.2); color: #34d399;">
                             {{ card.footer }}
                         </span>
                     {% elif card.color == 'warning' %}
-                        <span class="flex items-center text-yellow-600 dark:text-yellow-400 font-medium bg-yellow-100 dark:bg-yellow-900/30 px-2 py-0.5 rounded">
+                        <span class="flex items-center text-yellow-700 font-medium bg-yellow-100 px-2 py-0.5 rounded" style="background-color: rgba(245, 158, 11, 0.2); color: #fbbf24;">
                             {{ card.footer }}
                         </span>
                     {% elif card.color == 'danger' %}
-                        <span class="flex items-center text-red-600 dark:text-red-400 font-medium bg-red-100 dark:bg-red-900/30 px-2 py-0.5 rounded">
+                        <span class="flex items-center text-red-700 font-medium bg-red-100 px-2 py-0.5 rounded" style="background-color: rgba(239, 68, 68, 0.2); color: #f87171;">
                             {{ card.footer }}
                         </span>
                     {% else %}
-                        <span class="flex items-center text-blue-600 dark:text-blue-400 font-medium bg-blue-100 dark:bg-blue-900/30 px-2 py-0.5 rounded">
+                        <span class="flex items-center text-blue-700 font-medium bg-blue-100 px-2 py-0.5 rounded" style="background-color: rgba(59, 130, 246, 0.2); color: #60a5fa;">
                             {{ card.footer }}
                         </span>
                     {% endif %}
@@ -52,8 +87,8 @@
     {% endif %}
 
     {% if chart %}
-    <div class="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-900 dark:border-gray-800">
-        <h3 class="mb-4 text-lg font-medium text-gray-900 dark:text-white">{{ chart.name }}</h3>
+    <div class="custom-card mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <h3 class="mb-4 text-lg font-medium text-gray-900">{{ chart.name }}</h3>
         <div class="relative h-64 w-full">
             <canvas id="dashboardChart"></canvas>
         </div>
@@ -62,6 +97,12 @@
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 const ctx = document.getElementById('dashboardChart').getContext('2d');
+                
+                // Проверяем включена ли темная тема для стилизации графика
+                const isDark = document.documentElement.classList.contains('dark');
+                const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
+                const textColor = isDark ? '#9ca3af' : '#6b7280';
+
                 new Chart(ctx, {
                     type: '{{ chart.type }}',
                     data: {
@@ -71,22 +112,16 @@
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                display: false
-                            }
-                        },
+                        plugins: { legend: { display: false } },
                         scales: {
                             y: {
                                 beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(156, 163, 175, 0.1)'
-                                }
+                                grid: { color: gridColor },
+                                ticks: { color: textColor }
                             },
                             x: {
-                                grid: {
-                                    display: false
-                                }
+                                grid: { display: false },
+                                ticks: { color: textColor }
                             }
                         }
                     }
@@ -99,18 +134,18 @@
     {% if progress %}
     <div class="grid grid-cols-1 gap-6 mb-6">
         {% for prog in progress %}
-        <div class="p-6 bg-white border border-gray-200 rounded-lg shadow-sm dark:bg-gray-900 dark:border-gray-800">
+        <div class="custom-card p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
             <div class="flex justify-between mb-2">
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ prog.title }}</span>
-                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ prog.value }}%</span>
+                <span class="custom-text-muted text-sm font-medium text-gray-700">{{ prog.title }}</span>
+                <span class="custom-text-muted text-sm font-medium text-gray-700">{{ prog.value }}%</span>
             </div>
             
-            <div class="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
-                <div class="{% if prog.color == 'success' %}bg-green-600{% else %}bg-blue-600{% endif %} h-2.5 rounded-full" 
+            <div class="custom-progress-bg w-full bg-gray-200 rounded-full h-2.5">
+                <div class="{% if prog.color == 'success' %}bg-green-500{% else %}bg-blue-500{% endif %} h-2.5 rounded-full" 
                      style="width: {{ prog.value }}%"></div>
             </div>
             
-            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
+            <p class="custom-text-muted mt-2 text-sm text-gray-500">
                 {{ prog.description }}
             </p>
         </div>
@@ -118,56 +153,77 @@
     </div>
     {% endif %}
 
-    {% if custom_clients_table %}
-        <div class="flex flex-col mb-6">
-            <h3 class="mb-4 text-xl font-semibold text-gray-900 dark:text-gray-100">
-                Мои последние клиенты
-            </h3>
-            
-            <div class="overflow-x-auto shadow-sm rounded-md border border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-                    <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-800 dark:text-gray-400 border-b border-gray-200 dark:border-gray-800">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        
+        {% if my_clients %}
+        <div class="flex flex-col">
+            <h3 class="custom-text-muted mb-4 text-xl font-semibold text-gray-900">Новые клиенты</h3>
+            <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                         <tr>
                             <th scope="col" class="px-6 py-3">Клиент</th>
                             <th scope="col" class="px-6 py-3">Статус</th>
-                            <th scope="col" class="px-6 py-3">Город</th>
-                            <th scope="col" class="px-6 py-3">Телефон</th>
                             <th scope="col" class="px-6 py-3 text-right">Действие</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {% for client in custom_clients_table %}
-                        <tr class="bg-white border-b dark:bg-gray-900 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                            <td class="px-6 py-4 font-medium text-gray-900 dark:text-white whitespace-nowrap">
-                                {{ client.full_name }}
-                                {% if client.is_priority %}⭐{% endif %}
+                        {% for client in my_clients %}
+                        <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 font-medium whitespace-nowrap">
+                                {{ client.full_name }} {% if client.is_priority %}⭐{% endif %}
                             </td>
                             <td class="px-6 py-4">
-                                <span class="bg-blue-100 text-blue-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded dark:bg-blue-900 dark:text-blue-300">
+                                <span class="text-xs font-medium px-2 py-0.5 rounded border" style="background-color: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: #60a5fa;">
                                     {{ client.get_status_display }}
                                 </span>
                             </td>
-                            <td class="px-6 py-4">
-                                {{ client.city }}
-                            </td>
-                            <td class="px-6 py-4">
-                                {{ client.phone }}
-                            </td>
                             <td class="px-6 py-4 text-right">
-                                <a href="{% url 'admin:clients_client_change' client.id %}" class="font-medium text-primary-600 dark:text-primary-500 hover:underline">
-                                    Открыть
-                                </a>
+                                <a href="{% url 'admin:clients_client_change' client.id %}" class="font-medium hover:underline" style="color: #60a5fa;">Открыть</a>
                             </td>
                         </tr>
                         {% endfor %}
                     </tbody>
                 </table>
-                {% if not custom_clients_table %}
-                    <div class="p-6 text-center text-gray-500">
-                        У вас пока нет клиентов.
-                    </div>
-                {% endif %}
             </div>
         </div>
-    {% endif %}
+        {% endif %}
+
+        {% if my_deals %}
+        <div class="flex flex-col">
+            <h3 class="custom-text-muted mb-4 text-xl font-semibold text-gray-900">Активные сделки</h3>
+            <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th scope="col" class="px-6 py-3">Сделка</th>
+                            <th scope="col" class="px-6 py-3">Оплачено</th>
+                            <th scope="col" class="px-6 py-3 text-right">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for deal in my_deals %}
+                        <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4 font-medium whitespace-nowrap">
+                                #{{ deal.id }} - {{ deal.client.full_name|truncatechars:15 }}
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if deal.paid_amount_usd >= deal.total_to_pay_usd %}
+                                    <span class="font-bold" style="color: #34d399;">${{ deal.paid_amount_usd }}</span>
+                                {% else %}
+                                    <span class="font-bold" style="color: #fbbf24;">${{ deal.paid_amount_usd }} / ${{ deal.total_to_pay_usd }}</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{% url 'admin:analytics_deal_change' deal.id %}" class="font-medium hover:underline" style="color: #60a5fa;">Открыть</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
 {% endblock %}

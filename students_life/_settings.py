@@ -1,16 +1,13 @@
-import os
 from pathlib import Path
-from django.templatetags.static import static
+import os
 
-# --- BASE DIR ---
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# --- SECURITY ---
 SECRET_KEY = 'django-insecure-!rqdvi^b78eoq6ya$ltzt0a5ohyiz5n*az!cdoc5wcnmv3s621'
-DEBUG = False
-ALLOWED_HOSTS = ['91.229.10.83', 'manager-sl.ru', 'www.manager-sl.ru', 'localhost']
+DEBUG = True
+ALLOWED_HOSTS = ['*']
 
-# --- APPS ---
 INSTALLED_APPS = [
     # 1. UI & PWA
     'unfold',
@@ -44,7 +41,6 @@ INSTALLED_APPS = [
     'documents',
 ]
 
-# --- MIDDLEWARE ---
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -57,7 +53,6 @@ MIDDLEWARE = [
 
 ROOT_URLCONF = 'students_life.urls'
 
-# --- TEMPLATES ---
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -75,7 +70,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'students_life.wsgi.application'
 
-# --- DATABASE ---
 # Проверяем, есть ли переменная окружения DB_NAME (она будет только на сервере)
 if os.environ.get('DB_NAME'):
     DATABASES = {
@@ -84,8 +78,8 @@ if os.environ.get('DB_NAME'):
             'NAME': os.environ.get('DB_NAME'),
             'USER': os.environ.get('DB_USER'),
             'PASSWORD': os.environ.get('DB_PASSWORD'),
-            'HOST': os.environ.get('DB_HOST'),
-            'PORT': os.environ.get('DB_PORT')
+            'HOST': 'localhost',
+            'PORT': '5432',
         }
     }
 else:
@@ -96,8 +90,7 @@ else:
             'NAME': BASE_DIR / 'db.sqlite3',
         }
     }
-
-# --- AUTH ---
+    
 AUTH_USER_MODEL = 'users.User'
 
 AUTH_PASSWORD_VALIDATORS = [
@@ -107,18 +100,16 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# --- INTERNATIONALIZATION ---
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Asia/Ashgabat'
 USE_I18N = True
 USE_TZ = True
 
-# --- STATIC & MEDIA ---
-STATIC_URL = '/static/'
+STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / "static"]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-MEDIA_URL = '/media/'
+MEDIA_URL = 'media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
@@ -142,14 +133,14 @@ PWA_APP_ICONS = [
     {
         'src': '/static/logo.ico',
         'sizes': '512x512',
-        'type': 'image/png'
+        'type': 'image/png' 
     }
 ]
 PWA_APP_ICONS_APPLE = [
     {
         'src': '/static/logo.ico',
         'sizes': '160x160',
-        'type': 'image/png'
+        'type': 'image/png' 
     }
 ]
 PWA_APP_SPLASH_SCREEN = [
@@ -163,13 +154,17 @@ PWA_APP_LANG = 'ru-ru'
 
 
 # --- UNFOLD SETTINGS ---
+from django.templatetags.static import static
+
+# settings.py
+
 UNFOLD = {
     "SITE_TITLE": "Managers SL",
     "SITE_HEADER": "Students Life ERP",
     "SITE_URL": "/admin/",
     "SITE_ICON": lambda request: static("logo.ico"),  # Убедись, что логотип есть в папке static
+
     "DASHBOARD_CALLBACK": "students_life.dashboard.dashboard_callback",
-    
     # ЦВЕТА (Полная палитра)
     "COLORS": {
         "primary": {
@@ -235,16 +230,16 @@ UNFOLD = {
             "900": "127 29 29",
         },
         "info": {
-            "50": "239 246 255",
-            "100": "219 234 254",
-            "200": "191 219 254",
-            "300": "147 197 253",
-            "400": "96 165 250",
-            "500": "59 130 246",
-            "600": "37 99 235",
-            "700": "29 78 216",
-            "800": "30 64 175",
-            "900": "30 58 138",
+             "50": "239 246 255",
+             "100": "219 234 254",
+             "200": "191 219 254",
+             "300": "147 197 253",
+             "400": "96 165 250",
+             "500": "59 130 246",
+             "600": "37 99 235",
+             "700": "29 78 216",
+             "800": "30 64 175",
+             "900": "30 58 138",
         },
         # МАППИНГ ДЛЯ DEFAULT (чтобы не было просто текста)
         "default": {
@@ -275,9 +270,10 @@ UNFOLD = {
                         "link": "/admin/analytics/financialperiod/",
                     },
                     {
+                        # ОБНОВЛЕННАЯ ССЫЛКА НА ПРОКСИ-МОДЕЛЬ
                         "title": "История действий",
                         "icon": "history",
-                        "link": "/admin/analytics/auditlog/",
+                        "link": "/admin/analytics/auditlog/", 
                     },
                     {
                         "title": "Сделки и Оплаты",
@@ -286,7 +282,8 @@ UNFOLD = {
                     },
                 ],
             },
-            {
+            # ... остальные твои пункты меню (Клиенты, HR и т.д.) оставь как были ...
+             {
                 "title": "Работа с клиентами",
                 "separator": True,
                 "items": [
@@ -327,8 +324,8 @@ UNFOLD = {
                         "icon": "school",
                         "link": "/admin/catalog/university/",
                     },
-                    {
-                        "title": "Программы обучения",
+                     {
+                        "title": "Программы обучения", # <-- Ссылка на программы
                         "icon": "school",
                         "link": "/admin/catalog/program/",
                     },

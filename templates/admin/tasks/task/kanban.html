@@ -3,7 +3,12 @@
 
 {% block content %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
-
+<style>
+    html.dark .banner_card {
+        background-color: #1f2937 !important; /* Чуть светлее фона доски для эффекта "стикера" */
+        border-color: #374151 !important;
+    }
+</style>
 {% csrf_token %}
 
 <div class="flex flex-col h-full p-4">
@@ -16,7 +21,7 @@
             <a href="{% url 'admin:tasks_task_add' %}" class="bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition shadow-sm flex items-center text-sm font-medium">
                 <span class="material-symbols-outlined mr-2 text-sm">add</span> Новая задача
             </a>
-            <a href="{% url 'admin:tasks_task_changelist' %}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center text-sm font-medium">
+            <a href="{% url 'admin:tasks_task_changelist' %}" class="bg-white banner_card border border-gray-200 dark:border-gray-700 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition flex items-center text-sm font-medium">
                 <span class="material-symbols-outlined mr-2 text-sm">list</span> Список
             </a>
         </div>
