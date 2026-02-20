@@ -79,8 +79,10 @@ class TaskAdmin(ModelAdmin):
     def kanban_view(self, request):
         tasks = Task.objects.all().select_related('assigned_to')
         # Фильтр: Админ видит всё, Менеджер - только своё
-        if not request.user.is_superuser:
-            tasks = tasks.filter(assigned_to=request.user)
+        # if not request.user.is_superuser:
+        #     tasks = tasks.filter(assigned_to=request.user)
+        tasks = self.get_queryset(request).select_related('assigned_to')
+
 
         context = dict(
             self.admin_site.each_context(request),

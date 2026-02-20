@@ -80,3 +80,9 @@ class ContractAdmin(ModelAdmin):
         if obj.generated_file:
             return format_html(f'<a href="{obj.generated_file.url}" class="text-blue-600 font-bold" target="_blank">📥 Скачать</a>')
         return "—"
+    
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(manager=request.user)
