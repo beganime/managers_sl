@@ -297,6 +297,11 @@ UNFOLD = {
                 "separator": True,
                 "items": [
                     {
+                        "title": "Новые заявки", # <--- НОВАЯ ССЫЛКА
+                        "icon": "mail",
+                        "link": "/admin/leads/lead/",
+                    },
+                    {
                         "title": "Клиенты",
                         "icon": "people",
                         "link": "/admin/clients/client/",
