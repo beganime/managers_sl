@@ -5,8 +5,8 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-!rqdvi^b78eoq6ya$ltzt0a5ohyiz5n*az!cdoc5wcnmv3s621'
-DEBUG = True
-ALLOWED_HOSTS = ['*']
+DEBUG = False
+ALLOWED_HOSTS = ['91.229.10.83', 'manager-sl.ru', 'www.manager-sl.ru', 'localhost']
 
 INSTALLED_APPS = [
     # 1. UI & PWA
