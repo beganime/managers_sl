@@ -1,22 +1,34 @@
-# dashboard.py
+# students_life/dashboard.py
 
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
 from django.db.models.functions import TruncDay
 from datetime import timedelta
 
-# Импортируй свои модели из нужных аппок (поправь пути импортов под свою структуру)
 from users.models import User, ManagerSalary
 from clients.models import Client
 from analytics.models import Payment, Deal, FinancialPeriod
 from catalog.models import University, Program
-# from tasks.models import Task  <-- Раскомментируй и поправь путь к модели Task
+from tasks.models import Task
+from timetracking.models import WorkShift
+from reports.models import DailyReport
+from leads.models import Lead  # <-- Импортируем модель заявок
 
 def dashboard_callback(request, context):
     """
     Генерация данных для главной страницы Unfold Admin.
     """
     user = request.user
+    today = timezone.now().date()
+    tomorrow = timezone.now() + timedelta(days=1)
+    
+    # --- ГОРЯЩИЕ ЗАДАЧИ ДЛЯ ВСЕХ ---
+    hot_tasks = Task.objects.filter(
+        status__in=['todo', 'process'], 
+        deadline__lte=tomorrow
+    ).order_by('deadline')[:5]
+    
+    context['hot_tasks'] = hot_tasks
 
     # ---------------------------------------------------------
     # 1. СУПЕРПОЛЬЗОВАТЕЛЬ (ДИРЕКТОР / ФИНАНСЫ)
@@ -24,7 +36,6 @@ def dashboard_callback(request, context):
     if user.is_superuser:
         last_week = timezone.now() - timedelta(days=7)
         
-        # График платежей
         payments_data = (
             Payment.objects.filter(payment_date__gte=last_week, is_confirmed=True)
             .annotate(day=TruncDay('payment_date'))
@@ -36,12 +47,10 @@ def dashboard_callback(request, context):
         days = [p['day'].strftime('%d.%m') for p in payments_data]
         amounts = [float(p['total']) for p in payments_data]
 
-        # Финансы
         period = FinancialPeriod.objects.filter(is_closed=False).last()
-        total_revenue = period.total_revenue if period else 0
-        net_profit = period.net_profit if period else 0
+        total_revenue = float(period.total_revenue) if period else 0
+        net_profit = float(period.net_profit) if period else 0
         
-        # Обобщенная стата
         total_clients = Client.objects.count()
         active_deals = Deal.objects.filter(payment_status__in=['process', 'waiting_payment']).count()
 
@@ -73,14 +82,14 @@ def dashboard_callback(request, context):
                 },
             ],
             "chart": {
-                "name": "Динамика подтвержденных доходов (7 дней)",
+                "name": "Динамика доходов (7 дней)",
                 "type": "line",
                 "labels": days,
                 "datasets": [
                     {
                         "label": "Выручка (USD)",
                         "data": amounts,
-                        "borderColor": "#10B981", # Зеленый цвет
+                        "borderColor": "#10B981", 
                         "backgroundColor": "rgba(16, 185, 129, 0.1)",
                     }
                 ],
@@ -93,8 +102,6 @@ def dashboard_callback(request, context):
     elif user.groups.filter(name='Менеджер по партнерствам').exists():
         total_unis = University.objects.count()
         active_programs = Program.objects.filter(is_active=True, is_deleted=False).count()
-        
-        # Передаем последние добавленные вузы для вывода в таблицу
         context['recent_unis'] = University.objects.order_by('-id')[:5]
 
         context.update({
@@ -118,49 +125,75 @@ def dashboard_callback(request, context):
     # 3. МЕНЕДЖЕР ПО ПРОДАЖАМ
     # ---------------------------------------------------------
     else:
-        # Зарплата и KPI
         salary_profile = getattr(user, 'managersalary', None)
-        current_balance, plan, revenue, percent_complete = 0, 1000, 0, 0
+        
+        # Дефолтные значения
+        current_balance, fixed_salary, plan, revenue, percent_complete = 0, 0, 1000, 0, 0
+        mot_target, mot_reward, left_to_mot = 0, 0, 0
 
         if salary_profile:
-            current_balance = salary_profile.current_balance
-            plan = salary_profile.monthly_plan
-            revenue = salary_profile.current_month_revenue
+            current_balance = float(salary_profile.current_balance)
+            fixed_salary = float(salary_profile.fixed_salary)
+            plan = float(salary_profile.monthly_plan)
+            revenue = float(salary_profile.current_month_revenue)
+            mot_target = float(salary_profile.motivation_target)
+            mot_reward = float(salary_profile.motivation_reward)
+            
             if plan > 0:
                 percent_complete = min(int((revenue / plan) * 100), 100)
+            
+            # Считаем остаток до мотивашки
+            left_to_mot = mot_target - revenue if mot_target > revenue else 0
 
-        # Вытаскиваем понемногу из каждой таблицы
-        my_clients = Client.objects.filter(manager=user).order_by('-created_at')[:5]
-        my_deals = Deal.objects.filter(manager=user).order_by('-updated_at')[:5]
+        # === ЛОГИКА ТАЙМ-ТРЕКИНГА ===
+        context['has_active_shift'] = WorkShift.objects.filter(employee=user, date=today, is_active=True).exists()
+        context['has_report_today'] = DailyReport.objects.filter(employee=user, date=today).exists()
+
+        # === ТАБЛИЦЫ ===
+        # 1. Новые (ничьи) заявки с сайта
+        context['new_leads'] = Lead.objects.filter(status='new', manager__isnull=True).order_by('-created_at')[:5]
+        # 2. Клиенты менеджера
+        context['my_clients'] = Client.objects.filter(manager=user).order_by('-created_at')[:5]
+        # 3. Сделки менеджера
+        context['my_deals'] = Deal.objects.filter(manager=user).order_by('-updated_at')[:5]
+        # 4. Задачи менеджера
+        context['my_tasks'] = Task.objects.filter(assigned_to=user).exclude(status='done').order_by('deadline')[:5]
         
-        # Берем задачи, которые не 'done' и сортируем по ближайшему дедлайну
-        # Если модель Task импортирована корректно:
-        # my_tasks = Task.objects.filter(assigned_to=user).exclude(status='done').order_by('deadline')[:5]
-        
-        # Прокидываем в контекст (чтобы потом отрисовать в HTML)
-        context['my_clients'] = my_clients
-        context['my_deals'] = my_deals
-        # context['my_tasks'] = my_tasks
+        # Передаем переменные мотивации
+        if left_to_mot <= 0 and mot_target > 0:
+            mot_text = "Выполнено! 🎉"
+            mot_metric = f"+${mot_reward:,.0f}"
+            mot_color = "success"
+        else:
+            mot_text = f"Осталось до бонуса +${mot_reward:,.0f}"
+            mot_metric = f"${left_to_mot:,.0f}"
+            mot_color = "warning"
 
         context.update({
             "kpi": [
                 {
-                    "title": "Мой Баланс",
-                    "metric": f"${current_balance:,.2f}",
-                    "footer": "Доступно к выплате",
+                    "title": "Зарплата (Оклад + Бонус)",
+                    "metric": f"${current_balance + fixed_salary:,.2f}",
+                    "footer": f"Оклад: ${fixed_salary:,.0f} | Накоплено: ${current_balance:,.0f}",
                     "color": "success",
                 },
                 {
                     "title": "Выручка за месяц",
                     "metric": f"${revenue:,.2f}",
-                    "footer": f"План: ${plan:,.2f}",
+                    "footer": f"План: ${plan:,.0f}",
                     "color": "primary",
+                },
+                {
+                    "title": "Мотивация",
+                    "metric": mot_metric,
+                    "footer": mot_text,
+                    "color": mot_color,
                 },
             ],
             "progress": [
                 {
-                    "title": "Выполнение плана",
-                    "description": f"Вы заработали ${revenue:,.2f} из ${plan:,.2f}",
+                    "title": "Выполнение плана продаж",
+                    "description": f"Вы принесли компании ${revenue:,.2f} из ${plan:,.0f}",
                     "value": percent_complete,
                     "color": "primary" if percent_complete < 100 else "success",
                 }

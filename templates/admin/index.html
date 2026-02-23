@@ -7,78 +7,106 @@
     {% include "unfold/helpers/messages.html" %}
 
     <style>
-        /* Стили карточек */
-        html.dark .custom-card {
-            background-color: #111827 !important; /* Темно-синий/серый фон Unfold */
-            border-color: #1f2937 !important;
-            color: #f9fafb !important;
-        }
-        /* Стили приглушенного текста */
-        html.dark .custom-text-muted {
-            color: #9ca3af !important;
-        }
-        /* Стили таблиц */
-        html.dark .custom-table-bg {
-            background-color: #111827 !important;
-            border-color: #1f2937 !important;
-        }
-        html.dark .custom-table-header {
-            background-color: #1f2937 !important;
-            border-bottom-color: #374151 !important;
-            color: #9ca3af !important;
-        }
-        html.dark .custom-table-row {
-            background-color: #111827 !important;
-            border-bottom-color: #1f2937 !important;
-            color: #e5e7eb !important;
-        }
-        html.dark .custom-table-row:hover {
-            background-color: #1f2937 !important;
-        }
-        /* Прогресс бар */
-        html.dark .custom-progress-bg {
-            background-color: #374151 !important;
-        }
+        /* Базовые стили Unfold */
+        html.dark .custom-card { background-color: #111827 !important; border-color: #1f2937 !important; color: #f9fafb !important; }
+        html.dark .custom-text-muted { color: #9ca3af !important; }
+        html.dark .custom-table-bg { background-color: #111827 !important; border-color: #1f2937 !important; }
+        html.dark .custom-table-header { background-color: #1f2937 !important; border-bottom-color: #374151 !important; color: #9ca3af !important; }
+        html.dark .custom-table-row { background-color: #111827 !important; border-bottom-color: #1f2937 !important; color: #e5e7eb !important; }
+        html.dark .custom-table-row:hover { background-color: #1f2937 !important; }
+        html.dark .custom-progress-bg { background-color: #374151 !important; }
     </style>
 
+    {% if not request.user.is_superuser %}
+    <div class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row gap-6 justify-between items-center">
+        <div>
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                <span class="material-symbols-outlined text-blue-600">schedule</span> 
+                Рабочий день
+            </h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Отмечайте время прихода и ухода. Отчет обязателен в конце дня.</p>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+            {% if not has_active_shift %}
+                <form action="/admin/timetracking/workshift/start-shift/" method="POST">
+                    {% csrf_token %}
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-bold transition-all shadow flex items-center gap-2">
+                        <span class="material-symbols-outlined">play_circle</span> Я пришел (Начать смену)
+                    </button>
+                </form>
+            
+            {% else %}
+                <a href="/admin/reports/dailyreport/add/" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold transition-all shadow flex items-center gap-2">
+                    <span class="material-symbols-outlined">edit_document</span> Заполнить отчет
+                </a>
+
+                {% if not has_report_today %}
+                    <button disabled class="bg-gray-200 dark:bg-gray-700 text-gray-500 px-6 py-3 rounded-lg font-bold cursor-not-allowed flex items-center gap-2" title="Сначала напишите отчет!">
+                        <span class="material-symbols-outlined">block</span> Завершить день (Нужен отчет)
+                    </button>
+                {% else %}
+                    <form action="/admin/timetracking/workshift/end-shift/" method="POST">
+                        {% csrf_token %}
+                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all shadow flex items-center gap-2">
+                            <span class="material-symbols-outlined">stop_circle</span> Завершить день (Уйти)
+                        </button>
+                    </form>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if hot_tasks %}
+    <div class="mb-8">
+        <h3 class="mb-4 text-xl font-bold text-red-600 flex items-center">
+            <span class="material-symbols-outlined mr-2">local_fire_department</span> Горящие задачи
+        </h3>
+        <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-red-200 dark:border-red-900 bg-white">
+            <table class="w-full text-sm text-left text-gray-500">
+                <thead class="custom-table-header text-xs text-gray-700 uppercase bg-red-50 dark:bg-gray-800 border-b border-red-200 dark:border-red-900">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">Задача</th>
+                        <th scope="col" class="px-6 py-3">Дедлайн</th>
+                        <th scope="col" class="px-6 py-3">Исполнитель</th>
+                        <th scope="col" class="px-6 py-3 text-right">Действие</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in hot_tasks %}
+                    <tr class="custom-table-row bg-white border-b hover:bg-red-50 dark:hover:bg-gray-800 transition-colors">
+                        <td class="px-6 py-4 font-bold text-red-600 dark:text-red-400">{{ task.title }}</td>
+                        <td class="px-6 py-4 font-medium text-red-500">{{ task.deadline|date:"d.m.Y H:i" }}</td>
+                        <td class="px-6 py-4 font-medium">{{ task.assigned_to.first_name }} {{ task.assigned_to.last_name }}</td>
+                        <td class="px-6 py-4 text-right">
+                            <a href="{% url 'admin:tasks_task_change' task.id %}" class="font-medium text-blue-600 hover:underline">Открыть</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
     {% if kpi %}
-    <div class="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2 lg:grid-cols-4">
+    <div class="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2 lg:grid-cols-3">
         {% for card in kpi %}
             <div class="custom-card flex flex-col p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="custom-text-muted text-sm font-medium text-gray-500">
-                        {{ card.title }}
-                    </h3>
-                    {% if card.icon %}
-                    <span class="custom-text-muted material-symbols-outlined text-gray-400 text-2xl">
-                        {{ card.icon }}
-                    </span>
-                    {% endif %}
+                    <h3 class="custom-text-muted text-sm font-medium text-gray-500">{{ card.title }}</h3>
                 </div>
-                
-                <div class="flex items-baseline text-3xl font-bold text-gray-900">
-                    {{ card.metric }}
-                </div>
-
+                <div class="flex items-baseline text-3xl font-bold text-gray-900">{{ card.metric }}</div>
                 {% if card.footer %}
                 <div class="mt-4 flex items-center text-sm">
-                    {% if card.color == 'success' %}
-                        <span class="flex items-center text-green-700 font-medium bg-green-100 px-2 py-0.5 rounded" style="background-color: rgba(16, 185, 129, 0.2); color: #34d399;">
-                            {{ card.footer }}
-                        </span>
-                    {% elif card.color == 'warning' %}
-                        <span class="flex items-center text-yellow-700 font-medium bg-yellow-100 px-2 py-0.5 rounded" style="background-color: rgba(245, 158, 11, 0.2); color: #fbbf24;">
-                            {{ card.footer }}
-                        </span>
-                    {% elif card.color == 'danger' %}
-                        <span class="flex items-center text-red-700 font-medium bg-red-100 px-2 py-0.5 rounded" style="background-color: rgba(239, 68, 68, 0.2); color: #f87171;">
-                            {{ card.footer }}
-                        </span>
-                    {% else %}
-                        <span class="flex items-center text-blue-700 font-medium bg-blue-100 px-2 py-0.5 rounded" style="background-color: rgba(59, 130, 246, 0.2); color: #60a5fa;">
-                            {{ card.footer }}
-                        </span>
-                    {% endif %}
+                    <span class="text-xs font-medium px-2 py-0.5 rounded border 
+                        {% if card.color == 'success' %}bg-green-100 text-green-700 border-green-200
+                        {% elif card.color == 'warning' %}bg-yellow-100 text-yellow-700 border-yellow-200
+                        {% elif card.color == 'danger' %}bg-red-100 text-red-700 border-red-200
+                        {% else %}bg-blue-100 text-blue-700 border-blue-200{% endif %}">
+                        {{ card.footer }}
+                    </span>
                 </div>
                 {% endif %}
             </div>
@@ -86,68 +114,18 @@
     </div>
     {% endif %}
 
-    {% if chart %}
-    <div class="custom-card mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-        <h3 class="mb-4 text-lg font-medium text-gray-900">{{ chart.name }}</h3>
-        <div class="relative h-64 w-full">
-            <canvas id="dashboardChart"></canvas>
-        </div>
-        
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-        <script>
-            document.addEventListener('DOMContentLoaded', function() {
-                const ctx = document.getElementById('dashboardChart').getContext('2d');
-                
-                // Проверяем включена ли темная тема для стилизации графика
-                const isDark = document.documentElement.classList.contains('dark');
-                const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)';
-                const textColor = isDark ? '#9ca3af' : '#6b7280';
-
-                new Chart(ctx, {
-                    type: '{{ chart.type }}',
-                    data: {
-                        labels: {{ chart.labels|safe }},
-                        datasets: {{ chart.datasets|safe }}
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: { color: gridColor },
-                                ticks: { color: textColor }
-                            },
-                            x: {
-                                grid: { display: false },
-                                ticks: { color: textColor }
-                            }
-                        }
-                    }
-                });
-            });
-        </script>
-    </div>
-    {% endif %}
-
     {% if progress %}
-    <div class="grid grid-cols-1 gap-6 mb-6">
+    <div class="grid grid-cols-1 gap-6 mb-8">
         {% for prog in progress %}
         <div class="custom-card p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
             <div class="flex justify-between mb-2">
                 <span class="custom-text-muted text-sm font-medium text-gray-700">{{ prog.title }}</span>
-                <span class="custom-text-muted text-sm font-medium text-gray-700">{{ prog.value }}%</span>
+                <span class="custom-text-muted text-sm font-bold text-gray-700">{{ prog.value }}%</span>
             </div>
-            
             <div class="custom-progress-bg w-full bg-gray-200 rounded-full h-2.5">
-                <div class="{% if prog.color == 'success' %}bg-green-500{% else %}bg-blue-500{% endif %} h-2.5 rounded-full" 
-                     style="width: {{ prog.value }}%"></div>
+                <div class="{% if prog.color == 'success' %}bg-green-500{% else %}bg-blue-500{% endif %} h-2.5 rounded-full" style="width: {{ prog.value }}%"></div>
             </div>
-            
-            <p class="custom-text-muted mt-2 text-sm text-gray-500">
-                {{ prog.description }}
-            </p>
+            <p class="custom-text-muted mt-2 text-sm text-gray-500">{{ prog.description }}</p>
         </div>
         {% endfor %}
     </div>
@@ -155,31 +133,61 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         
-        {% if my_clients %}
+        {% if new_leads %}
         <div class="flex flex-col">
-            <h3 class="custom-text-muted mb-4 text-xl font-semibold text-gray-900">Новые клиенты</h3>
+            <h3 class="custom-text-muted mb-4 text-lg font-semibold text-gray-900">🔔 Свободные заявки (Сайт)</h3>
             <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
                 <table class="w-full text-sm text-left text-gray-500">
                     <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th scope="col" class="px-6 py-3">Клиент</th>
-                            <th scope="col" class="px-6 py-3">Статус</th>
-                            <th scope="col" class="px-6 py-3 text-right">Действие</th>
+                            <th scope="col" class="px-4 py-3">Имя / Контакт</th>
+                            <th scope="col" class="px-4 py-3">Направление</th>
+                            <th scope="col" class="px-4 py-3 text-right">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for lead in new_leads %}
+                        <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-3 font-medium whitespace-nowrap">
+                                <div>{{ lead.full_name|truncatechars:20 }}</div>
+                                <div class="text-xs text-gray-400">{{ lead.phone }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-xs">{{ lead.get_direction_display|default:"Не указано" }}</td>
+                            <td class="px-4 py-3 text-right">
+                                <a href="{% url 'admin:leads_lead_change' lead.id %}" class="bg-blue-600 text-white text-xs px-3 py-1 rounded hover:bg-blue-700 transition">Забрать</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if my_clients %}
+        <div class="flex flex-col">
+            <h3 class="custom-text-muted mb-4 text-lg font-semibold text-gray-900">👥 Мои новые клиенты</h3>
+            <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Клиент</th>
+                            <th scope="col" class="px-4 py-3 text-right">Статус</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for client in my_clients %}
                         <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 font-medium whitespace-nowrap">
-                                {{ client.full_name }} {% if client.is_priority %}⭐{% endif %}
+                            <td class="px-4 py-3 font-medium whitespace-nowrap">
+                                <a href="{% url 'admin:clients_client_change' client.id %}" class="hover:underline text-blue-600 font-medium">
+                                    {{ client.full_name|truncatechars:25 }}
+                                </a>
+                                {% if client.is_priority %}⭐{% endif %}
                             </td>
-                            <td class="px-6 py-4">
-                                <span class="text-xs font-medium px-2 py-0.5 rounded border" style="background-color: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.2); color: #60a5fa;">
+                            <td class="px-4 py-3 text-right">
+                                <span class="text-[10px] font-bold uppercase px-2 py-1 rounded border border-gray-200 bg-gray-100 text-gray-600">
                                     {{ client.get_status_display }}
                                 </span>
-                            </td>
-                            <td class="px-6 py-4 text-right">
-                                <a href="{% url 'admin:clients_client_change' client.id %}" class="font-medium hover:underline" style="color: #60a5fa;">Открыть</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -191,31 +199,63 @@
 
         {% if my_deals %}
         <div class="flex flex-col">
-            <h3 class="custom-text-muted mb-4 text-xl font-semibold text-gray-900">Активные сделки</h3>
+            <h3 class="custom-text-muted mb-4 text-lg font-semibold text-gray-900">💵 Активные сделки</h3>
             <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
                 <table class="w-full text-sm text-left text-gray-500">
                     <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
                         <tr>
-                            <th scope="col" class="px-6 py-3">Сделка</th>
-                            <th scope="col" class="px-6 py-3">Оплачено</th>
-                            <th scope="col" class="px-6 py-3 text-right">Действие</th>
+                            <th scope="col" class="px-4 py-3">Сделка</th>
+                            <th scope="col" class="px-4 py-3 text-right">Оплата</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for deal in my_deals %}
                         <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
-                            <td class="px-6 py-4 font-medium whitespace-nowrap">
-                                #{{ deal.id }} - {{ deal.client.full_name|truncatechars:15 }}
+                            <td class="px-4 py-3 font-medium whitespace-nowrap">
+                                <a href="{% url 'admin:analytics_deal_change' deal.id %}" class="hover:underline text-blue-600">
+                                    #{{ deal.id }} - {{ deal.client.full_name|truncatechars:15 }}
+                                </a>
                             </td>
-                            <td class="px-6 py-4">
+                            <td class="px-4 py-3 text-right">
                                 {% if deal.paid_amount_usd >= deal.total_to_pay_usd %}
-                                    <span class="font-bold" style="color: #34d399;">${{ deal.paid_amount_usd }}</span>
+                                    <span class="font-bold text-green-500">${{ deal.paid_amount_usd }}</span>
                                 {% else %}
-                                    <span class="font-bold" style="color: #fbbf24;">${{ deal.paid_amount_usd }} / ${{ deal.total_to_pay_usd }}</span>
+                                    <span class="font-bold text-yellow-500">${{ deal.paid_amount_usd }} / ${{ deal.total_to_pay_usd }}</span>
                                 {% endif %}
                             </td>
-                            <td class="px-6 py-4 text-right">
-                                <a href="{% url 'admin:analytics_deal_change' deal.id %}" class="font-medium hover:underline" style="color: #60a5fa;">Открыть</a>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if my_tasks %}
+        <div class="flex flex-col">
+            <h3 class="custom-text-muted mb-4 text-lg font-semibold text-gray-900">📝 Мои задачи (В работе)</h3>
+            <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Задача</th>
+                            <th scope="col" class="px-4 py-3 text-right">Дедлайн</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for task in my_tasks %}
+                        <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
+                            <td class="px-4 py-3 font-medium whitespace-nowrap">
+                                <a href="{% url 'admin:tasks_task_change' task.id %}" class="hover:underline text-blue-600">
+                                    {{ task.title|truncatechars:25 }}
+                                </a>
+                            </td>
+                            <td class="px-4 py-3 text-right font-medium">
+                                {% if task.deadline %}
+                                    {{ task.deadline|date:"d.m" }}
+                                {% else %}
+                                    —
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -226,4 +266,6 @@
         {% endif %}
 
     </div>
+
+    {{ block.super }}
 {% endblock %}
