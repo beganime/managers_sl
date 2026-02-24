@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 from datetime import timedelta
 
-from students_life import settings
+from students_life import _settings
 
 class Office(models.Model):
     city = models.CharField("Город", max_length=100)
@@ -78,7 +78,7 @@ class User(AbstractUser):
 
 
 class ManagerSalary(models.Model):
-    manager = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    manager = models.OneToOneField(_settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     
     # --- БАЛАНС И ОКЛАД ---
     current_balance = models.DecimalField("Бонусы к выплате (USD)", max_digits=10, decimal_places=2, default=0.00, help_text="Накопленные проценты со сделок")
@@ -87,11 +87,11 @@ class ManagerSalary(models.Model):
     # --- KPI И ПЛАН ---
     monthly_plan = models.DecimalField("План на месяц (USD)", max_digits=10, decimal_places=2, default=5000.00)
     current_month_revenue = models.DecimalField("Выручка в этом месяце", max_digits=12, decimal_places=2, default=0.00)
-    commission_percent = models.DecimalField("Процент от сделок (%)", max_digits=5, decimal_places=2, default=10.00)
+    commission_percent = models.DecimalField("Процент от сделок (%)", max_digits=5, decimal_places=2, default=5.00)
     
     # --- МОТИВАЦИЯ (ИЗ ТЗ) ---
     motivation_target = models.DecimalField("Цель для мотивашки (Выручка USD)", max_digits=10, decimal_places=2, default=10000.00)
-    motivation_reward = models.DecimalField("Сумма бонуса (USD)", max_digits=10, decimal_places=2, default=500.00)
+    motivation_reward = models.DecimalField("Сумма бонуса (USD)", max_digits=10, decimal_places=2, default=10.00)
 
     def add_commission(self, amount):
         self.current_balance += amount
