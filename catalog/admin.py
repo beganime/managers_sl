@@ -92,9 +92,9 @@ class UniversityAdmin(ModelAdmin, ImportExportModelAdmin):
         qs = super().get_queryset(request)
         qs = qs.annotate(programs_count=Count('programs'))
         return qs
-
+    
     def save_model(self, request, obj, form, change):
-        if not obj.added_by:
+        if not obj.pk:
             obj.added_by = request.user
         super().save_model(request, obj, form, change)
 

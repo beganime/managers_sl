@@ -81,10 +81,12 @@ class ClientAdmin(ModelAdmin):
         ).distinct()
 
     def save_model(self, request, obj, form, change):
-        # Если создаем нового и менеджер не выбран - ставим текущего
-        if not obj.pk and not obj.manager_id:
+        if not obj.pk:
             obj.manager = request.user
         super().save_model(request, obj, form, change)
+
+    def get_changeform_initial_data(self, request):
+        return {'manager': request.user}
 
     # --- ДЕКОРАТОРЫ (Красивое отображение) ---
     @display(description="Клиент", header=True)

@@ -70,9 +70,15 @@ class TaskAdmin(ModelAdmin):
         return fieldsets
 
     def save_model(self, request, obj, form, change):
-        if not obj.pk and not obj.created_by:
+        if not obj.pk:
             obj.created_by = request.user
+            # Если исполнитель не выбран, ставим себя
+            if not obj.assigned_to_id:
+                obj.assigned_to = request.user
         super().save_model(request, obj, form, change)
+
+    def get_changeform_initial_data(self, request):
+        return {'assigned_to': request.user, 'created_by': request.user}
 
     @display(description="Статус", label=True)
     def status_badge(self, obj):

@@ -6,10 +6,14 @@ from docxtpl import DocxTemplate
 import io
 import locale
 
+# Исправлено: безопасная установка локали
 try:
     locale.setlocale(locale.LC_ALL, 'ru_RU.UTF-8')
-except:
-    pass
+except Exception:
+    try:
+        locale.setlocale(locale.LC_ALL, 'ru_RU')
+    except Exception:
+        pass
 
 from clients.models import Client
 from catalog.models import Program
@@ -32,9 +36,7 @@ class InfoSnippet(models.Model):
         verbose_name_plural = "База знаний"
         ordering = ['category', 'order']
 
-
 class ContractTemplate(models.Model):
-    # ОБНОВЛЕНИЕ: Разделили обучение на Бюджет и Контракт
     TYPE_CHOICES = (
         ('education_budget', 'Обучение (Бюджет)'),
         ('education_contract', 'Обучение (Контракт)'),
@@ -49,7 +51,6 @@ class ContractTemplate(models.Model):
     class Meta:
         verbose_name = "Шаблон документа"
         verbose_name_plural = "Шаблоны документов"
-
 
 class Contract(models.Model):
     STATUS_CHOICES = (
@@ -80,8 +81,6 @@ class Contract(models.Model):
             return
             
         doc = DocxTemplate(self.template.file.path)
-        
-        # Исправлено: берем service_fee из Program (т.к. price там нет)
         price = self.custom_price if self.custom_price else (self.program.service_fee if self.program else 0)
         
         cust_fio = self.customer_fio if self.customer_fio else self.client.full_name
@@ -94,7 +93,6 @@ class Contract(models.Model):
             'date_today': self.created_at.strftime("%d.%m.%Y"),
             'year': self.created_at.strftime("%Y"),
             'manager_fio': f"{self.manager.first_name} {self.manager.last_name}",
-            
             'student_fio': self.client.full_name,
             'citizenship': self.client.citizenship,
             'dob': self.client.dob.strftime("%d.%m.%Y") if self.client.dob else "",
@@ -104,19 +102,16 @@ class Contract(models.Model):
             'issued_date': self.client.passport_issued_date.strftime("%d.%m.%Y") if self.client.passport_issued_date else "",
             'address': self.client.address_registration,
             'city': self.client.city,
-
             'customer_fio': cust_fio,
             'customer_passport': cust_pass,
             'customer_issued_date': cust_date,
             'customer_address': cust_addr,
-            
             'amount': f"{price:,.2f}",
             'payment_deadline': self.payment_deadline.strftime("%d.%m.%Y") if self.payment_deadline else "__________",
-            'program_name': self.program.name if self.program else "Услуги компании", # Исправлено: title -> name
+            'program_name': self.program.name if self.program else "Услуги компании",
         }
 
         doc.render(context)
-        
         buffer = io.BytesIO()
         doc.save(buffer)
         buffer.seek(0)

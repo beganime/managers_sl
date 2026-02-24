@@ -12,7 +12,7 @@ from catalog.models import University, Program
 from tasks.models import Task
 from timetracking.models import WorkShift
 from reports.models import DailyReport
-from leads.models import Lead  # <-- Импортируем модель заявок
+from leads.models import Lead
 
 def dashboard_callback(request, context):
     """
@@ -150,13 +150,9 @@ def dashboard_callback(request, context):
         context['has_report_today'] = DailyReport.objects.filter(employee=user, date=today).exists()
 
         # === ТАБЛИЦЫ ===
-        # 1. Новые (ничьи) заявки с сайта
         context['new_leads'] = Lead.objects.filter(status='new', manager__isnull=True).order_by('-created_at')[:5]
-        # 2. Клиенты менеджера
         context['my_clients'] = Client.objects.filter(manager=user).order_by('-created_at')[:5]
-        # 3. Сделки менеджера
         context['my_deals'] = Deal.objects.filter(manager=user).order_by('-updated_at')[:5]
-        # 4. Задачи менеджера
         context['my_tasks'] = Task.objects.filter(assigned_to=user).exclude(status='done').order_by('deadline')[:5]
         
         # Передаем переменные мотивации
@@ -201,3 +197,76 @@ def dashboard_callback(request, context):
         })
 
     return context
+
+
+# === НОВЫЙ БЛОК ДЛЯ ДИНАМИЧЕСКОГО МЕНЮ ===
+def get_navigation(request):
+    """
+    Генерация меню боковой панели (сайдбара).
+    """
+    # 1. Базовое меню (доступно всем: и менеджерам, и админу)
+    nav = [
+        {
+            "title": "Работа с клиентами",
+            "separator": True,
+            "items": [
+                {"title": "Новые заявки", "icon": "mail", "link": "/admin/leads/lead/"},
+                {"title": "Клиенты", "icon": "people", "link": "/admin/clients/client/"},
+                {"title": "Задачи (Канбан)", "icon": "assignment", "link": "/admin/tasks/task/"},
+                {"title": "Сделки и Оплаты", "icon": "attach_money", "link": "/admin/analytics/deal/"},
+            ],
+        },
+        {
+            "title": "Документы и Учет",
+            "separator": True,
+            "items": [
+                {"title": "Договоры", "icon": "description", "link": "/admin/documents/contract/"},
+                {"title": "Рабочие смены", "icon": "schedule", "link": "/admin/timetracking/workshift/"},
+                {"title": "Отчеты", "icon": "summarize", "link": "/admin/reports/dailyreport/"},
+            ],
+        },
+        {
+            "title": "Каталог и Услуги",
+            "separator": False,
+            "items": [
+                {"title": "ВУЗы и Страны", "icon": "school", "link": "/admin/catalog/university/"},
+                {"title": "Программы обучения", "icon": "school", "link": "/admin/catalog/program/"},
+                {"title": "Доп. услуги", "icon": "room_service", "link": "/admin/services/service/"},
+                {"title": "База знаний", "icon": "menu_book", "link": "/admin/documents/infosnippet/"},
+            ],
+        },
+        {
+            "title": "Обучение и Рейтинг",
+            "separator": True,
+            "items": [
+                {"title": "🏆 Живой рейтинг", "icon": "emoji_events", "link": "/admin/gamification/leaderboard/"},
+                {"title": "Видеоуроки", "icon": "play_circle", "link": "/admin/gamification/tutorialvideo/"},
+            ],
+        },
+    ]
+
+    # 2. Админское меню (добавляется ТОЛЬКО для Суперюзера сверху списка)
+    if request.user.is_superuser:
+        admin_nav = [
+            {
+                "title": "Управление бизнесом",
+                "separator": True,
+                "items": [
+                    {"title": "Финансы (Дашборд)", "icon": "account_balance", "link": "/admin/analytics/financialperiod/"},
+                    {"title": "История действий", "icon": "manage_search", "link": "/admin/analytics/auditlog/"},
+                    {"title": "Шаблоны документов", "icon": "folder_copy", "link": "/admin/documents/contracttemplate/"},
+                ],
+            },
+            {
+                "title": "HR и Команда",
+                "separator": True,
+                "items": [
+                    {"title": "Сотрудники", "icon": "badge", "link": "/admin/users/user/"},
+                    {"title": "Офисы", "icon": "apartment", "link": "/admin/users/office/"},
+                    {"title": "Архив рейтингов", "icon": "military_tech", "link": "/admin/gamification/ratingsnapshot/"},
+                ],
+            },
+        ]
+        nav = admin_nav + nav
+
+    return nav
