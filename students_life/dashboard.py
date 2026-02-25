@@ -1,22 +1,4 @@
 # students_life/dashboard.py
-
-from django.utils import timezone
-from django.db.models import Sum, Count, Q
-from django.db.models.functions import TruncDay
-from datetime import timedelta
-
-from users.models import User, ManagerSalary
-from clients.models import Client
-from analytics.models import Payment, Deal, FinancialPeriod
-from catalog.models import University, Program
-from tasks.models import Task
-from timetracking.models import WorkShift
-from reports.models import DailyReport
-from leads.models import Lead
-
-
-# students_life/dashboard.py
-
 import datetime
 from django.utils import timezone
 from django.db.models import Sum, Count, Q
@@ -37,28 +19,23 @@ def dashboard_callback(request, context):
     today = now.date()
     tomorrow = now + datetime.timedelta(days=1)
     
-    # ==========================================
-    # АВТОМАТИЧЕСКОЕ ЗАКРЫТИЕ ЗАБЫТЫХ СМЕН
-    # ==========================================
+    # Автозакрытие забытых смен
     active_shifts = WorkShift.objects.filter(is_active=True)
     for shift in active_shifts:
-        # Условие закрытия: Смена за прошлый день ИЛИ сегодня, но уже 22:00+
         is_past_day = shift.date < today
         is_late_today = shift.date == today and now.time() >= datetime.time(22, 0)
         
         if is_past_day or is_late_today:
-            # Принудительно ставим время ухода 22:00 того дня, когда была открыта смена
             shift.time_out = timezone.make_aware(datetime.datetime.combine(shift.date, datetime.time(22, 0)))
             shift.is_auto_closed = True
             shift.save()
             
-            # Если сотрудник забыл уйти 3 и более раз - снимаем статус Эффективности
             forgets_count = WorkShift.objects.filter(employee=shift.employee, is_auto_closed=True).count()
             if forgets_count >= 3:
                 shift.employee.is_effective = False
                 shift.employee.save()
 
-    # --- ГОРЯЩИЕ ЗАДАЧИ ДЛЯ ВСЕХ ---
+    # Горящие задачи
     hot_tasks = Task.objects.filter(
         status__in=['todo', 'process'], 
         deadline__lte=tomorrow
@@ -66,7 +43,6 @@ def dashboard_callback(request, context):
     
     context['hot_tasks'] = hot_tasks
 
-    # 1. СУПЕРПОЛЬЗОВАТЕЛЬ (ДИРЕКТОР / ФИНАНСЫ)
     if user.is_superuser:
         last_week = now - datetime.timedelta(days=7)
         payments_data = (
@@ -99,7 +75,6 @@ def dashboard_callback(request, context):
             },
         })
 
-    # 2. МЕНЕДЖЕР ПО ПАРТНЕРСТВАМ
     elif user.groups.filter(name='Менеджер по партнерствам').exists():
         total_unis = University.objects.count()
         active_programs = Program.objects.filter(is_active=True, is_deleted=False).count()
@@ -111,7 +86,6 @@ def dashboard_callback(request, context):
             ]
         })
 
-    # 3. МЕНЕДЖЕР ПО ПРОДАЖАМ
     else:
         salary_profile = getattr(user, 'managersalary', None)
         current_balance, fixed_salary, plan, revenue, percent_complete = 0, 0, 1000, 0, 0
@@ -129,12 +103,11 @@ def dashboard_callback(request, context):
                 percent_complete = min(int((revenue / plan) * 100), 100)
             left_to_mot = mot_target - revenue if mot_target > revenue else 0
 
-        # === ЛОГИКА ТАЙМ-ТРЕКИНГА И НАРУШЕНИЙ ===
+        context['raw_balance'] = current_balance
         context['has_active_shift'] = WorkShift.objects.filter(employee=user, date=today, is_active=True).exists()
         context['has_report_today'] = DailyReport.objects.filter(employee=user, date=today).exists()
         context['forgets_count'] = WorkShift.objects.filter(employee=user, is_auto_closed=True).count()
 
-        # === ТАБЛИЦЫ ===
         context['new_leads'] = Lead.objects.filter(status='new', manager__isnull=True).order_by('-created_at')[:5]
         context['my_clients'] = Client.objects.filter(manager=user).order_by('-created_at')[:5]
         context['my_deals'] = Deal.objects.filter(manager=user).order_by('-updated_at')[:5]
@@ -159,7 +132,7 @@ def dashboard_callback(request, context):
     return context
 
 
-# === НОВЫЙ БЛОК ДЛЯ ДИНАМИЧЕСКОГО МЕНЮ ===
+# === БЛОК ДЛЯ ДИНАМИЧЕСКОГО МЕНЮ ===
 def get_navigation(request):
     """
     Генерация меню боковой панели (сайдбара).
@@ -208,12 +181,12 @@ def get_navigation(request):
             "title": "Мой аккаунт",
             "separator": True,
             "items": [
-                    {
-                        "title": "Мой профиль",
-                        "icon": "account_circle",
-                        "link": "/admin/profile/",
-                    },
-                ],
+                {
+                    "title": "Мой профиль",
+                    "icon": "account_circle",
+                    "link": "/admin/profile/",
+                },
+            ],
         }
     ]
 

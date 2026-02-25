@@ -58,6 +58,15 @@
         <a href="{% url 'admin:analytics_deal_add' %}" class="bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-lg font-bold text-sm transition shadow-sm hover:bg-gray-50 flex items-center gap-2 custom-btn-outline">
             <span class="material-symbols-outlined text-[18px]">attach_money</span> Оформить сделку
         </a>
+        
+        {% if raw_balance and raw_balance > 0 %}
+        <form action="{% url 'admin:claim_salary' %}" method="POST" class="w-full sm:w-auto">
+            {% csrf_token %}
+            <button type="submit" class="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition shadow flex items-center justify-center gap-2" onclick="return confirm('Забрать бонусы в размере ${{ raw_balance }}? Баланс будет обнулен.')">
+                <span class="material-symbols-outlined text-[18px]">payments</span> Забрать ЗП (${{ raw_balance }})
+            </button>
+        </form>
+        {% endif %}
     </div>
 
     <div class="mb-8 p-6 bg-white rounded-lg shadow border border-gray-200 flex flex-col md:flex-row gap-6 justify-between items-center relative overflow-hidden custom-panel">

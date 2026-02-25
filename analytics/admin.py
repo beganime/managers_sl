@@ -14,7 +14,6 @@ class PaymentInline(TabularInline):
     extra = 0
     tab = True
     verbose_name_plural = "История платежей"
-    # ИСПРАВЛЕНИЕ: Добавили exchange_rate в список отображаемых полей
     fields = ('amount', 'currency', 'exchange_rate', 'amount_usd', 'net_income_usd', 'payment_date', 'method', 'is_confirmed')
     readonly_fields = ('amount_usd', 'exchange_rate', 'is_confirmed') 
 
@@ -29,7 +28,6 @@ class DealAdmin(ModelAdmin):
     list_per_page = 20
 
     list_select_related = ("client", "manager", "university", "service_ref", "program")
-    
     autocomplete_fields = ["client", "manager", "university", "program", "service_ref"]
 
     fieldsets = (
@@ -90,6 +88,9 @@ class PaymentAdmin(ModelAdmin):
     actions = ["confirm_payments"]
     
     list_select_related = ("deal", "manager", "currency", "deal__client")
+    
+    # ИСПРАВЛЕНИЕ: Блокируем галочку от ручного нажатия. Теперь ТОЛЬКО через Actions
+    readonly_fields = ('amount_usd', 'exchange_rate', 'is_confirmed', 'confirmed_by', 'confirmed_at')
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -243,7 +244,6 @@ class FinancialPeriodAdmin(ModelAdmin):
 from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from unfold.admin import ModelAdmin
 from unfold.decorators import display
-
 from .models import AuditLog 
 
 @admin.register(AuditLog)
