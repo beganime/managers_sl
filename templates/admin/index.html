@@ -6,16 +6,6 @@
 {% block content %}
     {% include "unfold/helpers/messages.html" %}
 
-    <style>
-        html.dark .custom-card { background-color: #111827 !important; border-color: #1f2937 !important; color: #f9fafb !important; }
-        html.dark .custom-text-muted { color: #9ca3af !important; }
-        html.dark .custom-table-bg { background-color: #111827 !important; border-color: #1f2937 !important; }
-        html.dark .custom-table-header { background-color: #1f2937 !important; border-bottom-color: #374151 !important; color: #9ca3af !important; }
-        html.dark .custom-table-row { background-color: #111827 !important; border-bottom-color: #1f2937 !important; color: #e5e7eb !important; }
-        html.dark .custom-table-row:hover { background-color: #1f2937 !important; }
-        html.dark .custom-progress-bg { background-color: #374151 !important; }
-    </style>
-
     {% if not request.user.is_superuser %}
     <div class="flex flex-wrap gap-3 mb-6">
         <a href="{% url 'admin:clients_client_add' %}" class="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition shadow flex items-center gap-2">
@@ -32,13 +22,13 @@
     <div class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row gap-6 justify-between items-center relative overflow-hidden">
         <div>
             <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                <span class="material-symbols-outlined text-blue-600">schedule</span> 
+                <span class="material-symbols-outlined text-blue-600 dark:text-blue-400">schedule</span> 
                 Рабочий день
             </h2>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Отмечайте время прихода и ухода. Не забудьте написать отчет до 22:00.</p>
             
             {% if forgets_count > 0 %}
-            <p class="text-xs font-bold text-red-500 mt-2 bg-red-50 dark:bg-red-900/20 p-2 rounded inline-block border border-red-100 dark:border-red-900/50">
+            <p class="text-xs font-bold text-red-600 dark:text-red-400 mt-2 bg-red-50 dark:bg-red-900/30 p-2 rounded inline-block border border-red-100 dark:border-red-800">
                 ⚠️ Вы забыли завершить смену {{ forgets_count }} раз(а). При 3 нарушениях вы лишаетесь статуса "Эффективный".
             </p>
             {% endif %}
@@ -58,7 +48,7 @@
                 </a>
 
                 {% if not has_report_today %}
-                    <button disabled class="bg-gray-200 dark:bg-gray-700 text-gray-500 px-6 py-3 rounded-lg font-bold cursor-not-allowed flex items-center gap-2" title="Сначала напишите отчет!">
+                    <button disabled class="bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 px-6 py-3 rounded-lg font-bold cursor-not-allowed flex items-center gap-2" title="Сначала напишите отчет!">
                         <span class="material-symbols-outlined">block</span> Уйти домой (Нужен отчет)
                     </button>
                 {% else %}
@@ -76,12 +66,12 @@
 
     {% if hot_tasks %}
     <div class="mb-8">
-        <h3 class="mb-4 text-xl font-bold text-red-600 flex items-center">
+        <h3 class="mb-4 text-xl font-bold text-red-600 dark:text-red-500 flex items-center">
             <span class="material-symbols-outlined mr-2">local_fire_department</span> Горящие задачи
         </h3>
-        <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-red-200 dark:border-red-900 bg-white">
-            <table class="w-full text-sm text-left text-gray-500">
-                <thead class="custom-table-header text-xs text-gray-700 uppercase bg-red-50 dark:bg-gray-800 border-b border-red-200 dark:border-red-900">
+        <div class="overflow-x-auto shadow-sm rounded-lg border border-red-200 dark:border-red-900/50 bg-white dark:bg-gray-800">
+            <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-900/50">
                     <tr>
                         <th scope="col" class="px-6 py-3">Задача</th>
                         <th scope="col" class="px-6 py-3">Дедлайн</th>
@@ -91,12 +81,12 @@
                 </thead>
                 <tbody>
                     {% for task in hot_tasks %}
-                    <tr class="custom-table-row bg-white border-b hover:bg-red-50 dark:hover:bg-gray-800 transition-colors">
+                    <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors">
                         <td class="px-6 py-4 font-bold text-red-600 dark:text-red-400">{{ task.title }}</td>
-                        <td class="px-6 py-4 font-medium text-red-500">{{ task.deadline|date:"d.m.Y H:i" }}</td>
-                        <td class="px-6 py-4 font-medium">{{ task.assigned_to.first_name }} {{ task.assigned_to.last_name }}</td>
+                        <td class="px-6 py-4 font-medium text-red-500 dark:text-red-400">{{ task.deadline|date:"d.m.Y H:i" }}</td>
+                        <td class="px-6 py-4 font-medium dark:text-gray-300">{{ task.assigned_to.first_name }} {{ task.assigned_to.last_name }}</td>
                         <td class="px-6 py-4 text-right">
-                            <a href="{% url 'admin:tasks_task_change' task.id %}" class="font-medium text-blue-600 hover:underline">Открыть</a>
+                            <a href="{% url 'admin:tasks_task_change' task.id %}" class="font-medium text-blue-600 dark:text-blue-400 hover:underline">Открыть</a>
                         </td>
                     </tr>
                     {% endfor %}
@@ -109,18 +99,18 @@
     {% if kpi %}
     <div class="grid grid-cols-1 gap-6 mb-6 md:grid-cols-2 lg:grid-cols-3">
         {% for card in kpi %}
-            <div class="custom-card flex flex-col p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <div class="flex flex-col p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="custom-text-muted text-sm font-medium text-gray-500">{{ card.title }}</h3>
+                    <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">{{ card.title }}</h3>
                 </div>
-                <div class="flex items-baseline text-3xl font-bold text-gray-900">{{ card.metric }}</div>
+                <div class="flex items-baseline text-3xl font-bold text-gray-900 dark:text-white">{{ card.metric }}</div>
                 {% if card.footer %}
                 <div class="mt-4 flex items-center text-sm">
                     <span class="text-xs font-medium px-2 py-0.5 rounded border 
-                        {% if card.color == 'success' %}bg-green-100 text-green-700 border-green-200
-                        {% elif card.color == 'warning' %}bg-yellow-100 text-yellow-700 border-yellow-200
-                        {% elif card.color == 'danger' %}bg-red-100 text-red-700 border-red-200
-                        {% else %}bg-blue-100 text-blue-700 border-blue-200{% endif %}">
+                        {% if card.color == 'success' %}bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800
+                        {% elif card.color == 'warning' %}bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-900/30 dark:text-yellow-400 dark:border-yellow-800
+                        {% elif card.color == 'danger' %}bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800
+                        {% else %}bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:text-blue-400 dark:border-blue-800{% endif %}">
                         {{ card.footer }}
                     </span>
                 </div>
@@ -133,15 +123,15 @@
     {% if progress %}
     <div class="grid grid-cols-1 gap-6 mb-8">
         {% for prog in progress %}
-        <div class="custom-card p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <div class="p-6 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-sm">
             <div class="flex justify-between mb-2">
-                <span class="custom-text-muted text-sm font-medium text-gray-700">{{ prog.title }}</span>
-                <span class="custom-text-muted text-sm font-bold text-gray-700">{{ prog.value }}%</span>
+                <span class="text-sm font-medium text-gray-700 dark:text-gray-300">{{ prog.title }}</span>
+                <span class="text-sm font-bold text-gray-700 dark:text-gray-300">{{ prog.value }}%</span>
             </div>
-            <div class="custom-progress-bg w-full bg-gray-200 rounded-full h-2.5">
+            <div class="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5">
                 <div class="{% if prog.color == 'success' %}bg-green-500{% else %}bg-blue-500{% endif %} h-2.5 rounded-full" style="width: {{ prog.value }}%"></div>
             </div>
-            <p class="custom-text-muted mt-2 text-sm text-gray-500">{{ prog.description }}</p>
+            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ prog.description }}</p>
         </div>
         {% endfor %}
     </div>
@@ -151,10 +141,10 @@
         
         {% if new_leads %}
         <div class="flex flex-col">
-            <h3 class="custom-text-muted mb-4 text-lg font-semibold text-gray-900">🔔 Свободные заявки (Сайт)</h3>
-            <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">🔔 Свободные заявки (Сайт)</h3>
+            <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                             <th scope="col" class="px-4 py-3">Имя / Контакт</th>
                             <th scope="col" class="px-4 py-3">Направление</th>
@@ -163,10 +153,10 @@
                     </thead>
                     <tbody>
                         {% for lead in new_leads %}
-                        <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
-                            <td class="px-4 py-3 font-medium whitespace-nowrap">
+                        <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
+                            <td class="px-4 py-3 font-medium whitespace-nowrap dark:text-gray-200">
                                 <div>{{ lead.full_name|truncatechars:20 }}</div>
-                                <div class="text-xs text-gray-400">{{ lead.phone }}</div>
+                                <div class="text-xs text-gray-400 dark:text-gray-500">{{ lead.phone }}</div>
                             </td>
                             <td class="px-4 py-3 text-xs">{{ lead.get_direction_display|default:"Не указано" }}</td>
                             <td class="px-4 py-3 text-right">
@@ -182,10 +172,10 @@
 
         {% if my_clients %}
         <div class="flex flex-col">
-            <h3 class="custom-text-muted mb-4 text-lg font-semibold text-gray-900">👥 Мои новые клиенты</h3>
-            <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">👥 Мои новые клиенты</h3>
+            <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                             <th scope="col" class="px-4 py-3">Клиент</th>
                             <th scope="col" class="px-4 py-3 text-right">Статус</th>
@@ -193,15 +183,15 @@
                     </thead>
                     <tbody>
                         {% for client in my_clients %}
-                        <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
+                        <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <td class="px-4 py-3 font-medium whitespace-nowrap">
-                                <a href="{% url 'admin:clients_client_change' client.id %}" class="hover:underline text-blue-600 font-medium">
+                                <a href="{% url 'admin:clients_client_change' client.id %}" class="hover:underline text-blue-600 dark:text-blue-400 font-medium">
                                     {{ client.full_name|truncatechars:25 }}
                                 </a>
                                 {% if client.is_priority %}⭐{% endif %}
                             </td>
                             <td class="px-4 py-3 text-right">
-                                <span class="text-[10px] font-bold uppercase px-2 py-1 rounded border border-gray-200 bg-gray-100 text-gray-600">
+                                <span class="text-[10px] font-bold uppercase px-2 py-1 rounded border border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">
                                     {{ client.get_status_display }}
                                 </span>
                             </td>
@@ -215,10 +205,10 @@
 
         {% if my_deals %}
         <div class="flex flex-col">
-            <h3 class="custom-text-muted mb-4 text-lg font-semibold text-gray-900">💵 Активные сделки</h3>
-            <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">💵 Активные сделки</h3>
+            <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                             <th scope="col" class="px-4 py-3">Сделка</th>
                             <th scope="col" class="px-4 py-3 text-right">Оплата</th>
@@ -226,17 +216,17 @@
                     </thead>
                     <tbody>
                         {% for deal in my_deals %}
-                        <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
+                        <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <td class="px-4 py-3 font-medium whitespace-nowrap">
-                                <a href="{% url 'admin:analytics_deal_change' deal.id %}" class="hover:underline text-blue-600">
+                                <a href="{% url 'admin:analytics_deal_change' deal.id %}" class="hover:underline text-blue-600 dark:text-blue-400">
                                     #{{ deal.id }} - {{ deal.client.full_name|truncatechars:15 }}
                                 </a>
                             </td>
                             <td class="px-4 py-3 text-right">
                                 {% if deal.paid_amount_usd >= deal.total_to_pay_usd %}
-                                    <span class="font-bold text-green-500">${{ deal.paid_amount_usd }}</span>
+                                    <span class="font-bold text-green-500 dark:text-green-400">${{ deal.paid_amount_usd }}</span>
                                 {% else %}
-                                    <span class="font-bold text-yellow-500">${{ deal.paid_amount_usd }} / ${{ deal.total_to_pay_usd }}</span>
+                                    <span class="font-bold text-yellow-500 dark:text-yellow-400">${{ deal.paid_amount_usd }} / ${{ deal.total_to_pay_usd }}</span>
                                 {% endif %}
                             </td>
                         </tr>
@@ -249,10 +239,10 @@
 
         {% if my_tasks %}
         <div class="flex flex-col">
-            <h3 class="custom-text-muted mb-4 text-lg font-semibold text-gray-900">📝 Мои задачи (В работе)</h3>
-            <div class="custom-table-bg overflow-x-auto shadow-sm rounded-lg border border-gray-200 bg-white">
-                <table class="w-full text-sm text-left text-gray-500">
-                    <thead class="custom-table-header text-xs text-gray-700 uppercase bg-gray-50 border-b border-gray-200">
+            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">📝 Мои задачи (В работе)</h3>
+            <div class="overflow-x-auto shadow-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+                <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
+                    <thead class="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700/50 border-b border-gray-200 dark:border-gray-700">
                         <tr>
                             <th scope="col" class="px-4 py-3">Задача</th>
                             <th scope="col" class="px-4 py-3 text-right">Дедлайн</th>
@@ -260,13 +250,13 @@
                     </thead>
                     <tbody>
                         {% for task in my_tasks %}
-                        <tr class="custom-table-row bg-white border-b hover:bg-gray-50 transition-colors">
+                        <tr class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors">
                             <td class="px-4 py-3 font-medium whitespace-nowrap">
-                                <a href="{% url 'admin:tasks_task_change' task.id %}" class="hover:underline text-blue-600">
+                                <a href="{% url 'admin:tasks_task_change' task.id %}" class="hover:underline text-blue-600 dark:text-blue-400">
                                     {{ task.title|truncatechars:25 }}
                                 </a>
                             </td>
-                            <td class="px-4 py-3 text-right font-medium">
+                            <td class="px-4 py-3 text-right font-medium dark:text-gray-300">
                                 {% if task.deadline %}
                                     {{ task.deadline|date:"d.m" }}
                                 {% else %}
