@@ -1,3 +1,4 @@
+# analytics/admin.py
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from unfold.admin import ModelAdmin, TabularInline
@@ -14,7 +15,7 @@ class PaymentInline(TabularInline):
     tab = True
     verbose_name_plural = "История платежей"
     fields = ('amount', 'currency', 'amount_usd', 'net_income_usd', 'payment_date', 'method', 'is_confirmed')
-    readonly_fields = ('amount_usd', 'exchange_rate', 'is_confirmed') # Запрещаем менять статус вручную в инлайне
+    readonly_fields = ('amount_usd', 'exchange_rate', 'is_confirmed') 
 
 @admin.register(Deal)
 class DealAdmin(ModelAdmin):
@@ -23,6 +24,9 @@ class DealAdmin(ModelAdmin):
     list_filter = ("payment_status", "deal_type", "created_at")
     search_fields = ("client__full_name", "id")
     list_per_page = 20
+
+    # Оптимизация запросов
+    list_select_related = ("client", "manager", "university", "service_ref", "program")
 
     fieldsets = (
         (_("Участники"), {
@@ -51,7 +55,8 @@ class DealAdmin(ModelAdmin):
     def get_changeform_initial_data(self, request):
         return {'manager': request.user}
 
-    @display(description="Клиент", header=True)
+    # ИСПРАВЛЕНИЕ: Убрал ломающий header=True
+    @display(description="Клиент")
     def display_client(self, obj):
         return obj.client.full_name
 
@@ -80,6 +85,8 @@ class PaymentAdmin(ModelAdmin):
     list_filter = ("is_confirmed", "payment_date", "method")
     search_fields = ("deal__client__full_name",)
     actions = ["confirm_payments"]
+    
+    list_select_related = ("deal", "manager", "currency", "deal__client")
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -96,7 +103,6 @@ class PaymentAdmin(ModelAdmin):
         processed_count = 0
         for payment in queryset:
             if not payment.is_confirmed:
-                # ВЫЗЫВАЕМ СЕРВИС (БЕЗОПАСНО)
                 BillingService.confirm_payment(payment, request.user)
                 processed_count += 1
         
@@ -119,6 +125,7 @@ class PaymentAdmin(ModelAdmin):
 class TransactionHistoryAdmin(ModelAdmin):
     list_display = ("manager", "amount", "created_at", "description")
     list_filter = ("created_at", "manager")
+    list_select_related = ("manager", "reference_payment")
     
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
@@ -128,6 +135,7 @@ class TransactionHistoryAdmin(ModelAdmin):
 @admin.register(Expense)
 class ExpenseAdmin(ModelAdmin):
     list_display = ("title", "amount_usd", "manager", "date")
+    list_select_related = ("manager", "currency")
     
     def get_queryset(self, request):
         qs = super().get_queryset(request)
@@ -135,8 +143,6 @@ class ExpenseAdmin(ModelAdmin):
             return qs
         return qs.filter(manager=request.user)
 
-
-# ... импорты в начале файла analytics/admin.py ...
 
 @admin.register(FinancialPeriod)
 class FinancialPeriodAdmin(ModelAdmin):
@@ -161,7 +167,7 @@ class FinancialPeriodAdmin(ModelAdmin):
         FinancialPeriod.ensure_current_period()
         return super().changelist_view(request, extra_context)
 
-    # НОВЫЙ МЕТОД: Собираем данные для детального отчета
+    # Метод, который мы добавляли ранее для вывода таблицы менеджеров
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
         obj = self.get_object(request, object_id)
@@ -172,7 +178,6 @@ class FinancialPeriodAdmin(ModelAdmin):
             from clients.models import Client
             from timetracking.models import WorkShift
             
-            # Берем базовые расчеты
             stats = obj.calculate_stats() 
             stats['total_new_clients'] = Client.objects.filter(created_at__date__range=(obj.start_date, obj.end_date)).count()
             
@@ -185,8 +190,6 @@ class FinancialPeriodAdmin(ModelAdmin):
                 
                 raised = payments.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
                 net = payments.aggregate(Sum('net_income_usd'))['net_income_usd__sum'] or 0
-                
-                # Подсчет штрафов (автозакрытых смен) за этот период!
                 forgets = WorkShift.objects.filter(employee=m, date__range=(obj.start_date, obj.end_date), is_auto_closed=True).count()
                 
                 if deals.count() > 0 or raised > 0 or forgets > 0:
@@ -196,7 +199,7 @@ class FinancialPeriodAdmin(ModelAdmin):
                         'deals_count': deals.count(),
                         'total_raised': float(raised),
                         'net_income': float(net),
-                        'forgets': forgets # Передаем в шаблон
+                        'forgets': forgets
                     })
             
             leaderboard.sort(key=lambda x: x['total_raised'], reverse=True)
@@ -239,7 +242,7 @@ from django.contrib.admin.models import LogEntry, ADDITION, CHANGE, DELETION
 from unfold.admin import ModelAdmin
 from unfold.decorators import display
 
-from .models import AuditLog # <-- Импортируем нашу новую модель
+from .models import AuditLog 
 
 @admin.register(AuditLog)
 class AuditLogAdmin(ModelAdmin):
@@ -249,12 +252,10 @@ class AuditLogAdmin(ModelAdmin):
     date_hierarchy = "action_time"
     ordering = ("-action_time",)
 
-    # Запрещаем редактирование (это история!)
     def has_add_permission(self, request): return False
     def has_change_permission(self, request, obj=None): return False
     def has_delete_permission(self, request, obj=None): return False
 
-    # Доступ только для Супер-Админа
     def has_module_permission(self, request):
         return request.user.is_superuser
 
