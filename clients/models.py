@@ -1,3 +1,4 @@
+# clients/models.py
 from django.db import models
 from django.conf import settings
 
@@ -22,10 +23,6 @@ class Client(models.Model):
     phone = models.CharField("Номер телефона", max_length=50)
     email = models.EmailField("Email", blank=True, null=True)
     city = models.CharField("Город", max_length=100)
-    
-    # Документы
-    passport_local_num = models.CharField("Серия внутреннего паспорта", max_length=50, blank=True)
-    passport_inter_num = models.CharField("Серия загранпаспорта", max_length=50, blank=True)
     
     # Менеджмент
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='my_clients', verbose_name="Основной менеджер")

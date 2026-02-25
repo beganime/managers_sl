@@ -1,3 +1,4 @@
+# clients/admin.py
 from django.contrib import admin
 from django.db import models
 from django.db.models import Q 
@@ -21,7 +22,7 @@ class ClientAdmin(ModelAdmin):
     list_display = (
         "display_fullname",
         "status_badge",
-        "citizenship", # <-- Добавил вывод гражданства в список
+        "citizenship", 
         "manager",
         "phone",
         "city",
@@ -29,13 +30,13 @@ class ClientAdmin(ModelAdmin):
         "created_at"
     )
     
-    # Добавил фильтр по Гражданству
     list_filter = ("status", "citizenship", "is_priority", "city", "is_partner_client")
-    
     search_fields = ("full_name", "phone", "email", "passport_inter_num", "passport_local_num")
     ordering = ("-created_at",)
 
-    # Включаем поиск для выбора менеджера (чтобы не листать список, если сотрудников много)
+    # ОПТИМИЗАЦИЯ: Избавляет от N+1 запросов при выводе Менеджера в таблице
+    list_select_related = ("manager",)
+
     autocomplete_fields = ["manager", "shared_with"]
 
     fieldsets = (
@@ -44,16 +45,16 @@ class ClientAdmin(ModelAdmin):
             "classes": ("tab-tabular",),
         }),
         (_("Контакты и Личные данные"), {
-            "fields": (("phone", "email"), ("city", "dob"), "citizenship"), # <-- Гражданство здесь
+            "fields": (("phone", "email"), ("city", "dob"), "citizenship"), 
             "classes": ("collapse",),
         }),
-        (_("Паспорт и Прописка"), { # <-- НОВАЯ СЕКЦИЯ ДЛЯ ДОКУМЕНТОВ
+        (_("Паспорт и Прописка"), { 
             "fields": (
                 ("passport_inter_num", "passport_local_num"),
                 ("passport_issued_by", "passport_issued_date"),
                 "address_registration"
             ),
-            "classes": ("collapse", "!bg-gray-50"), # Выделил серым фоном
+            "classes": ("collapse", "!bg-gray-50"), 
         }),
         (_("Партнерство и Финансы"), {
             "fields": (("is_partner_client", "partner_name"), ("has_discount", "discount_amount")),
@@ -69,27 +70,21 @@ class ClientAdmin(ModelAdmin):
         models.TextField: {"widget": WysiwygWidget},
     }
 
-    # --- ГЛАВНАЯ ЛОГИКА ОГРАНИЧЕНИЯ ВИДИМОСТИ ---
     def get_queryset(self, request):
         qs = super().get_queryset(request)
-        # Если Суперюзер - видит всех
         if request.user.is_superuser:
             return qs
-        # Если Менеджер - видит Своих + Расшаренных ему
         return qs.filter(
             Q(manager=request.user) | Q(shared_with=request.user)
         ).distinct()
 
     def save_model(self, request, obj, form, change):
-        if not obj.pk:
+        if not obj.pk and not obj.manager_id:
             obj.manager = request.user
         super().save_model(request, obj, form, change)
 
-    def get_changeform_initial_data(self, request):
-        return {'manager': request.user}
-
-    # --- ДЕКОРАТОРЫ (Красивое отображение) ---
-    @display(description="Клиент", header=True)
+    # ИСПРАВЛЕНИЕ: Убрали header=True, теперь возвращается просто отформатированная строка
+    @display(description="Клиент")
     def display_fullname(self, obj):
         icon = "⭐ " if obj.is_priority else ""
         discount_icon = " 🏷️" if obj.has_discount else ""
