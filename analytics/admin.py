@@ -14,12 +14,12 @@ class PaymentInline(TabularInline):
     extra = 0
     tab = True
     verbose_name_plural = "История платежей"
-    fields = ('amount', 'currency', 'amount_usd', 'net_income_usd', 'payment_date', 'method', 'is_confirmed')
+    # ИСПРАВЛЕНИЕ: Добавили exchange_rate в список отображаемых полей
+    fields = ('amount', 'currency', 'exchange_rate', 'amount_usd', 'net_income_usd', 'payment_date', 'method', 'is_confirmed')
     readonly_fields = ('amount_usd', 'exchange_rate', 'is_confirmed') 
 
 @admin.register(Deal)
 class DealAdmin(ModelAdmin):
-    # НОВОЕ: Подключаем шаблон, который будет фильтровать программы
     change_form_template = "admin/analytics/deal/change_form.html"
     
     inlines = [PaymentInline]
@@ -30,7 +30,6 @@ class DealAdmin(ModelAdmin):
 
     list_select_related = ("client", "manager", "university", "service_ref", "program")
     
-    # НОВОЕ: Добавляем поиск (автокомплит) для ВУЗа и Программы
     autocomplete_fields = ["client", "manager", "university", "program", "service_ref"]
 
     fieldsets = (
