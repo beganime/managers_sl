@@ -17,7 +17,6 @@ from unfold.contrib.forms.widgets import WysiwygWidget
 
 from .models import Task
 
-# КАСТОМНЫЙ ФИЛЬТР: "Горящие задачи"
 class HotTaskFilter(SimpleListFilter):
     title = "Горящие задачи 🔥"
     parameter_name = "is_hot"
@@ -31,19 +30,20 @@ class HotTaskFilter(SimpleListFilter):
         if self.value() == 'yes':
             now = timezone.now()
             tomorrow = now + timedelta(days=1)
-            # Отдаем задачи, которые не сделаны и срок подходит к концу
             return queryset.filter(status__in=['todo', 'process'], deadline__lte=tomorrow).order_by('deadline')
         return queryset
-
 
 @admin.register(Task)
 class TaskAdmin(ModelAdmin):
     actions_list = ["open_kanban_view"]
 
-    list_display = ("title", "assigned_to", "status_badge", "priority_badge", "deadline_fmt")
-    # Добавили наш кастомный фильтр HotTaskFilter
+    # Добавлен вывод клиента в общий список
+    list_display = ("title", "client", "assigned_to", "status_badge", "priority_badge", "deadline_fmt")
     list_filter = (HotTaskFilter, "status", "priority", "assigned_to")
-    search_fields = ("title", "description")
+    search_fields = ("title", "description", "client__full_name")
+    
+    # Включаем поиск для связей, чтобы не листать дропдауны
+    autocomplete_fields = ["assigned_to", "created_by", "client"]
 
     formfield_overrides = {
         models.TextField: {"widget": WysiwygWidget},
@@ -55,8 +55,8 @@ class TaskAdmin(ModelAdmin):
                 "fields": ("title", "description"),
                 "classes": ("mb-6",),
             }),
-            (_("Параметры выполнения"), {
-                "fields": (("assigned_to", "deadline"), ("status", "priority")),
+            (_("Связи и Параметры"), {
+                "fields": ("client", ("assigned_to", "deadline"), ("status", "priority")),
             }),
         ]
         
@@ -70,15 +70,9 @@ class TaskAdmin(ModelAdmin):
         return fieldsets
 
     def save_model(self, request, obj, form, change):
-        if not obj.pk:
+        if not obj.pk and not obj.created_by:
             obj.created_by = request.user
-            # Если исполнитель не выбран, ставим себя
-            if not obj.assigned_to_id:
-                obj.assigned_to = request.user
         super().save_model(request, obj, form, change)
-
-    def get_changeform_initial_data(self, request):
-        return {'assigned_to': request.user, 'created_by': request.user}
 
     @display(description="Статус", label=True)
     def status_badge(self, obj):
@@ -94,7 +88,6 @@ class TaskAdmin(ModelAdmin):
     def deadline_fmt(self, obj):
         return obj.deadline.strftime("%d.%m %H:%M") if obj.deadline else "—"
 
-    # --- КАНБАН ---
     def get_urls(self):
         urls = super().get_urls()
         my_urls = [
@@ -104,7 +97,8 @@ class TaskAdmin(ModelAdmin):
         return my_urls + urls
 
     def kanban_view(self, request):
-        tasks = self.get_queryset(request).select_related('assigned_to')
+        # Оптимизируем загрузку связанных клиентов для Канбана
+        tasks = self.get_queryset(request).select_related('assigned_to', 'client')
 
         context = dict(
             self.admin_site.each_context(request),
@@ -141,5 +135,5 @@ class TaskAdmin(ModelAdmin):
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
-            return qs
-        return qs.filter(models.Q(assigned_to=request.user) | models.Q(created_by=request.user))
+            return qs.select_related('client', 'assigned_to')
+        return qs.filter(models.Q(assigned_to=request.user) | models.Q(created_by=request.user)).select_related('client', 'assigned_to')

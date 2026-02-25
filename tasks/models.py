@@ -1,7 +1,6 @@
+# tasks/models.py
 from django.db import models
 from django.conf import settings
-# Импортируем Client, если нужно привязывать задачи к конкретному клиенту
-# from apps.clients.models import Client 
 
 class Task(models.Model):
     KANBAN_STATUS = (
@@ -23,8 +22,8 @@ class Task(models.Model):
     assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tasks', verbose_name="Исполнитель")
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_tasks', verbose_name="Постановщик")
     
-    # Опционально: связь с клиентом
-    # client = models.ForeignKey('clients.Client', on_delete=models.SET_NULL, null=True, blank=True)
+    # ВОССТАНОВЛЕНО: Обязательная привязка к клиенту для ERP
+    client = models.ForeignKey('clients.Client', on_delete=models.SET_NULL, null=True, blank=True, related_name='client_tasks', verbose_name="Связанный клиент")
     
     status = models.CharField("Статус (Канбан)", max_length=20, choices=KANBAN_STATUS, default='todo')
     priority = models.CharField("Приоритет", max_length=20, choices=PRIORITY_CHOICES, default='medium')

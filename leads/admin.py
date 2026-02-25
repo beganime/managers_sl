@@ -19,15 +19,7 @@ class LeadAdmin(ModelAdmin):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
-        
-        # Менеджер видит:
-        # 1. Свободные заявки (статус 'new' и нет менеджера)
-        # 2. Свои заявки (любой статус, где он назначен менеджером)
-        # Это автоматически скрывает заявки в статусе 'contacted', которые взял другой менеджер
-        return qs.filter(
-            Q(manager=request.user) | 
-            Q(manager__isnull=True, status='new')
-        ).distinct()
+        return qs.filter(Q(manager__isnull=True) | Q(manager=request.user))
 
     @action(description="🙋‍♂️ Забрать заявку в работу")
     def take_lead(self, request, queryset):
@@ -44,11 +36,21 @@ class LeadAdmin(ModelAdmin):
         count = 0
         for lead in queryset:
             if lead.status != 'converted':
+                # ФОРМИРУЕМ КОММЕНТАРИЙ СО ВСЕМИ ДАННЫМИ ЗАЯВКИ
+                lead_details = (
+                    f"--- ДАННЫЕ С САЙТА ---\n"
+                    f"Направление: {lead.get_direction_display() or 'Не указано'}\n"
+                    f"Образование: {lead.education or 'Не указано'}\n"
+                    f"Возраст: {lead.age or 'Не указано'}\n"
+                    f"Родство: {lead.relation or 'Сам'}\n"
+                )
+                
                 Client.objects.create(
                     full_name=lead.full_name,
                     phone=lead.phone,
                     email=lead.email,
-                    city=lead.country,
+                    city=lead.country, 
+                    comments=lead_details,
                     manager=request.user
                 )
                 lead.status = 'converted'

@@ -1,27 +1,15 @@
 <style>
-    /* Основная карточка */
     html.dark .custom-kanban-card {
-        background-color: #1f2937 !important; /* Чуть светлее фона доски для эффекта "стикера" */
+        background-color: #1f2937 !important;
         border-color: #374151 !important;
     }
     html.dark .custom-kanban-card:hover {
-        border-color: #3b82f6 !important; /* Голубая рамка при наведении */
+        border-color: #3b82f6 !important;
     }
-    
-    /* Тексты */
-    html.dark .custom-kanban-title {
-        color: #f3f4f6 !important;
-    }
-    html.dark .custom-kanban-desc {
-        color: #9ca3af !important;
-    }
-    
-    /* Разделитель подвала */
-    html.dark .custom-kanban-divider {
-        border-top-color: rgba(75, 85, 99, 0.4) !important;
-    }
+    html.dark .custom-kanban-title { color: #f3f4f6 !important; }
+    html.dark .custom-kanban-desc { color: #9ca3af !important; }
+    html.dark .custom-kanban-divider { border-top-color: rgba(75, 85, 99, 0.4) !important; }
 
-    /* Цветные бейджи приоритетов */
     html.dark .custom-badge-red {
         background-color: rgba(153, 27, 27, 0.2) !important;
         color: #f87171 !important;
@@ -38,18 +26,15 @@
         border-color: rgba(20, 83, 45, 0.4) !important;
     }
 
-    /* Аватар-заглушка с инициалами */
     html.dark .custom-avatar-fallback {
         background-color: rgba(30, 58, 138, 0.5) !important;
         color: #93c5fd !important;
         border-color: rgba(30, 58, 138, 0.8) !important;
     }
-    html.dark .custom-avatar-img {
-        border-color: #374151 !important;
-    }
+    html.dark .custom-avatar-img { border-color: #374151 !important; }
 </style>
 
-<div class="custom-kanban-card bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-grab active:cursor-grabbing group relative" 
+<div class="custom-kanban-card bg-white p-4 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all cursor-grab active:cursor-grabbing group relative flex flex-col h-full" 
      data-id="{{ task.id }}"
      ondblclick="window.location.href='{% url 'admin:tasks_task_change' task.id %}'">
     
@@ -71,6 +56,13 @@
         {{ task.title }}
     </h3>
     
+    {% if task.client %}
+    <div class="text-[11px] font-bold text-primary-600 dark:text-primary-400 mb-2 flex items-center gap-1 bg-primary-50 dark:bg-primary-900/20 px-2 py-1 rounded w-fit">
+        <span class="material-symbols-outlined text-[12px]">person</span>
+        {{ task.client.full_name|truncatechars:20 }}
+    </div>
+    {% endif %}
+
     <div class="custom-kanban-desc text-[11px] text-gray-500 mb-4 line-clamp-2">
         {{ task.description|striptags|default:"Нет описания" }}
     </div>
@@ -82,7 +74,6 @@
                 <img src="{{ task.assigned_to.avatar.url }}" class="custom-avatar-img w-6 h-6 rounded-full object-cover border border-gray-200 shadow-sm" title="{{ task.assigned_to.get_full_name|default:task.assigned_to.email }}">
             {% else %}
                 <div class="custom-avatar-fallback w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center text-[9px] font-black text-primary-700 border border-primary-200">
-                    {# Фикс NoneType: используем slice вместо first #}
                     {% if task.assigned_to.first_name %}
                         {{ task.assigned_to.first_name|slice:":1"|upper }}
                     {% else %}
