@@ -174,6 +174,7 @@ def get_navigation(request):
                 {"title": "Клиенты", "icon": "people", "link": "/admin/clients/client/"},
                 {"title": "Задачи (Канбан)", "icon": "assignment", "link": "/admin/tasks/task/"},
                 {"title": "Сделки и Оплаты", "icon": "attach_money", "link": "/admin/analytics/deal/"},
+                {"title": "Платежи", "icon": "money", "link": "/admin/analytics/payment/"},
             ],
         },
         {
