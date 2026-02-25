@@ -1,0 +1,43 @@
+{% extends "unfold/change_form.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ждем 1 секунду, чтобы Select2 успел инициализироваться библиотекой Unfold
+        setTimeout(function() {
+            const $prog = $('#id_program');
+            const $uni = $('#id_university');
+            
+            if($prog.length && $uni.length) {
+                // При смене ВУЗа очищаем поле Программы
+                $uni.on('change', function() {
+                    $prog.val(null).trigger('change');
+                });
+
+                // Перехватываем системный AJAX запрос Select2 для Программы
+                $prog.on('select2:opening', function (e) {
+                    const uni_id = $uni.val();
+                    if(!uni_id) {
+                        e.preventDefault();
+                        alert('Сначала выберите ВУЗ в поле выше!');
+                        return;
+                    }
+                    
+                    const s2 = $(this).data('select2');
+                    if(s2 && s2.options.options.ajax) {
+                        const oldDataFunc = s2.options.options.ajax.data;
+                        // Перезаписываем запрос, чтобы отправить ID ВУЗа на сервер
+                        s2.options.options.ajax.data = function(params) {
+                            const data = oldDataFunc.call(this, params);
+                            data.university_id = uni_id; 
+                            return data;
+                        };
+                    }
+                });
+            }
+        }, 1000); 
+    });
+</script>
+{% endblock %}

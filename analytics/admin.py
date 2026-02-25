@@ -19,14 +19,19 @@ class PaymentInline(TabularInline):
 
 @admin.register(Deal)
 class DealAdmin(ModelAdmin):
+    # НОВОЕ: Подключаем шаблон, который будет фильтровать программы
+    change_form_template = "admin/analytics/deal/change_form.html"
+    
     inlines = [PaymentInline]
     list_display = ("id", "display_client", "deal_type", "display_service_info", "display_financials", "payment_status_badge", "manager", "created_at")
     list_filter = ("payment_status", "deal_type", "created_at")
     search_fields = ("client__full_name", "id")
     list_per_page = 20
 
-    # Оптимизация запросов
     list_select_related = ("client", "manager", "university", "service_ref", "program")
+    
+    # НОВОЕ: Добавляем поиск (автокомплит) для ВУЗа и Программы
+    autocomplete_fields = ["client", "manager", "university", "program", "service_ref"]
 
     fieldsets = (
         (_("Участники"), {
@@ -55,7 +60,6 @@ class DealAdmin(ModelAdmin):
     def get_changeform_initial_data(self, request):
         return {'manager': request.user}
 
-    # ИСПРАВЛЕНИЕ: Убрал ломающий header=True
     @display(description="Клиент")
     def display_client(self, obj):
         return obj.client.full_name
@@ -167,7 +171,6 @@ class FinancialPeriodAdmin(ModelAdmin):
         FinancialPeriod.ensure_current_period()
         return super().changelist_view(request, extra_context)
 
-    # Метод, который мы добавляли ранее для вывода таблицы менеджеров
     def change_view(self, request, object_id, form_url='', extra_context=None):
         extra_context = extra_context or {}
         obj = self.get_object(request, object_id)

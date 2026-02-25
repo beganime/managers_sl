@@ -1,3 +1,4 @@
+# catalog/admin.py
 from django.contrib import admin
 from django.db import models
 from django.db.models import Count
@@ -8,41 +9,25 @@ from unfold.decorators import display
 from unfold.contrib.forms.widgets import WysiwygWidget
 from unfold.contrib.import_export.forms import ExportForm, ImportForm
 
-# Библиотеки для импорта/экспорта
 from import_export.admin import ImportExportModelAdmin
 from import_export import resources, fields
 from import_export.widgets import ForeignKeyWidget, BooleanWidget
 
 from .models import Currency, University, Program
 
-# --- РЕСУРСЫ (Настройка маппинга Excel -> БД) ---
-
 class UniversityResource(resources.ModelResource):
     class Meta:
         model = University
-        import_id_fields = ('name',) # Ищем вуз по названию, чтобы не дублировать
+        import_id_fields = ('name',)
         fields = ('name', 'country', 'city', 'local_currency__code')
 
 class ProgramResource(resources.ModelResource):
-    # Магия: ищем ВУЗ по названию из колонки 'university' в Excel
-    university = fields.Field(
-        column_name='university',
-        attribute='university',
-        widget=ForeignKeyWidget(University, field='name')
-    )
-    # Конвертируем 1/0 в True/False
-    is_active = fields.Field(
-        column_name='is_active',
-        attribute='is_active',
-        widget=BooleanWidget()
-    )
+    university = fields.Field(column_name='university', attribute='university', widget=ForeignKeyWidget(University, field='name'))
+    is_active = fields.Field(column_name='is_active', attribute='is_active', widget=BooleanWidget())
 
     class Meta:
         model = Program
-        # Укажи здесь названия колонок как в твоем Excel файле
         fields = ('id', 'university', 'name', 'degree', 'tuition_fee', 'service_fee', 'duration', 'is_active')
-
-# --- АДМИНКИ ---
 
 class ProgramInline(TabularInline):
     model = Program
@@ -70,8 +55,6 @@ class UniversityAdmin(ModelAdmin, ImportExportModelAdmin):
     list_filter = ("country", "local_currency")
     search_fields = ("name", "country", "city")
     list_per_page = 20
-    
-    # Оптимизация запросов
     list_select_related = ("local_currency", "added_by")
 
     fieldsets = (
@@ -88,13 +71,12 @@ class UniversityAdmin(ModelAdmin, ImportExportModelAdmin):
     formfield_overrides = {models.TextField: {"widget": WysiwygWidget}}
 
     def get_queryset(self, request):
-        # Аннотируем кверисет количеством программ для возможности сортировки
         qs = super().get_queryset(request)
         qs = qs.annotate(programs_count=Count('programs'))
         return qs
-    
+
     def save_model(self, request, obj, form, change):
-        if not obj.pk:
+        if not obj.added_by:
             obj.added_by = request.user
         super().save_model(request, obj, form, change)
 
@@ -104,12 +86,10 @@ class UniversityAdmin(ModelAdmin, ImportExportModelAdmin):
             return format_html('<img src="{}" style="width: 40px; border-radius: 5px;" />', obj.logo.url)
         return "-"
 
-    # Добавили ordering, теперь колонка сортируется по коду валюты
     @display(description="Валюта", label=True, ordering="local_currency__code")
     def display_currency(self, obj):
         return (obj.local_currency.code, "warning") if obj.local_currency else ("USD", "success")
 
-    # Добавили ordering, ссылающийся на аннотацию из get_queryset
     @display(description="Программ", ordering="programs_count")
     def program_count(self, obj):
         return obj.programs_count
@@ -123,22 +103,24 @@ class ProgramAdmin(ModelAdmin, ImportExportModelAdmin):
     list_display = ("name", "university", "display_degree", "display_tuition", "display_service_fee", "is_active")
     list_filter = ("degree", "university__country", "is_active", "is_deleted")
     search_fields = ("name", "university__name")
-    
-    # Быстрое редактирование статуса прямо из таблицы
     list_editable = ("is_active",)
-    
-    # Удобный поиск университета вместо длинного выпадающего списка
     autocomplete_fields = ("university",)
-    
-    # Оптимизация: подтягиваем универ и его валюту одним SQL-запросом
     list_select_related = ("university", "university__local_currency")
+
+    # НОВОЕ: Перехватываем параметр university_id из JS-запроса автокомплита Сделки!
+    def get_search_results(self, request, queryset, search_term):
+        queryset, use_distinct = super().get_search_results(request, queryset, search_term)
+        uni_id = request.GET.get('university_id')
+        if uni_id:
+            queryset = queryset.filter(university_id=uni_id)
+        return queryset, use_distinct
 
     @display(description="Степень", label=True, ordering="degree")
     def display_degree(self, obj):
         colors = {
             'bachelor': 'info', 
             'master': 'purple', 
-            'specialist': 'warning', # Добавил цвет для специалитета
+            'specialist': 'warning', 
             'language': 'success'
         }
         return obj.get_degree_display(), colors.get(obj.degree, 'default')

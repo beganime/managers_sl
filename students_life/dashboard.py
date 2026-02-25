@@ -204,6 +204,17 @@ def get_navigation(request):
                 {"title": "Видеоуроки", "icon": "play_circle", "link": "/admin/gamification/tutorialvideo/"},
             ],
         },
+        {
+            "title": "Мой аккаунт",
+            "separator": True,
+            "items": [
+                    {
+                        "title": "Мой профиль",
+                        "icon": "account_circle",
+                        "link": "/admin/profile/",
+                    },
+                ],
+        }
     ]
 
     # 2. Админское меню (добавляется ТОЛЬКО для Суперюзера сверху списка)
