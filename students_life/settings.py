@@ -171,6 +171,13 @@ PWA_APP_DIR = 'ltr'
 PWA_APP_LANG = 'ru-ru'
 
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'erp-snowflake',
+    }
+}
+
 # --- UNFOLD SETTINGS ---
 UNFOLD = {
     "SITE_TITLE": "Managers SL",

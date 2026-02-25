@@ -11,6 +11,9 @@ class WorkShift(models.Model):
     is_active = models.BooleanField("Смена активна (В офисе)", default=True)
     
     hours_worked = models.DecimalField("Отработано часов", max_digits=5, decimal_places=2, default=0.00)
+    
+    # НОВОЕ ПОЛЕ: Маркер нарушения
+    is_auto_closed = models.BooleanField("Закрыто автоматически (Забыл уйти)", default=False)
 
     def save(self, *args, **kwargs):
         # Автоматический подсчет часов при завершении смены

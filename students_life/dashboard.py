@@ -14,14 +14,50 @@ from timetracking.models import WorkShift
 from reports.models import DailyReport
 from leads.models import Lead
 
+
+# students_life/dashboard.py
+
+import datetime
+from django.utils import timezone
+from django.db.models import Sum, Count, Q
+from django.db.models.functions import TruncDay
+
+from users.models import User, ManagerSalary
+from clients.models import Client
+from analytics.models import Payment, Deal, FinancialPeriod
+from catalog.models import University, Program
+from tasks.models import Task
+from timetracking.models import WorkShift
+from reports.models import DailyReport
+from leads.models import Lead
+
 def dashboard_callback(request, context):
-    """
-    Генерация данных для главной страницы Unfold Admin.
-    """
     user = request.user
-    today = timezone.now().date()
-    tomorrow = timezone.now() + timedelta(days=1)
+    now = timezone.now()
+    today = now.date()
+    tomorrow = now + datetime.timedelta(days=1)
     
+    # ==========================================
+    # АВТОМАТИЧЕСКОЕ ЗАКРЫТИЕ ЗАБЫТЫХ СМЕН
+    # ==========================================
+    active_shifts = WorkShift.objects.filter(is_active=True)
+    for shift in active_shifts:
+        # Условие закрытия: Смена за прошлый день ИЛИ сегодня, но уже 22:00+
+        is_past_day = shift.date < today
+        is_late_today = shift.date == today and now.time() >= datetime.time(22, 0)
+        
+        if is_past_day or is_late_today:
+            # Принудительно ставим время ухода 22:00 того дня, когда была открыта смена
+            shift.time_out = timezone.make_aware(datetime.datetime.combine(shift.date, datetime.time(22, 0)))
+            shift.is_auto_closed = True
+            shift.save()
+            
+            # Если сотрудник забыл уйти 3 и более раз - снимаем статус Эффективности
+            forgets_count = WorkShift.objects.filter(employee=shift.employee, is_auto_closed=True).count()
+            if forgets_count >= 3:
+                shift.employee.is_effective = False
+                shift.employee.save()
+
     # --- ГОРЯЩИЕ ЗАДАЧИ ДЛЯ ВСЕХ ---
     hot_tasks = Task.objects.filter(
         status__in=['todo', 'process'], 
@@ -30,12 +66,9 @@ def dashboard_callback(request, context):
     
     context['hot_tasks'] = hot_tasks
 
-    # ---------------------------------------------------------
     # 1. СУПЕРПОЛЬЗОВАТЕЛЬ (ДИРЕКТОР / ФИНАНСЫ)
-    # ---------------------------------------------------------
     if user.is_superuser:
-        last_week = timezone.now() - timedelta(days=7)
-        
+        last_week = now - datetime.timedelta(days=7)
         payments_data = (
             Payment.objects.filter(payment_date__gte=last_week, is_confirmed=True)
             .annotate(day=TruncDay('payment_date'))
@@ -43,7 +76,6 @@ def dashboard_callback(request, context):
             .annotate(total=Sum('amount_usd'))
             .order_by('day')
         )
-
         days = [p['day'].strftime('%d.%m') for p in payments_data]
         amounts = [float(p['total']) for p in payments_data]
 
@@ -56,78 +88,32 @@ def dashboard_callback(request, context):
 
         context.update({
             "kpi": [
-                {
-                    "title": "Выручка (Период)",
-                    "metric": f"${total_revenue:,.2f}",
-                    "footer": "Текущий финансовый период",
-                    "color": "primary",
-                },
-                {
-                    "title": "Чистая прибыль",
-                    "metric": f"${net_profit:,.2f}",
-                    "footer": "Свободные деньги компании",
-                    "color": "success",
-                },
-                {
-                    "title": "Активные сделки",
-                    "metric": active_deals,
-                    "footer": "Деньги в пути",
-                    "color": "warning",
-                },
-                {
-                    "title": "Всего клиентов",
-                    "metric": total_clients,
-                    "footer": "Общая база",
-                    "color": "info",
-                },
+                {"title": "Выручка (Период)", "metric": f"${total_revenue:,.2f}", "footer": "Текущий финансовый период", "color": "primary"},
+                {"title": "Чистая прибыль", "metric": f"${net_profit:,.2f}", "footer": "Свободные деньги", "color": "success"},
+                {"title": "Активные сделки", "metric": active_deals, "footer": "Деньги в пути", "color": "warning"},
+                {"title": "Всего клиентов", "metric": total_clients, "footer": "Общая база", "color": "info"},
             ],
             "chart": {
-                "name": "Динамика доходов (7 дней)",
-                "type": "line",
-                "labels": days,
-                "datasets": [
-                    {
-                        "label": "Выручка (USD)",
-                        "data": amounts,
-                        "borderColor": "#10B981", 
-                        "backgroundColor": "rgba(16, 185, 129, 0.1)",
-                    }
-                ],
+                "name": "Динамика доходов (7 дней)", "type": "line", "labels": days,
+                "datasets": [{"label": "Выручка (USD)", "data": amounts, "borderColor": "#10B981", "backgroundColor": "rgba(16, 185, 129, 0.1)"}],
             },
         })
 
-    # ---------------------------------------------------------
     # 2. МЕНЕДЖЕР ПО ПАРТНЕРСТВАМ
-    # ---------------------------------------------------------
     elif user.groups.filter(name='Менеджер по партнерствам').exists():
         total_unis = University.objects.count()
         active_programs = Program.objects.filter(is_active=True, is_deleted=False).count()
         context['recent_unis'] = University.objects.order_by('-id')[:5]
-
         context.update({
             "kpi": [
-                {
-                    "title": "Университеты в базе",
-                    "metric": total_unis,
-                    "footer": "Доступно для продаж",
-                    "color": "primary",
-                },
-                {
-                    "title": "Активные программы",
-                    "metric": active_programs,
-                    "footer": "Открыт набор",
-                    "color": "success",
-                },
+                {"title": "Университеты в базе", "metric": total_unis, "footer": "Доступно для продаж", "color": "primary"},
+                {"title": "Активные программы", "metric": active_programs, "footer": "Открыт набор", "color": "success"},
             ]
         })
 
-    # ---------------------------------------------------------
     # 3. МЕНЕДЖЕР ПО ПРОДАЖАМ
-    # ---------------------------------------------------------
     else:
         salary_profile = getattr(user, 'managersalary', None)
-        
-        # Дефолтные значения
         current_balance, fixed_salary, plan, revenue, percent_complete = 0, 0, 1000, 0, 0
         mot_target, mot_reward, left_to_mot = 0, 0, 0
 
@@ -141,13 +127,12 @@ def dashboard_callback(request, context):
             
             if plan > 0:
                 percent_complete = min(int((revenue / plan) * 100), 100)
-            
-            # Считаем остаток до мотивашки
             left_to_mot = mot_target - revenue if mot_target > revenue else 0
 
-        # === ЛОГИКА ТАЙМ-ТРЕКИНГА ===
+        # === ЛОГИКА ТАЙМ-ТРЕКИНГА И НАРУШЕНИЙ ===
         context['has_active_shift'] = WorkShift.objects.filter(employee=user, date=today, is_active=True).exists()
         context['has_report_today'] = DailyReport.objects.filter(employee=user, date=today).exists()
+        context['forgets_count'] = WorkShift.objects.filter(employee=user, is_auto_closed=True).count()
 
         # === ТАБЛИЦЫ ===
         context['new_leads'] = Lead.objects.filter(status='new', manager__isnull=True).order_by('-created_at')[:5]
@@ -155,44 +140,19 @@ def dashboard_callback(request, context):
         context['my_deals'] = Deal.objects.filter(manager=user).order_by('-updated_at')[:5]
         context['my_tasks'] = Task.objects.filter(assigned_to=user).exclude(status='done').order_by('deadline')[:5]
         
-        # Передаем переменные мотивации
         if left_to_mot <= 0 and mot_target > 0:
-            mot_text = "Выполнено! 🎉"
-            mot_metric = f"+${mot_reward:,.0f}"
-            mot_color = "success"
+            mot_text, mot_metric, mot_color = "Выполнено! 🎉", f"+${mot_reward:,.0f}", "success"
         else:
-            mot_text = f"Осталось до бонуса +${mot_reward:,.0f}"
-            mot_metric = f"${left_to_mot:,.0f}"
-            mot_color = "warning"
+            mot_text, mot_metric, mot_color = f"Осталось до бонуса +${mot_reward:,.0f}", f"${left_to_mot:,.0f}", "warning"
 
         context.update({
             "kpi": [
-                {
-                    "title": "Зарплата (Оклад + Бонус)",
-                    "metric": f"${current_balance + fixed_salary:,.2f}",
-                    "footer": f"Оклад: ${fixed_salary:,.0f} | Накоплено: ${current_balance:,.0f}",
-                    "color": "success",
-                },
-                {
-                    "title": "Выручка за месяц",
-                    "metric": f"${revenue:,.2f}",
-                    "footer": f"План: ${plan:,.0f}",
-                    "color": "primary",
-                },
-                {
-                    "title": "Мотивация",
-                    "metric": mot_metric,
-                    "footer": mot_text,
-                    "color": mot_color,
-                },
+                {"title": "Зарплата (Оклад + Бонус)", "metric": f"${current_balance + fixed_salary:,.2f}", "footer": f"Оклад: ${fixed_salary:,.0f} | Накоплено: ${current_balance:,.0f}", "color": "success"},
+                {"title": "Выручка за месяц", "metric": f"${revenue:,.2f}", "footer": f"План: ${plan:,.0f}", "color": "primary"},
+                {"title": "Мотивация", "metric": mot_metric, "footer": mot_text, "color": mot_color},
             ],
             "progress": [
-                {
-                    "title": "Выполнение плана продаж",
-                    "description": f"Вы принесли компании ${revenue:,.2f} из ${plan:,.0f}",
-                    "value": percent_complete,
-                    "color": "primary" if percent_complete < 100 else "success",
-                }
+                {"title": "Выполнение плана продаж", "description": f"Вы принесли компании ${revenue:,.2f} из ${plan:,.0f}", "value": percent_complete, "color": "primary" if percent_complete < 100 else "success"}
             ]
         })
 

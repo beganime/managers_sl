@@ -7,7 +7,6 @@
     {% include "unfold/helpers/messages.html" %}
 
     <style>
-        /* Базовые стили Unfold */
         html.dark .custom-card { background-color: #111827 !important; border-color: #1f2937 !important; color: #f9fafb !important; }
         html.dark .custom-text-muted { color: #9ca3af !important; }
         html.dark .custom-table-bg { background-color: #111827 !important; border-color: #1f2937 !important; }
@@ -18,16 +17,34 @@
     </style>
 
     {% if not request.user.is_superuser %}
-    <div class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row gap-6 justify-between items-center">
+    <div class="flex flex-wrap gap-3 mb-6">
+        <a href="{% url 'admin:clients_client_add' %}" class="bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-lg font-bold text-sm transition shadow flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">person_add</span> Создать Клиента
+        </a>
+        <a href="{% url 'admin:tasks_task_add' %}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-5 py-2.5 rounded-lg font-bold text-sm transition shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">add_task</span> Поставить задачу
+        </a>
+        <a href="{% url 'admin:analytics_deal_add' %}" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 px-5 py-2.5 rounded-lg font-bold text-sm transition shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center gap-2">
+            <span class="material-symbols-outlined text-[18px]">attach_money</span> Оформить сделку
+        </a>
+    </div>
+
+    <div class="mb-8 p-6 bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-200 dark:border-gray-700 flex flex-col md:flex-row gap-6 justify-between items-center relative overflow-hidden">
         <div>
             <h2 class="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                 <span class="material-symbols-outlined text-blue-600">schedule</span> 
                 Рабочий день
             </h2>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Отмечайте время прихода и ухода. Отчет обязателен в конце дня.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">Отмечайте время прихода и ухода. Не забудьте написать отчет до 22:00.</p>
+            
+            {% if forgets_count > 0 %}
+            <p class="text-xs font-bold text-red-500 mt-2 bg-red-50 dark:bg-red-900/20 p-2 rounded inline-block border border-red-100 dark:border-red-900/50">
+                ⚠️ Вы забыли завершить смену {{ forgets_count }} раз(а). При 3 нарушениях вы лишаетесь статуса "Эффективный".
+            </p>
+            {% endif %}
         </div>
 
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-3 z-10">
             {% if not has_active_shift %}
                 <form action="/admin/timetracking/workshift/start-shift/" method="POST">
                     {% csrf_token %}
@@ -35,21 +52,20 @@
                         <span class="material-symbols-outlined">play_circle</span> Я пришел (Начать смену)
                     </button>
                 </form>
-            
             {% else %}
                 <a href="/admin/reports/dailyreport/add/" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-bold transition-all shadow flex items-center gap-2">
-                    <span class="material-symbols-outlined">edit_document</span> Заполнить отчет
+                    <span class="material-symbols-outlined">edit_document</span> Написать отчет
                 </a>
 
                 {% if not has_report_today %}
                     <button disabled class="bg-gray-200 dark:bg-gray-700 text-gray-500 px-6 py-3 rounded-lg font-bold cursor-not-allowed flex items-center gap-2" title="Сначала напишите отчет!">
-                        <span class="material-symbols-outlined">block</span> Завершить день (Нужен отчет)
+                        <span class="material-symbols-outlined">block</span> Уйти домой (Нужен отчет)
                     </button>
                 {% else %}
                     <form action="/admin/timetracking/workshift/end-shift/" method="POST">
                         {% csrf_token %}
                         <button type="submit" class="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-lg font-bold transition-all shadow flex items-center gap-2">
-                            <span class="material-symbols-outlined">stop_circle</span> Завершить день (Уйти)
+                            <span class="material-symbols-outlined">stop_circle</span> Уйти домой (Завершить)
                         </button>
                     </form>
                 {% endif %}

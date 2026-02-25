@@ -163,6 +163,13 @@ PWA_APP_SPLASH_SCREEN = [
 PWA_APP_DIR = 'ltr'
 PWA_APP_LANG = 'ru-ru'
 
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'erp-snowflake',
+    }
+}
+
 
 # --- UNFOLD SETTINGS ---
 from django.templatetags.static import static

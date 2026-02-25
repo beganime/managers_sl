@@ -136,6 +136,8 @@ class ExpenseAdmin(ModelAdmin):
         return qs.filter(manager=request.user)
 
 
+# ... импорты в начале файла analytics/admin.py ...
+
 @admin.register(FinancialPeriod)
 class FinancialPeriodAdmin(ModelAdmin):
     list_display = ("period_name", "display_revenue", "display_profit", "is_closed", "status_badge")
@@ -156,14 +158,57 @@ class FinancialPeriodAdmin(ModelAdmin):
     readonly_fields = ("total_revenue", "total_expenses", "net_profit")
 
     def changelist_view(self, request, extra_context=None):
-        # Больше НЕ вызываем расчет при каждом просмотре
         FinancialPeriod.ensure_current_period()
         return super().changelist_view(request, extra_context)
+
+    # НОВЫЙ МЕТОД: Собираем данные для детального отчета
+    def change_view(self, request, object_id, form_url='', extra_context=None):
+        extra_context = extra_context or {}
+        obj = self.get_object(request, object_id)
+        
+        if obj:
+            from django.db.models import Sum
+            from users.models import User
+            from clients.models import Client
+            from timetracking.models import WorkShift
+            
+            # Берем базовые расчеты
+            stats = obj.calculate_stats() 
+            stats['total_new_clients'] = Client.objects.filter(created_at__date__range=(obj.start_date, obj.end_date)).count()
+            
+            leaderboard = []
+            managers = User.objects.filter(managersalary__isnull=False)
+            
+            for m in managers:
+                deals = m.deal_set.filter(created_at__date__range=(obj.start_date, obj.end_date))
+                payments = m.payment_set.filter(payment_date__range=(obj.start_date, obj.end_date), is_confirmed=True)
+                
+                raised = payments.aggregate(Sum('amount_usd'))['amount_usd__sum'] or 0
+                net = payments.aggregate(Sum('net_income_usd'))['net_income_usd__sum'] or 0
+                
+                # Подсчет штрафов (автозакрытых смен) за этот период!
+                forgets = WorkShift.objects.filter(employee=m, date__range=(obj.start_date, obj.end_date), is_auto_closed=True).count()
+                
+                if deals.count() > 0 or raised > 0 or forgets > 0:
+                    leaderboard.append({
+                        'name': f"{m.first_name} {m.last_name}",
+                        'clients_count': Client.objects.filter(manager=m, created_at__date__range=(obj.start_date, obj.end_date)).count(),
+                        'deals_count': deals.count(),
+                        'total_raised': float(raised),
+                        'net_income': float(net),
+                        'forgets': forgets # Передаем в шаблон
+                    })
+            
+            leaderboard.sort(key=lambda x: x['total_raised'], reverse=True)
+            stats['leaderboard'] = leaderboard
+            extra_context['report_stats'] = stats
+
+        return super().change_view(request, object_id, form_url, extra_context)
 
     @action(description="🔄 Пересчитать статистику периода")
     def recalculate_period(self, request, queryset):
         for period in queryset:
-            period.calculate_stats() # Вызываем тяжелый метод только здесь
+            period.calculate_stats()
         self.message_user(request, "Статистика успешно обновлена.", messages.SUCCESS)
 
     @display(description="Период")
