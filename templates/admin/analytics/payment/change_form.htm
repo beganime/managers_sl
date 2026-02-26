@@ -1,0 +1,37 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Ждем 1 секунду, чтобы Select2 (библиотека поиска Unfold) успела загрузиться
+        setTimeout(function() {
+            const $deal = $('#id_deal');
+            const $amount = $('#id_amount');
+            const $currency = $('#id_currency');
+
+            if($deal.length && $amount.length && $currency.length) {
+                // Ловим момент изменения сделки
+                $deal.on('change', function() {
+                    const deal_id = $(this).val();
+                    if(deal_id) {
+                        // Идем в наш API (он написан в analytics/admin.py)
+                        fetch(`/admin/analytics/payment/api/deal-info/${deal_id}/`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if(data.remaining_amount !== undefined) {
+                                // Подставляем сумму остатка (до 2 знаков после запятой)
+                                $amount.val(data.remaining_amount.toFixed(2));
+                                // Выбираем правильную валюту сделки
+                                $currency.val(data.currency_id).trigger('change');
+                            }
+                        })
+                        .catch(err => console.error("Ошибка автоподстановки платежа:", err));
+                    }
+                });
+            }
+        }, 1000); 
+    });
+</script>
+{% endblock %}

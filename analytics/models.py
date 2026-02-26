@@ -4,6 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.db.models import Sum
 from datetime import date
+from decimal import Decimal
 from catalog.models import Currency, University, Program
 from services.models import Service
 
@@ -46,8 +47,29 @@ class Deal(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    def save(self, *args, **kwargs):
+        # 1. Автоматический расчет итоговой оплаты в USD
+        if self.currency:
+            if self.currency.code == 'USD':
+                self.total_to_pay_usd = self.price_client
+            else:
+                self.total_to_pay_usd = self.price_client / self.currency.rate
+        else:
+            self.total_to_pay_usd = self.price_client
+
+        # 2. Автоматический расчет ожидаемой выручки компании
+        if self.deal_type == 'university' and self.program:
+            self.expected_revenue_usd = self.program.service_fee
+        elif self.deal_type == 'service' and self.service_ref:
+            self.expected_revenue_usd = self.total_to_pay_usd - self.service_ref.real_cost
+        elif not self.expected_revenue_usd:
+            self.expected_revenue_usd = Decimal('0.00')
+
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return f"Сделка #{self.id} - {self.client} ({self.get_deal_type_display()})"
+        # 3. Подробное отображение для списка выбора в Платежах
+        return f"Сделка #{self.id} | Клиент: {self.client.full_name} | К оплате: {self.total_to_pay_usd}$ | Оплачено: {self.paid_amount_usd}$"
 
     class Meta:
         verbose_name = "Сделка"
@@ -81,15 +103,20 @@ class Payment(models.Model):
     confirmed_at = models.DateTimeField(null=True, blank=True)
 
     def save(self, *args, **kwargs):
-        # Фиксируем курс только при создании или если он не задан
         if not self.exchange_rate:
             self.exchange_rate = self.currency.rate
         
-        # Расчет суммы в USD
         if self.currency.code == 'USD':
              self.amount_usd = self.amount
         else:
              self.amount_usd = self.amount / self.exchange_rate
+             
+        # 7. Авто-расчет чистого дохода (пропорционально сумме платежа)
+        if self.deal and self.deal.total_to_pay_usd > 0:
+            profit_ratio = self.deal.expected_revenue_usd / self.deal.total_to_pay_usd
+            self.net_income_usd = self.amount_usd * profit_ratio
+        else:
+            self.net_income_usd = Decimal('0.00')
              
         super().save(*args, **kwargs)
 
@@ -98,11 +125,8 @@ class Payment(models.Model):
         verbose_name_plural = "Платежи"
 
 
-# --- ИСТОРИЯ ТРАНЗАКЦИЙ (NEW) ---
+# --- ИСТОРИЯ ТРАНЗАКЦИЙ ---
 class TransactionHistory(models.Model):
-    """
-    Аудит начислений. Показывает, откуда взялись деньги на балансе менеджера.
-    """
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='transactions')
     amount = models.DecimalField("Сумма (USD)", max_digits=10, decimal_places=2)
     reference_payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Основание (Платеж)")
@@ -145,7 +169,6 @@ class FinancialPeriod(models.Model):
     start_date = models.DateField("Начало периода", unique=True)
     end_date = models.DateField("Конец периода")
     
-    # Эти поля теперь заполняются явно, а не при каждом сохранении
     total_revenue = models.DecimalField("Всего выручка (USD)", max_digits=15, decimal_places=2, default=0.00)
     total_expenses = models.DecimalField("Всего расходы (USD)", max_digits=15, decimal_places=2, default=0.00)
     net_profit = models.DecimalField("Чистая прибыль (Котёл)", max_digits=15, decimal_places=2, default=0.00)
@@ -184,13 +207,6 @@ class FinancialPeriod(models.Model):
         return obj
 
     def calculate_stats(self):
-        """
-        Тяжелый метод пересчета статистики. 
-        Вызывать ТОЛЬКО при нажатии кнопки 'Обновить' или закрытии периода.
-        """
-        from clients.models import Client
-        
-        # Считаем только подтвержденные платежи
         all_confirmed_payments = Payment.objects.filter(
             payment_date__range=(self.start_date, self.end_date),
             is_confirmed=True
@@ -205,11 +221,10 @@ class FinancialPeriod(models.Model):
         
         final_profit = calc_net_income - calc_expenses
         
-        # Обновляем поля модели
         self.total_revenue = float(calc_revenue)
         self.total_expenses = float(calc_expenses)
         self.net_profit = float(final_profit)
-        self.save() # Сохраняем новые цифры в базу
+        self.save() 
 
         return {
             "calc_revenue": float(calc_revenue),
@@ -224,12 +239,8 @@ class FinancialPeriod(models.Model):
 from django.contrib.admin.models import LogEntry
 
 class AuditLog(LogEntry):
-    """
-    Прокси-модель для Истории действий.
-    Позволяет отобразить логи в разделе 'Analytics' и чинит доступ к ним.
-    """
     class Meta:
-        proxy = True # Не создает новую таблицу в БД, использует существующую
+        proxy = True 
         verbose_name = "История действий"
         verbose_name_plural = "История действий"
-        app_label = 'analytics' # <-- ВАЖНО: Привязываем к твоему приложению
+        app_label = 'analytics'
