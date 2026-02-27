@@ -10,6 +10,7 @@ class Office(models.Model):
     city = models.CharField("Город", max_length=100)
     address = models.CharField("Адрес", max_length=255)
     phone = models.CharField("Телефон офиса", max_length=50)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.city} ({self.address})"
@@ -49,12 +50,14 @@ class User(AbstractUser):
     avatar = models.ImageField("Аватар", upload_to='avatars/', blank=True, null=True)
     dob = models.DateField("Дата рождения", null=True, blank=True)
     office = models.ForeignKey(Office, on_delete=models.SET_NULL, null=True, verbose_name="Офис")
-    
+    social_contacts = models.CharField("Контакты в соц. сетях", max_length=255, blank=True, help_text="Telegram, Instagram, WhatsApp и т.д.")
     job_description = models.TextField("Описание должности", blank=True)
     work_status = models.CharField("Текущий статус", max_length=20, choices=STATUS_CHOICES, default='working')
     
     is_effective = models.BooleanField("Эффективный сотрудник", default=True, help_text="Расчитывается автоматически на основе активности за 7 дней")
     last_activity = models.DateTimeField("Последняя активность", auto_now=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = []
@@ -78,7 +81,7 @@ class User(AbstractUser):
 
 
 class ManagerSalary(models.Model):
-    manager = models.OneToOneField(_settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    manager = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     
     # --- БАЛАНС И ОКЛАД ---
     current_balance = models.DecimalField("Бонусы к выплате (USD)", max_digits=10, decimal_places=2, default=0.00, help_text="Накопленные проценты со сделок")

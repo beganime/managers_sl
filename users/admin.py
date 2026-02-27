@@ -70,7 +70,7 @@ class UserAdmin(BaseUserAdmin, ImportExportModelAdmin, ModelAdmin):
     fieldsets = (
         (None, {"fields": ("email", "password")}),
         (_("Персональные данные"), {
-            "fields": (("first_name", "last_name", "middle_name"), "avatar", "dob", "office")
+            "fields": (("first_name", "last_name", "middle_name"), "avatar", "dob", "social_contacts", "office")
         }),
         (_("Права доступа"), {
             "fields": (("is_active", "is_staff", "is_superuser"), "groups", "user_permissions"),

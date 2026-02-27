@@ -36,6 +36,7 @@ urlpatterns = [
     path('', include('analytics.urls')),
     path('', include('gamification.urls')),
     path('', include('documents.urls')),
+    path('', include('users.urls')),
 ]
 
 if settings.DEBUG:
