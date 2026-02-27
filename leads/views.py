@@ -1,8 +1,10 @@
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import BasePermission
+from rest_framework import viewsets, permissions
+from django.utils.dateparse import parse_datetime
 from django.conf import settings
 from .models import Lead
-from .serializers import LeadSerializer
+from .serializers import LeadSerializer, MobileLeadSerializer
 
 # Создаем кастомную защиту
 class IsAuthorizedAPIClient(BasePermission):
@@ -24,3 +26,26 @@ class LeadCreateAPIView(CreateAPIView):
     serializer_class = LeadSerializer
     # Применяем нашу защиту вместо AllowAny
     permission_classes = [IsAuthorizedAPIClient]
+
+
+# --- АПИ ДЛЯ МОБИЛЬНОГО ПРИЛОЖЕНИЯ (SYNC) ---
+class LeadViewSet(viewsets.ModelViewSet):
+    serializer_class = MobileLeadSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        if user.is_superuser:
+            qs = Lead.objects.all()
+        else:
+            # Менеджер видит: Свои заявки ИЛИ Новые ничьи заявки
+            qs = Lead.objects.filter(Q(manager=user) | Q(manager__isnull=True)).distinct()
+            
+        updated_after = self.request.query_params.get('updated_after')
+        if updated_after:
+            dt = parse_datetime(updated_after)
+            if dt:
+                qs = qs.filter(updated_at__gte=dt)
+                
+        return qs.order_by('-updated_at')

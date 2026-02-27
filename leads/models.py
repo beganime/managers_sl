@@ -59,6 +59,7 @@ class Lead(models.Model):
 
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='new')
     created_at = models.DateTimeField("Дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.full_name} ({self.phone})"

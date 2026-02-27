@@ -8,6 +8,7 @@ class Currency(models.Model):
     symbol = models.CharField("Символ", max_length=5, default='$')
     rate = models.DecimalField("Курс к 1 USD", max_digits=10, decimal_places=4, help_text="Сколько единиц этой валюты в 1 долларе?")
     
+    updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"{self.code} ({self.rate})"
 
@@ -36,6 +37,7 @@ class University(models.Model):
     
     added_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Кем добавлен")
 
+    updated_at = models.DateTimeField(auto_now=True)
     def __str__(self):
         return f"{self.name} ({self.country})"
 
@@ -61,6 +63,7 @@ class Program(models.Model):
     
     is_active = models.BooleanField("Активна", default=True)
     is_deleted = models.BooleanField("Удалена (Архив)", default=False)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         # ДИНАМИЧЕСКИЙ ВЫВОД ЦЕНЫ прямо в названии программы!

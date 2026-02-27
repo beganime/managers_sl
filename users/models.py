@@ -4,7 +4,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 from datetime import timedelta
 
-from students_life import _settings
+from students_life import settings
 
 class Office(models.Model):
     city = models.CharField("Город", max_length=100)

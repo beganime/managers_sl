@@ -101,6 +101,7 @@ class Payment(models.Model):
     is_confirmed = models.BooleanField("Подтверждено Администрацией", default=False)
     confirmed_by = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='confirmed_payments', on_delete=models.SET_NULL, null=True, blank=True)
     confirmed_at = models.DateTimeField(null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def save(self, *args, **kwargs):
         if not self.exchange_rate:
@@ -132,6 +133,8 @@ class TransactionHistory(models.Model):
     reference_payment = models.ForeignKey(Payment, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Основание (Платеж)")
     description = models.CharField("Описание", max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
+    
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.manager} -> {self.amount}$ ({self.created_at.strftime('%d.%m')})"
@@ -151,6 +154,8 @@ class Expense(models.Model):
     
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, verbose_name="Кто потратил")
     date = models.DateField(default=timezone.now)
+    
+    updated_at = models.DateTimeField(auto_now=True)
     
     def save(self, *args, **kwargs):
         if self.currency.code == 'USD':
@@ -175,6 +180,7 @@ class FinancialPeriod(models.Model):
     
     is_closed = models.BooleanField("Период закрыт", default=False, help_text="Если закрыт - зарплаты выплачены/обнулены")
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Период {self.start_date} - {self.end_date}"

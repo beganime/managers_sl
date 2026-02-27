@@ -43,3 +43,10 @@ class LeadSerializer(serializers.ModelSerializer):
                 mutable_data[df] = None
                 
         return super().to_internal_value(mutable_data)
+
+# Новый сериализатор для мобильного приложения (чтение и обновление)
+class MobileLeadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Lead
+        fields = '__all__'
+        read_only_fields = ('created_at', 'updated_at')

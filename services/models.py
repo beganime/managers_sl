@@ -15,6 +15,7 @@ class Service(models.Model):
     real_cost = models.DecimalField("Себестоимость (USD)", max_digits=10, decimal_places=2, default=0.00, help_text="Реальная цена услуги. НЕ ПОКАЗЫВАТЬ МЕНЕДЖЕРАМ.")
     
     is_active = models.BooleanField("Активна", default=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.title} ({self.price_client}$)"

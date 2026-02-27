@@ -9,6 +9,7 @@ class Notification(models.Model):
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     fcm_message_id = models.CharField(max_length=255, blank=True, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
@@ -21,6 +22,7 @@ class TutorialVideo(models.Model):
     video_file = models.FileField("Файл видео", upload_to='tutorials/', blank=True, null=True)
     youtube_url = models.URLField("Или ссылка на YouTube", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Видеоурок"
@@ -44,6 +46,7 @@ class RatingSnapshot(models.Model):
     
     third_place_manager = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='bronze_medals', on_delete=models.SET_NULL, null=True, blank=True)
     third_place_revenue = models.DecimalField("Выручка 3 места", max_digits=12, decimal_places=2, default=0.00)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         verbose_name = "Рейтинг (Архив)"

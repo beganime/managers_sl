@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from django.templatetags.static import static
+from datetime import timedelta
 
 # --- BASE DIR ---
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -34,6 +35,7 @@ INSTALLED_APPS = [
     'smart_selects',
     'corsheaders',      
     'rest_framework',   
+    'rest_framework_simplejwt',
 
     # 4. My Apps
     'users',
@@ -115,6 +117,27 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator'},
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
+
+# --- REST FRAMEWORK & JWT SETTINGS (ДЛЯ МОБИЛКИ) ---
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
+    'PAGE_SIZE': 50,
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'AUTH_HEADER_TYPES': ('Bearer',),
+}
 
 # --- INTERNATIONALIZATION ---
 LANGUAGE_CODE = 'ru-ru'

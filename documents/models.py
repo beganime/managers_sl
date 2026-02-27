@@ -29,6 +29,7 @@ class InfoSnippet(models.Model):
     title = models.CharField("Название", max_length=255)
     content = models.TextField("Содержание (Текст для копирования)")
     order = models.PositiveIntegerField("Порядок", default=0)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self): return self.title
     class Meta:
@@ -46,6 +47,7 @@ class ContractTemplate(models.Model):
     title = models.CharField("Название шаблона", max_length=255)
     type = models.CharField("Тип документа", max_length=30, choices=TYPE_CHOICES, default='education_contract')
     file = models.FileField("Файл шаблона (.docx)", upload_to="templates/contracts/")
+    updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self): return f"{self.title} ({self.get_type_display()})"
     class Meta:
@@ -75,6 +77,7 @@ class Contract(models.Model):
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='draft')
     generated_file = models.FileField("Готовый файл", upload_to="generated_contracts/", blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def generate_document(self):
         if not self.template.file:

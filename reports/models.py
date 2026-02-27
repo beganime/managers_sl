@@ -12,6 +12,7 @@ class DailyReport(models.Model):
     deals_closed = models.PositiveIntegerField("Закрыто сделок", default=0)
     
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"Отчет за {self.date} - {self.employee.first_name}"
