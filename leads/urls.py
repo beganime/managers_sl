@@ -1,7 +1,16 @@
-from django.urls import path
-from .views import LeadCreateAPIView
+# leads/urls.py
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from .views import LeadCreateAPIView, LeadViewSet
+
+# Используем роутер для мобильного ViewSet
+router = DefaultRouter()
+# Регистрируем с префиксом 'mobile', чтобы путь был /api/leads/mobile/
+router.register(r'mobile', LeadViewSet, basename='lead-mobile')
 
 urlpatterns = [
-    # Эндпоинт будет доступен по адресу: /api/leads/create/
+    # Эндпоинт для сайта
     path('api/leads/create/', LeadCreateAPIView.as_view(), name='lead-create'),
+    # Эндпоинты для мобильного приложения
+    path('api/leads/', include(router.urls)),
 ]

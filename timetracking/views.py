@@ -1,5 +1,7 @@
 # timetracking/views.py
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django.utils.dateparse import parse_datetime
 from rest_framework.exceptions import ValidationError
 from django.utils import timezone
@@ -35,3 +37,19 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
             raise ValidationError({"detail": "У вас уже есть активная смена на сегодня!"})
             
         serializer.save(employee=user)
+
+    # --- НОВЫЙ ЭНДПОИНТ ДЛЯ ФРОНТЕНДА ---
+    # Обрабатывает GET и PATCH запросы по адресу /api/timetracking/shifts/current/
+    @action(detail=False, methods=['patch', 'get'], url_path='current')
+    def current_shift(self, request):
+        shift = self.get_queryset().filter(is_active=True).first()
+        if not shift:
+            return Response({"detail": "Нет активной смены"}, status=status.HTTP_404_NOT_FOUND)
+        
+        if request.method == 'PATCH':
+            shift.time_out = timezone.now()
+            shift.is_active = False # Модель сама посчитает часы при сохранении
+            shift.save()
+            return Response(self.get_serializer(shift).data)
+        
+        return Response(self.get_serializer(shift).data)

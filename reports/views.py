@@ -1,6 +1,9 @@
 # reports/views.py
-from rest_framework import viewsets, permissions
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
 from django.utils.dateparse import parse_datetime
+from django.utils import timezone
 from .models import DailyReport
 from .serializers import DailyReportSerializer
 
@@ -25,3 +28,13 @@ class DailyReportViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(employee=self.request.user)
+
+    # --- НОВЫЙ ЭНДПОИНТ ДЛЯ ФРОНТЕНДА ---
+    # Обрабатывает GET запрос по адресу /api/reports/daily/today/
+    @action(detail=False, methods=['get'], url_path='today')
+    def check_today(self, request):
+        today = timezone.now().date()
+        report = self.get_queryset().filter(date=today).first()
+        if report:
+            return Response(self.get_serializer(report).data)
+        return Response({"detail": "Отчет не найден"}, status=status.HTTP_404_NOT_FOUND)
