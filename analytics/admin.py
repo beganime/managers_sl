@@ -20,19 +20,11 @@ class PaymentInline(TabularInline):
 
 @admin.register(Deal)
 class DealAdmin(ModelAdmin):
-    change_form_template = "admin/analytics/deal/change_form.html"
-    
     inlines = [PaymentInline]
     list_display = ("id", "display_client", "deal_type", "display_service_info", "display_financials", "payment_status_badge", "manager", "created_at")
     list_filter = ("payment_status", "deal_type", "created_at")
     search_fields = ("client__full_name", "id")
     list_per_page = 20
-
-    list_select_related = ("client", "manager", "university", "service_ref", "program")
-    autocomplete_fields = ["client", "manager", "university", "program", "service_ref"]
-    
-    # Расчетные поля делаем неизменяемыми руками (они считаются в save)
-    readonly_fields = ('total_to_pay_usd', 'expected_revenue_usd', 'paid_amount_usd')
 
     fieldsets = (
         (_("Участники"), {
@@ -58,27 +50,12 @@ class DealAdmin(ModelAdmin):
             return qs
         return qs.filter(manager=request.user)
 
-    # 4. Автоподстановка менеджера в форме
     def get_changeform_initial_data(self, request):
         return {'manager': request.user}
 
-    def save_model(self, request, obj, form, change):
-        if not obj.pk and not obj.manager_id:
-            obj.manager = request.user
-        super().save_model(request, obj, form, change)
-
-    # Автоматически ставим текущего менеджера при добавлении платежа внутри карточки сделки (Inline)
-    def save_formset(self, request, form, formset, change):
-        instances = formset.save(commit=False)
-        for instance in instances:
-            if isinstance(instance, Payment) and not getattr(instance, 'manager_id', None):
-                instance.manager = request.user
-            instance.save()
-        formset.save_m2m()
-
-    @display(description="Клиент")
+    @display(description="Клиент", header=True)
     def display_client(self, obj):
-        return obj.client.full_name
+        return obj.client.full_name if obj.client else "—"
 
     @display(description="Услуга")
     def display_service_info(self, obj):
@@ -90,8 +67,11 @@ class DealAdmin(ModelAdmin):
 
     @display(description="Финансы", label=True)
     def display_financials(self, obj):
-        color = "success" if obj.paid_amount_usd >= obj.total_to_pay_usd else "warning"
-        return f"${obj.paid_amount_usd:,.2f} / ${obj.total_to_pay_usd:,.2f}", color
+        # СПАСАТЕЛЬНЫЙ КРУГ: Если в базе Null, ставим 0
+        paid = obj.paid_amount_usd or 0
+        total = obj.total_to_pay_usd or 0
+        color = "success" if paid >= total and total > 0 else "warning"
+        return f"${paid:,.2f} / ${total:,.2f}", color
 
     @display(description="Статус", label=True)
     def payment_status_badge(self, obj):
@@ -101,59 +81,16 @@ class DealAdmin(ModelAdmin):
 
 @admin.register(Payment)
 class PaymentAdmin(ModelAdmin):
-    # Шаблон со скриптом автоподстановки суммы и валюты
-    change_form_template = "admin/analytics/payment/change_form.html"
-    
     list_display = ("deal", "manager", "display_amount", "amount_usd", "net_income_badge", "date_fmt", "is_confirmed")
     list_filter = ("is_confirmed", "payment_date", "method")
     search_fields = ("deal__client__full_name",)
     actions = ["confirm_payments"]
-    
-    list_select_related = ("deal", "manager", "currency", "deal__client")
-    autocomplete_fields = ["deal", "manager", "currency"]
-    
-    # 7. Чистый доход делаем readonly
-    readonly_fields = ('amount_usd', 'exchange_rate', 'is_confirmed', 'confirmed_by', 'confirmed_at', 'net_income_usd')
-
-    # --- API ДЛЯ АВТОПОДСТАНОВКИ (п.5 и п.6) ---
-    def get_urls(self):
-        urls = super().get_urls()
-        my_urls = [
-            path('api/deal-info/<int:deal_id>/', self.admin_site.admin_view(self.deal_info_api), name='api_deal_info'),
-        ]
-        return my_urls + urls
-
-    def deal_info_api(self, request, deal_id):
-        deal = Deal.objects.filter(id=deal_id).first()
-        if deal:
-            # Считаем остаток в USD
-            remaining_usd = deal.total_to_pay_usd - deal.paid_amount_usd
-            # Конвертируем обратно в оригинальную валюту
-            if deal.currency.code == 'USD':
-                remaining_amount = remaining_usd
-            else:
-                remaining_amount = remaining_usd * deal.currency.rate
-            
-            return JsonResponse({
-                'currency_id': deal.currency_id,
-                'remaining_amount': float(remaining_amount) if remaining_amount > 0 else 0
-            })
-        return JsonResponse({'error': 'Not found'}, status=404)
 
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
             return qs
         return qs.filter(manager=request.user)
-        
-    # 4. Автоподстановка менеджера в форме
-    def get_changeform_initial_data(self, request):
-        return {'manager': request.user}
-
-    def save_model(self, request, obj, form, change):
-        if not obj.pk and not obj.manager_id:
-            obj.manager = request.user
-        super().save_model(request, obj, form, change)
 
     @action(description="✅ Подтвердить платежи и начислить бонусы")
     def confirm_payments(self, request, queryset):
@@ -171,16 +108,17 @@ class PaymentAdmin(ModelAdmin):
 
     @display(description="Сумма")
     def display_amount(self, obj):
-        return f"{obj.amount:,.2f} {obj.currency.code}"
+        return f"{obj.amount or 0:,.2f} {obj.currency.code if obj.currency else '$'}"
 
     @display(description="Доход (USD)", label=True)
     def net_income_badge(self, obj):
-        return f"+${obj.net_income_usd:,.2f}", "success"
+        # СПАСАТЕЛЬНЫЙ КРУГ
+        income = obj.net_income_usd or 0
+        return f"+${income:,.2f}", "success"
 
     @display(description="Дата")
     def date_fmt(self, obj):
-        return obj.payment_date.strftime("%d.%m")
-
+        return obj.payment_date.strftime("%d.%m") if obj.payment_date else "—"
 
 @admin.register(TransactionHistory)
 class TransactionHistoryAdmin(ModelAdmin):
