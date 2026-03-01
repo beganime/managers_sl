@@ -10,7 +10,7 @@ router.register(r'mobile', LeadViewSet, basename='lead-mobile')
 
 urlpatterns = [
     # Эндпоинт для сайта
-    path('api/leads/create/', LeadCreateAPIView.as_view(), name='lead-create'),
+    path('leads/create/', LeadCreateAPIView.as_view(), name='lead-create'),
     # Эндпоинты для мобильного приложения
-    path('api/leads/', include(router.urls)),
+    path('leads/', include(router.urls)),
 ]

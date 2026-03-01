@@ -8,5 +8,5 @@ router.register(r'currencies', CurrencyViewSet, basename='currency')
 router.register(r'universities', UniversityViewSet, basename='university')
 
 urlpatterns = [
-    path('api/catalog/', include(router.urls)),
+    path('catalog/', include(router.urls)),
 ]

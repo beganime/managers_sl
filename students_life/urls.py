@@ -22,21 +22,21 @@ urlpatterns = [
     
     path('admin/', admin.site.urls),
     path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'logo.ico', permanent=True)),
-    path('', include('leads.urls')),
     path('', include('pwa.urls')),
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), # Логин (получить токен)
     path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # Обновить токен
     
     path('api/clients/', include('clients.urls')),
     path('api/tasks/', include('tasks.urls')),
-    path('', include('timetracking.urls')),
-    path('', include('reports.urls')),
-    path('', include('catalog.urls')),
-    path('', include('services.urls')),
-    path('', include('analytics.urls')),
-    path('', include('gamification.urls')),
-    path('', include('documents.urls')),
-    path('', include('users.urls')),
+    path('api/', include('timetracking.urls')),
+    path('api/', include('reports.urls')),
+    path('api/', include('leads.urls')),
+    path('api/', include('catalog.urls')),
+    path('api/', include('services.urls')),
+    path('api/', include('analytics.urls')),
+    path('api/', include('gamification.urls')),
+    path('api/', include('documents.urls')),
+    path('api/', include('users.urls')),
 ]
 
 if settings.DEBUG:

@@ -7,5 +7,5 @@ router = DefaultRouter()
 router.register(r'services', ServiceViewSet, basename='service')
 
 urlpatterns = [
-    path('api/extra-services/', include(router.urls)),
+    path('extra-services/', include(router.urls)),
 ]

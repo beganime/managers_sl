@@ -7,5 +7,5 @@ router = DefaultRouter()
 router.register(r'shifts', WorkShiftViewSet, basename='workshift')
 
 urlpatterns = [
-    path('api/timetracking/', include(router.urls)),
+    path('timetracking/', include(router.urls)),
 ]

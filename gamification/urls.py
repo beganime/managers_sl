@@ -8,5 +8,5 @@ router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'leaderboard', LeaderboardViewSet, basename='leaderboard')
 
 urlpatterns = [
-    path('api/gamification/', include(router.urls)),
+    path('gamification/', include(router.urls)),
 ]

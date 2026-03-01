@@ -9,5 +9,5 @@ router.register(r'payments', PaymentViewSet, basename='payment')
 router.register(r'expenses', ExpenseViewSet, basename='expense')
 
 urlpatterns = [
-    path('api/analytics/', include(router.urls)),
+    path('analytics/', include(router.urls)),
 ]
