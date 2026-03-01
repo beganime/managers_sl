@@ -1,6 +1,11 @@
 # users/serializers.py
 from rest_framework import serializers
-from .models import User, Office
+from .models import User, ManagerSalary, Office
+
+class ManagerSalarySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ManagerSalary
+        fields = '__all__'
 
 class OfficeSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,17 +13,13 @@ class OfficeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UserSerializer(serializers.ModelSerializer):
-    # Для удобства прокидываем название города офиса
-    office_name = serializers.CharField(source='office.city', read_only=True)
+    # Явно вкладываем профиль с планом продаж и мотивацией
+    managersalary = ManagerSalarySerializer(read_only=True)
+    office = OfficeSerializer(read_only=True)
 
     class Meta:
         model = User
-        fields = (
+        fields = [
             'id', 'email', 'first_name', 'last_name', 'middle_name', 
-            'avatar', 'dob', 'office', 'office_name', 'job_description', 
-            'work_status', 'social_contacts', 'is_effective', 'updated_at'
-        )
-        
-        # Защищаем поля от изменения менеджером через профиль.
-        # Эти данные может менять только HR или Админ через веб-версию.
-        read_only_fields = ('email', 'office', 'job_description', 'is_effective', 'updated_at')
+            'avatar', 'work_status', 'is_effective', 'managersalary', 'office'
+        ]
