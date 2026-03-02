@@ -10,7 +10,8 @@ class BaseAnalyticsViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        # Менеджер видит только свои записи, Суперюзер — все
+        
+        # Суперюзер видит все, менеджер — только свои записи
         qs = self.queryset.all() if user.is_superuser else self.queryset.filter(manager=user)
             
         updated_after = self.request.query_params.get('updated_after')
@@ -22,10 +23,11 @@ class BaseAnalyticsViewSet(viewsets.ModelViewSet):
         return qs.order_by('-updated_at')
 
     def perform_create(self, serializer):
-        # При создании записи с телефона всегда жестко привязываем текущего менеджера
+        # Жестко фиксируем, что сделку/платеж создал именно этот менеджер
         serializer.save(manager=self.request.user)
 
 class DealViewSet(BaseAnalyticsViewSet):
+    # prefetch_related ускоряет загрузку, чтобы не было 100 запросов к БД при выводе платежей
     queryset = Deal.objects.prefetch_related('payments').all()
     serializer_class = DealSerializer
 

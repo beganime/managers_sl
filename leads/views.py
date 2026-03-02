@@ -1,3 +1,4 @@
+# leads/views.py
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import BasePermission
 from rest_framework import viewsets, permissions
@@ -7,29 +8,19 @@ from django.db.models import Q
 from .models import Lead
 from .serializers import LeadSerializer, MobileLeadSerializer
 
-# Создаем кастомную защиту
 class IsAuthorizedAPIClient(BasePermission):
-    """
-    Разрешает доступ только если передан правильный X-API-KEY в заголовках.
-    """
+    """Разрешает доступ для создания лидов с сайта по API-ключу."""
     def has_permission(self, request, view):
-        # Достаем ключ из заголовков запроса
         provided_key = request.headers.get('X-API-KEY')
-        # Сравниваем с ключом из настроек
         actual_key = getattr(settings, 'LEADS_API_KEY', None)
-        
-        # Если совпадают - пускаем, если нет - выдаст 403 Forbidden
         return provided_key == actual_key
 
-# Твоя вьюшка
 class LeadCreateAPIView(CreateAPIView):
     queryset = Lead.objects.all()
     serializer_class = LeadSerializer
-    # Применяем нашу защиту вместо AllowAny
     permission_classes = [IsAuthorizedAPIClient]
 
-
-# --- АПИ ДЛЯ МОБИЛЬНОГО ПРИЛОЖЕНИЯ (SYNC) ---
+# --- АПИ ДЛЯ МОБИЛЬНОГО ПРИЛОЖЕНИЯ ---
 class LeadViewSet(viewsets.ModelViewSet):
     serializer_class = MobileLeadSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -40,7 +31,7 @@ class LeadViewSet(viewsets.ModelViewSet):
         if user.is_superuser:
             qs = Lead.objects.all()
         else:
-            # Менеджер видит: Свои заявки ИЛИ Новые ничьи заявки
+            # Менеджер видит: Свои заявки ИЛИ Ничьи заявки (manager__isnull=True)
             qs = Lead.objects.filter(Q(manager=user) | Q(manager__isnull=True)).distinct()
             
         updated_after = self.request.query_params.get('updated_after')
@@ -50,3 +41,11 @@ class LeadViewSet(viewsets.ModelViewSet):
                 qs = qs.filter(updated_at__gte=dt)
                 
         return qs.order_by('-updated_at')
+
+    def perform_update(self, serializer):
+        # Если статус меняется на "contacted" (В работу) и менеджер пустой, забираем лид себе
+        instance = self.get_object()
+        if not instance.manager and serializer.validated_data.get('status') == 'contacted':
+            serializer.save(manager=self.request.user)
+        else:
+            serializer.save()
