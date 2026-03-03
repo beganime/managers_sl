@@ -1,11 +1,11 @@
 # documents/views.py
 from rest_framework import viewsets, permissions
 from django.utils.dateparse import parse_datetime
-from .models import InfoSnippet, ContractTemplate, Contract
-from .serializers import InfoSnippetSerializer, ContractTemplateSerializer, ContractSerializer
+from .models import InfoSnippet, DocumentTemplate, GeneratedDocument
+from .serializers import InfoSnippetSerializer, DocumentTemplateSerializer, GeneratedDocumentSerializer
 
 class InfoSnippetViewSet(viewsets.ReadOnlyModelViewSet):
-    """API для Базы знаний (скрипты, ссылки, реквизиты). Только чтение."""
+    """API для Базы знаний. Только чтение."""
     serializer_class = InfoSnippetSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -18,13 +18,13 @@ class InfoSnippetViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.filter(updated_at__gte=dt)
         return qs.order_by('category', 'order')
 
-class ContractTemplateViewSet(viewsets.ReadOnlyModelViewSet):
-    """API для Шаблонов договоров. Только чтение."""
-    serializer_class = ContractTemplateSerializer
+class DocumentTemplateViewSet(viewsets.ReadOnlyModelViewSet):
+    """API для получения доступных шаблонов документов. Только чтение."""
+    serializer_class = DocumentTemplateSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = ContractTemplate.objects.all()
+        qs = DocumentTemplate.objects.filter(is_active=True)
         updated_after = self.request.query_params.get('updated_after')
         if updated_after:
             dt = parse_datetime(updated_after)
@@ -32,14 +32,14 @@ class ContractTemplateViewSet(viewsets.ReadOnlyModelViewSet):
                 qs = qs.filter(updated_at__gte=dt)
         return qs.order_by('-updated_at')
 
-class ContractViewSet(viewsets.ModelViewSet):
-    """API для запросов на создание договоров (черновиков)."""
-    serializer_class = ContractSerializer
+class GeneratedDocumentViewSet(viewsets.ModelViewSet):
+    """API для создания и просмотра сгенерированных документов менеджером."""
+    serializer_class = GeneratedDocumentSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
         user = self.request.user
-        qs = Contract.objects.all() if user.is_superuser else Contract.objects.filter(manager=user)
+        qs = GeneratedDocument.objects.all() if user.is_superuser else GeneratedDocument.objects.filter(manager=user)
         
         updated_after = self.request.query_params.get('updated_after')
         if updated_after:
@@ -49,5 +49,11 @@ class ContractViewSet(viewsets.ModelViewSet):
         return qs.order_by('-created_at')
 
     def perform_create(self, serializer):
-        # Менеджер, создавший запрос, привязывается автоматически
-        serializer.save(manager=self.request.user)
+        # 1. Привязываем документ к текущему менеджеру и сохраняем
+        document = serializer.save(manager=self.request.user)
+        
+        # 2. Мгновенно пытаемся сгенерировать DOCX файл
+        try:
+            document.generate_document()
+        except Exception:
+            pass # Если ошибка генерации, статус просто станет 'error'

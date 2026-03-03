@@ -13,13 +13,14 @@ class OfficeSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UserSerializer(serializers.ModelSerializer):
-    # Явно вкладываем профиль с планом продаж и мотивацией
     managersalary = ManagerSalarySerializer(read_only=True)
     office = OfficeSerializer(read_only=True)
 
     class Meta:
         model = User
+        # ИСПРАВЛЕНИЕ: Добавили dob, social_contacts, job_description
         fields = [
             'id', 'email', 'first_name', 'last_name', 'middle_name', 
-            'avatar', 'work_status', 'is_effective', 'managersalary', 'office'
+            'avatar', 'dob', 'social_contacts', 'job_description', 
+            'work_status', 'is_effective', 'managersalary', 'office'
         ]
