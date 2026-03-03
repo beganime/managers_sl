@@ -154,7 +154,8 @@ def get_navigation(request):
             "title": "Документы и Учет",
             "separator": True,
             "items": [
-                {"title": "Договоры", "icon": "description", "link": "/admin/documents/contract/"},
+                # ИСПРАВЛЕНО: Ссылка на сгенерированные документы
+                {"title": "Документы", "icon": "description", "link": "/admin/documents/generateddocument/"},
                 {"title": "Рабочие смены", "icon": "schedule", "link": "/admin/timetracking/workshift/"},
                 {"title": "Отчеты", "icon": "summarize", "link": "/admin/reports/dailyreport/"},
             ],
@@ -199,7 +200,8 @@ def get_navigation(request):
                 "items": [
                     {"title": "Финансы (Дашборд)", "icon": "account_balance", "link": "/admin/analytics/financialperiod/"},
                     {"title": "История действий", "icon": "manage_search", "link": "/admin/analytics/auditlog/"},
-                    {"title": "Шаблоны документов", "icon": "folder_copy", "link": "/admin/documents/contracttemplate/"},
+                    # ИСПРАВЛЕНО: Ссылка на конструктор шаблонов
+                    {"title": "Шаблоны документов", "icon": "folder_copy", "link": "/admin/documents/documenttemplate/"},
                 ],
             },
             {
