@@ -1,8 +1,11 @@
 # documents/views.py
+import logging
 from rest_framework import viewsets, permissions
 from django.utils.dateparse import parse_datetime
 from .models import InfoSnippet, DocumentTemplate, GeneratedDocument
 from .serializers import InfoSnippetSerializer, DocumentTemplateSerializer, GeneratedDocumentSerializer
+
+logger = logging.getLogger(__name__)
 
 class InfoSnippetViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = InfoSnippetSerializer
@@ -50,5 +53,5 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         document = serializer.save(manager=self.request.user)
         try:
             document.generate_document()
-        except Exception:
-            pass
+        except Exception as e:
+            logger.error(f"Ошибка при автоматической генерации документа ID {document.id}: {str(e)}")

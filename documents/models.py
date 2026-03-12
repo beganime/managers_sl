@@ -1,9 +1,13 @@
 # documents/models.py
+import json
+import io
+import logging
 from django.db import models
 from django.conf import settings
 from django.core.files.base import ContentFile
 from docxtpl import DocxTemplate
-import io
+
+logger = logging.getLogger(__name__)
 
 class InfoSnippet(models.Model):
     CATEGORY_CHOICES = (
@@ -102,9 +106,18 @@ class GeneratedDocument(models.Model):
             
         try:
             doc = DocxTemplate(self.template.file.path)
-            context = self.context_data or {}
             
+            # ЗАЩИТА: Если данные пришли в виде строки JSON, парсим их в словарь
+            context = self.context_data or {}
+            if isinstance(context, str):
+                try:
+                    context = json.loads(context)
+                except json.JSONDecodeError:
+                    context = {}
+            
+            # Рендерим шаблон
             doc.render(context)
+            
             buffer = io.BytesIO()
             doc.save(buffer)
             buffer.seek(0)
@@ -115,7 +128,9 @@ class GeneratedDocument(models.Model):
             self.generated_file.save(filename, ContentFile(buffer.read()), save=False)
             self.status = 'generated'
             self.save()
+            
         except Exception as e:
+            logger.error(f"DocxTemplate Error: {str(e)}")
             self.status = 'error'
             self.save()
             raise e
