@@ -31,20 +31,6 @@ class DocumentTemplate(models.Model):
     title = models.CharField("Название шаблона", max_length=255)
     description = models.TextField("Описание для менеджера", blank=True)
     file = models.FileField("Файл шаблона (DOCX)", upload_to='templates/')
-    
-    # Конфигурация полей, которые мобильное приложение должно запросить у менеджера.
-    # Пример: 
-    # [
-    #   {"key": "fio", "label": "ФИО Клиента", "type": "text"},
-    #   {"key": "amount", "label": "Сумма контракта", "type": "numeric"}
-    # ]
-    fields_config = models.JSONField(
-        "Настройки полей (JSON)", 
-        default=list, 
-        blank=True, 
-        help_text='Пример: [{"key": "fio", "label": "ФИО Клиента", "type": "text"}]'
-    )
-    
     is_active = models.BooleanField("Активен", default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -54,6 +40,31 @@ class DocumentTemplate(models.Model):
     class Meta:
         verbose_name = "Шаблон документа"
         verbose_name_plural = "Шаблоны документов"
+
+
+class TemplateField(models.Model):
+    """Описывает переменные, которые нужно запросить у менеджера для конкретного шаблона"""
+    FIELD_TYPES = (
+        ('text', 'Строка текста'),
+        ('numeric', 'Число'),
+        ('date', 'Дата'),
+        ('textarea', 'Большой текст'),
+    )
+
+    template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE, related_name='fields', verbose_name="Шаблон")
+    key = models.CharField("Ключ (как в docx)", max_length=50, help_text="Например: client_fio (на английском, без пробелов)")
+    label = models.CharField("Название поля (для менеджера)", max_length=255, help_text="Например: ФИО Клиента")
+    field_type = models.CharField("Тип поля", max_length=20, choices=FIELD_TYPES, default='text')
+    is_required = models.BooleanField("Обязательное", default=True)
+    order = models.PositiveIntegerField("Порядок вывода", default=0)
+
+    class Meta:
+        verbose_name = "Поле шаблона"
+        verbose_name_plural = "Поля шаблона"
+        ordering = ['order']
+
+    def __str__(self):
+        return f"{self.label} ({self.key})"
 
 
 class GeneratedDocument(models.Model):
@@ -68,7 +79,7 @@ class GeneratedDocument(models.Model):
     
     title = models.CharField("Название документа (для удобства)", max_length=255, blank=True)
     
-    # В этом поле хранятся все данные, которые менеджер ввел в приложении
+    # В этом поле сохраняем присланные из приложения данные (ответы на поля TemplateField)
     context_data = models.JSONField("Введенные данные (Переменные)", default=dict, blank=True)
     
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='draft')
@@ -86,14 +97,11 @@ class GeneratedDocument(models.Model):
         ordering = ['-created_at']
 
     def generate_document(self):
-        """Динамически генерирует DOCX файл на основе context_data и шаблона"""
         if not self.template.file:
             raise ValueError("В выбранном шаблоне отсутствует файл DOCX.")
             
         try:
             doc = DocxTemplate(self.template.file.path)
-            
-            # Контекст берется ровно из того, что прислал фронтенд
             context = self.context_data or {}
             
             doc.render(context)
@@ -101,7 +109,6 @@ class GeneratedDocument(models.Model):
             doc.save(buffer)
             buffer.seek(0)
             
-            # Формируем красивое название
             safe_title = "".join([c for c in (self.title or self.template.title) if c.isalpha() or c.isdigit() or c in ' -_']).rstrip()
             filename = f"{safe_title}_{self.id}.docx".replace(" ", "_")
             

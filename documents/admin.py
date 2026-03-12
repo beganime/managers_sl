@@ -2,9 +2,9 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from django.contrib import messages
-from unfold.admin import ModelAdmin
+from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display, action
-from .models import InfoSnippet, DocumentTemplate, GeneratedDocument
+from .models import InfoSnippet, DocumentTemplate, TemplateField, GeneratedDocument
 
 @admin.register(InfoSnippet)
 class InfoSnippetAdmin(ModelAdmin):
@@ -25,17 +25,21 @@ class InfoSnippetAdmin(ModelAdmin):
             clean_text
         )
 
+class TemplateFieldInline(TabularInline):
+    model = TemplateField
+    extra = 1
+    fields = ('key', 'label', 'field_type', 'is_required', 'order')
+
 @admin.register(DocumentTemplate)
 class DocumentTemplateAdmin(ModelAdmin):
     list_display = ("title", "is_active", "fields_count", "updated_at")
     search_fields = ("title",)
     list_filter = ("is_active",)
+    inlines = [TemplateFieldInline]
 
     @display(description="Кол-во динамических полей")
     def fields_count(self, obj):
-        if isinstance(obj.fields_config, list):
-            return len(obj.fields_config)
-        return 0
+        return obj.fields.count()
 
 @admin.register(GeneratedDocument)
 class GeneratedDocumentAdmin(ModelAdmin):
@@ -43,7 +47,6 @@ class GeneratedDocumentAdmin(ModelAdmin):
     list_filter = ("status", "template", "manager")
     search_fields = ("title", "manager__email", "manager__first_name")
     
-    # Чтобы админ случайно не сломал сгенерированный файл
     readonly_fields = ("status", "generated_file", "manager")
 
     def save_model(self, request, obj, form, change):
