@@ -47,12 +47,24 @@ class GeneratedDocumentAdmin(ModelAdmin):
     list_filter = ("status", "template", "manager")
     search_fields = ("title", "manager__email", "manager__first_name")
     
-    readonly_fields = ("status", "generated_file", "manager")
+    def get_readonly_fields(self, request, obj=None):
+        # Статус и сам файл нельзя менять руками, они генерируются кодом
+        return ("status", "generated_file")
 
     def save_model(self, request, obj, form, change):
-        if not obj.pk: 
+        # Если админ не выбрал менеджера, привязываем документ к самому админу
+        if not getattr(obj, 'manager', None):
             obj.manager = request.user
+            
+        # Сначала сохраняем данные в БД, чтобы у объекта появился ID
         super().save_model(request, obj, form, change)
+
+        # Сразу после сохранения пытаемся сгенерировать готовый Word-файл
+        try:
+            obj.generate_document()
+            self.message_user(request, "Документ успешно сгенерирован!", messages.SUCCESS)
+        except Exception as e:
+            self.message_user(request, f"Ошибка генерации документа: {e}", messages.ERROR)
 
     @action(description="🔄 Сгенерировать файл заново")
     def regenerate_docs(self, request, queryset):
