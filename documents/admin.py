@@ -1,5 +1,4 @@
 # documents/admin.py
-import json
 from django.contrib import admin
 from django.utils.html import format_html
 from django.contrib import messages
@@ -42,52 +41,25 @@ class DocumentTemplateAdmin(ModelAdmin):
     def fields_count(self, obj):
         return obj.fields.count()
 
-
 @admin.register(GeneratedDocument)
 class GeneratedDocumentAdmin(ModelAdmin):
-    # Указываем кастомный шаблон для формы редактирования/создания
-    change_form_template = "admin/documents/generateddocument/change_form.html"
-    
     list_display = ("title", "template", "manager", "status_badge", "download_link", "created_at")
     list_filter = ("status", "template", "manager")
     search_fields = ("title", "manager__email", "manager__first_name")
     
     def get_readonly_fields(self, request, obj=None):
+        # Статус и сам файл нельзя менять руками, они генерируются кодом
         return ("status", "generated_file")
 
-    # Передаем конфигурацию полей шаблонов в HTML-шаблон админки
-    def change_view(self, request, object_id, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['templates_config_json'] = self.get_templates_config()
-        return super().change_view(request, object_id, form_url, extra_context=extra_context)
-
-    def add_view(self, request, form_url='', extra_context=None):
-        extra_context = extra_context or {}
-        extra_context['templates_config_json'] = self.get_templates_config()
-        return super().add_view(request, form_url, extra_context=extra_context)
-
-    def get_templates_config(self):
-        """Возвращает JSON со всеми активными шаблонами и их полями"""
-        templates = DocumentTemplate.objects.filter(is_active=True).prefetch_related('fields')
-        config = {}
-        for t in templates:
-            config[t.id] = [
-                {
-                    'key': f.key,
-                    'label': f.label,
-                    'field_type': f.field_type,
-                    'is_required': f.is_required
-                }
-                for f in t.fields.all()
-            ]
-        return json.dumps(config)
-
     def save_model(self, request, obj, form, change):
+        # Если админ не выбрал менеджера, привязываем документ к самому админу
         if not getattr(obj, 'manager', None):
             obj.manager = request.user
             
+        # Сначала сохраняем данные в БД, чтобы у объекта появился ID
         super().save_model(request, obj, form, change)
 
+        # Сразу после сохранения пытаемся сгенерировать готовый Word-файл
         try:
             obj.generate_document()
             self.message_user(request, "Документ успешно сгенерирован!", messages.SUCCESS)
