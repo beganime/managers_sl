@@ -95,18 +95,12 @@ class GeneratedDocument(models.Model):
         ordering = ['-created_at']
 
     def generate_document(self):
-        """
-        Асинхронно-безопасная (в рамках I/O) генерация документа.
-        Исправляет проблему 500 Internal Server Error при потоковом чтении и сохранении.
-        """
         if not self.template.file:
             raise ValueError("В выбранном шаблоне отсутствует файл DOCX.")
             
         try:
-            # Безопасное открытие файла через контекстный менеджер (важно для S3 и Highload)
-            with self.template.file.open('rb') as template_file:
-                template_stream = io.BytesIO(template_file.read())
-            
+            # ИСПРАВЛЕНИЕ 500 ОШИБКИ: Читаем файл в память (совместимо с S3)
+            template_stream = io.BytesIO(self.template.file.read())
             doc = DocxTemplate(template_stream)
             
             context = self.context_data or {}
@@ -120,21 +114,17 @@ class GeneratedDocument(models.Model):
             
             buffer = io.BytesIO()
             doc.save(buffer)
+            buffer.seek(0)
             
-            # Очищаем название файла от опасных символов
             safe_title = "".join([c for c in str(self.title or self.template.title) if c.isalpha() or c.isdigit() or c in ' -_']).rstrip()
             filename = f"{safe_title}_{self.id}.docx".replace(" ", "_")
             
-            # Используем getvalue() вместо seek(0) + read() для гарантии корректного буфера памяти
-            self.generated_file.save(filename, ContentFile(buffer.getvalue()), save=False)
+            self.generated_file.save(filename, ContentFile(buffer.read()), save=False)
             self.status = 'generated'
-            
-            # Точечное обновление полей для предотвращения Race Condition
-            self.save(update_fields=['generated_file', 'status', 'updated_at'])
+            self.save()
             
         except Exception as e:
-            logger.error(f"Ошибка DocxTemplate для документа ID {self.id}: {str(e)}", exc_info=True)
+            logger.error(f"DocxTemplate Error: {str(e)}")
             self.status = 'error'
-            if self.pk:
-                self.save(update_fields=['status', 'updated_at'])
+            self.save()
             raise e
