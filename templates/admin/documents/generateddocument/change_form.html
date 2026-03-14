@@ -1,18 +1,24 @@
-{% extends "unfold/change_form.html" %}
+{% extends "admin/change_form.html" %}
 
 {% block extrahead %}
 {{ block.super }}
 <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Получаем JSON конфиг из Python
-        const templatesConfig = {{ templates_config_json|safe }};
+        // Получаем JSON конфиг из Python (с защитой от пустых данных)
+        const templatesConfig = {{ templates_config_json|safe|default:"{}" }};
         const templateSelect = document.getElementById('id_template');
         const contextDataField = document.getElementById('id_context_data');
         
         if (!templateSelect || !contextDataField) return;
 
-        // 1. Скрываем оригинальное поле JSON (но оно остается в коде для отправки на сервер)
-        const contextDataRow = contextDataField.closest('.form-row') || contextDataField.parentElement;
+        // 1. Скрываем оригинальное поле JSON (в Unfold поля обернуты в flex-контейнеры)
+        // Ищем родительский элемент, чтобы скрыть весь блок с лейблом
+        let contextDataRow = contextDataField.closest('.form-row');
+        if (!contextDataRow) {
+            // Фолбэк для Tailwind/Unfold
+            contextDataRow = contextDataField.closest('div.flex.flex-col') || contextDataField.parentElement;
+        }
+        
         if (contextDataRow) {
             contextDataRow.style.display = 'none';
         }
@@ -20,10 +26,11 @@
         // 2. Создаем контейнер для наших красивых динамических полей
         const dynamicContainer = document.createElement('div');
         dynamicContainer.id = 'dynamic-fields-container';
-        dynamicContainer.className = 'mt-4 p-5 bg-gray-50 border border-gray-200 rounded-md dark:bg-gray-800 dark:border-gray-700';
+        // Стилизуем под Unfold (поддержка светлой и темной темы)
+        dynamicContainer.className = 'mt-6 p-6 bg-gray-50 border border-gray-200 rounded-lg dark:bg-gray-800/50 dark:border-gray-700 shadow-sm';
         
         // Вставляем его сразу после выбора шаблона
-        const templateRow = templateSelect.closest('.form-row') || templateSelect.parentElement;
+        let templateRow = templateSelect.closest('.form-row') || templateSelect.closest('div.flex.flex-col') || templateSelect.parentElement;
         if (templateRow && templateRow.parentNode) {
             templateRow.parentNode.insertBefore(dynamicContainer, templateRow.nextSibling);
         } else {
@@ -43,8 +50,8 @@
             dynamicContainer.style.display = 'block';
             
             const title = document.createElement('h3');
-            title.className = 'text-lg font-semibold text-gray-900 mb-4 dark:text-gray-100';
-            title.innerText = 'Заполните поля документа';
+            title.className = 'text-lg font-bold text-gray-900 mb-5 dark:text-gray-100 flex items-center gap-2';
+            title.innerHTML = '<span class="material-symbols-outlined text-primary-600">edit_document</span> Заполните данные для документа';
             dynamicContainer.appendChild(title);
 
             const fields = templatesConfig[templateId];
@@ -57,14 +64,15 @@
 
             fields.forEach(field => {
                 const fieldWrapper = document.createElement('div');
-                fieldWrapper.className = 'mb-4';
+                fieldWrapper.className = 'mb-5';
 
                 const label = document.createElement('label');
                 label.className = 'block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300';
-                label.innerHTML = field.label + (field.is_required ? ' <span class="text-red-500">*</span>' : '');
+                label.innerHTML = field.label + (field.is_required ? ' <span class="text-red-500 font-bold">*</span>' : '');
                 
                 let input;
-                const inputClasses = 'border border-gray-300 rounded-md w-full p-2.5 text-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-300 dark:placeholder-gray-500';
+                // Классы Unfold для красивых полей ввода
+                const inputClasses = 'border border-gray-300 rounded-md w-full px-3 py-2 text-sm focus:ring-2 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-200 shadow-sm transition-colors duration-200';
                 
                 if (field.field_type === 'textarea') {
                     input = document.createElement('textarea');
