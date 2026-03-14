@@ -95,12 +95,19 @@ class GeneratedDocument(models.Model):
         ordering = ['-created_at']
 
     def generate_document(self):
+        """
+        Безопасная генерация документа.
+        Возвращает кортеж: (success: bool, message: str)
+        Это предотвращает падение сервера (500 Error) и отдает ошибку прямо в UI.
+        """
         if not self.template.file:
-            raise ValueError("В выбранном шаблоне отсутствует файл DOCX.")
+            return False, "В выбранном шаблоне отсутствует файл DOCX."
             
         try:
-            # ИСПРАВЛЕНИЕ 500 ОШИБКИ: Читаем файл в память (совместимо с S3)
-            template_stream = io.BytesIO(self.template.file.read())
+            # Считываем файл напрямую в байты, чтобы избежать конфликтов блокировки (file locks)
+            template_bytes = self.template.file.read()
+            template_stream = io.BytesIO(template_bytes)
+            
             doc = DocxTemplate(template_stream)
             
             context = self.context_data or {}
@@ -110,21 +117,32 @@ class GeneratedDocument(models.Model):
                 except json.JSONDecodeError:
                     context = {}
             
+            # Рендер DOCX документа
             doc.render(context)
             
+            # Сохранение в буфер
             buffer = io.BytesIO()
             doc.save(buffer)
             buffer.seek(0)
             
+            # Очистка названия файла от спецсимволов
             safe_title = "".join([c for c in str(self.title or self.template.title) if c.isalpha() or c.isdigit() or c in ' -_']).rstrip()
             filename = f"{safe_title}_{self.id}.docx".replace(" ", "_")
             
             self.generated_file.save(filename, ContentFile(buffer.read()), save=False)
             self.status = 'generated'
-            self.save()
+            
+            # Обновляем только нужные поля (оптимизация под Highload)
+            self.save(update_fields=['generated_file', 'status', 'updated_at'])
+            
+            return True, "Документ успешно сгенерирован!"
             
         except Exception as e:
-            logger.error(f"DocxTemplate Error: {str(e)}")
+            error_msg = f"Ошибка генерации (DocxTemplate): {str(e)}"
+            logger.error(error_msg, exc_info=True)
             self.status = 'error'
-            self.save()
-            raise e
+            if self.pk:
+                self.save(update_fields=['status', 'updated_at'])
+            
+            # Возвращаем False вместо 'raise e', устраняя 500 ошибку
+            return False, error_msg
