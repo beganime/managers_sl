@@ -212,7 +212,9 @@ UNFOLD = {
     "SITE_URL": "/admin/",
     "SITE_ICON": lambda request: static("logo.ico"),
     "DASHBOARD_CALLBACK": "students_life.dashboard.dashboard_callback",
-    
+    "SCRIPTS": [
+        lambda request: static("js/tabbar.js"),
+    ],
     # ЦВЕТА (Полная палитра)
     "COLORS": {
         "primary": {

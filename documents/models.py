@@ -47,7 +47,6 @@ class DocumentTemplate(models.Model):
 
 
 class TemplateField(models.Model):
-    """Описывает переменные, которые нужно запросить у менеджера для конкретного шаблона"""
     FIELD_TYPES = (
         ('text', 'Строка текста'),
         ('numeric', 'Число'),
@@ -56,7 +55,7 @@ class TemplateField(models.Model):
     )
 
     template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE, related_name='fields', verbose_name="Шаблон")
-    key = models.CharField("Ключ (как в docx)", max_length=50, help_text="Например: client_fio (на английском, без пробелов)")
+    key = models.CharField("Ключ (как в docx)", max_length=50, help_text="Например: client_fio")
     label = models.CharField("Название поля (для менеджера)", max_length=255, help_text="Например: ФИО Клиента")
     field_type = models.CharField("Тип поля", max_length=20, choices=FIELD_TYPES, default='text')
     is_required = models.BooleanField("Обязательное", default=True)
@@ -80,15 +79,10 @@ class GeneratedDocument(models.Model):
 
     template = models.ForeignKey(DocumentTemplate, on_delete=models.CASCADE, related_name='documents', verbose_name="Шаблон")
     manager = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='my_documents', verbose_name="Менеджер")
-    
     title = models.CharField("Название документа (для удобства)", max_length=255, blank=True)
-    
-    # В этом поле сохраняем присланные из приложения данные (ответы на поля TemplateField)
     context_data = models.JSONField("Введенные данные (Переменные)", default=dict, blank=True)
-    
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='draft')
     generated_file = models.FileField("Готовый документ", upload_to='generated_docs/', null=True, blank=True)
-    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -105,9 +99,10 @@ class GeneratedDocument(models.Model):
             raise ValueError("В выбранном шаблоне отсутствует файл DOCX.")
             
         try:
-            doc = DocxTemplate(self.template.file.path)
+            # ИСПРАВЛЕНИЕ 500 ОШИБКИ: Читаем файл в память (совместимо с S3)
+            template_stream = io.BytesIO(self.template.file.read())
+            doc = DocxTemplate(template_stream)
             
-            # ЗАЩИТА: Если данные пришли в виде строки JSON, парсим их в словарь
             context = self.context_data or {}
             if isinstance(context, str):
                 try:
@@ -115,14 +110,13 @@ class GeneratedDocument(models.Model):
                 except json.JSONDecodeError:
                     context = {}
             
-            # Рендерим шаблон
             doc.render(context)
             
             buffer = io.BytesIO()
             doc.save(buffer)
             buffer.seek(0)
             
-            safe_title = "".join([c for c in (self.title or self.template.title) if c.isalpha() or c.isdigit() or c in ' -_']).rstrip()
+            safe_title = "".join([c for c in str(self.title or self.template.title) if c.isalpha() or c.isdigit() or c in ' -_']).rstrip()
             filename = f"{safe_title}_{self.id}.docx".replace(" ", "_")
             
             self.generated_file.save(filename, ContentFile(buffer.read()), save=False)
