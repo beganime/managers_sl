@@ -13,7 +13,7 @@
 </style>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    {% comment %} document.addEventListener('DOMContentLoaded', function() {
         // Если экран шире 768px (планшеты и десктопы) — ничего не делаем
         if (window.innerWidth > 768) return;
 
@@ -83,6 +83,6 @@
         
         // Вставляем меню прямо в body
         document.body.appendChild(nav);
-    });
+    }); {% endcomment %}
 </script>
 {% endblock %}
