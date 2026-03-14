@@ -1,0 +1,113 @@
+{% extends "unfold/change_form.html" %}
+
+{% block extrahead %}
+{{ block.super }}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Получаем JSON конфиг из Python
+        const templatesConfig = {{ templates_config_json|safe }};
+        const templateSelect = document.getElementById('id_template');
+        const contextDataField = document.getElementById('id_context_data');
+        
+        if (!templateSelect || !contextDataField) return;
+
+        // 1. Скрываем оригинальное поле JSON (но оно остается в коде для отправки на сервер)
+        const contextDataRow = contextDataField.closest('.form-row') || contextDataField.parentElement;
+        if (contextDataRow) {
+            contextDataRow.style.display = 'none';
+        }
+
+        // 2. Создаем контейнер для наших красивых динамических полей
+        const dynamicContainer = document.createElement('div');
+        dynamicContainer.id = 'dynamic-fields-container';
+        dynamicContainer.className = 'mt-4 p-5 bg-gray-50 border border-gray-200 rounded-md dark:bg-gray-800 dark:border-gray-700';
+        
+        // Вставляем его сразу после выбора шаблона
+        const templateRow = templateSelect.closest('.form-row') || templateSelect.parentElement;
+        if (templateRow && templateRow.parentNode) {
+            templateRow.parentNode.insertBefore(dynamicContainer, templateRow.nextSibling);
+        } else {
+            templateSelect.parentNode.appendChild(dynamicContainer);
+        }
+
+        // Главная функция рендера инпутов
+        function renderFields() {
+            const templateId = templateSelect.value;
+            dynamicContainer.innerHTML = ''; // Очищаем контейнер
+            
+            if (!templateId || !templatesConfig[templateId] || templatesConfig[templateId].length === 0) {
+                dynamicContainer.style.display = 'none';
+                return;
+            }
+
+            dynamicContainer.style.display = 'block';
+            
+            const title = document.createElement('h3');
+            title.className = 'text-lg font-semibold text-gray-900 mb-4 dark:text-gray-100';
+            title.innerText = 'Заполните поля документа';
+            dynamicContainer.appendChild(title);
+
+            const fields = templatesConfig[templateId];
+            
+            // Если мы редактируем существующий документ, достаем сохраненные данные
+            let currentData = {};
+            try {
+                currentData = JSON.parse(contextDataField.value || '{}');
+            } catch (e) {}
+
+            fields.forEach(field => {
+                const fieldWrapper = document.createElement('div');
+                fieldWrapper.className = 'mb-4';
+
+                const label = document.createElement('label');
+                label.className = 'block text-sm font-medium text-gray-700 mb-2 dark:text-gray-300';
+                label.innerHTML = field.label + (field.is_required ? ' <span class="text-red-500">*</span>' : '');
+                
+                let input;
+                const inputClasses = 'border border-gray-300 rounded-md w-full p-2.5 text-sm focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-900 dark:border-gray-600 dark:text-gray-300 dark:placeholder-gray-500';
+                
+                if (field.field_type === 'textarea') {
+                    input = document.createElement('textarea');
+                    input.className = inputClasses;
+                    input.rows = 3;
+                } else {
+                    input = document.createElement('input');
+                    input.className = inputClasses;
+                    input.type = field.field_type === 'numeric' ? 'number' : (field.field_type === 'date' ? 'date' : 'text');
+                }
+                
+                input.dataset.key = field.key;
+                input.value = currentData[field.key] || '';
+                if (field.is_required) input.required = true;
+
+                // При вводе данных обновляем скрытый JSON
+                input.addEventListener('input', updateJson);
+
+                fieldWrapper.appendChild(label);
+                fieldWrapper.appendChild(input);
+                dynamicContainer.appendChild(fieldWrapper);
+            });
+            
+            updateJson();
+        }
+
+        // Собираем значения из инпутов в скрытое поле JSON
+        function updateJson() {
+            const inputs = dynamicContainer.querySelectorAll('input, textarea');
+            const newData = {};
+            inputs.forEach(input => {
+                if (input.value) {
+                    newData[input.dataset.key] = input.value;
+                }
+            });
+            contextDataField.value = JSON.stringify(newData, null, 2);
+        }
+
+        // Слушаем выбор шаблона
+        templateSelect.addEventListener('change', renderFields);
+        
+        // Рисуем поля при загрузке страницы
+        renderFields();
+    });
+</script>
+{% endblock %}
