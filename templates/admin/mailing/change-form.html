@@ -1,0 +1,54 @@
+{% extends "admin/change_form.html" %}
+{% load i18n %}
+
+{% block submit_buttons_bottom %}
+{{ block.super }}
+
+{% if original and original.status in 'draft,error' %}
+<div class="mt-4 flex flex-wrap gap-3">
+
+    <!-- Кнопка предпросмотра получателей -->
+    <a href="{{ preview_url }}"
+       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
+              bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold text-sm
+              border border-blue-200 transition dark:bg-blue-900/20 dark:border-blue-800 dark:text-blue-300">
+        <span class="material-symbols-outlined text-[18px]">preview</span>
+        Предпросмотр получателей
+    </a>
+
+    <!-- Кнопка отправки -->
+    <a href="{{ send_url }}"
+       onclick="return confirm('Запустить рассылку «{{ original.title }}»?\nЭто действие нельзя отменить.')"
+       class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg
+              bg-green-600 hover:bg-green-700 text-white font-bold text-sm
+              shadow-md transition">
+        <span class="material-symbols-outlined text-[18px]">send</span>
+        🚀 Запустить рассылку
+    </a>
+</div>
+{% endif %}
+
+{% if original and original.status == 'done' %}
+<div class="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+    <p class="text-green-700 dark:text-green-300 font-bold">
+        ✅ Рассылка завершена:
+        <span class="text-green-600">{{ original.total_sent }} писем отправлено</span>
+        {% if original.total_failed %}
+        / <span class="text-red-500">{{ original.total_failed }} ошибок</span>
+        {% endif %}
+    </p>
+    {% if original.started_at %}
+    <p class="text-sm text-gray-500 mt-1">
+        {{ original.started_at|date:"d.m.Y H:i" }} → {{ original.finished_at|date:"H:i" }}
+    </p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if original and original.status == 'sending' %}
+<div class="mt-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg border border-yellow-200 animate-pulse">
+    <p class="text-yellow-700 dark:text-yellow-300 font-bold">⏳ Рассылка выполняется...</p>
+</div>
+{% endif %}
+
+{% endblock %}
