@@ -1,3 +1,4 @@
+#!/bin/bash
 set -e
 echo "🔄 Получаем последний код..."
 git pull origin main
