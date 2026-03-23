@@ -136,11 +136,11 @@ def get_navigation(request):
             'separator': True,
             'collapsible': False,
             'items': [
-                {'title': '📋 Заявки с сайта',     'icon': 'mail',           'link': '/admin/leads/lead/'},
-                {'title': '👥 Клиенты',            'icon': 'people',         'link': '/admin/clients/client/'},
-                {'title': '✅ Задачи (Канбан)',     'icon': 'assignment',     'link': '/admin/tasks/task/kanban/'},
-                {'title': '💰 Сделки',             'icon': 'attach_money',   'link': '/admin/analytics/deal/'},
-                {'title': '💳 Платежи',            'icon': 'payments',       'link': '/admin/analytics/payment/'},
+                {'title': ' Заявки с сайта',     'icon': 'mail',           'link': '/admin/leads/lead/'},
+                {'title': ' Клиенты',            'icon': 'people',         'link': '/admin/clients/client/'},
+                {'title': ' Задачи (Канбан)',     'icon': 'assignment',     'link': '/admin/tasks/task/kanban/'},
+                {'title': ' Сделки',             'icon': 'attach_money',   'link': '/admin/analytics/deal/'},
+                {'title': ' Платежи',            'icon': 'payments',       'link': '/admin/analytics/payment/'},
             ],
         },
         {
@@ -148,9 +148,9 @@ def get_navigation(request):
             'separator': True,
             'collapsible': True,
             'items': [
-                {'title': '📄 Документы',          'icon': 'description',    'link': '/admin/documents/generateddocument/'},
-                {'title': '🕐 Рабочие смены',      'icon': 'schedule',       'link': '/admin/timetracking/workshift/'},
-                {'title': '📊 Отчёты',             'icon': 'summarize',       'link': '/admin/reports/dailyreport/'},
+                {'title': ' Документы',          'icon': 'description',    'link': '/admin/documents/generateddocument/'},
+                {'title': ' Рабочие смены',      'icon': 'schedule',       'link': '/admin/timetracking/workshift/'},
+                {'title': ' Отчёты',             'icon': 'summarize',       'link': '/admin/reports/dailyreport/'},
             ],
         },
         {
@@ -158,11 +158,11 @@ def get_navigation(request):
             'separator': False,
             'collapsible': True,
             'items': [
-                {'title': '🏫 Университеты',       'icon': 'school',         'link': '/admin/catalog/university/'},
-                {'title': '📚 Программы',          'icon': 'menu_book',      'link': '/admin/catalog/program/'},
-                {'title': '✈️ Доп. услуги',        'icon': 'room_service',   'link': '/admin/services/service/'},
-                {'title': '💱 Курсы валют',         'icon': 'currency_exchange','link': '/admin/catalog/currency/'},
-                {'title': '📖 База знаний',         'icon': 'library_books',  'link': '/admin/documents/infosnippet/'},
+                {'title': ' Университеты',       'icon': 'school',         'link': '/admin/catalog/university/'},
+                {'title': ' Программы',          'icon': 'menu_book',      'link': '/admin/catalog/program/'},
+                {'title': ' Доп. услуги',        'icon': 'room_service',   'link': '/admin/services/service/'},
+                {'title': ' Курсы валют',         'icon': 'currency_exchange','link': '/admin/catalog/currency/'},
+                {'title': ' База знаний',         'icon': 'library_books',  'link': '/admin/documents/infosnippet/'},
             ],
         },
         {
@@ -170,9 +170,9 @@ def get_navigation(request):
             'separator': True,
             'collapsible': True,
             'items': [
-                {'title': '🏆 Живой рейтинг',      'icon': 'emoji_events',   'link': '/admin/gamification/leaderboard/'},
-                {'title': '🎓 Видеоуроки',          'icon': 'play_circle',    'link': '/admin/gamification/tutorialvideo/'},
-                {'title': '🧪 Тесты',              'icon': 'quiz',            'link': '/admin/documents/knowledgetest/'},
+                {'title': ' Живой рейтинг',      'icon': 'emoji_events',   'link': '/admin/gamification/leaderboard/'},
+                {'title': ' Видеоуроки',          'icon': 'play_circle',    'link': '/admin/gamification/tutorialvideo/'},
+                {'title': ' Тесты',              'icon': 'quiz',            'link': '/admin/documents/knowledgetest/'},
             ],
         },
         {
@@ -180,7 +180,7 @@ def get_navigation(request):
             'separator': True,
             'collapsible': False,
             'items': [
-                {'title': '👤 Мой профиль',        'icon': 'account_circle', 'link': '/admin/profile/'},
+                {'title': ' Мой профиль',        'icon': 'account_circle', 'link': '/admin/profile/'},
             ],
         },
     ]
@@ -193,10 +193,10 @@ def get_navigation(request):
                 'separator': True,
                 'collapsible': False,
                 'items': [
-                    {'title': '📈 Финансовые периоды', 'icon': 'account_balance',   'link': '/admin/analytics/financialperiod/'},
-                    {'title': '💸 Расходы',           'icon': 'money_off',          'link': '/admin/analytics/expense/'},
-                    {'title': '📜 История начислений', 'icon': 'receipt_long',       'link': '/admin/analytics/transactionhistory/'},
-                    {'title': '🔍 История действий',   'icon': 'manage_search',      'link': '/admin/analytics/auditlog/'},
+                    {'title': ' Финансовые периоды', 'icon': 'account_balance',   'link': '/admin/analytics/financialperiod/'},
+                    {'title': ' Расходы',           'icon': 'money_off',          'link': '/admin/analytics/expense/'},
+                    {'title': ' История начислений', 'icon': 'receipt_long',       'link': '/admin/analytics/transactionhistory/'},
+                    {'title': ' История действий',   'icon': 'manage_search',      'link': '/admin/analytics/auditlog/'},
                 ],
             },
             {
@@ -204,10 +204,10 @@ def get_navigation(request):
                 'separator': True,
                 'collapsible': False,
                 'items': [
-                    {'title': '📨 Рассылки',           'icon': 'send',              'link': '/admin/mailing/mailingcampaign/',
+                    {'title': ' Рассылки',           'icon': 'send',              'link': '/admin/mailing/mailingcampaign/',
                      'badge': _pending_campaigns_count()},
-                    {'title': '✉️ Шаблоны писем',      'icon': 'email',             'link': '/admin/mailing/emailtemplate/'},
-                    {'title': '📋 История отправок',   'icon': 'history',            'link': '/admin/mailing/mailinglog/'},
+                    {'title': ' Шаблоны писем',      'icon': 'email',             'link': '/admin/mailing/emailtemplate/'},
+                    {'title': ' История отправок',   'icon': 'history',            'link': '/admin/mailing/mailinglog/'},
                 ],
             },
             {
@@ -215,10 +215,10 @@ def get_navigation(request):
                 'separator': True,
                 'collapsible': True,
                 'items': [
-                    {'title': '👨‍💼 Сотрудники',        'icon': 'badge',             'link': '/admin/users/user/'},
-                    {'title': '🏢 Офисы',              'icon': 'apartment',          'link': '/admin/users/office/'},
-                    {'title': '🏅 Архив рейтингов',    'icon': 'military_tech',       'link': '/admin/gamification/ratingsnapshot/'},
-                    {'title': '📐 Шаблоны документов', 'icon': 'folder_copy',         'link': '/admin/documents/documenttemplate/'},
+                    {'title': ' Сотрудники',        'icon': 'badge',             'link': '/admin/users/user/'},
+                    {'title': ' Офисы',              'icon': 'apartment',          'link': '/admin/users/office/'},
+                    {'title': ' Архив рейтингов',    'icon': 'military_tech',       'link': '/admin/gamification/ratingsnapshot/'},
+                    {'title': ' Шаблоны документов', 'icon': 'folder_copy',         'link': '/admin/documents/documenttemplate/'},
                 ],
             },
         ]
