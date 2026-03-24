@@ -83,4 +83,4 @@ def send_campaign(campaign: MailingCampaign) -> None:
     campaign.total_failed = failed
     campaign.finished_at = timezone.now()
     campaign.error_log = '\n'.join(errors[:50])
-    campaign.save(update_fields=['status', 'total_sent', 'total_failed', 'finished_at', 'error_log'])
+    campaign.save(update_fields=['status', 'total_sent', 'total_failed', 'finished_at', 'error_log']) 

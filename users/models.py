@@ -3,6 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
 from datetime import timedelta
+from django.db.models import Sum
 
 from students_life import settings
 
@@ -11,6 +12,12 @@ class Office(models.Model):
     address = models.CharField("Адрес", max_length=255)
     phone = models.CharField("Телефон офиса", max_length=50)
     updated_at = models.DateTimeField(auto_now=True)
+
+    @property
+    def monthly_revenue(self):
+        # Автоматически складываем выручку всех менеджеров этого офиса за месяц
+        res = self.user_set.aggregate(total=Sum('managersalary__current_month_revenue'))['total']
+        return res if res is not None else 0.00
 
     def __str__(self):
         return f"{self.city} ({self.address})"
@@ -103,7 +110,6 @@ class ManagerSalary(models.Model):
     def reset_balance(self):
         """Вызывается админом при отметке о выдаче ЗП"""
         self.current_balance = 0
-        # В идеале здесь еще обнулять current_month_revenue, если это начало нового месяца
         self.save()
 
     def __str__(self):

@@ -8,9 +8,12 @@ class ManagerSalarySerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class OfficeSerializer(serializers.ModelSerializer):
+    # Явно указываем новое поле дохода офиса
+    monthly_revenue = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+
     class Meta:
         model = Office
-        fields = '__all__'
+        fields = ['id', 'city', 'address', 'phone', 'monthly_revenue', 'updated_at']
 
 class UserSerializer(serializers.ModelSerializer):
     managersalary = ManagerSalarySerializer(read_only=True)
@@ -18,9 +21,9 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        # ИСПРАВЛЕНИЕ: Добавили dob, social_contacts, job_description
         fields = [
             'id', 'email', 'first_name', 'last_name', 'middle_name', 
             'avatar', 'dob', 'social_contacts', 'job_description', 
-            'work_status', 'is_effective', 'managersalary', 'office'
+            'work_status', 'is_effective', 'managersalary', 'office',
+            'is_superuser', 'is_staff'  # <-- ИСПРАВЛЕНИЕ: Теперь мобилка знает, что ты Админ!
         ]
