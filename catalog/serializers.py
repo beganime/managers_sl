@@ -13,9 +13,9 @@ class ProgramSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class UniversitySerializer(serializers.ModelSerializer):
-    # Вкладываем список программ прямо внутрь университета, 
-    # чтобы мобилке не пришлось делать лишние запросы!
     programs = ProgramSerializer(many=True, read_only=True)
+    # ВАЖНО: Теперь мы отдаем валюту как объект, а не просто ID
+    local_currency = CurrencySerializer(read_only=True)
     
     class Meta:
         model = University
