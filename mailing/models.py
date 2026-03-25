@@ -2,10 +2,7 @@
 from django.db import models
 from django.conf import settings
 
-
 class EmailTemplate(models.Model):
-    """Шаблон письма с поддержкой переменных {{имя}}, {{офис}} и т.д."""
-
     CATEGORY_CHOICES = (
         ('info',      'Информационное'),
         ('promo',     'Акция / Предложение'),
@@ -13,19 +10,11 @@ class EmailTemplate(models.Model):
         ('welcome',   'Приветственное'),
         ('custom',    'Произвольное'),
     )
-
     title      = models.CharField('Название шаблона', max_length=255)
     category   = models.CharField('Категория', max_length=20, choices=CATEGORY_CHOICES, default='custom')
     subject    = models.CharField('Тема письма', max_length=255)
-    body_html  = models.TextField(
-        'HTML-тело письма',
-        help_text='Используйте {{first_name}}, {{last_name}}, {{email}}, {{office}} как переменные',
-    )
-    body_text  = models.TextField(
-        'Текстовое тело (запасной вариант)',
-        blank=True,
-        help_text='Отображается если HTML не поддерживается',
-    )
+    body_html  = models.TextField('HTML-тело письма', help_text='Используйте {{first_name}}, {{last_name}}, {{email}}, {{office}} как переменные')
+    body_text  = models.TextField('Текстовое тело (запасной вариант)', blank=True, help_text='Отображается если HTML не поддерживается')
     is_active  = models.BooleanField('Активен', default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -40,8 +29,6 @@ class EmailTemplate(models.Model):
 
 
 class MailingCampaign(models.Model):
-    """Рассылка — одна кампания = один шаблон + выбранные получатели."""
-
     STATUS_CHOICES = (
         ('draft',     'Черновик'),
         ('scheduled', 'Запланирована'),
@@ -51,37 +38,26 @@ class MailingCampaign(models.Model):
     )
 
     RECIPIENT_TYPE_CHOICES = (
-        ('all_clients',    'Все клиенты'),
-        ('all_staff',      'Все сотрудники'),
-        ('clients_status', 'Клиенты по статусу'),
-        ('custom_emails',  'Произвольные email-адреса'),
+        ('all_clients',      'Все клиенты (Вся база)'),
+        ('all_staff',        'Все сотрудники (Вся команда)'),
+        ('specific_clients', 'Выбрать клиентов вручную'),
+        ('specific_staff',   'Выбрать сотрудников вручную'),
+        ('clients_status',   'Клиенты по статусу'),
+        ('custom_emails',    'Ввести любые email вручную'),
     )
 
     title           = models.CharField('Название кампании', max_length=255)
-    template        = models.ForeignKey(
-        EmailTemplate,
-        on_delete=models.PROTECT,
-        verbose_name='Шаблон письма',
-        related_name='campaigns',
-    )
-    recipient_type  = models.CharField(
-        'Тип получателей', max_length=30,
-        choices=RECIPIENT_TYPE_CHOICES, default='all_clients',
-    )
-    client_status   = models.CharField(
-        'Статус клиентов', max_length=20, blank=True,
-        help_text='Заполнять при типе "Клиенты по статусу"',
-    )
-    custom_emails   = models.TextField(
-        'Произвольные email (через запятую или перенос строки)',
-        blank=True,
-    )
-    created_by      = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL,
-        null=True, related_name='mailing_campaigns',
-        verbose_name='Кто создал',
-    )
-
+    template        = models.ForeignKey(EmailTemplate, on_delete=models.PROTECT, verbose_name='Шаблон письма', related_name='campaigns')
+    recipient_type  = models.CharField('Тип получателей', max_length=30, choices=RECIPIENT_TYPE_CHOICES, default='all_clients')
+    
+    # === НОВЫЕ ПОЛЯ ДЛЯ КРАСИВОГО ВЫБОРА ===
+    specific_clients = models.ManyToManyField('clients.Client', blank=True, verbose_name='Конкретные клиенты')
+    specific_staff   = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, verbose_name='Конкретные сотрудники')
+    
+    client_status   = models.CharField('Статус клиентов', max_length=20, blank=True, help_text='Заполнять при типе "Клиенты по статусу"')
+    custom_emails   = models.TextField('Произвольные email (через запятую или перенос строки)', blank=True)
+    
+    created_by      = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='mailing_campaigns', verbose_name='Кто создал')
     status          = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='draft')
     total_sent      = models.PositiveIntegerField('Отправлено писем', default=0)
     total_failed    = models.PositiveIntegerField('Ошибок отправки',  default=0)
@@ -103,12 +79,7 @@ class MailingCampaign(models.Model):
 
 
 class MailingLog(models.Model):
-    """История каждого отправленного письма."""
-
-    campaign   = models.ForeignKey(
-        MailingCampaign, on_delete=models.CASCADE,
-        related_name='logs', verbose_name='Кампания',
-    )
+    campaign   = models.ForeignKey(MailingCampaign, on_delete=models.CASCADE, related_name='logs', verbose_name='Кампания')
     email      = models.EmailField('Email получателя')
     recipient_name = models.CharField('Имя получателя', max_length=255, blank=True)
     is_success = models.BooleanField('Успешно', default=True)

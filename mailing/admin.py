@@ -2,7 +2,6 @@
 from django.contrib import admin, messages
 from django.db import models
 from django.shortcuts import redirect
-from django.conf import settings
 
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display, action
@@ -26,12 +25,14 @@ class EmailTemplateAdmin(ModelAdmin):
         colors = {'info': 'info', 'promo': 'warning', 'reminder': 'danger', 'welcome': 'success', 'custom': 'default'}
         return obj.get_category_display(), colors.get(obj.category, 'default')
 
+
 class MailingLogInline(TabularInline):
     model      = MailingLog
     extra      = 0
     max_num    = 0
     readonly_fields = ('email', 'recipient_name', 'is_success', 'error_msg', 'sent_at')
     can_delete = False
+
 
 @admin.register(MailingCampaign)
 class MailingCampaignAdmin(ModelAdmin):
@@ -40,7 +41,24 @@ class MailingCampaignAdmin(ModelAdmin):
     list_filter   = ('status', 'recipient_type')
     readonly_fields = ('status', 'total_sent', 'total_failed', 'error_log', 'started_at', 'finished_at')
     
-    # Твоя любимая фишка из старого кода: массовые и детальные действия!
+    # === МАГИЯ КРАСИВОЙ АДМИНКИ (ДВЕ КОЛОНКИ ДЛЯ ВЫБОРА) ===
+    filter_horizontal = ('specific_clients', 'specific_staff')
+
+    fieldsets = (
+        ('1. Основные настройки', {
+            'fields': ('title', 'template', 'recipient_type'),
+        }),
+        ('2. Точный выбор получателей', {
+            'fields': ('specific_clients', 'specific_staff', 'client_status', 'custom_emails'),
+            'classes': ('collapse',),
+            'description': 'Заполняйте эти поля ТОЛЬКО если выбрали соответствующий тип получателей выше.',
+        }),
+        ('3. Статистика (Автоматически)', {
+            'fields': ('status', 'total_sent', 'total_failed', 'error_log', 'started_at', 'finished_at'),
+            'classes': ('collapse',),
+        }),
+    )
+
     actions = ['send_newsletters_now']
     actions_detail = ['test_send', 'send_now_detail']
 
@@ -53,7 +71,7 @@ class MailingCampaignAdmin(ModelAdmin):
                 count += 1
         self.message_user(request, f"Успешно запущена отправка для {count} кампаний.", messages.SUCCESS)
 
-    @action(description="🚀 Запустить рассылку сейчас")
+    @action(description="🚀 ЗАПУСТИТЬ РАССЫЛКУ СЕЙЧАС")
     def send_now_detail(self, request, object_id):
         campaign = self.get_object(request, object_id)
         if campaign.status in ('sending', 'done'):
@@ -66,7 +84,7 @@ class MailingCampaignAdmin(ModelAdmin):
                 self.message_user(request, f"Критическая ошибка: {str(e)}", level=messages.ERROR)
         return redirect(request.META.get('HTTP_REFERER', '.'))
 
-    @action(description="🛠 Тестовая отправка (на мой email)")
+    @action(description="🛠 ТЕСТОВАЯ ОТПРАВКА (на мой email)")
     def test_send(self, request, object_id):
         campaign = self.get_object(request, object_id)
         admin_email = request.user.email
@@ -77,7 +95,7 @@ class MailingCampaignAdmin(ModelAdmin):
 
         try:
             send_test_email(campaign, admin_email)
-            self.message_user(request, f"Тестовое письмо успешно отправлено на {admin_email}.", level=messages.SUCCESS)
+            self.message_user(request, f"Тестовое письмо успешно отправлено на {admin_email}. ПРОВЕРЬТЕ ПАПКУ СПАМ!", level=messages.SUCCESS)
         except Exception as e:
             self.message_user(request, f"Ошибка SMTP: {str(e)}", level=messages.ERROR)
             
@@ -85,13 +103,13 @@ class MailingCampaignAdmin(ModelAdmin):
 
     @display(description='Тип получателей', label=True)
     def recipient_type_badge(self, obj):
-        colors = {'all_clients': 'info', 'all_staff': 'success', 'clients_status': 'warning', 'custom_emails': 'default'}
-        return obj.get_recipient_type_display(), colors.get(obj.recipient_type, 'default')
+        return obj.get_recipient_type_display(), 'info'
 
     @display(description='Статус', label=True)
     def status_badge(self, obj):
         colors = {'draft': 'default', 'scheduled': 'info', 'sending': 'warning', 'done': 'success', 'error': 'danger'}
         return obj.get_status_display(), colors.get(obj.status, 'default')
+
 
 @admin.register(MailingLog)
 class MailingLogAdmin(ModelAdmin):
