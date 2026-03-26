@@ -1,41 +1,94 @@
 # users/serializers.py
+from decimal import Decimal
 from rest_framework import serializers
+
 from .models import User, ManagerSalary, Office
+
 
 class ManagerSalarySerializer(serializers.ModelSerializer):
     class Meta:
         model = ManagerSalary
-        fields = '__all__'
+        fields = (
+            'id',
+            'manager',
+            'current_balance',
+            'fixed_salary',
+            'monthly_plan',
+            'current_month_revenue',
+            'commission_percent',
+            'motivation_target',
+            'motivation_reward',
+        )
+
 
 class OfficeSerializer(serializers.ModelSerializer):
-    # Явно указываем новое поле дохода офиса
-    monthly_revenue = serializers.DecimalField(max_digits=15, decimal_places=2, read_only=True)
+    monthly_revenue = serializers.SerializerMethodField()
 
     class Meta:
         model = Office
-        fields = ['id', 'city', 'address', 'phone', 'monthly_revenue', 'updated_at']
+        fields = ('id', 'city', 'address', 'phone', 'monthly_revenue', 'updated_at')
+
+    def get_monthly_revenue(self, obj):
+        try:
+            value = obj.monthly_revenue
+            if value is None:
+                return '0.00'
+            return str(value)
+        except Exception:
+            return '0.00'
+
 
 class UserSerializer(serializers.ModelSerializer):
-    managersalary = ManagerSalarySerializer(read_only=True)
-    office = OfficeSerializer(read_only=True)
+    managersalary = serializers.SerializerMethodField()
+    office = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
     is_admin_role = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = [
-            'id', 'email', 'first_name', 'last_name', 'middle_name',
+            'id',
+            'email',
+            'first_name',
+            'last_name',
+            'middle_name',
             'full_name',
-            'avatar', 'dob', 'social_contacts', 'job_description',
-            'work_status', 'is_effective',
-            'role', 'is_admin_role',
-            'managersalary', 'office',
-            'is_superuser', 'is_staff',
+            'avatar',
+            'dob',
+            'social_contacts',
+            'job_description',
+            'work_status',
+            'is_effective',
+            'role',
+            'is_admin_role',
+            'managersalary',
+            'office',
+            'is_superuser',
+            'is_staff',
         ]
         read_only_fields = ('is_superuser', 'is_staff')
 
     def get_full_name(self, obj):
-        return f"{obj.first_name} {obj.last_name}".strip() or obj.email
+        full = f"{obj.first_name} {obj.last_name}".strip()
+        return full or obj.email
 
     def get_is_admin_role(self, obj):
-        return obj.is_superuser or obj.role == 'admin'
+        return bool(obj.is_superuser or getattr(obj, 'role', None) == 'admin')
+
+    def get_managersalary(self, obj):
+        try:
+            salary = getattr(obj, 'managersalary', None)
+            if not salary:
+                return None
+            return ManagerSalarySerializer(salary, context=self.context).data
+        except Exception:
+            return None
+
+    def get_office(self, obj):
+        try:
+            office = getattr(obj, 'office', None)
+            if not office:
+                return None
+            return OfficeSerializer(office, context=self.context).data
+        except Exception:
+            return None
