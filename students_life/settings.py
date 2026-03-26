@@ -30,18 +30,48 @@ ALLOWED_HOSTS = env_list(
     '127.0.0.1,localhost,manager-sl.ru,www.manager-sl.ru,91.229.10.83'
 )
 
-CSRF_TRUSTED_ORIGINS = env_list(
-    'CSRF_TRUSTED_ORIGINS',
-    'https://manager-sl.ru,https://www.manager-sl.ru,http://127.0.0.1:8000,http://localhost:8000'
-)
-
-CORS_ALLOW_ALL_ORIGINS = env_bool('CORS_ALLOW_ALL_ORIGINS', DEBUG)
-CORS_ALLOWED_ORIGINS = [] if CORS_ALLOW_ALL_ORIGINS else env_list(
-    'CORS_ALLOWED_ORIGINS',
-    'https://manager-sl.ru,https://www.manager-sl.ru,http://127.0.0.1:8000,http://localhost:8000'
-)
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOW_HEADERS = list(default_headers) + ['x-api-key']
+
+
+from corsheaders.defaults import default_headers, default_methods
+
+CORS_ALLOW_ALL_ORIGINS = env_bool('CORS_ALLOW_ALL_ORIGINS', False)
+
+CORS_ALLOWED_ORIGINS = [
+    'https://manager-sl.ru',
+    'https://www.manager-sl.ru',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://localhost:8081',
+    'http://127.0.0.1:8081',
+    'http://localhost:19006',
+    'http://127.0.0.1:19006',
+]
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https?://localhost(:\d+)?$",
+    r"^https?://127\.0\.0\.1(:\d+)?$",
+]
+
+CORS_ALLOW_HEADERS = list(default_headers) + [
+    'authorization',
+    'content-type',
+    'accept',
+    'origin',
+    'x-requested-with',
+]
+CORS_ALLOW_METHODS = list(default_methods)
+
+CSRF_TRUSTED_ORIGINS = [
+    'https://manager-sl.ru',
+    'https://www.manager-sl.ru',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    'http://localhost:8081',
+    'http://127.0.0.1:8081',
+    'http://localhost:19006',
+    'http://127.0.0.1:19006',
+]
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
