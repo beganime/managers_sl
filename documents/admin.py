@@ -1,23 +1,34 @@
 # documents/admin.py
 import json
+
 from django.contrib import admin, messages
-from django.utils.html import format_html
 from django.utils import timezone
+from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display, action
 
 from .models import (
-    InfoSnippet, DocumentTemplate, TemplateField,
-    GeneratedDocument, KnowledgeTest, TestQuestion,
+    InfoSnippet,
+    DocumentTemplate,
+    TemplateField,
+    GeneratedDocument,
+    KnowledgeTest,
+    TestQuestion,
 )
 
 
-# ─── InfoSnippet ─────────────────────────────────────────────────────────────
+def is_admin_user(user):
+    return bool(
+        user and user.is_authenticated and (
+            user.is_superuser or getattr(user, 'role', None) == 'admin'
+        )
+    )
+
 
 @admin.register(InfoSnippet)
 class InfoSnippetAdmin(ModelAdmin):
-    list_display  = ('title', 'category', 'preview', 'copy_btn')
-    list_filter   = ('category',)
+    list_display = ('title', 'category', 'preview', 'copy_btn')
+    list_filter = ('category',)
     search_fields = ('title', 'content')
 
     @display(description="Текст")
@@ -34,96 +45,113 @@ class InfoSnippetAdmin(ModelAdmin):
         )
 
 
-# ─── Тесты ───────────────────────────────────────────────────────────────────
-
 class TestQuestionInline(TabularInline):
-    model  = TestQuestion
-    extra  = 1
+    model = TestQuestion
+    extra = 1
     fields = ('text', 'options', 'correct', 'order')
 
 
 @admin.register(KnowledgeTest)
 class KnowledgeTestAdmin(ModelAdmin):
-    list_display  = ('title', 'questions_count', 'is_active', 'updated_at')
-    list_filter   = ('is_active',)
+    list_display = ('title', 'questions_count', 'is_active', 'updated_at')
+    list_filter = ('is_active',)
     search_fields = ('title',)
-    inlines       = [TestQuestionInline]
+    inlines = [TestQuestionInline]
 
     @display(description="Вопросов")
     def questions_count(self, obj):
         return obj.questions.count()
 
 
-# ─── Шаблоны документов ──────────────────────────────────────────────────────
-
 class TemplateFieldInline(TabularInline):
-    model  = TemplateField
-    extra  = 1
+    model = TemplateField
+    extra = 1
     fields = ('key', 'label', 'field_type', 'is_required', 'order')
 
 
 @admin.register(DocumentTemplate)
 class DocumentTemplateAdmin(ModelAdmin):
-    list_display  = ('title', 'is_active', 'fields_count', 'updated_at')
+    list_display = ('title', 'is_active', 'fields_count', 'updated_at')
     search_fields = ('title',)
-    list_filter   = ('is_active',)
-    inlines       = [TemplateFieldInline]
+    list_filter = ('is_active',)
+    inlines = [TemplateFieldInline]
 
     @display(description="Полей")
     def fields_count(self, obj):
         return obj.fields.count()
 
 
-# ─── Сгенерированные документы ───────────────────────────────────────────────
-
 @admin.register(GeneratedDocument)
 class GeneratedDocumentAdmin(ModelAdmin):
     change_form_template = "admin/documents/generateddocument/change_form.html"
 
-    list_display  = (
-        'title', 'template', 'manager',
-        'status_badge', 'download_link', 'created_at',
+    list_display = (
+        'title',
+        'template',
+        'deal',
+        'manager',
+        'status_badge',
+        'download_link',
+        'created_at',
     )
-    list_filter   = ('status', 'template', 'manager')
-    search_fields = ('title', 'manager__email', 'manager__first_name')
-    actions       = ['approve_documents', 'regenerate_docs']
+    list_filter = ('status', 'template', 'manager')
+    search_fields = ('title', 'manager__email', 'manager__first_name', 'deal__client__full_name')
+    actions = ['approve_documents', 'regenerate_docs']
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request).select_related('template', 'manager', 'deal', 'deal__client')
+        if is_admin_user(request.user):
+            return qs
+        return qs.filter(manager=request.user)
 
     def get_readonly_fields(self, request, obj=None):
         return ('status', 'generated_file', 'approved_by', 'approved_at')
 
-    # ── Одобрение ────────────────────────────────────────────────────────────
-    @action(description="✅ Одобрить документы (разрешить скачивание)")
+    @action(description="✅ Одобрить документы")
     def approve_documents(self, request, queryset):
-        if not request.user.is_superuser:
+        if not is_admin_user(request.user):
             self.message_user(request, "Нет прав для этой операции.", messages.ERROR)
             return
+
         count = 0
         for doc in queryset:
-            if doc.status == 'generated':
-                doc.status      = 'approved'
+            if doc.status == 'generated' and doc.generated_file:
+                doc.status = 'approved'
                 doc.approved_by = request.user
                 doc.approved_at = timezone.now()
                 doc.save(update_fields=['status', 'approved_by', 'approved_at', 'updated_at'])
                 count += 1
+
         self.message_user(request, f"Одобрено документов: {count}.", messages.SUCCESS)
 
     @action(description="🔄 Перегенерировать файл")
     def regenerate_docs(self, request, queryset):
         ok, err = 0, 0
         for doc in queryset:
+            if not is_admin_user(request.user) and doc.manager_id != request.user.id:
+                continue
+
             success, msg = doc.generate_document()
             if success:
                 ok += 1
             else:
                 err += 1
                 self.message_user(request, f"Ошибка #{doc.id}: {msg}", messages.ERROR)
+
         if ok:
             self.message_user(request, f"Перегенерировано: {ok}.", messages.SUCCESS)
+        if err and not ok:
+            self.message_user(request, f"Ошибок: {err}.", messages.ERROR)
 
     def save_model(self, request, obj, form, change):
         if not getattr(obj, 'manager', None):
-            obj.manager = request.user
+            if obj.deal_id and obj.deal:
+                obj.manager = obj.deal.manager
+            else:
+                obj.manager = request.user
+
         super().save_model(request, obj, form, change)
+
         success, msg = obj.generate_document()
         level = messages.SUCCESS if success else messages.WARNING
         self.message_user(request, msg, level)
@@ -134,9 +162,9 @@ class GeneratedDocumentAdmin(ModelAdmin):
         for t in templates:
             config[t.id] = [
                 {
-                    'key':         f.key,
-                    'label':       f.label,
-                    'field_type':  f.field_type,
+                    'key': f.key,
+                    'label': f.label,
+                    'field_type': f.field_type,
                     'is_required': f.is_required,
                 }
                 for f in t.fields.all()
@@ -156,10 +184,10 @@ class GeneratedDocumentAdmin(ModelAdmin):
     @display(description="Статус", label=True)
     def status_badge(self, obj):
         colors = {
-            'draft':     'warning',
+            'draft': 'warning',
             'generated': 'info',
-            'approved':  'success',
-            'error':     'danger',
+            'approved': 'success',
+            'error': 'danger',
         }
         return obj.get_status_display(), colors.get(obj.status, 'default')
 

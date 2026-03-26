@@ -1,34 +1,42 @@
 # students_life/urls.py
-from django.contrib import admin
-from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from django.views.generic import RedirectView, TemplateView
-from django.shortcuts import redirect
+from django.contrib import admin
 from django.contrib.auth.decorators import login_required
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from django.shortcuts import redirect
+from django.urls import include, path
+from django.views.generic import RedirectView, TemplateView
 
-# Функция перенаправления в свой профиль
+from rest_framework_simplejwt.views import TokenRefreshView
+
+from users.auth_views import LoginView, LogoutView
+from students_life.api_views import HealthCheckView, AppConfigView, DashboardSummaryView
+
+
 @login_required
 def my_profile_redirect(request):
     return redirect(f'/admin/users/user/{request.user.id}/change/')
 
+
 urlpatterns = [
-    # Главная страница -> Сразу в админку
     path('', RedirectView.as_view(url='/admin/', permanent=False)),
-    
-    # Ссылка на личный профиль
     path('admin/profile/', my_profile_redirect, name='my_profile'),
-    
+
     path('privacy/', TemplateView.as_view(template_name='privacy.html'), name='privacy'),
     path('privacy.html', RedirectView.as_view(url='/privacy/', permanent=True)),
-    
+
     path('admin/', admin.site.urls),
     path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'logo.ico', permanent=True)),
     path('', include('pwa.urls')),
-    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'), # Логин (получить токен)
-    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'), # Обновить токен
-    
+
+    path('api/health/', HealthCheckView.as_view(), name='api_health'),
+    path('api/app/config/', AppConfigView.as_view(), name='api_app_config'),
+    path('api/app/dashboard/', DashboardSummaryView.as_view(), name='api_app_dashboard'),
+
+    path('api/auth/login/', LoginView.as_view(), name='api_login'),
+    path('api/auth/logout/', LogoutView.as_view(), name='api_logout'),
+    path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+
     path('api/clients/', include('clients.urls')),
     path('api/tasks/', include('tasks.urls')),
     path('api/', include('timetracking.urls')),

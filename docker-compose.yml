@@ -1,12 +1,32 @@
 version: "3.9"
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: managers_sl_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-managers_sl}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-managers_sl}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
 
   web:
     build: .
     container_name: managers_sl_web
     restart: unless-stopped
     env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./media:/app/media
       - ./staticfiles:/app/staticfiles
@@ -31,6 +51,9 @@ services:
       - web
     networks:
       - app_net
+
+volumes:
+  postgres_data:
 
 networks:
   app_net:

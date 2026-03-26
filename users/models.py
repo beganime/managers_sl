@@ -50,9 +50,22 @@ class User(AbstractUser):
         ('sick', 'На больничном'),
     )
 
+    ROLE_CHOICES = (
+        ('admin', 'Администратор'),
+        ('manager', 'Менеджер'),
+    )
+
     username = None
     email = models.EmailField("Email (Логин)", unique=True)
-    
+
+    role = models.CharField(
+        "Роль",
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='manager',
+        db_index=True,
+    )
+
     middle_name = models.CharField("Отчество", max_length=100, blank=True)
     avatar = models.ImageField("Аватар", upload_to='avatars/', blank=True, null=True)
     dob = models.DateField("Дата рождения", null=True, blank=True)
@@ -60,10 +73,9 @@ class User(AbstractUser):
     social_contacts = models.CharField("Контакты в соц. сетях", max_length=255, blank=True, help_text="Telegram, Instagram, WhatsApp и т.д.")
     job_description = models.TextField("Описание должности", blank=True)
     work_status = models.CharField("Текущий статус", max_length=20, choices=STATUS_CHOICES, default='working')
-    
+
     is_effective = models.BooleanField("Эффективный сотрудник", default=True, help_text="Расчитывается автоматически на основе активности за 7 дней")
     last_activity = models.DateTimeField("Последняя активность", auto_now=True)
-
     updated_at = models.DateTimeField(auto_now=True)
 
     USERNAME_FIELD = 'email'
@@ -71,20 +83,17 @@ class User(AbstractUser):
 
     objects = UserManager()
 
-    def check_efficiency(self):
-        seven_days_ago = timezone.now() - timedelta(days=7)
-        if self.last_login and self.last_login < seven_days_ago:
-            self.is_effective = False
-        else:
-            self.is_effective = True
-        self.save()
+    @property
+    def is_admin_role(self):
+        return self.role == 'admin' or self.is_superuser
+
+    def save(self, *args, **kwargs):
+        if self.is_superuser and self.role != 'admin':
+            self.role = 'admin'
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.email})"
-
-    class Meta:
-        verbose_name = "Сотрудник"
-        verbose_name_plural = "Сотрудники"
 
 
 class ManagerSalary(models.Model):

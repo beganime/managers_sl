@@ -1,47 +1,73 @@
+# analytics/services.py
+from decimal import Decimal
 from django.db import transaction
-from django.db.models import F
 from django.utils import timezone
+
 from users.models import ManagerSalary
 from .models import Payment, TransactionHistory
+
 
 class BillingService:
     @staticmethod
     def confirm_payment(payment: Payment, admin_user):
         """
-        Безопасное подтверждение платежа с начислением бонусов.
-        Выполняется в одной транзакции: или всё, или ничего.
+        Безопасное подтверждение платежа:
+        - блокировка записи платежа
+        - защита от двойного подтверждения
+        - защита от двойного начисления бонуса
         """
-        # Если уже подтвержден — пропускаем, чтобы не начислить дважды
-        if payment.is_confirmed:
-            return
-
         with transaction.atomic():
-            # 1. Фиксируем платеж
-            payment.is_confirmed = True
-            payment.confirmed_by = admin_user
-            payment.confirmed_at = timezone.now()
-            payment.save()
+            locked_payment = (
+                Payment.objects
+                .select_for_update()
+                .select_related('deal', 'deal__client', 'manager')
+                .get(pk=payment.pk)
+            )
 
-            # 2. Находим менеджера и его кошелек
-            manager = payment.manager
-            if hasattr(manager, 'managersalary'):
-                salary_profile = ManagerSalary.objects.select_for_update().get(manager=manager)
-                
-                # Расчет бонуса
-                percent = salary_profile.commission_percent / 100
-                base_amount = payment.net_income_usd if payment.net_income_usd > 0 else payment.amount_usd
-                bonus = base_amount * percent
+            if locked_payment.is_confirmed:
+                return locked_payment
 
-                # 3. Атомарное обновление баланса (защита от Race Condition)
-                # Мы не делаем balance += bonus, мы шлем инструкцию в БД
-                salary_profile.current_balance = F('current_balance') + bonus
-                salary_profile.current_month_revenue = F('current_month_revenue') + payment.amount_usd
-                salary_profile.save()
+            locked_payment.is_confirmed = True
+            locked_payment.confirmed_by = admin_user
+            locked_payment.confirmed_at = timezone.now()
+            locked_payment.save(update_fields=[
+                'is_confirmed',
+                'confirmed_by',
+                'confirmed_at',
+                'updated_at',
+            ])
 
-                # 4. Пишем лог транзакции (Аудит)
-                TransactionHistory.objects.create(
-                    manager=manager,
-                    amount=bonus,
-                    reference_payment=payment,
-                    description=f"Бонус за платеж #{payment.id} (Клиент: {payment.deal.client.full_name})"
+            manager = locked_payment.manager
+            if not hasattr(manager, 'managersalary'):
+                return locked_payment
+
+            salary_profile = ManagerSalary.objects.select_for_update().get(manager=manager)
+
+            already_exists = TransactionHistory.objects.filter(
+                reference_payment=locked_payment
+            ).exists()
+
+            if not already_exists:
+                base_amount = (
+                    locked_payment.net_income_usd
+                    if locked_payment.net_income_usd and locked_payment.net_income_usd > 0
+                    else locked_payment.amount_usd
                 )
+                bonus = (base_amount * salary_profile.commission_percent) / Decimal('100.00')
+
+                if bonus > 0:
+                    TransactionHistory.objects.create(
+                        manager=manager,
+                        amount=bonus,
+                        reference_payment=locked_payment,
+                        description=(
+                            f"Комиссия {salary_profile.commission_percent}% "
+                            f"за подтверждённый платёж #{locked_payment.id} "
+                            f"(Сделка #{locked_payment.deal_id})"
+                        )
+                    )
+
+                    salary_profile.current_balance += bonus
+                    salary_profile.save(update_fields=['current_balance'])
+
+            return locked_payment
