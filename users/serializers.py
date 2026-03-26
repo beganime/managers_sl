@@ -1,7 +1,5 @@
 # users/serializers.py
-from decimal import Decimal
 from rest_framework import serializers
-
 from .models import User, ManagerSalary, Office
 
 
@@ -26,16 +24,14 @@ class OfficeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Office
-        fields = ('id', 'city', 'address', 'phone', 'monthly_revenue', 'updated_at')
+        fields = ['id', 'city', 'address', 'phone', 'monthly_revenue', 'updated_at']
 
     def get_monthly_revenue(self, obj):
         try:
             value = obj.monthly_revenue
-            if value is None:
-                return '0.00'
-            return str(value)
+            return str(value if value is not None else 0)
         except Exception:
-            return '0.00'
+            return "0.00"
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -47,30 +43,18 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id',
-            'email',
-            'first_name',
-            'last_name',
-            'middle_name',
+            'id', 'email', 'first_name', 'last_name', 'middle_name',
             'full_name',
-            'avatar',
-            'dob',
-            'social_contacts',
-            'job_description',
-            'work_status',
-            'is_effective',
-            'role',
-            'is_admin_role',
-            'managersalary',
-            'office',
-            'is_superuser',
-            'is_staff',
+            'avatar', 'dob', 'social_contacts', 'job_description',
+            'work_status', 'is_effective',
+            'role', 'is_admin_role',
+            'managersalary', 'office',
+            'is_superuser', 'is_staff',
         ]
         read_only_fields = ('is_superuser', 'is_staff')
 
     def get_full_name(self, obj):
-        full = f"{obj.first_name} {obj.last_name}".strip()
-        return full or obj.email
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.email
 
     def get_is_admin_role(self, obj):
         return bool(obj.is_superuser or getattr(obj, 'role', None) == 'admin')

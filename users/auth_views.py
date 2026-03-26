@@ -1,7 +1,7 @@
 # users/auth_views.py
 import logging
 
-from rest_framework import permissions, status
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
@@ -66,7 +66,7 @@ class LogoutView(APIView):
         if not refresh_token:
             return Response(
                 {'detail': 'refresh token обязателен'},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_400_BAD_REQUEST
             )
 
         try:
@@ -75,10 +75,7 @@ class LogoutView(APIView):
         except Exception:
             return Response(
                 {'detail': 'Некорректный refresh token'},
-                status=status.HTTP_400_BAD_REQUEST,
+                status=status.HTTP_400_BAD_REQUEST
             )
 
-        return Response(
-            {'detail': 'Выход выполнен успешно'},
-            status=status.HTTP_200_OK,
-        )
+        return Response({'detail': 'Выход выполнен успешно'}, status=status.HTTP_200_OK)
