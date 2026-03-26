@@ -7,6 +7,7 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display, action
 
+
 from .models import (
     InfoSnippet,
     DocumentTemplate,
@@ -191,13 +192,17 @@ class GeneratedDocumentAdmin(ModelAdmin):
         }
         return obj.get_status_display(), colors.get(obj.status, 'default')
 
+
     @display(description="Скачать")
     def download_link(self, obj):
-        if obj.can_download:
+        if obj.can_download and obj.generated_file:
             return format_html(
                 '<a href="{}" class="text-blue-600 font-bold" target="_blank">📥 Скачать</a>',
                 obj.generated_file.url,
             )
         if obj.status == 'generated':
-            return format_html('<span class="text-yellow-600 text-xs">⏳ Ожидает одобрения</span>')
+            return format_html(
+                '<span class="text-yellow-600 text-xs">{}</span>',
+                '⏳ Ожидает одобрения',
+            )
         return '—'
