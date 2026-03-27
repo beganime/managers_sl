@@ -1,4 +1,3 @@
-# timetracking/views.py
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
@@ -19,9 +18,18 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
     serializer_class = WorkShiftSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def _is_admin(self, user):
+        return bool(
+            user and (
+                user.is_superuser
+                or user.is_staff
+                or getattr(user, 'role', None) == 'admin'
+            )
+        )
+
     def get_queryset(self):
         user = self.request.user
-        is_admin = user.is_superuser or getattr(user, 'role', None) == 'admin'
+        is_admin = self._is_admin(user)
 
         qs = (
             WorkShift.objects.select_related('employee').all()
@@ -50,12 +58,6 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
         return qs.order_by('-date', '-time_in', '-id')
 
     def _get_open_shift(self, user):
-        """
-        Более надежный поиск незавершенной смены.
-        Ищем:
-        1) активную смену,
-        2) если не нашли — последнюю смену без time_out.
-        """
         shift = (
             WorkShift.objects
             .filter(employee=user, is_active=True)
@@ -84,10 +86,6 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='current')
     def current_shift(self, request):
-        """
-        Для мобильного приложения лучше не отдавать 404.
-        Отдаем 200 и флаг, есть ли активная/незавершенная смена.
-        """
         user = request.user
         shift = self._get_open_shift(user)
 
@@ -144,11 +142,13 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
     def end_day(self, request):
         """
         Завершение дня:
-        - ищет не только is_active=True, но и последнюю незавершенную смену,
-        - умеет сразу принять и сохранить отчет из этого же запроса.
+        - для менеджера отчет обязателен,
+        - для админа отчет НЕ обязателен,
+        - если админ все же передал отчет, он сохранится.
         """
         user = request.user
         today = timezone.localdate()
+        is_admin = self._is_admin(user)
         shift = self._get_open_shift(user)
 
         if not shift:
@@ -197,26 +197,26 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
             serializer.is_valid(raise_exception=True)
             report_instance = serializer.save(employee=user)
 
-        if not report_instance:
-            return Response(
-                {"detail": "Сначала заполните ежедневный отчёт."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if not is_admin:
+            if not report_instance:
+                return Response(
+                    {"detail": "Сначала заполните ежедневный отчёт."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-        if not str(report_instance.content or '').strip():
-            return Response(
-                {"detail": "Отчёт пустой. Напишите, что было сделано за день."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            if not str(report_instance.content or '').strip():
+                return Response(
+                    {"detail": "Отчёт пустой. Напишите, что было сделано за день."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
         shift.time_out = timezone.now()
         shift.save()
 
-        return Response(
-            {
-                "detail": "Рабочий день завершён, отчёт сохранён.",
-                "shift": self.get_serializer(shift).data,
-                "report": DailyReportSerializer(report_instance, context={'request': request}).data,
-            },
-            status=status.HTTP_200_OK
-        )
+        response_payload = {
+            "detail": "Рабочий день завершён, отчёт сохранён." if report_instance else "Рабочий день завершён.",
+            "shift": self.get_serializer(shift).data,
+            "report": DailyReportSerializer(report_instance, context={'request': request}).data if report_instance else None,
+        }
+
+        return Response(response_payload, status=status.HTTP_200_OK)
