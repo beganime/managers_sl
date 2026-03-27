@@ -200,7 +200,7 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 100,
+    'PAGE_SIZE': 500,
 }
 
 SIMPLE_JWT = {
@@ -272,9 +272,6 @@ UNFOLD = {
     "SITE_URL": "/admin/",
     "SITE_ICON": lambda request: static("logo.ico"),
     "DASHBOARD_CALLBACK": "students_life.dashboard.dashboard_callback",
-    "SCRIPTS": [
-        lambda request: static("js/tabbar.js"),
-    ],
     "SIDEBAR": {
         "show_search": True,
         "show_all_applications": False,
