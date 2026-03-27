@@ -1,21 +1,21 @@
-# tasks/admin.py
 import json
-from django.contrib import admin
-from django.db import models
-from django.urls import path
-from django.shortcuts import render, get_object_or_404
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.translation import gettext_lazy as _
-from django.utils import timezone
 from datetime import timedelta
-from django.contrib.admin import SimpleListFilter
 
+from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
+from django.db import models
+from django.http import JsonResponse
+from django.shortcuts import get_object_or_404, render
+from django.urls import path
+from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
+from django.views.decorators.csrf import csrf_exempt
 from unfold.admin import ModelAdmin
-from unfold.decorators import display, action
 from unfold.contrib.forms.widgets import WysiwygWidget
+from unfold.decorators import action, display
 
 from .models import Task
+
 
 class HotTaskFilter(SimpleListFilter):
     title = "Горящие задачи 🔥"
@@ -33,16 +33,22 @@ class HotTaskFilter(SimpleListFilter):
             return queryset.filter(status__in=['todo', 'process'], deadline__lte=tomorrow).order_by('deadline')
         return queryset
 
+
 @admin.register(Task)
 class TaskAdmin(ModelAdmin):
     actions_list = ["open_kanban_view"]
 
-    # Добавлен вывод клиента в общий список
-    list_display = ("title", "client", "assigned_to", "status_badge", "priority_badge", "deadline_fmt")
-    list_filter = (HotTaskFilter, "status", "priority", "assigned_to")
+    list_display = (
+        "title",
+        "pin_badge",
+        "client",
+        "assigned_to",
+        "status_badge",
+        "priority_badge",
+        "deadline_fmt",
+    )
+    list_filter = (HotTaskFilter, "is_pinned", "status", "priority", "assigned_to")
     search_fields = ("title", "description", "client__full_name")
-    
-    # Включаем поиск для связей, чтобы не листать дропдауны
     autocomplete_fields = ["assigned_to", "created_by", "client"]
 
     formfield_overrides = {
@@ -56,10 +62,14 @@ class TaskAdmin(ModelAdmin):
                 "classes": ("mb-6",),
             }),
             (_("Связи и Параметры"), {
-                "fields": ("client", ("assigned_to", "deadline"), ("status", "priority")),
+                "fields": (
+                    "client",
+                    ("assigned_to", "deadline"),
+                    ("status", "priority", "is_pinned"),
+                ),
             }),
         ]
-        
+
         if request.user.is_superuser:
             fieldsets.append(
                 (_("Системное"), {
@@ -73,6 +83,10 @@ class TaskAdmin(ModelAdmin):
         if not obj.pk and not obj.created_by:
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
+
+    @display(description="PIN", label=True)
+    def pin_badge(self, obj):
+        return ('Закреплена', 'purple') if obj.is_pinned else ('Обычная', 'gray')
 
     @display(description="Статус", label=True)
     def status_badge(self, obj):
@@ -97,7 +111,6 @@ class TaskAdmin(ModelAdmin):
         return my_urls + urls
 
     def kanban_view(self, request):
-        # Оптимизируем загрузку связанных клиентов для Канбана
         tasks = self.get_queryset(request).select_related('assigned_to', 'client')
 
         context = dict(
@@ -108,7 +121,7 @@ class TaskAdmin(ModelAdmin):
                 "review": tasks.filter(status='review'),
                 "done": tasks.filter(status='done'),
             },
-            title="Задачи (Канбан)"
+            title="Задачи (Канбан)",
         )
         return render(request, "admin/tasks/task/kanban.html", context)
 
@@ -118,8 +131,8 @@ class TaskAdmin(ModelAdmin):
             try:
                 data = json.loads(request.body)
                 task = get_object_or_404(Task, id=data.get("task_id"))
-                
-                if request.user.is_superuser or task.assigned_to == request.user:
+
+                if request.user.is_superuser or task.assigned_to == request.user or task.created_by == request.user:
                     task.status = data.get("status")
                     task.save()
                     return JsonResponse({"success": True})
@@ -131,9 +144,13 @@ class TaskAdmin(ModelAdmin):
     @action(description="📋 Открыть Канбан", url_path="kanban")
     def open_kanban_view(self, request):
         pass
-    
+
     def get_queryset(self, request):
         qs = super().get_queryset(request)
         if request.user.is_superuser:
-            return qs.select_related('client', 'assigned_to')
-        return qs.filter(models.Q(assigned_to=request.user) | models.Q(created_by=request.user)).select_related('client', 'assigned_to')
+            return qs.select_related('client', 'assigned_to', 'created_by')
+        return qs.filter(models.Q(assigned_to=request.user) | models.Q(created_by=request.user)).select_related(
+            'client',
+            'assigned_to',
+            'created_by',
+        )

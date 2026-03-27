@@ -1,6 +1,6 @@
-# tasks/models.py
 from django.db import models
 from django.conf import settings
+
 
 class Task(models.Model):
     KANBAN_STATUS = (
@@ -9,7 +9,7 @@ class Task(models.Model):
         ('review', 'На проверке'),
         ('done', 'Готово'),
     )
-    
+
     PRIORITY_CHOICES = (
         ('low', 'Низкий'),
         ('medium', 'Средний'),
@@ -18,17 +18,35 @@ class Task(models.Model):
 
     title = models.CharField("Заголовок задачи", max_length=200)
     description = models.TextField("Описание", blank=True)
-    
-    assigned_to = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='tasks', verbose_name="Исполнитель")
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name='created_tasks', verbose_name="Постановщик")
-    
-    # ВОССТАНОВЛЕНО: Обязательная привязка к клиенту для ERP
-    client = models.ForeignKey('clients.Client', on_delete=models.SET_NULL, null=True, blank=True, related_name='client_tasks', verbose_name="Связанный клиент")
-    
+
+    assigned_to = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='tasks',
+        verbose_name="Исполнитель",
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_tasks',
+        verbose_name="Постановщик",
+    )
+
+    client = models.ForeignKey(
+        'clients.Client',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='client_tasks',
+        verbose_name="Связанный клиент",
+    )
+
     status = models.CharField("Статус (Канбан)", max_length=20, choices=KANBAN_STATUS, default='todo')
     priority = models.CharField("Приоритет", max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    is_pinned = models.BooleanField("Закреплена", default=False)
     deadline = models.DateTimeField("Дедлайн", null=True, blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -38,3 +56,4 @@ class Task(models.Model):
     class Meta:
         verbose_name = "Задача"
         verbose_name_plural = "Задачи"
+        ordering = ('-is_pinned', '-updated_at')

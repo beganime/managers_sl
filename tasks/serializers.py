@@ -29,8 +29,14 @@ class TaskSerializer(serializers.ModelSerializer):
             'client',
             'status',
             'priority',
+            'is_pinned',
             'deadline',
             'created_at',
             'updated_at',
         )
         read_only_fields = ('created_by', 'created_at', 'updated_at')
+        extra_kwargs = {
+            'assigned_to': {'required': False},
+            'client': {'required': False, 'allow_null': True},
+            'deadline': {'required': False, 'allow_null': True},
+        }
