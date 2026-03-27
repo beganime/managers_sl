@@ -10,7 +10,7 @@ from django.contrib.admin.models import LogEntry
 
 from catalog.models import Currency, University, Program, Service
 from clients.models import Client
-
+from services.models import Service
 
 class Deal(models.Model):
     DEAL_TYPE_CHOICES = (
