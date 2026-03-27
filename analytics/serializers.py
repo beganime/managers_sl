@@ -1,5 +1,6 @@
 # analytics/serializers.py
 from decimal import Decimal
+import datetime
 from django.db.models import Sum
 from rest_framework import serializers
 
@@ -14,6 +15,13 @@ def is_admin_user(user):
             user.is_superuser or getattr(user, 'role', None) == 'admin'
         )
     )
+
+
+class SafeDateField(serializers.DateField):
+    def to_representation(self, value):
+        if isinstance(value, datetime.datetime):
+            value = value.date()
+        return super().to_representation(value)
 
 
 class SimpleUserSerializer(serializers.ModelSerializer):
@@ -35,6 +43,8 @@ class SimpleClientSerializer(serializers.ModelSerializer):
 
 
 class PaymentLiteSerializer(serializers.ModelSerializer):
+    payment_date = SafeDateField(read_only=True)
+
     class Meta:
         model = Payment
         fields = (
@@ -159,9 +169,7 @@ class DealSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'currency': 'Нужно указать валюту сделки.'})
 
         if currency.rate <= 0:
-            raise serializers.ValidationError({
-                'currency': 'Курс валюты должен быть больше нуля.'
-            })
+            raise serializers.ValidationError({'currency': 'Курс валюты должен быть больше нуля.'})
 
         if deal_type == 'university':
             if not university:
@@ -169,15 +177,11 @@ class DealSerializer(serializers.ModelSerializer):
             if not program:
                 raise serializers.ValidationError({'program': 'Для поступления нужно указать программу.'})
             if program and university and program.university_id != university.id:
-                raise serializers.ValidationError({
-                    'program': 'Программа не принадлежит выбранному университету.'
-                })
+                raise serializers.ValidationError({'program': 'Программа не принадлежит выбранному университету.'})
 
             attrs['service_ref'] = None
-            if 'custom_service_name' not in attrs:
-                attrs['custom_service_name'] = ''
-            if 'custom_service_desc' not in attrs:
-                attrs['custom_service_desc'] = ''
+            attrs['custom_service_name'] = ''
+            attrs['custom_service_desc'] = ''
 
         elif deal_type == 'service':
             if not service_ref and not str(custom_service_name or '').strip():
@@ -187,12 +191,8 @@ class DealSerializer(serializers.ModelSerializer):
 
             attrs['university'] = None
             attrs['program'] = None
-
-            if 'custom_service_name' in attrs:
-                attrs['custom_service_name'] = str(attrs['custom_service_name'] or '').strip()
-            if 'custom_service_desc' in attrs:
-                attrs['custom_service_desc'] = str(attrs['custom_service_desc'] or '').strip()
-
+            attrs['custom_service_name'] = str(attrs.get('custom_service_name') or '').strip()
+            attrs['custom_service_desc'] = str(attrs.get('custom_service_desc') or '').strip()
         else:
             raise serializers.ValidationError({'deal_type': 'Некорректный тип сделки.'})
 
@@ -222,6 +222,7 @@ class DealSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     deal_data = DealShortSerializer(source='deal', read_only=True)
     manager_data = SimpleUserSerializer(source='manager', read_only=True)
+    payment_date = SafeDateField(required=False)
 
     manager = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
@@ -289,9 +290,7 @@ class PaymentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'currency': 'Нужно указать валюту платежа.'})
 
         if currency.rate <= 0:
-            raise serializers.ValidationError({
-                'currency': 'Курс валюты должен быть больше нуля.'
-            })
+            raise serializers.ValidationError({'currency': 'Курс валюты должен быть больше нуля.'})
 
         incoming_amount_usd = amount if currency.code == 'USD' else (amount / currency.rate)
 
@@ -307,59 +306,13 @@ class PaymentSerializer(serializers.ModelSerializer):
                 'amount': f'Платёж превышает остаток по сделке. Осталось максимум ${max(limit - existing_total_usd, Decimal("0.00")):.2f}.'
             })
 
+        if not attrs.get('payment_date'):
+            from django.utils import timezone
+            attrs['payment_date'] = timezone.localdate()
+
         if not is_admin:
             attrs['manager'] = user
         elif not attrs.get('manager'):
             attrs['manager'] = deal.manager
 
         return attrs
-
-
-class ExpenseSerializer(serializers.ModelSerializer):
-    manager_data = SimpleUserSerializer(source='manager', read_only=True)
-
-    class Meta:
-        model = Expense
-        fields = (
-            'id',
-            'title',
-            'amount',
-            'currency',
-            'amount_usd',
-            'manager',
-            'manager_data',
-            'date',
-            'updated_at',
-        )
-        read_only_fields = ('manager', 'amount_usd', 'updated_at')
-
-    def validate(self, attrs):
-        amount = attrs.get('amount')
-        currency = attrs.get('currency') or getattr(self.instance, 'currency', None)
-
-        if amount is None or amount <= 0:
-            raise serializers.ValidationError({'amount': 'Сумма расхода должна быть больше нуля.'})
-
-        if not currency:
-            raise serializers.ValidationError({'currency': 'Нужно указать валюту расхода.'})
-
-        if currency.rate <= 0:
-            raise serializers.ValidationError({'currency': 'Курс валюты должен быть больше нуля.'})
-
-        return attrs
-
-
-class FinancialPeriodSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = FinancialPeriod
-        fields = (
-            'id',
-            'start_date',
-            'end_date',
-            'total_revenue',
-            'total_expenses',
-            'net_profit',
-            'is_closed',
-            'created_at',
-            'updated_at',
-        )
