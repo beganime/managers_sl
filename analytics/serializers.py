@@ -72,6 +72,12 @@ class DealSerializer(serializers.ModelSerializer):
     program_name = serializers.CharField(source='program.name', read_only=True)
     service_title = serializers.CharField(source='service_ref.title', read_only=True)
 
+    manager = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True,
+    )
+
     class Meta:
         model = Deal
         fields = (
@@ -124,9 +130,15 @@ class DealSerializer(serializers.ModelSerializer):
         if custom_service_name is None and instance:
             custom_service_name = instance.custom_service_name
         currency = attrs.get('currency') or (instance.currency if instance else None)
+        price_client = attrs.get('price_client')
+        if price_client is None and instance:
+            price_client = instance.price_client
 
         if not client:
             raise serializers.ValidationError({'client': 'Нужно указать клиента.'})
+
+        if price_client is None or price_client <= 0:
+            raise serializers.ValidationError({'price_client': 'Цена для клиента должна быть больше нуля.'})
 
         if not is_admin:
             if client.manager_id != user.id and not client.shared_with.filter(id=user.id).exists():
@@ -161,11 +173,26 @@ class DealSerializer(serializers.ModelSerializer):
                     'program': 'Программа не принадлежит выбранному университету.'
                 })
 
+            attrs['service_ref'] = None
+            if 'custom_service_name' not in attrs:
+                attrs['custom_service_name'] = ''
+            if 'custom_service_desc' not in attrs:
+                attrs['custom_service_desc'] = ''
+
         elif deal_type == 'service':
-            if not service_ref and not custom_service_name:
+            if not service_ref and not str(custom_service_name or '').strip():
                 raise serializers.ValidationError({
                     'service_ref': 'Укажите услугу из каталога или заполните custom_service_name.'
                 })
+
+            attrs['university'] = None
+            attrs['program'] = None
+
+            if 'custom_service_name' in attrs:
+                attrs['custom_service_name'] = str(attrs['custom_service_name'] or '').strip()
+            if 'custom_service_desc' in attrs:
+                attrs['custom_service_desc'] = str(attrs['custom_service_desc'] or '').strip()
+
         else:
             raise serializers.ValidationError({'deal_type': 'Некорректный тип сделки.'})
 
@@ -174,8 +201,12 @@ class DealSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         request = self.context.get('request')
         user = request.user if request else None
+
         if not is_admin_user(user):
             validated_data['manager'] = user
+        elif not validated_data.get('manager') and validated_data.get('client'):
+            validated_data['manager'] = validated_data['client'].manager
+
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
@@ -191,6 +222,12 @@ class DealSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     deal_data = DealShortSerializer(source='deal', read_only=True)
     manager_data = SimpleUserSerializer(source='manager', read_only=True)
+
+    manager = serializers.PrimaryKeyRelatedField(
+        queryset=User.objects.all(),
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = Payment
@@ -213,7 +250,6 @@ class PaymentSerializer(serializers.ModelSerializer):
             'updated_at',
         )
         read_only_fields = (
-            'manager',
             'exchange_rate',
             'amount_usd',
             'net_income_usd',
@@ -270,6 +306,11 @@ class PaymentSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 'amount': f'Платёж превышает остаток по сделке. Осталось максимум ${max(limit - existing_total_usd, Decimal("0.00")):.2f}.'
             })
+
+        if not is_admin:
+            attrs['manager'] = user
+        elif not attrs.get('manager'):
+            attrs['manager'] = deal.manager
 
         return attrs
 
