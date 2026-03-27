@@ -1,6 +1,7 @@
 # analytics/serializers.py
 from decimal import Decimal
 import datetime
+
 from django.db.models import Sum
 from rest_framework import serializers
 
@@ -302,8 +303,9 @@ class PaymentSerializer(serializers.ModelSerializer):
 
         limit = deal.total_to_pay_usd or Decimal('0.00')
         if existing_total_usd + incoming_amount_usd > limit + Decimal('0.01'):
+            rest = max(limit - existing_total_usd, Decimal('0.00'))
             raise serializers.ValidationError({
-                'amount': f'Платёж превышает остаток по сделке. Осталось максимум ${max(limit - existing_total_usd, Decimal("0.00")):.2f}.'
+                'amount': f'Платёж превышает остаток по сделке. Осталось максимум ${rest:.2f}.'
             })
 
         if not attrs.get('payment_date'):
@@ -316,3 +318,102 @@ class PaymentSerializer(serializers.ModelSerializer):
             attrs['manager'] = deal.manager
 
         return attrs
+
+    def create(self, validated_data):
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        if not is_admin_user(user):
+            validated_data['manager'] = user
+        elif not validated_data.get('manager') and validated_data.get('deal'):
+            validated_data['manager'] = validated_data['deal'].manager
+
+        return super().create(validated_data)
+
+    def update(self, instance, validated_data):
+        if instance.is_confirmed:
+            raise serializers.ValidationError('Подтверждённый платёж нельзя изменять.')
+
+        request = self.context.get('request')
+        user = request.user if request else None
+
+        if not is_admin_user(user):
+            validated_data.pop('manager', None)
+
+        return super().update(instance, validated_data)
+
+
+class ExpenseSerializer(serializers.ModelSerializer):
+    manager_data = SimpleUserSerializer(source='manager', read_only=True)
+    date = SafeDateField(required=False)
+
+    class Meta:
+        model = Expense
+        fields = (
+            'id',
+            'title',
+            'amount',
+            'currency',
+            'amount_usd',
+            'manager',
+            'manager_data',
+            'date',
+            'updated_at',
+        )
+        read_only_fields = (
+            'amount_usd',
+            'updated_at',
+        )
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        user = request.user if request else None
+        instance = getattr(self, 'instance', None)
+
+        amount = attrs.get('amount')
+        if amount is None and instance:
+            amount = instance.amount
+
+        currency = attrs.get('currency') or (instance.currency if instance else None)
+
+        if not str(attrs.get('title') or (instance.title if instance else '')).strip():
+            raise serializers.ValidationError({'title': 'Нужно указать название расхода.'})
+
+        if amount is None or amount <= 0:
+            raise serializers.ValidationError({'amount': 'Сумма расхода должна быть больше нуля.'})
+
+        if not currency:
+            raise serializers.ValidationError({'currency': 'Нужно указать валюту.'})
+
+        if currency.rate <= 0:
+            raise serializers.ValidationError({'currency': 'Курс валюты должен быть больше нуля.'})
+
+        if not attrs.get('date'):
+            from django.utils import timezone
+            attrs['date'] = timezone.localdate()
+
+        if not is_admin_user(user):
+            attrs['manager'] = user
+        elif not attrs.get('manager') and instance and instance.manager:
+            attrs['manager'] = instance.manager
+        elif not attrs.get('manager'):
+            attrs['manager'] = user
+
+        return attrs
+
+
+class FinancialPeriodSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FinancialPeriod
+        fields = (
+            'id',
+            'start_date',
+            'end_date',
+            'total_revenue',
+            'total_expenses',
+            'net_profit',
+            'is_closed',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = fields
