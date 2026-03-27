@@ -1,6 +1,5 @@
 from rest_framework import serializers
-
-from .models import ManagerSalary, Office, User
+from .models import User, ManagerSalary, Office
 
 
 class ManagerSalarySerializer(serializers.ModelSerializer):
@@ -21,47 +20,33 @@ class ManagerSalarySerializer(serializers.ModelSerializer):
 
 class OfficeSerializer(serializers.ModelSerializer):
     monthly_revenue = serializers.SerializerMethodField()
-    employee_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Office
-        fields = [
-            'id',
-            'city',
-            'address',
-            'phone',
-            'monthly_revenue',
-            'employee_count',
-            'updated_at',
-        ]
+        fields = ['id', 'city', 'address', 'phone', 'monthly_revenue', 'updated_at']
 
     def get_monthly_revenue(self, obj):
         try:
             value = obj.monthly_revenue
             return str(value if value is not None else 0)
         except Exception:
-            return '0.00'
-
-    def get_employee_count(self, obj):
-        try:
-            return obj.user_set.count()
-        except Exception:
-            return 0
+            return "0.00"
 
 
 class UserSerializer(serializers.ModelSerializer):
     managersalary = serializers.SerializerMethodField()
-    office = OfficeSerializer(read_only=True)
-    office_id = serializers.PrimaryKeyRelatedField(
-        source='office',
-        queryset=Office.objects.all(),
-        allow_null=True,
-        required=False,
-        write_only=True,
-    )
+    office = serializers.SerializerMethodField()
     full_name = serializers.SerializerMethodField()
     is_admin_role = serializers.SerializerMethodField()
+
     password = serializers.CharField(write_only=True, required=False, allow_blank=False)
+    office_id = serializers.PrimaryKeyRelatedField(
+        queryset=Office.objects.all(),
+        source='office',
+        write_only=True,
+        required=False,
+        allow_null=True,
+    )
 
     class Meta:
         model = User
@@ -87,10 +72,10 @@ class UserSerializer(serializers.ModelSerializer):
             'is_superuser',
             'is_staff',
         ]
-        read_only_fields = ('is_superuser', 'is_staff', 'managersalary', 'office')
+        read_only_fields = ('is_superuser', 'is_staff')
 
     def get_full_name(self, obj):
-        return f'{obj.first_name} {obj.last_name}'.strip() or obj.email
+        return f"{obj.first_name} {obj.last_name}".strip() or obj.email
 
     def get_is_admin_role(self, obj):
         return bool(obj.is_superuser or getattr(obj, 'role', None) == 'admin')
@@ -104,24 +89,17 @@ class UserSerializer(serializers.ModelSerializer):
         except Exception:
             return None
 
-    def validate(self, attrs):
-        if self.instance is None and not attrs.get('password'):
-            raise serializers.ValidationError({'password': 'Нужно задать пароль для нового сотрудника.'})
-        return attrs
-
-    def _apply_role_flags(self, validated_data):
-        role = validated_data.get('role')
-        if role == 'admin':
-            validated_data['is_staff'] = True
-            validated_data['is_superuser'] = True
-        elif role == 'manager':
-            validated_data['is_staff'] = False
-            validated_data['is_superuser'] = False
-        return validated_data
+    def get_office(self, obj):
+        try:
+            office = getattr(obj, 'office', None)
+            if not office:
+                return None
+            return OfficeSerializer(office, context=self.context).data
+        except Exception:
+            return None
 
     def create(self, validated_data):
         password = validated_data.pop('password', None)
-        validated_data = self._apply_role_flags(validated_data)
         user = User(**validated_data)
         if password:
             user.set_password(password)
@@ -132,7 +110,6 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
-        validated_data = self._apply_role_flags(validated_data)
 
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
