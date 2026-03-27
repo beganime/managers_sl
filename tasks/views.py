@@ -16,13 +16,17 @@ class TaskViewSet(viewsets.ModelViewSet):
         params = self.request.query_params
         user = self.request.user
 
-        if params.get('mine') in ('1', 'true', 'yes'):
+        mine = str(params.get('mine', '')).lower()
+        created_by_me = str(params.get('created_by_me', '')).lower()
+        pinned = str(params.get('pinned', '')).lower()
+
+        if mine in ('1', 'true', 'yes'):
             qs = qs.filter(assigned_to=user)
 
-        if params.get('created_by_me') in ('1', 'true', 'yes'):
+        if created_by_me in ('1', 'true', 'yes'):
             qs = qs.filter(created_by=user)
 
-        if params.get('pinned') in ('1', 'true', 'yes'):
+        if pinned in ('1', 'true', 'yes'):
             qs = qs.filter(is_pinned=True)
 
         task_status = params.get('status')
@@ -38,7 +42,13 @@ class TaskViewSet(viewsets.ModelViewSet):
         return qs.order_by('-is_pinned', '-updated_at')
 
     def _is_admin(self, user):
-        return bool(user and (user.is_superuser or user.is_staff or getattr(user, 'role', None) == 'admin'))
+        return bool(
+            user and (
+                user.is_superuser
+                or user.is_staff
+                or getattr(user, 'role', None) == 'admin'
+            )
+        )
 
     def _can_manage_task(self, user, task):
         if self._is_admin(user):
@@ -67,7 +77,10 @@ class TaskViewSet(viewsets.ModelViewSet):
     def toggle_pin(self, request, pk=None):
         task = self.get_object()
         if not self._can_manage_task(request.user, task):
-            return Response({'detail': 'Недостаточно прав'}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {'detail': 'Недостаточно прав'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         task.is_pinned = not task.is_pinned
         task.save(update_fields=['is_pinned', 'updated_at'])
@@ -77,7 +90,10 @@ class TaskViewSet(viewsets.ModelViewSet):
     def toggle_done(self, request, pk=None):
         task = self.get_object()
         if not self._can_manage_task(request.user, task):
-            return Response({'detail': 'Недостаточно прав'}, status=status.HTTP_403_FORBIDDEN)
+            return Response(
+                {'detail': 'Недостаточно прав'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         task.status = 'done' if task.status != 'done' else 'todo'
         task.save(update_fields=['status', 'updated_at'])

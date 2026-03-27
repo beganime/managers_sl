@@ -49,24 +49,47 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
 
         return qs.order_by('-date', '-time_in', '-id')
 
+    def _get_open_shift(self, user):
+        """
+        Более надежный поиск незавершенной смены.
+        Ищем:
+        1) активную смену,
+        2) если не нашли — последнюю смену без time_out.
+        """
+        shift = (
+            WorkShift.objects
+            .filter(employee=user, is_active=True)
+            .order_by('-date', '-time_in', '-id')
+            .first()
+        )
+        if shift:
+            return shift
+
+        shift = (
+            WorkShift.objects
+            .filter(employee=user, time_out__isnull=True)
+            .order_by('-date', '-time_in', '-id')
+            .first()
+        )
+        return shift
+
     def perform_create(self, serializer):
         user = self.request.user
-        today = timezone.localdate()
+        open_shift = self._get_open_shift(user)
 
-        if WorkShift.objects.filter(employee=user, date=today, is_active=True).exists():
-            raise ValidationError({"detail": "У вас уже есть активная смена на сегодня."})
+        if open_shift:
+            raise ValidationError({"detail": "У вас уже есть незавершённая смена."})
 
         serializer.save(employee=user)
 
     @action(detail=False, methods=['get'], url_path='current')
     def current_shift(self, request):
         """
-        Раньше тут возвращался 404, если активной смены нет.
-        Для мобильного приложения удобнее всегда отдавать 200,
-        чтобы это было обычное состояние, а не ошибка в консоли.
+        Для мобильного приложения лучше не отдавать 404.
+        Отдаем 200 и флаг, есть ли активная/незавершенная смена.
         """
         user = request.user
-        shift = WorkShift.objects.filter(employee=user, is_active=True).order_by('-time_in').first()
+        shift = self._get_open_shift(user)
 
         if not shift:
             return Response(
@@ -78,10 +101,11 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_200_OK
             )
 
+        data = self.get_serializer(shift).data
         return Response(
             {
                 "is_active": True,
-                "shift": self.get_serializer(shift).data
+                "shift": data
             },
             status=status.HTTP_200_OK
         )
@@ -91,12 +115,12 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
         user = request.user
         today = timezone.localdate()
 
-        active_shift = WorkShift.objects.filter(employee=user, is_active=True).order_by('-time_in').first()
-        if active_shift:
+        open_shift = self._get_open_shift(user)
+        if open_shift:
             return Response(
                 {
                     "detail": "Рабочий день уже начат.",
-                    "shift": self.get_serializer(active_shift).data
+                    "shift": self.get_serializer(open_shift).data
                 },
                 status=status.HTTP_200_OK
             )
@@ -119,14 +143,13 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='end_day')
     def end_day(self, request):
         """
-        Завершение дня теперь умеет:
-        1) принять report внутри этого же запроса,
-        2) создать/обновить ежедневный отчет,
-        3) только потом закрыть смену.
+        Завершение дня:
+        - ищет не только is_active=True, но и последнюю незавершенную смену,
+        - умеет сразу принять и сохранить отчет из этого же запроса.
         """
         user = request.user
         today = timezone.localdate()
-        shift = WorkShift.objects.filter(employee=user, is_active=True).order_by('-time_in').first()
+        shift = self._get_open_shift(user)
 
         if not shift:
             return Response(
@@ -141,7 +164,6 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
         if not isinstance(raw_report, dict):
             raw_report = request.data if isinstance(request.data, dict) else {}
 
-        # Проверяем, есть ли вообще хоть какие-то данные по отчету
         has_report_payload = any(
             key in raw_report
             for key in ['content', 'income', 'expense', 'leads_processed', 'deals_closed']
@@ -177,22 +199,17 @@ class WorkShiftViewSet(viewsets.ModelViewSet):
 
         if not report_instance:
             return Response(
-                {
-                    "detail": "Сначала заполните ежедневный отчёт, потом завершайте рабочий день."
-                },
+                {"detail": "Сначала заполните ежедневный отчёт."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         if not str(report_instance.content or '').strip():
             return Response(
-                {
-                    "detail": "Отчёт пустой. Напишите, что было сделано за день."
-                },
+                {"detail": "Отчёт пустой. Напишите, что было сделано за день."},
                 status=status.HTTP_400_BAD_REQUEST
             )
 
         shift.time_out = timezone.now()
-        shift.is_active = False
         shift.save()
 
         return Response(
