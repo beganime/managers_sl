@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -11,10 +12,32 @@ class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def _is_admin(self, user):
+        return bool(
+            user and (
+                user.is_superuser
+                or user.is_staff
+                or getattr(user, 'role', None) == 'admin'
+            )
+        )
+
+    def _can_manage_task(self, user, task):
+        if self._is_admin(user):
+            return True
+        return task.created_by_id == user.id or task.assigned_to_id == user.id
+
     def get_queryset(self):
-        qs = Task.objects.select_related('assigned_to', 'created_by', 'client').all()
-        params = self.request.query_params
         user = self.request.user
+        qs = Task.objects.select_related('assigned_to', 'created_by', 'client')
+
+        # Главное исправление:
+        # не-админ видит только свои задачи
+        if not self._is_admin(user):
+            qs = qs.filter(
+                Q(assigned_to=user) | Q(created_by=user)
+            )
+
+        params = self.request.query_params
 
         mine = str(params.get('mine', '')).lower()
         created_by_me = str(params.get('created_by_me', '')).lower()
@@ -41,20 +64,6 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         return qs.order_by('-is_pinned', '-updated_at')
 
-    def _is_admin(self, user):
-        return bool(
-            user and (
-                user.is_superuser
-                or user.is_staff
-                or getattr(user, 'role', None) == 'admin'
-            )
-        )
-
-    def _can_manage_task(self, user, task):
-        if self._is_admin(user):
-            return True
-        return task.created_by_id == user.id or task.assigned_to_id == user.id
-
     def perform_create(self, serializer):
         assigned_to = serializer.validated_data.get('assigned_to') or self.request.user
         serializer.save(
@@ -68,9 +77,17 @@ class TaskViewSet(viewsets.ModelViewSet):
             raise permissions.PermissionDenied('Недостаточно прав для изменения задачи')
         serializer.save()
 
+    def destroy(self, request, *args, **kwargs):
+        task = self.get_object()
+        if not self._can_manage_task(request.user, task):
+            return Response(
+                {'detail': 'Недостаточно прав для удаления задачи'},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+        self.perform_destroy(task)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
     def perform_destroy(self, instance):
-        if not self._can_manage_task(self.request.user, instance):
-            raise permissions.PermissionDenied('Недостаточно прав для удаления задачи')
         instance.delete()
 
     @action(detail=True, methods=['post'], url_path='toggle-pin')

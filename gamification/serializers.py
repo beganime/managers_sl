@@ -2,27 +2,43 @@
 from rest_framework import serializers
 from .models import Notification, Leaderboard
 
+
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = '__all__'
         read_only_fields = ('recipient', 'title', 'body', 'created_at', 'updated_at', 'fcm_message_id')
 
+
 class LeaderboardSerializer(serializers.ModelSerializer):
-    # Используем безопасные методы вместо прямого source
     revenue = serializers.SerializerMethodField()
     office_name = serializers.SerializerMethodField()
     avatar_url = serializers.SerializerMethodField()
+    full_name = serializers.SerializerMethodField()
+    office = serializers.SerializerMethodField()
 
     class Meta:
         model = Leaderboard
-        fields = ('id', 'first_name', 'last_name', 'avatar_url', 'office_name', 'revenue')
+        fields = (
+            'id',
+            'first_name',
+            'last_name',
+            'full_name',
+            'avatar_url',
+            'office_name',
+            'office',
+            'revenue',
+        )
+
+    def get_full_name(self, obj):
+        full = f"{obj.first_name} {obj.last_name}".strip()
+        return full or obj.email or 'Сотрудник'
 
     def get_revenue(self, obj):
         try:
             if hasattr(obj, 'managersalary') and obj.managersalary:
                 val = obj.managersalary.current_month_revenue
-                return val if val is not None else 0.00
+                return float(val if val is not None else 0.00)
         except Exception:
             pass
         return 0.00
@@ -30,10 +46,23 @@ class LeaderboardSerializer(serializers.ModelSerializer):
     def get_office_name(self, obj):
         try:
             if hasattr(obj, 'office') and obj.office:
-                return obj.office.city or "—"
+                return obj.office.city or "Без офиса"
         except Exception:
             pass
-        return "—"
+        return "Без офиса"
+
+    def get_office(self, obj):
+        try:
+            if hasattr(obj, 'office') and obj.office:
+                return {
+                    'id': obj.office.id,
+                    'city': obj.office.city or 'Без офиса',
+                    'address': obj.office.address or '',
+                    'phone': obj.office.phone or '',
+                }
+        except Exception:
+            pass
+        return None
 
     def get_avatar_url(self, obj):
         try:

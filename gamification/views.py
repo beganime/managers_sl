@@ -1,8 +1,10 @@
 # gamification/views.py
-from rest_framework import viewsets, permissions
 from django.utils.dateparse import parse_datetime
+from rest_framework import permissions, viewsets
+
 from .models import Notification, Leaderboard
 from .serializers import NotificationSerializer, LeaderboardSerializer
+
 
 class NotificationViewSet(viewsets.ModelViewSet):
     serializer_class = NotificationSerializer
@@ -20,12 +22,15 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
         return qs.order_by('-created_at')
 
+
 class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = LeaderboardSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # select_related ускоряет запрос в БД в 10 раз и предотвращает ошибку N+1
-        return Leaderboard.objects.select_related(
-            'managersalary', 'office'
-        ).filter(managersalary__isnull=False)
+        return (
+            Leaderboard.objects
+            .select_related('managersalary', 'office')
+            .filter(managersalary__isnull=False)
+            .order_by('-managersalary__current_month_revenue', 'first_name', 'last_name', 'id')
+        )
