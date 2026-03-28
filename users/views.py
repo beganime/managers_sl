@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status, parsers
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
 from .models import User, Office, ManagerSalary
 from .serializers import UserSerializer, OfficeSerializer
 from .permissions import IsAdminRole
@@ -37,12 +38,19 @@ class UserViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get', 'patch'], url_path='me')
     def me(self, request):
         if request.method == 'PATCH':
-            safe_data = request.data.copy()
-            safe_data.pop('role', None)
-            safe_data.pop('is_superuser', None)
-            safe_data.pop('is_staff', None)
+            # Важно: на multipart нельзя бездумно терять request.FILES
+            data = request.data.copy()
 
-            serializer = self.get_serializer(request.user, data=safe_data, partial=True)
+            # Защищённые поля
+            data.pop('role', None)
+            data.pop('is_superuser', None)
+            data.pop('is_staff', None)
+
+            # Явно прокидываем файл обратно, если он пришёл
+            if 'avatar' in request.FILES:
+                data['avatar'] = request.FILES['avatar']
+
+            serializer = self.get_serializer(request.user, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
@@ -55,24 +63,35 @@ class UserViewSet(viewsets.ModelViewSet):
         sal, _ = ManagerSalary.objects.get_or_create(manager=user)
 
         allowed = (
-            'monthly_plan', 'fixed_salary', 'commission_percent',
-            'motivation_target', 'motivation_reward',
+            'monthly_plan',
+            'fixed_salary',
+            'commission_percent',
+            'motivation_target',
+            'motivation_reward',
         )
         for field in allowed:
             if field in request.data:
                 setattr(sal, field, request.data[field])
+
         sal.save()
         return Response({'detail': 'Финансы обновлены'})
 
     @action(detail=True, methods=['post'], url_path='pay_salary', permission_classes=[IsAdminRole])
     def pay_salary(self, request, pk=None):
         user = self.get_object()
+
         if not hasattr(user, 'managersalary'):
-          return Response({'detail': 'Нет финансового профиля'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Нет финансового профиля'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         amount = float(user.managersalary.current_balance)
         if amount <= 0:
-            return Response({'detail': 'Нет средств к выплате'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Нет средств к выплате'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         from analytics.models import TransactionHistory
         TransactionHistory.objects.create(

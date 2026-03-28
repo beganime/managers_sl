@@ -1,4 +1,3 @@
-# documents/serializers.py
 from rest_framework import serializers
 
 from .models import (
@@ -8,6 +7,7 @@ from .models import (
     GeneratedDocument,
     KnowledgeTest,
     TestQuestion,
+    KnowledgeTestAttempt,
 )
 
 
@@ -69,8 +69,16 @@ class KnowledgeTestSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         questions_data = validated_data.pop('questions', [])
         test = KnowledgeTest.objects.create(**validated_data)
-        for question in questions_data:
-            TestQuestion.objects.create(test=test, **question)
+
+        for index, question in enumerate(questions_data):
+            TestQuestion.objects.create(
+                test=test,
+                text=question.get('text', ''),
+                options=question.get('options', []),
+                correct=question.get('correct', 0),
+                order=question.get('order', index),
+            )
+
         return test
 
     def update(self, instance, validated_data):
@@ -82,10 +90,46 @@ class KnowledgeTestSerializer(serializers.ModelSerializer):
 
         if questions_data is not None:
             instance.questions.all().delete()
-            for question in questions_data:
-                TestQuestion.objects.create(test=instance, **question)
+            for index, question in enumerate(questions_data):
+                TestQuestion.objects.create(
+                    test=instance,
+                    text=question.get('text', ''),
+                    options=question.get('options', []),
+                    correct=question.get('correct', 0),
+                    order=question.get('order', index),
+                )
 
         return instance
+
+
+class KnowledgeTestAttemptSerializer(serializers.ModelSerializer):
+    user_name = serializers.SerializerMethodField()
+    test_title = serializers.CharField(source='test.title', read_only=True)
+    percent = serializers.SerializerMethodField()
+
+    class Meta:
+        model = KnowledgeTestAttempt
+        fields = (
+            'id',
+            'test',
+            'test_title',
+            'user',
+            'user_name',
+            'score',
+            'total',
+            'percent',
+            'answers',
+            'started_at',
+            'completed_at',
+        )
+        read_only_fields = fields
+
+    def get_user_name(self, obj):
+        full = f"{obj.user.first_name} {obj.user.last_name}".strip()
+        return full or obj.user.email or f"ID {obj.user_id}"
+
+    def get_percent(self, obj):
+        return obj.percent
 
 
 class GeneratedDocumentSerializer(serializers.ModelSerializer):

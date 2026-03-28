@@ -11,10 +11,6 @@ from docxtpl import DocxTemplate
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# База знаний — сниппеты
-# ─────────────────────────────────────────────────────────────────────────────
-
 class InfoSnippet(models.Model):
     CATEGORY_CHOICES = (
         ('script', 'Скрипты продаж'),
@@ -37,10 +33,6 @@ class InfoSnippet(models.Model):
         verbose_name_plural = "База знаний"
         ordering = ['category', 'order']
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Тесты
-# ─────────────────────────────────────────────────────────────────────────────
 
 class KnowledgeTest(models.Model):
     title = models.CharField("Название теста", max_length=255)
@@ -86,9 +78,39 @@ class TestQuestion(models.Model):
         ordering = ['order']
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Шаблоны документов
-# ─────────────────────────────────────────────────────────────────────────────
+class KnowledgeTestAttempt(models.Model):
+    test = models.ForeignKey(
+        KnowledgeTest,
+        on_delete=models.CASCADE,
+        related_name='attempts',
+        verbose_name="Тест"
+    )
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='knowledge_test_attempts',
+        verbose_name="Пользователь"
+    )
+    score = models.PositiveIntegerField("Правильных ответов", default=0)
+    total = models.PositiveIntegerField("Всего вопросов", default=0)
+    answers = models.JSONField("Ответы пользователя", default=dict, blank=True)
+    started_at = models.DateTimeField("Начало", auto_now_add=True)
+    completed_at = models.DateTimeField("Завершено", auto_now=True)
+
+    class Meta:
+        verbose_name = "Результат теста"
+        verbose_name_plural = "Результаты тестов"
+        ordering = ['-completed_at']
+
+    def __str__(self):
+        return f"{self.user} — {self.test} ({self.score}/{self.total})"
+
+    @property
+    def percent(self):
+        if not self.total:
+            return 0
+        return round((self.score / self.total) * 100, 2)
+
 
 class DocumentTemplate(models.Model):
     title = models.CharField("Название шаблона", max_length=255)
@@ -146,10 +168,6 @@ class TemplateField(models.Model):
     def __str__(self):
         return f"{self.label} ({self.key})"
 
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Сгенерированные документы
-# ─────────────────────────────────────────────────────────────────────────────
 
 class GeneratedDocument(models.Model):
     STATUS_CHOICES = (

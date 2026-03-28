@@ -7,7 +7,6 @@ from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 from unfold.decorators import display, action
 
-
 from .models import (
     InfoSnippet,
     DocumentTemplate,
@@ -15,6 +14,7 @@ from .models import (
     GeneratedDocument,
     KnowledgeTest,
     TestQuestion,
+    KnowledgeTestAttempt,
 )
 
 
@@ -54,7 +54,7 @@ class TestQuestionInline(TabularInline):
 
 @admin.register(KnowledgeTest)
 class KnowledgeTestAdmin(ModelAdmin):
-    list_display = ('title', 'questions_count', 'is_active', 'updated_at')
+    list_display = ('title', 'questions_count', 'attempts_count', 'is_active', 'updated_at')
     list_filter = ('is_active',)
     search_fields = ('title',)
     inlines = [TestQuestionInline]
@@ -62,6 +62,66 @@ class KnowledgeTestAdmin(ModelAdmin):
     @display(description="Вопросов")
     def questions_count(self, obj):
         return obj.questions.count()
+
+    @display(description="Попыток")
+    def attempts_count(self, obj):
+        return obj.attempts.count()
+
+
+@admin.register(KnowledgeTestAttempt)
+class KnowledgeTestAttemptAdmin(ModelAdmin):
+    list_display = (
+        'test',
+        'user_display',
+        'score_display',
+        'percent_display',
+        'completed_at',
+    )
+    list_filter = ('test', 'completed_at')
+    search_fields = (
+        'test__title',
+        'user__email',
+        'user__first_name',
+        'user__last_name',
+    )
+    readonly_fields = (
+        'test',
+        'user',
+        'score',
+        'total',
+        'answers',
+        'started_at',
+        'completed_at',
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return is_admin_user(request.user)
+
+    def has_delete_permission(self, request, obj=None):
+        return is_admin_user(request.user)
+
+    @display(description='Сотрудник')
+    def user_display(self, obj):
+        full = f"{obj.user.first_name} {obj.user.last_name}".strip()
+        return full or obj.user.email or f"ID {obj.user_id}"
+
+    @display(description='Баллы', label=True)
+    def score_display(self, obj):
+        return f"{obj.score}/{obj.total}", 'info'
+
+    @display(description='Процент', label=True)
+    def percent_display(self, obj):
+        percent = obj.percent
+        if percent >= 80:
+            color = 'success'
+        elif percent >= 50:
+            color = 'warning'
+        else:
+            color = 'danger'
+        return f"{percent}%", color
 
 
 class TemplateFieldInline(TabularInline):
@@ -191,7 +251,6 @@ class GeneratedDocumentAdmin(ModelAdmin):
             'error': 'danger',
         }
         return obj.get_status_display(), colors.get(obj.status, 'default')
-
 
     @display(description="Скачать")
     def download_link(self, obj):
