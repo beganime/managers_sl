@@ -22,12 +22,12 @@ logger = logging.getLogger(__name__)
 def is_admin_user(user):
     return bool(
         user and user.is_authenticated and (
-            user.is_superuser or getattr(user, 'role', None) == 'admin'
+            user.is_superuser or getattr(user, 'role', None) == 'admin' or user.is_staff
         )
     )
 
 
-class InfoSnippetViewSet(viewsets.ReadOnlyModelViewSet):
+class InfoSnippetViewSet(viewsets.ModelViewSet):
     serializer_class = InfoSnippetSerializer
     permission_classes = [permissions.IsAuthenticated]
 
@@ -39,6 +39,21 @@ class InfoSnippetViewSet(viewsets.ReadOnlyModelViewSet):
             if dt:
                 qs = qs.filter(updated_at__gte=dt)
         return qs.order_by('category', 'order')
+
+    def perform_create(self, serializer):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может добавлять записи.')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может изменять записи.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может удалять записи.')
+        instance.delete()
 
 
 class DocumentTemplateViewSet(viewsets.ReadOnlyModelViewSet):
@@ -183,9 +198,30 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         }, status=status.HTTP_200_OK)
 
 
-class KnowledgeTestViewSet(viewsets.ReadOnlyModelViewSet):
+class KnowledgeTestViewSet(viewsets.ModelViewSet):
     serializer_class = KnowledgeTestSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return KnowledgeTest.objects.filter(is_active=True).prefetch_related('questions')
+        qs = KnowledgeTest.objects.filter(is_active=True).prefetch_related('questions')
+        updated_after = self.request.query_params.get('updated_after')
+        if updated_after:
+            dt = parse_datetime(updated_after)
+            if dt:
+                qs = qs.filter(updated_at__gte=dt)
+        return qs.order_by('-created_at')
+
+    def perform_create(self, serializer):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может создавать тесты.')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может изменять тесты.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может удалять тесты.')
+        instance.delete()

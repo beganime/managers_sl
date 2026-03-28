@@ -14,7 +14,7 @@ from .models import (
 def is_admin_user(user):
     return bool(
         user and user.is_authenticated and (
-            user.is_superuser or getattr(user, 'role', None) == 'admin'
+            user.is_superuser or getattr(user, 'role', None) == 'admin' or user.is_staff
         )
     )
 
@@ -54,7 +54,7 @@ class TestQuestionSerializer(serializers.ModelSerializer):
 
 
 class KnowledgeTestSerializer(serializers.ModelSerializer):
-    questions = TestQuestionSerializer(many=True, read_only=True)
+    questions = TestQuestionSerializer(many=True)
 
     class Meta:
         model = KnowledgeTest
@@ -65,6 +65,27 @@ class KnowledgeTestSerializer(serializers.ModelSerializer):
             'questions',
             'updated_at',
         )
+
+    def create(self, validated_data):
+        questions_data = validated_data.pop('questions', [])
+        test = KnowledgeTest.objects.create(**validated_data)
+        for question in questions_data:
+            TestQuestion.objects.create(test=test, **question)
+        return test
+
+    def update(self, instance, validated_data):
+        questions_data = validated_data.pop('questions', None)
+
+        instance.title = validated_data.get('title', instance.title)
+        instance.description = validated_data.get('description', instance.description)
+        instance.save()
+
+        if questions_data is not None:
+            instance.questions.all().delete()
+            for question in questions_data:
+                TestQuestion.objects.create(test=instance, **question)
+
+        return instance
 
 
 class GeneratedDocumentSerializer(serializers.ModelSerializer):

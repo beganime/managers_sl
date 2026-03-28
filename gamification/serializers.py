@@ -1,6 +1,6 @@
 # gamification/serializers.py
 from rest_framework import serializers
-from .models import Notification, Leaderboard
+from .models import Notification, Leaderboard, TutorialVideo
 
 
 class NotificationSerializer(serializers.ModelSerializer):
@@ -8,6 +8,37 @@ class NotificationSerializer(serializers.ModelSerializer):
         model = Notification
         fields = '__all__'
         read_only_fields = ('recipient', 'title', 'body', 'created_at', 'updated_at', 'fcm_message_id')
+
+
+class TutorialVideoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = TutorialVideo
+        fields = (
+            'id',
+            'title',
+            'description',
+            'video_file',
+            'youtube_url',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = ('created_at', 'updated_at')
+
+    def validate(self, attrs):
+        video_file = attrs.get('video_file')
+        youtube_url = attrs.get('youtube_url')
+
+        instance = getattr(self, 'instance', None)
+        if instance:
+            if video_file is None:
+                video_file = instance.video_file
+            if youtube_url is None:
+                youtube_url = instance.youtube_url
+
+        if not video_file and not youtube_url:
+            raise serializers.ValidationError('Нужно указать либо файл видео, либо ссылку YouTube.')
+
+        return attrs
 
 
 class LeaderboardSerializer(serializers.ModelSerializer):

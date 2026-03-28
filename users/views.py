@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, status
+from rest_framework import viewsets, permissions, status, parsers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from .models import User, Office, ManagerSalary
@@ -16,6 +16,7 @@ class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.select_related('office', 'managersalary').all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
 
     def get_queryset(self):
         qs = super().get_queryset()
@@ -67,7 +68,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def pay_salary(self, request, pk=None):
         user = self.get_object()
         if not hasattr(user, 'managersalary'):
-            return Response({'detail': 'Нет финансового профиля'}, status=status.HTTP_400_BAD_REQUEST)
+          return Response({'detail': 'Нет финансового профиля'}, status=status.HTTP_400_BAD_REQUEST)
 
         amount = float(user.managersalary.current_balance)
         if amount <= 0:
