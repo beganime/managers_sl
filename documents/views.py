@@ -7,6 +7,10 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
+from django.db import ProgrammingError, OperationalError
+from rest_framework.exceptions import APIException
+
+
 from .models import (
     InfoSnippet,
     DocumentTemplate,
@@ -274,13 +278,25 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
             if answer_index == question.correct:
                 score += 1
 
-        attempt = KnowledgeTestAttempt.objects.create(
-            test=test,
-            user=request.user,
-            score=score,
-            total=total,
-            answers=normalized_answers,
-        )
+        try:
+            attempt = KnowledgeTestAttempt.objects.create(
+                test=test,
+                user=request.user,
+                score=score,
+                total=total,
+                answers=normalized_answers,
+            )
+        except (ProgrammingError, OperationalError) as exc:
+            logger.exception(
+                "Knowledge test submit failed because attempts table is missing or unavailable. "
+                "test_id=%s user_id=%s",
+                test.id,
+                request.user.id,
+            )
+            raise APIException(
+                "Таблица результатов тестов не создана на сервере. "
+                "Нужно применить миграции documents."
+            ) from exc
 
         return Response(
             {
@@ -291,17 +307,6 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
             },
             status=status.HTTP_201_CREATED,
         )
-
-    @action(detail=True, methods=['get'], url_path='attempts')
-    def attempts(self, request, pk=None):
-        if not is_admin_user(request.user):
-            raise PermissionDenied('Только администратор может смотреть результаты всех сотрудников.')
-
-        test = self.get_object()
-        qs = test.attempts.select_related('user', 'test').order_by('-completed_at')
-        serializer = KnowledgeTestAttemptSerializer(qs, many=True, context={'request': request})
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
 
 class KnowledgeTestAttemptViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = KnowledgeTestAttemptSerializer
