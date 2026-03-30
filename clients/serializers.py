@@ -1,4 +1,5 @@
-# clients/serializers.py
+from decimal import Decimal, InvalidOperation
+
 from django.db import transaction
 from rest_framework import serializers
 
@@ -30,7 +31,8 @@ class ClientSerializer(serializers.ModelSerializer):
 
     manager = serializers.PrimaryKeyRelatedField(
         queryset=User.objects.all(),
-        required=False
+        required=False,
+        allow_null=True
     )
     manager_data = SimpleUserSerializer(source='manager', read_only=True)
 
@@ -46,7 +48,129 @@ class ClientSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
 
+    def _to_bool(self, value, default=False):
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+
+        text = str(value).strip().lower()
+        if text in ('true', '1', 'yes', 'y', 'on', 'да'):
+            return True
+        if text in ('false', '0', 'no', 'n', 'off', 'нет', ''):
+            return False
+        return default
+
+    def _to_nullable_str(self, value):
+        if value is None:
+            return None
+        value = str(value).strip()
+        return value or None
+
+    def _to_decimal(self, value, default=Decimal('0')):
+        if value in (None, ''):
+            return default
+        if isinstance(value, Decimal):
+            return value
+        try:
+            return Decimal(str(value).replace(',', '.').strip())
+        except (InvalidOperation, ValueError, TypeError):
+            return default
+
+    def _extract_block(self, text, block_title):
+        text = str(text or '')
+        if not text:
+            return ''
+
+        marker = f'{block_title}\n'
+        start = text.find(marker)
+        if start == -1:
+            return ''
+
+        start = start + len(marker)
+        rest = text[start:]
+        next_idx = rest.find('\n\n===')
+        if next_idx != -1:
+            rest = rest[:next_idx]
+        return rest.strip()
+
+    def _extract_line_value(self, block, label):
+        for line in str(block or '').splitlines():
+            if line.lower().startswith(f'{label.lower()}:'):
+                return line.split(':', 1)[1].strip()
+        return ''
+
+    def _relative_from_legacy_comments(self, attrs, instance=None):
+        # Если nested relative уже пришёл — используем его
+        relative_data = attrs.get('relative', serializers.empty)
+        if relative_data is not serializers.empty:
+            return relative_data
+
+        comments = attrs.get('comments')
+        if comments is None and instance is not None:
+            comments = instance.comments
+
+        block = self._extract_block(comments, '=== RELATIVE ===')
+        if not block:
+            return serializers.empty
+
+        parsed = {
+            'full_name': self._extract_line_value(block, 'ФИО'),
+            'relation_type': self._extract_line_value(block, 'Кем приходится'),
+            'phone': self._extract_line_value(block, 'Телефон'),
+            'work_place': self._extract_line_value(block, 'Место работы'),
+        }
+
+        has_any = any(str(v or '').strip() and str(v).strip() != '-' for v in parsed.values())
+        if not has_any:
+            return None
+
+        for key, value in parsed.items():
+            if value == '-':
+                parsed[key] = ''
+
+        return parsed
+
+    def _normalize_legacy_payload(self, attrs):
+        attrs = attrs.copy()
+
+        for key in ['email', 'dob', 'passport_issued_date']:
+            if key in attrs:
+                attrs[key] = self._to_nullable_str(attrs.get(key))
+
+        for key in [
+            'full_name',
+            'phone',
+            'city',
+            'citizenship',
+            'passport_local_num',
+            'passport_inter_num',
+            'passport_issued_by',
+            'address_registration',
+            'partner_name',
+            'current_tasks',
+            'comments',
+        ]:
+            if key in attrs and attrs.get(key) is not None:
+                attrs[key] = str(attrs.get(key)).strip()
+
+        if 'is_priority' in attrs:
+            attrs['is_priority'] = self._to_bool(attrs.get('is_priority'))
+        if 'is_partner_client' in attrs:
+            attrs['is_partner_client'] = self._to_bool(attrs.get('is_partner_client'))
+        if 'has_discount' in attrs:
+            attrs['has_discount'] = self._to_bool(attrs.get('has_discount'))
+
+        if 'discount_amount' in attrs:
+            attrs['discount_amount'] = self._to_decimal(attrs.get('discount_amount'))
+
+        return attrs
+
     def validate(self, attrs):
+        attrs = self._normalize_legacy_payload(attrs)
+
         request = self.context.get('request')
         user = request.user if request else None
         instance = getattr(self, 'instance', None)
@@ -56,9 +180,15 @@ class ClientSerializer(serializers.ModelSerializer):
 
         is_admin = user.is_superuser or getattr(user, 'role', None) == 'admin'
 
-        # Менеджер не может менять manager/shared_with вручную
+        # Совместимость со старым приложением:
+        # relative может лежать в comments, а не в nested object
+        if 'relative' not in attrs:
+            legacy_relative = self._relative_from_legacy_comments(attrs, instance=instance)
+            if legacy_relative is not serializers.empty:
+                attrs['relative'] = legacy_relative
+
         if not is_admin:
-            if 'manager' in attrs and attrs['manager'] != user:
+            if 'manager' in attrs and attrs['manager'] not in (None, user):
                 raise serializers.ValidationError({
                     'manager': 'Менеджер не может назначать другого ответственного менеджера.'
                 })
@@ -68,7 +198,6 @@ class ClientSerializer(serializers.ModelSerializer):
                     'shared_with': 'Только администратор может управлять shared access.'
                 })
 
-        # Валидация блока партнера
         is_partner_client = attrs.get(
             'is_partner_client',
             instance.is_partner_client if instance else False
@@ -83,25 +212,23 @@ class ClientSerializer(serializers.ModelSerializer):
                 'partner_name': 'Укажите название партнёра.'
             })
 
-        # Валидация скидки
         has_discount = attrs.get(
             'has_discount',
             instance.has_discount if instance else False
         )
         discount_amount = attrs.get(
             'discount_amount',
-            instance.discount_amount if instance else 0
+            instance.discount_amount if instance else Decimal('0')
         )
+
+        if not has_discount:
+            attrs['discount_amount'] = Decimal('0')
 
         if has_discount and discount_amount is None:
             raise serializers.ValidationError({
                 'discount_amount': 'Укажите размер скидки.'
             })
 
-        if not has_discount and 'discount_amount' in attrs:
-            attrs['discount_amount'] = 0
-
-        # Валидация relative
         relative_data = attrs.get('relative', serializers.empty)
         if relative_data is not serializers.empty and relative_data is not None:
             full_name = str(relative_data.get('full_name') or '').strip()
@@ -128,12 +255,6 @@ class ClientSerializer(serializers.ModelSerializer):
         return attrs
 
     def _normalize_relative_payload(self, relative_data):
-        """
-        Возвращает:
-        - None -> если relative не передан
-        - {}   -> если relative надо удалить
-        - dict -> если relative надо создать/обновить
-        """
         if relative_data is serializers.empty:
             return None
 
@@ -155,6 +276,8 @@ class ClientSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def create(self, validated_data):
+        validated_data = self._normalize_legacy_payload(validated_data)
+
         relative_data = validated_data.pop('relative', serializers.empty)
         shared_with = validated_data.pop('shared_with', [])
 
@@ -180,6 +303,8 @@ class ClientSerializer(serializers.ModelSerializer):
 
     @transaction.atomic
     def update(self, instance, validated_data):
+        validated_data = self._normalize_legacy_payload(validated_data)
+
         relative_data = validated_data.pop('relative', serializers.empty)
         shared_with = validated_data.pop('shared_with', None)
 
@@ -216,10 +341,6 @@ class ClientSerializer(serializers.ModelSerializer):
         return instance
 
     def to_representation(self, instance):
-        """
-        На выходе всегда отдаем красивый full response:
-        client + manager_data + shared_with_data + relative
-        """
         data = super().to_representation(instance)
         relative = getattr(instance, 'relative', None)
         data['relative'] = (

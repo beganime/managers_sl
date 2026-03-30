@@ -1,17 +1,21 @@
-# clients/views.py
+import logging
+
 from django.db.models import Q, Case, When, Value, IntegerField
 from django.utils.dateparse import parse_datetime
-from rest_framework import permissions, status, viewsets
+from rest_framework import permissions, status, viewsets, parsers
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .models import Client
 from .serializers import ClientSerializer
 
+logger = logging.getLogger(__name__)
+
 
 class ClientViewSet(viewsets.ModelViewSet):
     serializer_class = ClientSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
 
     def get_queryset(self):
         user = self.request.user
@@ -62,7 +66,6 @@ class ClientViewSet(viewsets.ModelViewSet):
                 Q(relative__phone__icontains=search)
             )
 
-        # Неархивные сначала, архивные внизу
         qs = qs.annotate(
             archive_order=Case(
                 When(status='archive', then=Value(1)),
@@ -72,6 +75,30 @@ class ClientViewSet(viewsets.ModelViewSet):
         )
 
         return qs.order_by('archive_order', '-updated_at', '-id')
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        try:
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+
+            logger.info(
+                'Client created successfully user_id=%s client_id=%s full_name=%s',
+                getattr(request.user, 'id', None),
+                serializer.data.get('id'),
+                serializer.data.get('full_name'),
+            )
+
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        except Exception as exc:
+            logger.exception(
+                'Client create failed user_id=%s payload=%s',
+                getattr(request.user, 'id', None),
+                dict(request.data),
+            )
+            raise
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -83,17 +110,9 @@ class ClientViewSet(viewsets.ModelViewSet):
             serializer.save(manager=user)
 
     def perform_update(self, serializer):
-        """
-        Логику manager/shared_with/relative контролирует serializer.
-        Здесь просто сохраняем объект.
-        """
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):
-        """
-        МЯГКОЕ УДАЛЕНИЕ:
-        вместо реального удаления переводим клиента в статус archive.
-        """
         instance = self.get_object()
 
         if instance.status != 'archive':
@@ -111,10 +130,6 @@ class ClientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='archive')
     def archive(self, request, pk=None):
-        """
-        Дополнительный явный endpoint для архивации:
-        POST /api/clients/{id}/archive/
-        """
         instance = self.get_object()
 
         if instance.status != 'archive':
@@ -126,12 +141,6 @@ class ClientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='restore')
     def restore(self, request, pk=None):
-        """
-        Восстановление клиента из архива.
-        Если не передан status, вернём в consultation.
-        POST /api/clients/{id}/restore/
-        body: {"status": "consultation"}
-        """
         instance = self.get_object()
         new_status = request.data.get('status') or 'consultation'
 
@@ -147,11 +156,6 @@ class ClientViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='set-status')
     def set_status(self, request, pk=None):
-        """
-        Быстрая смена статуса клиента с карточки.
-        POST /api/clients/{id}/set-status/
-        body: {"status": "consultation"}
-        """
         instance = self.get_object()
         new_status = request.data.get('status')
 
