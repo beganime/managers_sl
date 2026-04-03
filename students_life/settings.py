@@ -223,6 +223,8 @@ EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', '20'))
 DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER)
 SERVER_EMAIL = EMAIL_HOST_USER
 
+USE_X_FORWARDED_HOST = True
+
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = os.environ.get('TIME_ZONE', 'Asia/Ashgabat')
 USE_I18N = True
