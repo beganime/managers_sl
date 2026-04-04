@@ -333,3 +333,5 @@ class GeneratedDocument(models.Model):
             if self.pk:
                 self.save(update_fields=['status', 'updated_at'])
             return False, msg
+
+from .review_models import DocumentReview # noqa: F401,E402

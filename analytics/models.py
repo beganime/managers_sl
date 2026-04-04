@@ -388,3 +388,5 @@ class AuditLog(LogEntry):
         verbose_name = 'История действий'
         verbose_name_plural = 'История действий'
         app_label = 'analytics'
+
+from .finance_models import OfficeFinanceEntry

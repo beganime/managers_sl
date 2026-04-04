@@ -63,3 +63,5 @@ class Leaderboard(User):
         verbose_name_plural = "🏆 Рейтинг (Текущий)"
         # Сортировка по выручке в текущем месяце (от большего к меньшему)
         ordering = ('-managersalary__current_month_revenue',)
+
+from .push_models import DeviceToken, PushBroadcast # noqa: F401,E402

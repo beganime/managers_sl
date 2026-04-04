@@ -123,3 +123,5 @@ class ManagerSalary(models.Model):
 
     def __str__(self):
         return f"Финансы: {self.manager.first_name}"
+
+from .access_models import OfficeTarget, UserAccessProfile  # noqa: F401,E402
