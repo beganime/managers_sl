@@ -1,10 +1,11 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 
+from .mobile_views import GeneratedDocumentViewSet
+
 from .views import (
     InfoSnippetViewSet,
     DocumentTemplateViewSet,
-    GeneratedDocumentViewSet,
     KnowledgeTestViewSet,
     KnowledgeTestAttemptViewSet,
 )

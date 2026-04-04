@@ -1,9 +1,10 @@
-from django.db.models import Count, Q
+from django.db.models import Case, Count, IntegerField, Q, When
 from django.utils.dateparse import parse_datetime
-from rest_framework import filters, permissions, viewsets
+from rest_framework import permissions, viewsets
 
 from .models import Currency, University, Program
 from .pagination import ProgramPagination, UniversityPagination
+from .search import rank_queryset_by_search
 from .serializers import (
     CurrencySerializer,
     ProgramSerializer,
@@ -29,8 +30,6 @@ class CurrencyViewSet(viewsets.ReadOnlyModelViewSet):
 class UniversityViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = UniversityPagination
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'country', 'city']
 
     def get_queryset(self):
         qs = (
@@ -39,7 +38,7 @@ class UniversityViewSet(viewsets.ReadOnlyModelViewSet):
             .annotate(
                 programs_count=Count(
                     'programs',
-                    filter=Q(programs__is_deleted=False, programs__is_active=True)
+                    filter=Q(programs__is_deleted=False, programs__is_active=True),
                 )
             )
             .all()
@@ -55,6 +54,32 @@ class UniversityViewSet(viewsets.ReadOnlyModelViewSet):
         if country and country != 'all':
             qs = qs.filter(country=country)
 
+        search = (self.request.query_params.get('search') or '').strip()
+        if search:
+            ranked_ids = rank_queryset_by_search(
+                list(qs[:500]),
+                search,
+                lambda obj: ' '.join(
+                    filter(
+                        None,
+                        [
+                            obj.name,
+                            obj.country,
+                            obj.city,
+                            getattr(obj, 'description', ''),
+                            getattr(obj, 'required_docs', ''),
+                        ],
+                    )
+                ),
+                min_score=0.43,
+            )
+            if ranked_ids:
+                preserved = Case(
+                    *[When(id=pk, then=pos) for pos, pk in enumerate(ranked_ids)],
+                    output_field=IntegerField(),
+                )
+                return qs.filter(id__in=ranked_ids).order_by(preserved)
+
         return qs.order_by('name')
 
     def get_serializer_class(self):
@@ -67,8 +92,6 @@ class ProgramViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ProgramSerializer
     permission_classes = [permissions.IsAuthenticated]
     pagination_class = ProgramPagination
-    filter_backends = [filters.SearchFilter]
-    search_fields = ['name', 'degree', 'university__name', 'university__country', 'university__city']
 
     def get_queryset(self):
         qs = (
@@ -102,12 +125,36 @@ class ProgramViewSet(viewsets.ReadOnlyModelViewSet):
             except Exception:
                 pass
 
+        search = (self.request.query_params.get('search') or '').strip()
+        if search:
+            ranked_ids = rank_queryset_by_search(
+                list(qs[:1000]),
+                search,
+                lambda obj: ' '.join(
+                    filter(
+                        None,
+                        [
+                            obj.name,
+                            obj.degree,
+                            getattr(obj.university, 'name', ''),
+                            getattr(obj.university, 'country', ''),
+                            getattr(obj.university, 'city', ''),
+                        ],
+                    )
+                ),
+                min_score=0.42,
+            )
+            if ranked_ids:
+                preserved = Case(
+                    *[When(id=pk, then=pos) for pos, pk in enumerate(ranked_ids)],
+                    output_field=IntegerField(),
+                )
+                qs = qs.filter(id__in=ranked_ids).order_by(preserved)
+                return qs
+
         sort = self.request.query_params.get('sort')
         if sort == 'price_asc':
-            qs = qs.order_by('tuition_fee', 'name')
-        elif sort == 'price_desc':
-            qs = qs.order_by('-tuition_fee', 'name')
-        else:
-            qs = qs.order_by('name')
-
-        return qs
+            return qs.order_by('tuition_fee', 'name')
+        if sort == 'price_desc':
+            return qs.order_by('-tuition_fee', 'name')
+        return qs.order_by('name')

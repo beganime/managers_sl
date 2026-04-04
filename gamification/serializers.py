@@ -1,19 +1,48 @@
 from rest_framework import serializers
 from .models import Notification, Leaderboard, TutorialVideo
 
+from rest_framework import serializers
+
+from .models import Notification, Leaderboard
+from .push_models import DeviceToken, PushBroadcast
+
 
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = '__all__'
-        read_only_fields = (
-            'recipient',
+        read_only_fields = ('recipient', 'title', 'body', 'created_at', 'updated_at', 'fcm_message_id')
+
+
+class DeviceTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = DeviceToken
+        fields = (
+            'id',
+            'token',
+            'platform',
+            'device_name',
+            'is_active',
+            'last_seen_at',
+            'created_at',
+        )
+        read_only_fields = ('last_seen_at', 'created_at')
+
+
+class PushBroadcastSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PushBroadcast
+        fields = (
+            'id',
             'title',
             'body',
+            'target_all',
+            'sent_count',
+            'failed_count',
             'created_at',
-            'updated_at',
-            'fcm_message_id',
+            'sent_at',
         )
+        read_only_fields = ('sent_count', 'failed_count', 'created_at', 'sent_at')
 
 
 class TutorialVideoSerializer(serializers.ModelSerializer):

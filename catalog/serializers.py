@@ -1,4 +1,5 @@
 from rest_framework import serializers
+
 from .models import Currency, University, Program
 
 
@@ -59,6 +60,15 @@ class UniversityDetailSerializer(serializers.ModelSerializer):
     local_currency = CurrencySerializer(read_only=True)
     programs = serializers.SerializerMethodField()
 
+    # alias-поля под мобильный экран, чтобы не ломать клиент
+    requirements = serializers.CharField(source='required_docs', read_only=True)
+    documents_required = serializers.CharField(source='required_docs', read_only=True)
+    visa_info = serializers.SerializerMethodField()
+    study_languages = serializers.SerializerMethodField()
+    hostel_info = serializers.SerializerMethodField()
+    scholarship_info = serializers.SerializerMethodField()
+    website = serializers.SerializerMethodField()
+
     class Meta:
         model = University
         fields = '__all__'
@@ -66,3 +76,18 @@ class UniversityDetailSerializer(serializers.ModelSerializer):
     def get_programs(self, obj):
         queryset = obj.programs.filter(is_deleted=False, is_active=True).order_by('name')
         return ProgramSerializer(queryset, many=True, context=self.context).data
+
+    def get_visa_info(self, obj):
+        return ''
+
+    def get_study_languages(self, obj):
+        return ''
+
+    def get_hostel_info(self, obj):
+        return ''
+
+    def get_scholarship_info(self, obj):
+        return ''
+
+    def get_website(self, obj):
+        return ''
