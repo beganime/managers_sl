@@ -39,12 +39,12 @@ services:
       test:
         [
           "CMD-SHELL",
-          "python - <<'PY'\nimport urllib.request\nreq = urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'X-Forwarded-Proto': 'https'})\nurllib.request.urlopen(req).read()\nprint('ok')\nPY"
+          "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health/').read()\" || exit 1"
         ]
       interval: 20s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 60s
 
   nginx:
     image: nginx:1.25-alpine
