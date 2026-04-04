@@ -29,6 +29,8 @@ services:
     volumes:
       - ./media:/app/media
       - ./staticfiles:/app/staticfiles
+      - ./secrets:/app/secrets:ro
+      - ./branding:/app/branding:ro
     expose:
       - "8000"
     networks:
