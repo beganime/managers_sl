@@ -39,12 +39,12 @@ services:
       test:
         [
           "CMD-SHELL",
-          "python -c \"import socket; s=socket.create_connection(('127.0.0.1', 8000), 5); s.close()\" || exit 1"
+          "python - <<'PY'\nimport urllib.request\nreq = urllib.request.Request('http://127.0.0.1:8000/api/health/', headers={'X-Forwarded-Proto': 'https'})\nurllib.request.urlopen(req).read()\nprint('ok')\nPY"
         ]
       interval: 20s
       timeout: 5s
       retries: 10
-      start_period: 25s
+      start_period: 20s
 
   nginx:
     image: nginx:1.25-alpine
