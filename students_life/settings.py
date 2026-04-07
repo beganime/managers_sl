@@ -47,6 +47,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:19006',
     'http://127.0.0.1:19006',
 ]
+DOCUMENT_WATERMARK_IMAGE = "/branding/watermark.png"
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https?://localhost(:\d+)?$",

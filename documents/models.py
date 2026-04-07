@@ -1,11 +1,11 @@
 # documents/models.py
-import json
 import io
+import json
 import logging
 
-from django.db import models
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.db import models
 from docxtpl import DocxTemplate
 
 logger = logging.getLogger(__name__)
@@ -55,17 +55,17 @@ class TestQuestion(models.Model):
         KnowledgeTest,
         on_delete=models.CASCADE,
         related_name='questions',
-        verbose_name="Тест"
+        verbose_name="Тест",
     )
     text = models.TextField("Текст вопроса")
     options = models.JSONField(
         "Варианты ответов",
         default=list,
-        help_text='Список строк: ["Вариант 1", "Вариант 2", ...]'
+        help_text='Список строк: ["Вариант 1", "Вариант 2", ...]',
     )
     correct = models.PositiveSmallIntegerField(
         "Индекс правильного ответа (с 0)",
-        default=0
+        default=0,
     )
     order = models.PositiveIntegerField("Порядок", default=0)
 
@@ -83,13 +83,13 @@ class KnowledgeTestAttempt(models.Model):
         KnowledgeTest,
         on_delete=models.CASCADE,
         related_name='attempts',
-        verbose_name="Тест"
+        verbose_name="Тест",
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='knowledge_test_attempts',
-        verbose_name="Пользователь"
+        verbose_name="Пользователь",
     )
     score = models.PositiveIntegerField("Правильных ответов", default=0)
     total = models.PositiveIntegerField("Всего вопросов", default=0)
@@ -139,23 +139,23 @@ class TemplateField(models.Model):
         DocumentTemplate,
         on_delete=models.CASCADE,
         related_name='fields',
-        verbose_name="Шаблон"
+        verbose_name="Шаблон",
     )
     key = models.CharField(
         "Ключ (как в docx)",
         max_length=50,
-        help_text="Например: client_fio"
+        help_text="Например: client_fio",
     )
     label = models.CharField(
         "Название поля (для менеджера)",
         max_length=255,
-        help_text="Например: ФИО Клиента"
+        help_text="Например: ФИО Клиента",
     )
     field_type = models.CharField(
         "Тип поля",
         max_length=20,
         choices=FIELD_TYPES,
-        default='text'
+        default='text',
     )
     is_required = models.BooleanField("Обязательное", default=True)
     order = models.PositiveIntegerField("Порядок вывода", default=0)
@@ -181,13 +181,13 @@ class GeneratedDocument(models.Model):
         DocumentTemplate,
         on_delete=models.CASCADE,
         related_name='documents',
-        verbose_name="Шаблон"
+        verbose_name="Шаблон",
     )
     manager = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='my_documents',
-        verbose_name="Менеджер"
+        verbose_name="Менеджер",
     )
     deal = models.ForeignKey(
         'analytics.Deal',
@@ -195,7 +195,7 @@ class GeneratedDocument(models.Model):
         null=True,
         blank=True,
         related_name='generated_documents',
-        verbose_name="Сделка"
+        verbose_name="Сделка",
     )
     title = models.CharField("Название документа", max_length=255, blank=True)
     context_data = models.JSONField("Введённые данные", default=dict, blank=True)
@@ -203,13 +203,13 @@ class GeneratedDocument(models.Model):
         "Статус",
         max_length=20,
         choices=STATUS_CHOICES,
-        default='draft'
+        default='draft',
     )
     generated_file = models.FileField(
         "Готовый документ",
         upload_to='generated_docs/',
         null=True,
-        blank=True
+        blank=True,
     )
 
     approved_by = models.ForeignKey(
@@ -218,7 +218,7 @@ class GeneratedDocument(models.Model):
         null=True,
         blank=True,
         related_name='approved_documents',
-        verbose_name="Одобрено администратором"
+        verbose_name="Одобрено администратором",
     )
     approved_at = models.DateTimeField(null=True, blank=True)
 
@@ -239,6 +239,9 @@ class GeneratedDocument(models.Model):
 
     @property
     def can_download(self) -> bool:
+        review = getattr(self, 'review', None)
+        if review:
+            return review.status == 'approved' and bool(review.approved_file)
         return self.status == 'approved' and bool(self.generated_file)
 
     def _parse_context_data(self):
@@ -334,4 +337,5 @@ class GeneratedDocument(models.Model):
                 self.save(update_fields=['status', 'updated_at'])
             return False, msg
 
-from .review_models import DocumentReview # noqa: F401,E402
+
+from .review_models import DocumentReview  # noqa: F401,E402

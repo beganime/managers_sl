@@ -2,20 +2,23 @@
 import json
 
 from django.contrib import admin, messages
+from django.db import transaction
 from django.utils import timezone
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
-from unfold.decorators import display, action
+from unfold.decorators import action, display
 
 from .models import (
-    InfoSnippet,
     DocumentTemplate,
-    TemplateField,
     GeneratedDocument,
+    InfoSnippet,
     KnowledgeTest,
-    TestQuestion,
     KnowledgeTestAttempt,
+    TemplateField,
+    TestQuestion,
 )
+from .review_models import DocumentReview
+from .watermarking import build_approved_document
 
 
 def is_admin_user(user):
@@ -38,7 +41,7 @@ class InfoSnippetAdmin(ModelAdmin):
 
     @display(description="Копировать", label=True)
     def copy_btn(self, obj):
-        clean = obj.content.replace('"', '&quot;').replace("'", "\\'").replace('\n', ' ')
+        clean = obj.content.replace('"', '&quot;').replace("'", "\'").replace('\n', ' ')
         return format_html(
             '<button type="button" class="bg-primary-600 text-white px-2 py-1 rounded text-xs" '
             "onclick=\"navigator.clipboard.writeText('{}').then(()=>alert('Скопировано!'))\">📋</button>",
@@ -160,13 +163,32 @@ class GeneratedDocumentAdmin(ModelAdmin):
     actions = ['approve_documents', 'regenerate_docs']
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request).select_related('template', 'manager', 'deal', 'deal__client')
+        qs = super().get_queryset(request).select_related(
+            'template',
+            'manager',
+            'deal',
+            'deal__client',
+            'review',
+        )
         if is_admin_user(request.user):
             return qs
         return qs.filter(manager=request.user)
 
     def get_readonly_fields(self, request, obj=None):
         return ('status', 'generated_file', 'approved_by', 'approved_at')
+
+    def _reset_review_after_regenerate(self, doc):
+        review, _ = DocumentReview.objects.get_or_create(document=doc)
+
+        if review.approved_file:
+            review.approved_file.delete(save=False)
+            review.approved_file = None
+
+        review.status = 'pending'
+        review.rejection_reason = ''
+        review.reviewed_by = None
+        review.reviewed_at = None
+        review.save()
 
     @action(description="✅ Одобрить документы")
     def approve_documents(self, request, queryset):
@@ -176,12 +198,30 @@ class GeneratedDocumentAdmin(ModelAdmin):
 
         count = 0
         for doc in queryset:
-            if doc.status == 'generated' and doc.generated_file:
+            if doc.status != 'generated' or not doc.generated_file:
+                continue
+
+            approved_file = build_approved_document(doc)
+            if approved_file is None:
+                self.message_user(
+                    request,
+                    f"Ошибка #{doc.id}: не удалось собрать approved-файл с watermark. Проверь DOCUMENT_WATERMARK_IMAGE.",
+                    messages.ERROR,
+                )
+                continue
+
+            review, _ = DocumentReview.objects.get_or_create(document=doc)
+            with transaction.atomic():
+                if review.approved_file:
+                    review.approved_file.delete(save=False)
+
+                review.mark_approved(user=request.user, approved_file=approved_file)
                 doc.status = 'approved'
                 doc.approved_by = request.user
                 doc.approved_at = timezone.now()
                 doc.save(update_fields=['status', 'approved_by', 'approved_at', 'updated_at'])
-                count += 1
+
+            count += 1
 
         self.message_user(request, f"Одобрено документов: {count}.", messages.SUCCESS)
 
@@ -194,6 +234,7 @@ class GeneratedDocumentAdmin(ModelAdmin):
 
             success, msg = doc.generate_document()
             if success:
+                self._reset_review_after_regenerate(doc)
                 ok += 1
             else:
                 err += 1
@@ -214,6 +255,9 @@ class GeneratedDocumentAdmin(ModelAdmin):
         super().save_model(request, obj, form, change)
 
         success, msg = obj.generate_document()
+        if success:
+            self._reset_review_after_regenerate(obj)
+
         level = messages.SUCCESS if success else messages.WARNING
         self.message_user(request, msg, level)
 
@@ -244,24 +288,43 @@ class GeneratedDocumentAdmin(ModelAdmin):
 
     @display(description="Статус", label=True)
     def status_badge(self, obj):
+        review = getattr(obj, 'review', None)
+        current_status = review.status if review else obj.status
+
         colors = {
             'draft': 'warning',
             'generated': 'info',
+            'pending': 'info',
             'approved': 'success',
+            'rejected': 'danger',
             'error': 'danger',
         }
-        return obj.get_status_display(), colors.get(obj.status, 'default')
+
+        labels = {
+            'draft': 'Создан / Ожидает',
+            'generated': 'Сгенерирован',
+            'pending': 'На рассмотрении',
+            'approved': 'Одобрен',
+            'rejected': 'Отклонён',
+            'error': 'Ошибка',
+        }
+
+        return labels.get(current_status, obj.get_status_display()), colors.get(current_status, 'default')
 
     @display(description="Скачать")
     def download_link(self, obj):
-        if obj.can_download and obj.generated_file:
+        review = getattr(obj, 'review', None)
+
+        if review and review.status == 'approved' and review.approved_file:
             return format_html(
                 '<a href="{}" class="text-blue-600 font-bold" target="_blank">📥 Скачать</a>',
-                obj.generated_file.url,
+                review.approved_file.url,
             )
+
         if obj.status == 'generated':
             return format_html(
                 '<span class="text-yellow-600 text-xs">{}</span>',
                 '⏳ Ожидает одобрения',
             )
+
         return '—'

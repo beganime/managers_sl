@@ -1,173 +1,265 @@
 import json
 import os
+import urllib.error
+import urllib.request
 from decimal import Decimal
 
-import requests
 from django.conf import settings
-from django.db.models import Sum
 
-from analytics.finance_models import summarize_office_finances
-from analytics.models import Payment
-from .models import DailyReport
+from reports.models import DailyReport
+
+try:
+    from analytics.models import Payment, Expense
+except Exception:  # pragma: no cover
+    Payment = None
+    Expense = None
+
+try:
+    from analytics.finance_models import OfficeFinanceEntry
+except Exception:  # pragma: no cover
+    try:
+        from analytics.models import OfficeFinanceEntry  # type: ignore
+    except Exception:
+        OfficeFinanceEntry = None
 
 
-def _safe_decimal(value):
-    return Decimal(str(value or 0)).quantize(Decimal('0.01'))
+def _num(value):
+    try:
+        return Decimal(str(value or 0))
+    except Exception:
+        return Decimal("0")
 
 
-def build_summary_payload(date_from=None, date_to=None, office_id=None):
-    reports_qs = DailyReport.objects.select_related('employee', 'employee__office').all()
-    payments_qs = Payment.objects.select_related('manager', 'manager__office').all()
+def _date_str(value):
+    return str(value) if value else None
 
-    if date_from:
-        reports_qs = reports_qs.filter(date__gte=date_from)
-        payments_qs = payments_qs.filter(payment_date__gte=date_from)
-    if date_to:
-        reports_qs = reports_qs.filter(date__lte=date_to)
-        payments_qs = payments_qs.filter(payment_date__lte=date_to)
-    if office_id:
-        reports_qs = reports_qs.filter(employee__office_id=office_id)
-        payments_qs = payments_qs.filter(manager__office_id=office_id)
 
-    reports = []
-    offices = {}
-    for report in reports_qs.order_by('-date', 'employee__first_name'):
-        reports.append(
+def _call_gemini(prompt: str):
+    api_key = getattr(settings, "GEMINI_API_KEY", "") or os.getenv("GEMINI_API_KEY", "")
+    model = getattr(settings, "GEMINI_MODEL", "") or os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
+
+    if not api_key:
+        return None, "GEMINI_API_KEY не задан"
+
+    url = (
+        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"{model}:generateContent?key={api_key}"
+    )
+
+    payload = {
+        "contents": [
             {
-                'date': str(report.date),
-                'employee': f'{report.employee.first_name} {report.employee.last_name}'.strip() or report.employee.email,
-                'office': getattr(getattr(report.employee, 'office', None), 'city', None),
-                'content': report.content,
-                'leads_processed': report.leads_processed,
-                'deals_closed': report.deals_closed,
-                'income': str(report.income),
-                'expense': str(report.expense),
-                'net_result': str(report.net_result),
+                "parts": [
+                    {"text": prompt},
+                ]
             }
-        )
-
-        office = getattr(report.employee, 'office', None)
-        if office and office.id not in offices:
-            offices[office.id] = office
-
-    payments_total = _safe_decimal(payments_qs.aggregate(total=Sum('amount_usd'))['total'])
-
-    office_summaries = []
-    for office in offices.values():
-        fin = summarize_office_finances(office, date_from=date_from, date_to=date_to)
-        office_summaries.append(
-            {
-                'office_id': office.id,
-                'office_name': office.city,
-                'monthly_revenue': str(_safe_decimal(getattr(office, 'monthly_revenue', 0))),
-                'cashflow_income_usd': str(fin['income_usd']),
-                'cashflow_expense_usd': str(fin['expense_usd']),
-                'cashflow_net_usd': str(fin['net_usd']),
-            }
-        )
-
-    return {
-        'period': {'date_from': str(date_from) if date_from else None, 'date_to': str(date_to) if date_to else None},
-        'payments_total_usd': str(payments_total),
-        'office_summaries': office_summaries,
-        'reports': reports,
+        ]
     }
 
-
-def _build_prompt(payload):
-    return f"""
-Ты — аналитик управленческой отчётности.
-На основе переданных данных подготовь единый итоговый отчёт на русском языке.
-
-Нужна структура:
-1. Общая картина
-2. Что хорошо
-3. Что плохо / риски
-4. Офисы и менеджеры, кто тянет план, кто отстаёт
-5. Доходы / расходы / вывод по марже
-6. Конкретные рекомендации админу на ближайшие 3-7 дней
-
-Данные JSON:
-{json.dumps(payload, ensure_ascii=False)}
-""".strip()
-
-
-def call_openai(prompt):
-    api_key = getattr(settings, 'OPENAI_API_KEY', '') or os.getenv('OPENAI_API_KEY', '')
-    model = getattr(settings, 'OPENAI_MODEL', 'gpt-4o-mini') or os.getenv('OPENAI_MODEL', 'gpt-4o-mini')
-    if not api_key:
-        return None
-
-    response = requests.post(
-        'https://api.openai.com/v1/chat/completions',
-        headers={'Authorization': f'Bearer {api_key}', 'Content-Type': 'application/json'},
-        json={
-            'model': model,
-            'messages': [
-                {'role': 'system', 'content': 'Ты делаешь управленческие итоговые отчёты.'},
-                {'role': 'user', 'content': prompt},
-            ],
-            'temperature': 0.3,
-        },
-        timeout=60,
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
     )
-    response.raise_for_status()
-    data = response.json()
-    return data['choices'][0]['message']['content'].strip()
 
+    try:
+        with urllib.request.urlopen(req, timeout=90) as resp:
+            raw = resp.read().decode("utf-8")
+            data = json.loads(raw)
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="ignore")
+        return None, f"Gemini HTTPError: {exc.code} {body}"
+    except Exception as exc:
+        return None, str(exc)
 
-def call_gemini(prompt):
-    api_key = getattr(settings, 'GEMINI_API_KEY', '') or os.getenv('GEMINI_API_KEY', '')
-    model = getattr(settings, 'GEMINI_MODEL', 'gemini-1.5-flash') or os.getenv('GEMINI_MODEL', 'gemini-1.5-flash')
-    if not api_key:
-        return None
+    candidates = data.get("candidates") or []
+    if not candidates:
+        return None, f"Пустой ответ Gemini: {json.dumps(data, ensure_ascii=False)}"
 
-    response = requests.post(
-        f'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}',
-        headers={'Content-Type': 'application/json'},
-        json={
-            'contents': [
-                {
-                    'parts': [{'text': prompt}],
-                }
-            ]
-        },
-        timeout=60,
-    )
-    response.raise_for_status()
-    data = response.json()
-    return data['candidates'][0]['content']['parts'][0]['text'].strip()
+    parts = candidates[0].get("content", {}).get("parts", [])
+    text = "\n".join(part.get("text", "") for part in parts if part.get("text"))
+    return text.strip() or None, None
 
 
 def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
-    payload = build_summary_payload(date_from=date_from, date_to=date_to, office_id=office_id)
-    prompt = _build_prompt(payload)
-    provider = (getattr(settings, 'AI_PROVIDER', '') or os.getenv('AI_PROVIDER', '') or 'openai').lower()
+    reports_qs = DailyReport.objects.select_related("employee", "employee__office").all()
 
-    summary_text = None
-    error_message = None
+    if date_from:
+        reports_qs = reports_qs.filter(date__gte=date_from)
+    if date_to:
+        reports_qs = reports_qs.filter(date__lte=date_to)
+    if office_id:
+        reports_qs = reports_qs.filter(employee__office_id=office_id)
 
-    try:
-        if provider == 'gemini':
-            summary_text = call_gemini(prompt)
-        else:
-            summary_text = call_openai(prompt)
-    except Exception as exc:
-        error_message = str(exc)
+    reports_payload = []
+    office_stats = {}
 
-    if not summary_text:
-        # fallback, если AI не настроен
-        summary_text = (
-            'AI-резюме не было сгенерировано автоматически. '
-            'Проверьте ключи API и настройки AI_PROVIDER. '
-            f'Всего платежей (USD): {payload["payments_total_usd"]}. '
-            f'Количество отчётов: {len(payload["reports"])}. '
-            f'Количество офисов в отчёте: {len(payload["office_summaries"])}.'
+    for report in reports_qs.order_by("-date", "employee_id"):
+        office = getattr(report.employee, "office", None)
+        office_key = getattr(office, "id", None) or 0
+        office_name = getattr(office, "city", None) or "Без офиса"
+        employee_name = f"{report.employee.first_name} {report.employee.last_name}".strip() or report.employee.email
+
+        office_stats.setdefault(
+            office_key,
+            {
+                "office_name": office_name,
+                "employees": set(),
+                "reports_count": 0,
+                "income": Decimal("0"),
+                "expense": Decimal("0"),
+            },
         )
 
+        office_stats[office_key]["employees"].add(employee_name)
+        office_stats[office_key]["reports_count"] += 1
+        office_stats[office_key]["income"] += _num(
+            getattr(report, "income", None)
+            or getattr(report, "income_usd", None)
+            or getattr(report, "total_income", None)
+        )
+        office_stats[office_key]["expense"] += _num(
+            getattr(report, "expense", None)
+            or getattr(report, "expense_usd", None)
+            or getattr(report, "total_expense", None)
+        )
+
+        reports_payload.append(
+            {
+                "date": _date_str(getattr(report, "date", None)),
+                "employee": employee_name,
+                "office": office_name,
+                "leads_processed": getattr(report, "leads_processed", 0),
+                "deals_closed": getattr(report, "deals_closed", 0),
+                "income": str(
+                    _num(
+                        getattr(report, "income", None)
+                        or getattr(report, "income_usd", None)
+                        or getattr(report, "total_income", None)
+                    )
+                ),
+                "expense": str(
+                    _num(
+                        getattr(report, "expense", None)
+                        or getattr(report, "expense_usd", None)
+                        or getattr(report, "total_expense", None)
+                    )
+                ),
+                "content": getattr(report, "content", "") or "",
+            }
+        )
+
+    payments_total = Decimal("0")
+    if Payment is not None:
+        payments_qs = Payment.objects.select_related("manager", "manager__office").all()
+        if date_from:
+            payments_qs = payments_qs.filter(payment_date__gte=date_from)
+        if date_to:
+            payments_qs = payments_qs.filter(payment_date__lte=date_to)
+        if office_id:
+            payments_qs = payments_qs.filter(manager__office_id=office_id)
+
+        for item in payments_qs:
+            payments_total += _num(getattr(item, "amount_usd", None) or getattr(item, "amount", None))
+
+    expenses_total = Decimal("0")
+    if Expense is not None:
+        expenses_qs = Expense.objects.select_related("manager", "manager__office").all()
+        if date_from:
+            expenses_qs = expenses_qs.filter(date__gte=date_from)
+        if date_to:
+            expenses_qs = expenses_qs.filter(date__lte=date_to)
+        if office_id:
+            expenses_qs = expenses_qs.filter(manager__office_id=office_id)
+
+        for item in expenses_qs:
+            expenses_total += _num(getattr(item, "amount_usd", None) or getattr(item, "amount", None))
+
+    finance_entries = []
+    finance_balance = Decimal("0")
+    if OfficeFinanceEntry is not None:
+        finance_qs = OfficeFinanceEntry.objects.select_related("office", "created_by").all()
+        if date_from:
+            finance_qs = finance_qs.filter(entry_date__gte=date_from)
+        if date_to:
+            finance_qs = finance_qs.filter(entry_date__lte=date_to)
+        if office_id:
+            finance_qs = finance_qs.filter(office_id=office_id)
+
+        for item in finance_qs.order_by("-entry_date", "-id"):
+            amount = _num(getattr(item, "amount_usd", None) or getattr(item, "amount", None))
+            entry_type = getattr(item, "entry_type", "") or ""
+            finance_balance += amount if entry_type == "income" else -amount
+            finance_entries.append(
+                {
+                    "office": getattr(getattr(item, "office", None), "city", None) or "Без офиса",
+                    "entry_type": entry_type,
+                    "title": getattr(item, "title", "") or "",
+                    "amount": str(amount),
+                    "entry_date": _date_str(getattr(item, "entry_date", None)),
+                }
+            )
+
+    office_summaries = []
+    for stat in office_stats.values():
+        office_summaries.append(
+            {
+                "office_name": stat["office_name"],
+                "reports_count": stat["reports_count"],
+                "employees": sorted(list(stat["employees"])),
+                "income": str(stat["income"]),
+                "expense": str(stat["expense"]),
+                "balance": str(stat["income"] - stat["expense"]),
+            }
+        )
+
+    payload = {
+        "period": {
+            "date_from": _date_str(date_from),
+            "date_to": _date_str(date_to),
+            "office_id": office_id,
+        },
+        "reports_count": len(reports_payload),
+        "payments_total": str(payments_total),
+        "expenses_total": str(expenses_total),
+        "office_finance_balance": str(finance_balance),
+        "office_summaries": office_summaries,
+        "finance_entries": finance_entries[:60],
+        "reports": reports_payload[:120],
+    }
+
+    prompt = f"""
+Ты — сильный операционный аналитик.
+Подготовь для администратора единый итоговый отчёт на русском языке.
+
+Структура:
+1. Общая картина
+2. Что хорошо
+3. Какие проблемы и риски
+4. Что видно по офисам
+5. Что видно по доходам и расходам
+6. Какие сотрудники/офисы выделяются
+7. 5 конкретных рекомендаций админу
+
+Данные:
+{json.dumps(payload, ensure_ascii=False)}
+""".strip()
+
+    summary_text, error = _call_gemini(prompt)
+
+    if not summary_text:
+      summary_text = (
+          "AI-резюме пока не сгенерировано. "
+          f"Отчётов: {len(reports_payload)}. "
+          f"Платежей: {payments_total}. "
+          f"Расходов: {expenses_total}. "
+          f"Баланс office finance: {finance_balance}."
+      )
+
     return {
-        'provider': provider,
-        'summary': summary_text,
-        'error': error_message,
-        'payload': payload,
+        "provider": "gemini",
+        "summary": summary_text,
+        "error": error,
+        "payload": payload,
     }

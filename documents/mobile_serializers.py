@@ -1,11 +1,11 @@
 from rest_framework import serializers
 
 from .models import GeneratedDocument
-from .review_models import DocumentReview, resolve_document_status
+from .review_models import resolve_document_status
 
 
 class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
-    template_name = serializers.CharField(source='template.name', read_only=True)
+    template_name = serializers.CharField(source='template.title', read_only=True)
     manager_name = serializers.SerializerMethodField()
     deal_client_name = serializers.SerializerMethodField()
     can_download = serializers.SerializerMethodField()
@@ -49,6 +49,16 @@ class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         )
+        extra_kwargs = {
+            'manager': {'required': False, 'allow_null': True},
+        }
+
+    def to_internal_value(self, data):
+        payload = data.copy() if hasattr(data, 'copy') else dict(data)
+        if payload.get('manager') in ('', None, 'null', 'undefined'):
+            payload.pop('manager', None)
+        return super().to_internal_value(payload)
+
 
     def get_manager_name(self, obj):
         manager = getattr(obj, 'manager', None)
@@ -61,7 +71,14 @@ class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
         client = getattr(deal, 'client', None) if deal else None
         if not client:
             return None
-        return f'{client.first_name} {client.last_name}'.strip() or getattr(client, 'email', None)
+
+        full_name = getattr(client, 'full_name', None)
+        if full_name:
+            return full_name
+
+        first_name = getattr(client, 'first_name', '') or ''
+        last_name = getattr(client, 'last_name', '') or ''
+        return f'{first_name} {last_name}'.strip() or getattr(client, 'email', None)
 
     def get_status(self, obj):
         return resolve_document_status(obj)
@@ -72,13 +89,12 @@ class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
 
     def get_can_download(self, obj):
         review = getattr(obj, 'review', None)
-        if review and review.status == 'approved' and review.approved_file:
-            return True
-        return False
+        return bool(review and review.status == 'approved' and review.approved_file)
 
     def _build_url(self, file_field):
         if not file_field:
             return None
+
         try:
             request = self.context.get('request')
             if request:
@@ -88,6 +104,9 @@ class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
             return None
 
     def get_file_url(self, obj):
+        review = getattr(obj, 'review', None)
+        if review and review.status == 'approved' and review.approved_file:
+            return self._build_url(review.approved_file)
         return self._build_url(getattr(obj, 'generated_file', None))
 
     def get_approved_file_url(self, obj):
