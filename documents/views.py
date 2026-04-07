@@ -14,8 +14,9 @@ from .models import (
     InfoSnippet,
     KnowledgeTest,
     KnowledgeTestAttempt,
+    DocumentReview, 
+    resolve_document_status
 )
-from .review_models import DocumentReview, resolve_document_status
 from .serializers import (
     DocumentTemplateSerializer,
     GeneratedDocumentSerializer,

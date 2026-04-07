@@ -5,8 +5,7 @@ from rest_framework.response import Response
 
 from users.permissions import is_admin_user
 from .mobile_serializers import GeneratedDocumentMobileSerializer
-from .models import GeneratedDocument
-from .review_models import DocumentReview, resolve_document_status
+from .models import GeneratedDocument, DocumentReview, resolve_document_status
 from .watermarking import build_approved_document
 
 

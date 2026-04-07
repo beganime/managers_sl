@@ -16,8 +16,8 @@ from .models import (
     KnowledgeTestAttempt,
     TemplateField,
     TestQuestion,
+    DocumentReview
 )
-from .review_models import DocumentReview
 from .watermarking import build_approved_document
 
 

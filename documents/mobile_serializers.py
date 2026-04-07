@@ -1,7 +1,6 @@
 from rest_framework import serializers
 
-from .models import GeneratedDocument
-from .review_models import resolve_document_status
+from .models import GeneratedDocument, resolve_document_status
 
 
 class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
