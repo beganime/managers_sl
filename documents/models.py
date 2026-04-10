@@ -9,6 +9,7 @@ from django.db import models
 from docxtpl import DocxTemplate
 from django.utils import timezone
 
+from .review_guard import safe_get_document_review
 
 
 logger = logging.getLogger(__name__)
@@ -242,7 +243,7 @@ class GeneratedDocument(models.Model):
 
     @property
     def can_download(self) -> bool:
-        review = getattr(self, 'review', None)
+        review = safe_get_document_review(self)
         if review:
             return review.status == 'approved' and bool(review.approved_file)
         return self.status == 'approved' and bool(self.generated_file)
@@ -340,6 +341,7 @@ class GeneratedDocument(models.Model):
                 self.save(update_fields=['status', 'updated_at'])
             return False, msg
 
+
 class DocumentReview(models.Model):
     STATUS_CHOICES = (
         ('pending', 'На рассмотрении'),
@@ -402,7 +404,7 @@ class DocumentReview(models.Model):
 
 
 def resolve_document_status(document):
-    review = getattr(document, 'review', None)
+    review = safe_get_document_review(document)
     if review:
         if review.status == 'approved':
             return 'approved'

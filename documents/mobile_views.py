@@ -6,6 +6,7 @@ from rest_framework.response import Response
 from users.permissions import is_admin_user
 from .mobile_serializers import GeneratedDocumentMobileSerializer
 from .models import GeneratedDocument, DocumentReview, resolve_document_status
+from .review_guard import has_document_review_table
 from .watermarking import build_approved_document
 
 
@@ -14,25 +15,33 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = GeneratedDocument.objects.select_related(
+        review_table_ready = has_document_review_table()
+
+        related_fields = [
             'template',
             'manager',
             'deal',
             'deal__client',
-            'review',
             'approved_by',
-        ).all()
+        ]
+        if review_table_ready:
+            related_fields.append('review')
+
+        qs = GeneratedDocument.objects.select_related(*related_fields).all()
 
         if not is_admin_user(self.request.user):
             qs = qs.filter(manager=self.request.user)
 
         status_param = (self.request.query_params.get('status') or '').strip().lower()
         if status_param == 'approved':
-            qs = qs.filter(review__status='approved')
+            qs = qs.filter(review__status='approved') if review_table_ready else qs.none()
         elif status_param == 'rejected':
-            qs = qs.filter(review__status='rejected')
+            qs = qs.filter(review__status='rejected') if review_table_ready else qs.none()
         elif status_param == 'pending':
-            qs = qs.exclude(review__status__in=['approved', 'rejected'])
+            if review_table_ready:
+                qs = qs.exclude(review__status__in=['approved', 'rejected'])
+            else:
+                qs = qs.exclude(status='error')
         elif status_param == 'error':
             qs = qs.filter(status='error')
 
@@ -57,7 +66,9 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 document.title = document.template.title
             document.save(update_fields=['title', 'updated_at'])
 
-        review, _ = DocumentReview.objects.get_or_create(document=document)
+        review = None
+        if has_document_review_table():
+            review, _ = DocumentReview.objects.get_or_create(document=document)
 
         try:
             success, _ = document.generate_document()
@@ -68,15 +79,16 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             document.status = 'generated'
             document.save(update_fields=['status', 'updated_at'])
 
-            if review.approved_file:
-                review.approved_file.delete(save=False)
-                review.approved_file = None
+            if review:
+                if review.approved_file:
+                    review.approved_file.delete(save=False)
 
-            review.status = 'pending'
-            review.rejection_reason = ''
-            review.reviewed_by = None
-            review.reviewed_at = None
-            review.save()
+                review.approved_file = None
+                review.status = 'pending'
+                review.rejection_reason = ''
+                review.reviewed_by = None
+                review.reviewed_at = None
+                review.save()
         except Exception:
             document.status = 'error'
             document.save(update_fields=['status', 'updated_at'])
@@ -88,12 +100,16 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             raise permissions.PermissionDenied('Нельзя менять одобренный документ')
 
         document = serializer.save()
+
+        if not has_document_review_table():
+            return
+
         review, _ = DocumentReview.objects.get_or_create(document=document)
 
         if review.approved_file:
             review.approved_file.delete(save=False)
-            review.approved_file = None
 
+        review.approved_file = None
         review.status = 'pending'
         review.rejection_reason = ''
         review.reviewed_by = None
@@ -111,7 +127,10 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         if resolve_document_status(document) == 'approved':
             return Response({'detail': 'Одобренный документ нельзя перегенерировать'}, status=400)
 
-        review, _ = DocumentReview.objects.get_or_create(document=document)
+        review = None
+        if has_document_review_table():
+            review, _ = DocumentReview.objects.get_or_create(document=document)
+
         try:
             success, msg = document.generate_document()
             if not success:
@@ -121,15 +140,16 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             document.status = 'generated'
             document.save(update_fields=['status', 'updated_at'])
 
-            if review.approved_file:
-                review.approved_file.delete(save=False)
-                review.approved_file = None
+            if review:
+                if review.approved_file:
+                    review.approved_file.delete(save=False)
 
-            review.status = 'pending'
-            review.rejection_reason = ''
-            review.reviewed_by = None
-            review.reviewed_at = None
-            review.save()
+                review.approved_file = None
+                review.status = 'pending'
+                review.rejection_reason = ''
+                review.reviewed_by = None
+                review.reviewed_at = None
+                review.save()
         except Exception as exc:
             document.status = 'error'
             document.save(update_fields=['status', 'updated_at'])
@@ -142,6 +162,12 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         document = self.get_object()
         if not is_admin_user(request.user):
             return Response({'detail': 'Только админ может одобрять документы'}, status=403)
+
+        if not has_document_review_table():
+            return Response(
+                {'detail': 'Таблица documents_documentreview не создана. Примените миграции documents.'},
+                status=500,
+            )
 
         if resolve_document_status(document) == 'approved':
             return Response({'detail': 'Документ уже одобрен'}, status=400)
@@ -176,12 +202,19 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         if not is_admin_user(request.user):
             return Response({'detail': 'Только админ может отклонять документы'}, status=403)
 
+        if not has_document_review_table():
+            return Response(
+                {'detail': 'Таблица documents_documentreview не создана. Примените миграции documents.'},
+                status=500,
+            )
+
         reason = request.data.get('reason', '')
         review, _ = DocumentReview.objects.get_or_create(document=document)
 
         if review.approved_file:
             review.approved_file.delete(save=False)
-            review.approved_file = None
+
+        review.approved_file = None
 
         review.mark_rejected(user=request.user, reason=reason)
         document.status = 'generated'

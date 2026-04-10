@@ -18,6 +18,7 @@ from .models import (
     TestQuestion,
     DocumentReview
 )
+from .review_guard import has_document_review_table, safe_get_document_review
 from .watermarking import build_approved_document
 
 
@@ -41,7 +42,7 @@ class InfoSnippetAdmin(ModelAdmin):
 
     @display(description="Копировать", label=True)
     def copy_btn(self, obj):
-        clean = obj.content.replace('"', '&quot;').replace("'", "\'").replace('\n', ' ')
+        clean = obj.content.replace('"', '&quot;').replace("'", "\\'").replace('\n', ' ')
         return format_html(
             '<button type="button" class="bg-primary-600 text-white px-2 py-1 rounded text-xs" '
             "onclick=\"navigator.clipboard.writeText('{}').then(()=>alert('Скопировано!'))\">📋</button>",
@@ -163,13 +164,17 @@ class GeneratedDocumentAdmin(ModelAdmin):
     actions = ['approve_documents', 'regenerate_docs']
 
     def get_queryset(self, request):
-        qs = super().get_queryset(request).select_related(
+        related_fields = [
             'template',
             'manager',
             'deal',
             'deal__client',
-            'review',
-        )
+        ]
+        if has_document_review_table():
+            related_fields.append('review')
+
+        qs = super().get_queryset(request).select_related(*related_fields)
+
         if is_admin_user(request.user):
             return qs
         return qs.filter(manager=request.user)
@@ -178,12 +183,15 @@ class GeneratedDocumentAdmin(ModelAdmin):
         return ('status', 'generated_file', 'approved_by', 'approved_at')
 
     def _reset_review_after_regenerate(self, doc):
+        if not has_document_review_table():
+            return
+
         review, _ = DocumentReview.objects.get_or_create(document=doc)
 
         if review.approved_file:
             review.approved_file.delete(save=False)
-            review.approved_file = None
 
+        review.approved_file = None
         review.status = 'pending'
         review.rejection_reason = ''
         review.reviewed_by = None
@@ -194,6 +202,14 @@ class GeneratedDocumentAdmin(ModelAdmin):
     def approve_documents(self, request, queryset):
         if not is_admin_user(request.user):
             self.message_user(request, "Нет прав для этой операции.", messages.ERROR)
+            return
+
+        if not has_document_review_table():
+            self.message_user(
+                request,
+                "Таблица documents_documentreview не создана. Сначала примените миграции documents.",
+                messages.ERROR,
+            )
             return
 
         count = 0
@@ -256,7 +272,14 @@ class GeneratedDocumentAdmin(ModelAdmin):
 
         success, msg = obj.generate_document()
         if success:
-            self._reset_review_after_regenerate(obj)
+            if has_document_review_table():
+                self._reset_review_after_regenerate(obj)
+            else:
+                self.message_user(
+                    request,
+                    "Документ сгенерирован, но review-таблица ещё не создана. Примените миграции documents.",
+                    messages.WARNING,
+                )
 
         level = messages.SUCCESS if success else messages.WARNING
         self.message_user(request, msg, level)
@@ -288,7 +311,7 @@ class GeneratedDocumentAdmin(ModelAdmin):
 
     @display(description="Статус", label=True)
     def status_badge(self, obj):
-        review = getattr(obj, 'review', None)
+        review = safe_get_document_review(obj)
         current_status = review.status if review else obj.status
 
         colors = {
@@ -313,7 +336,7 @@ class GeneratedDocumentAdmin(ModelAdmin):
 
     @display(description="Скачать")
     def download_link(self, obj):
-        review = getattr(obj, 'review', None)
+        review = safe_get_document_review(obj)
 
         if review and review.status == 'approved' and review.approved_file:
             return format_html(

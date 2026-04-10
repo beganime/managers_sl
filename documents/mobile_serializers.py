@@ -1,6 +1,7 @@
 from rest_framework import serializers
 
 from .models import GeneratedDocument, resolve_document_status
+from .review_guard import safe_get_document_review
 
 
 class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
@@ -58,7 +59,6 @@ class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
             payload.pop('manager', None)
         return super().to_internal_value(payload)
 
-
     def get_manager_name(self, obj):
         manager = getattr(obj, 'manager', None)
         if not manager:
@@ -83,11 +83,11 @@ class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
         return resolve_document_status(obj)
 
     def get_rejection_reason(self, obj):
-        review = getattr(obj, 'review', None)
+        review = safe_get_document_review(obj)
         return getattr(review, 'rejection_reason', '') if review else ''
 
     def get_can_download(self, obj):
-        review = getattr(obj, 'review', None)
+        review = safe_get_document_review(obj)
         return bool(review and review.status == 'approved' and review.approved_file)
 
     def _build_url(self, file_field):
@@ -103,13 +103,13 @@ class GeneratedDocumentMobileSerializer(serializers.ModelSerializer):
             return None
 
     def get_file_url(self, obj):
-        review = getattr(obj, 'review', None)
+        review = safe_get_document_review(obj)
         if review and review.status == 'approved' and review.approved_file:
             return self._build_url(review.approved_file)
         return self._build_url(getattr(obj, 'generated_file', None))
 
     def get_approved_file_url(self, obj):
-        review = getattr(obj, 'review', None)
+        review = safe_get_document_review(obj)
         if review and review.approved_file:
             return self._build_url(review.approved_file)
         return None
