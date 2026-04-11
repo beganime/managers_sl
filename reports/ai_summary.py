@@ -26,7 +26,8 @@ except Exception:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-1.5-flash"
+DEFAULT_MODEL = "gemini-2.5-flash"
+DEFAULT_API_VERSION = "v1"
 MAX_REPORTS_FOR_PROMPT = 60
 MAX_FINANCE_ENTRIES_FOR_PROMPT = 40
 MAX_REPORT_CONTENT_CHARS = 700
@@ -107,12 +108,13 @@ def _extract_gemini_text(data: dict):
 def _call_gemini(prompt: str):
     api_key = os.getenv("GEMINI_API_KEY", "") or getattr(settings, "GEMINI_API_KEY", "")
     model = os.getenv("GEMINI_MODEL", "") or getattr(settings, "GEMINI_MODEL", DEFAULT_MODEL)
+    api_version = os.getenv("GEMINI_API_VERSION", "") or getattr(settings, "GEMINI_API_VERSION", DEFAULT_API_VERSION)
 
     if not api_key:
         return None, "GEMINI_API_KEY не задан", model
 
     url = (
-        f"https://generativelanguage.googleapis.com/v1beta/models/"
+        f"https://generativelanguage.googleapis.com/{api_version}/models/"
         f"{model}:generateContent?key={api_key}"
     )
 
@@ -134,13 +136,13 @@ def _call_gemini(prompt: str):
             data = json.loads(raw)
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="ignore")
-        logger.exception("Gemini HTTPError")
+        logger.exception("Gemini HTTPError. model=%s api_version=%s body=%s", model, api_version, body)
         return None, f"Gemini HTTPError {exc.code}: {body}", model
     except urllib.error.URLError as exc:
-        logger.exception("Gemini URLError")
+        logger.exception("Gemini URLError. model=%s api_version=%s", model, api_version)
         return None, f"Gemini URLError: {exc}", model
     except Exception as exc:
-        logger.exception("Gemini unknown error")
+        logger.exception("Gemini unknown error. model=%s api_version=%s", model, api_version)
         return None, str(exc), model
 
     text, error = _extract_gemini_text(data)
@@ -419,8 +421,8 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
 
     fallback_text = (
         "AI-резюме не удалось сгенерировать. "
-        "Проверьте GEMINI_API_KEY, GEMINI_MODEL, доступ сервера к Google API "
-        "и ограничения ключа. Подробность ошибки есть в поле error."
+        "Проверьте GEMINI_API_KEY, GEMINI_MODEL, GEMINI_API_VERSION "
+        "и доступ сервера к Google API. Подробность ошибки есть в поле error."
     )
 
     return {
