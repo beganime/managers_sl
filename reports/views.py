@@ -88,6 +88,7 @@ class DailyReportViewSet(viewsets.ModelViewSet):
             serializer = self.get_serializer(existing, data=request.data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
+
             return Response(
                 {
                     "detail": "Отчёт за сегодня обновлён.",
@@ -128,6 +129,7 @@ class DailyReportViewSet(viewsets.ModelViewSet):
         date_from = request.query_params.get("date_from")
         date_to = request.query_params.get("date_to")
         office_id = request.query_params.get("office")
+
         office_id = int(office_id) if office_id and str(office_id).isdigit() else None
 
         result = build_admin_ai_summary(
@@ -135,4 +137,5 @@ class DailyReportViewSet(viewsets.ModelViewSet):
             date_to=date_to,
             office_id=office_id,
         )
+
         return Response(result, status=status.HTTP_200_OK)
