@@ -1,22 +1,25 @@
 import logging
 import os
-from io import BytesIO
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 
 from django.conf import settings
 from django.core.files.base import ContentFile
+from PIL import Image
 
 try:
-    from docx import Document
-    from docx.enum.text import WD_ALIGN_PARAGRAPH
-    from docx.shared import Mm
+    import pymupdf
 except Exception:  # pragma: no cover
-    Document = None
-    WD_ALIGN_PARAGRAPH = None
-    Mm = None
+    pymupdf = None
 
 
 logger = logging.getLogger(__name__)
+
+
+def _mm_to_pt(value_mm: float) -> float:
+    return float(value_mm) * 72.0 / 25.4
 
 
 def _candidate_watermark_paths(raw: str) -> list[Path]:
@@ -24,8 +27,8 @@ def _candidate_watermark_paths(raw: str) -> list[Path]:
         return []
 
     base_dir = Path(getattr(settings, "BASE_DIR", Path.cwd()))
-
     raw_path = Path(raw)
+
     candidates = [
         raw_path,
         base_dir / raw,
@@ -33,7 +36,7 @@ def _candidate_watermark_paths(raw: str) -> list[Path]:
         base_dir / "media" / raw,
     ]
 
-    unique = []
+    unique: list[Path] = []
     seen = set()
     for item in candidates:
         key = str(item)
@@ -51,7 +54,8 @@ def _get_watermark_path():
         logger.error("DOCUMENT_WATERMARK_IMAGE is empty")
         return None
 
-    for candidate in _candidate_watermark_paths(raw):
+    candidates = _candidate_watermark_paths(raw)
+    for candidate in candidates:
         try:
             if candidate.exists() and candidate.is_file():
                 logger.info("Watermark resolved to: %s", candidate)
@@ -59,40 +63,29 @@ def _get_watermark_path():
         except Exception:
             logger.exception("Failed while checking watermark path candidate: %s", candidate)
 
-    logger.error("Watermark file not found for raw value: %r", raw)
+    logger.error(
+        "Watermark file not found. Raw value: %r. Checked: %s",
+        raw,
+        [str(p) for p in candidates],
+    )
     return None
 
 
-def _iter_unique_footers(section):
-    seen = set()
-    for footer in (
-        getattr(section, "footer", None),
-        getattr(section, "first_page_footer", None),
-        getattr(section, "even_page_footer", None),
-    ):
-        if footer is None:
-            continue
+def _get_soffice_binary() -> str | None:
+    env_value = os.getenv("LIBREOFFICE_BIN", "").strip()
+    if env_value:
+        return env_value
 
-        footer_id = id(footer)
-        if footer_id in seen:
-            continue
+    for name in ("soffice", "libreoffice"):
+        path = shutil.which(name)
+        if path:
+            return path
 
-        seen.add(footer_id)
-        yield footer
+    logger.error("LibreOffice binary not found. Checked: soffice, libreoffice")
+    return None
 
 
-def _append_watermark_to_footer(footer, watermark_path):
-    if getattr(footer, "is_linked_to_previous", False):
-        footer.is_linked_to_previous = False
-
-    paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-    paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-
-    run = paragraph.add_run()
-    run.add_picture(str(watermark_path), width=Mm(35))
-
-
-def build_approved_document(generated_document):
+def _resolve_source_docx_path(generated_document) -> Path | None:
     source_field = getattr(generated_document, "generated_file", None)
     if not source_field:
         logger.error("Generated document %s has no generated_file", getattr(generated_document, "id", None))
@@ -118,8 +111,147 @@ def build_approved_document(generated_document):
         )
         return None
 
-    if Document is None or WD_ALIGN_PARAGRAPH is None or Mm is None:
-        logger.error("python-docx imports are unavailable")
+    return source_path
+
+
+def _convert_docx_to_pdf(source_docx_path: Path, workdir: Path) -> Path | None:
+    soffice_bin = _get_soffice_binary()
+    if not soffice_bin:
+        return None
+
+    input_docx_path = workdir / source_docx_path.name
+    shutil.copy2(source_docx_path, input_docx_path)
+
+    profile_dir = workdir / "lo-profile"
+    profile_dir.mkdir(parents=True, exist_ok=True)
+
+    command = [
+        soffice_bin,
+        "--headless",
+        f"-env:UserInstallation={profile_dir.resolve().as_uri()}",
+        "--convert-to",
+        "pdf:writer_pdf_Export",
+        "--outdir",
+        str(workdir),
+        str(input_docx_path),
+    ]
+
+    try:
+        completed = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            timeout=120,
+            check=False,
+        )
+    except Exception:
+        logger.exception("LibreOffice conversion crashed for %s", source_docx_path)
+        return None
+
+    if completed.stdout:
+        logger.info("LibreOffice stdout: %s", completed.stdout.strip())
+
+    if completed.returncode != 0:
+        logger.error(
+            "LibreOffice failed for %s. Return code=%s stderr=%s",
+            source_docx_path,
+            completed.returncode,
+            (completed.stderr or "").strip(),
+        )
+        return None
+
+    output_pdf_path = workdir / f"{input_docx_path.stem}.pdf"
+    if not output_pdf_path.exists():
+        logger.error(
+            "LibreOffice did not create PDF for %s. Expected path: %s",
+            source_docx_path,
+            output_pdf_path,
+        )
+        return None
+
+    return output_pdf_path
+
+
+def _get_watermark_rect_on_last_page(page, watermark_path: Path):
+    width_mm = float(
+        getattr(settings, "DOCUMENT_WATERMARK_WIDTH_MM", os.getenv("DOCUMENT_WATERMARK_WIDTH_MM", 35)) or 35
+    )
+    bottom_mm = float(
+        getattr(settings, "DOCUMENT_WATERMARK_BOTTOM_MM", os.getenv("DOCUMENT_WATERMARK_BOTTOM_MM", 8)) or 8
+    )
+    left_mm = float(
+        getattr(settings, "DOCUMENT_WATERMARK_LEFT_MM", os.getenv("DOCUMENT_WATERMARK_LEFT_MM", 15)) or 15
+    )
+
+    width_pt = _mm_to_pt(width_mm)
+    bottom_pt = _mm_to_pt(bottom_mm)
+    left_pt = _mm_to_pt(left_mm)
+
+    with Image.open(watermark_path) as image:
+        img_w, img_h = image.size
+
+    if not img_w or not img_h:
+        raise ValueError("Invalid watermark image size")
+
+    height_pt = width_pt * (img_h / img_w)
+
+    page_rect = page.rect
+    x0 = min(left_pt, max(0, page_rect.width - width_pt - _mm_to_pt(5)))
+    x1 = x0 + width_pt
+    y1 = page_rect.height - bottom_pt
+    y0 = y1 - height_pt
+
+    if y0 < 0:
+        y0 = _mm_to_pt(5)
+        y1 = y0 + height_pt
+
+    return pymupdf.Rect(x0, y0, x1, y1)
+
+
+def _apply_watermark_to_last_pdf_page(source_pdf_path: Path, watermark_path: Path, output_pdf_path: Path) -> bool:
+    if pymupdf is None:
+        logger.error("PyMuPDF is not installed")
+        return False
+
+    try:
+        pdf = pymupdf.open(str(source_pdf_path))
+    except Exception:
+        logger.exception("Failed to open PDF for watermarking: %s", source_pdf_path)
+        return False
+
+    try:
+        if len(pdf) == 0:
+            logger.error("PDF has no pages: %s", source_pdf_path)
+            return False
+
+        last_page = pdf[-1]
+        rect = _get_watermark_rect_on_last_page(last_page, watermark_path)
+
+        last_page.insert_image(
+            rect,
+            filename=str(watermark_path),
+            overlay=True,
+            keep_proportion=True,
+        )
+
+        pdf.save(str(output_pdf_path), deflate=True, garbage=3)
+        logger.info("Watermark applied to last PDF page: %s", output_pdf_path)
+        return True
+
+    except Exception:
+        logger.exception(
+            "Failed while applying watermark to the last page of PDF %s using %s",
+            source_pdf_path,
+            watermark_path,
+        )
+        return False
+    finally:
+        pdf.close()
+
+
+def build_approved_document(generated_document):
+    source_docx_path = _resolve_source_docx_path(generated_document)
+    if source_docx_path is None:
         return None
 
     watermark_path = _get_watermark_path()
@@ -127,49 +259,30 @@ def build_approved_document(generated_document):
         logger.error("Watermark path could not be resolved")
         return None
 
-    try:
-        doc = Document(str(source_path))
-    except Exception:
-        logger.exception(
-            "Failed to open generated .docx for document %s: %s",
-            getattr(generated_document, "id", None),
-            source_path,
-        )
-        return None
+    with tempfile.TemporaryDirectory(prefix="approved_pdf_") as tmp_dir_raw:
+        tmp_dir = Path(tmp_dir_raw)
 
-    try:
-        if not doc.sections:
-            logger.error("Document %s has no sections", getattr(generated_document, "id", None))
-            return None
-
-        last_section = doc.sections[-1]
-        added = 0
-
-        for footer in _iter_unique_footers(last_section):
-            _append_watermark_to_footer(footer, watermark_path)
-            added += 1
-
-        if added == 0:
+        source_pdf_path = _convert_docx_to_pdf(source_docx_path, tmp_dir)
+        if source_pdf_path is None:
             logger.error(
-                "No footer targets found in last section for document %s",
+                "Failed to convert DOCX to PDF for document %s",
                 getattr(generated_document, "id", None),
             )
             return None
 
-        buffer = BytesIO()
-        doc.save(buffer)
-        buffer.seek(0)
+        approved_pdf_path = tmp_dir / f"approved_{source_docx_path.stem}.pdf"
 
-        approved_name = f"generated_documents/approved/approved_{Path(source_name).name}"
-        logger.info(
-            "Approved document built successfully for document %s with watermark on last section only",
-            getattr(generated_document, "id", None),
+        success = _apply_watermark_to_last_pdf_page(
+            source_pdf_path=source_pdf_path,
+            watermark_path=watermark_path,
+            output_pdf_path=approved_pdf_path,
         )
-        return ContentFile(buffer.read(), name=approved_name)
+        if not success or not approved_pdf_path.exists():
+            logger.error(
+                "Failed to build approved PDF with watermark for document %s",
+                getattr(generated_document, "id", None),
+            )
+            return None
 
-    except Exception:
-        logger.exception(
-            "Failed while applying watermark to last section for document %s",
-            getattr(generated_document, "id", None),
-        )
-        return None
+        approved_name = f"generated_documents/approved/approved_{source_docx_path.stem}.pdf"
+        return ContentFile(approved_pdf_path.read_bytes(), name=approved_name)

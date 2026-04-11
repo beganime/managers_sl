@@ -10,6 +10,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     ca-certificates \
     netcat-openbsd \
+    libreoffice \
+    libreoffice-writer \
+    fonts-dejavu-core \
+    fonts-liberation \
     && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
