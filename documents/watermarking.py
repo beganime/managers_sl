@@ -33,8 +33,7 @@ def _candidate_watermark_paths(raw: str) -> list[Path]:
         base_dir / "media" / raw,
     ]
 
-    # Убираем дубли, сохраняя порядок
-    unique: list[Path] = []
+    unique = []
     seen = set()
     for item in candidates:
         key = str(item)
@@ -52,8 +51,7 @@ def _get_watermark_path():
         logger.error("DOCUMENT_WATERMARK_IMAGE is empty")
         return None
 
-    candidates = _candidate_watermark_paths(raw)
-    for candidate in candidates:
+    for candidate in _candidate_watermark_paths(raw):
         try:
             if candidate.exists() and candidate.is_file():
                 logger.info("Watermark resolved to: %s", candidate)
@@ -61,11 +59,7 @@ def _get_watermark_path():
         except Exception:
             logger.exception("Failed while checking watermark path candidate: %s", candidate)
 
-    logger.error(
-        "Watermark file not found. Raw value: %r. Checked: %s",
-        raw,
-        [str(p) for p in candidates],
-    )
+    logger.error("Watermark file not found for raw value: %r", raw)
     return None
 
 
@@ -144,15 +138,20 @@ def build_approved_document(generated_document):
         return None
 
     try:
+        if not doc.sections:
+            logger.error("Document %s has no sections", getattr(generated_document, "id", None))
+            return None
+
+        last_section = doc.sections[-1]
         added = 0
-        for section in doc.sections:
-            for footer in _iter_unique_footers(section):
-                _append_watermark_to_footer(footer, watermark_path)
-                added += 1
+
+        for footer in _iter_unique_footers(last_section):
+            _append_watermark_to_footer(footer, watermark_path)
+            added += 1
 
         if added == 0:
             logger.error(
-                "No footer targets found while applying watermark for document %s",
+                "No footer targets found in last section for document %s",
                 getattr(generated_document, "id", None),
             )
             return None
@@ -163,16 +162,14 @@ def build_approved_document(generated_document):
 
         approved_name = f"generated_documents/approved/approved_{Path(source_name).name}"
         logger.info(
-            "Approved document built successfully for document %s with watermark %s",
+            "Approved document built successfully for document %s with watermark on last section only",
             getattr(generated_document, "id", None),
-            watermark_path,
         )
         return ContentFile(buffer.read(), name=approved_name)
 
     except Exception:
         logger.exception(
-            "Failed while applying watermark for document %s using %s",
+            "Failed while applying watermark to last section for document %s",
             getattr(generated_document, "id", None),
-            watermark_path,
         )
         return None
