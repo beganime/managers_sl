@@ -77,8 +77,16 @@ def _build_yandex_payload(payload_dict: dict, folder_id: str, model_type: str):
     # Пользовательский промпт передает сами данные
     user_prompt = f"Данные для анализа:\n{json.dumps(payload_dict, ensure_ascii=False)}"
 
+    # Умная сборка URL модели (предотвращает дублирование /latest)
+    if model_type.startswith("gpt://"):
+        model_uri = model_type
+    elif "/" in model_type:
+        model_uri = f"gpt://{folder_id}/{model_type}"
+    else:
+        model_uri = f"gpt://{folder_id}/{model_type}/latest"
+
     return {
-        "modelUri": f"gpt://{folder_id}/{model_type}/latest",
+        "modelUri": model_uri,
         "completionOptions": {
             "stream": False,
             "temperature": 0.35,
