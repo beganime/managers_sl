@@ -7,6 +7,7 @@ from rest_framework.decorators import action
 from rest_framework.generics import CreateAPIView
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
 
 from .models import Lead
 from .serializers import LeadSerializer, MobileLeadSerializer
@@ -21,10 +22,17 @@ class IsAuthorizedAPIClient(BasePermission):
         return provided_key == actual_key
 
 
+class LeadCreateThrottle(AnonRateThrottle):
+    # Ограничение по IP: максимум 3 заявки в минуту
+    rate = '3/min'
+    scope = 'leads_create'
+
+
 class LeadCreateAPIView(CreateAPIView):
     queryset = Lead.objects.all()
     serializer_class = LeadSerializer
     permission_classes = [IsAuthorizedAPIClient]
+    throttle_classes = [LeadCreateThrottle]  # Добавляем защиту от DDoS/спама
 
 
 class LeadViewSet(viewsets.ModelViewSet):

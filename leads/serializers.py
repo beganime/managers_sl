@@ -1,4 +1,5 @@
 # leads/serializers.py
+import re
 from rest_framework import serializers
 
 from .models import Lead
@@ -8,6 +9,31 @@ class LeadSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lead
         fields = '__all__'
+
+    def validate_full_name(self, value):
+        # Защита от спама: блокируем имена, где 5 и более одинаковых символов подряд (xxxxx)
+        if value and re.search(r'(.)\1{4,}', value.lower()):
+            raise serializers.ValidationError("Имя содержит недопустимое количество повторяющихся символов.")
+        return value
+
+    def validate_student_name(self, value):
+        # Аналогичная защита для ФИО студента
+        if value and re.search(r'(.)\1{4,}', value.lower()):
+            raise serializers.ValidationError("ФИО содержит недопустимое количество повторяющихся символов.")
+        return value
+
+    def validate_parent_name(self, value):
+        # Аналогичная защита для ФИО родителя
+        if value and re.search(r'(.)\1{4,}', value.lower()):
+            raise serializers.ValidationError("ФИО содержит недопустимое количество повторяющихся символов.")
+        return value
+
+    def validate_phone(self, value):
+        # Защита от кривых номеров телефона
+        cleaned = re.sub(r'\D', '', str(value))
+        if len(cleaned) < 6:
+            raise serializers.ValidationError("Некорректный номер телефона.")
+        return value
 
     def to_internal_value(self, data):
         """
