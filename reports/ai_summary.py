@@ -26,8 +26,8 @@ except Exception:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "gemini-2.5-flash"
-DEFAULT_API_VERSION = "v1"
+# По умолчанию используем основную модель (также можно yandexgpt-lite)
+DEFAULT_MODEL = "yandexgpt"
 MAX_REPORTS_FOR_PROMPT = 60
 MAX_FINANCE_ENTRIES_FOR_PROMPT = 40
 MAX_REPORT_CONTENT_CHARS = 700
@@ -56,76 +56,81 @@ def _is_income_entry(entry_type: str) -> bool:
     return normalized in {"income", "in", "plus", "credit", "deposit", "приход", "доход"}
 
 
-def _build_gemini_payload(prompt: str):
+def _build_yandex_payload(payload_dict: dict, folder_id: str, model_type: str):
+    # В Яндексе системный промпт задает поведение модели
+    system_prompt = """Ты — сильный операционный аналитик и помощник администратора.
+
+Сделай итоговый управленческий отчёт на русском языке.
+Пиши конкретно, без воды, с опорой только на переданные данные.
+Если данных мало или они неполные — прямо скажи об этом.
+Не выдумывай факты.
+
+Структура ответа:
+1. Общая картина
+2. Что хорошо
+3. Проблемы и риски
+4. Что видно по офисам
+5. Доходы и расходы
+6. Кто или какой офис выделяется
+7. 5 конкретных рекомендаций администратору"""
+
+    # Пользовательский промпт передает сами данные
+    user_prompt = f"Данные для анализа:\n{json.dumps(payload_dict, ensure_ascii=False)}"
+
     return {
-        "contents": [
-            {
-                "parts": [
-                    {"text": prompt},
-                ]
-            }
-        ],
-        "generationConfig": {
+        "modelUri": f"gpt://{folder_id}/{model_type}/latest",
+        "completionOptions": {
+            "stream": False,
             "temperature": 0.35,
-            "topP": 0.9,
-            "maxOutputTokens": 1800,
+            "maxTokens": "2000"
         },
+        "messages": [
+            {
+                "role": "system",
+                "text": system_prompt
+            },
+            {
+                "role": "user",
+                "text": user_prompt
+            }
+        ]
     }
 
 
-def _extract_gemini_text(data: dict):
-    prompt_feedback = data.get("promptFeedback") or {}
-    block_reason = prompt_feedback.get("blockReason")
-    if block_reason:
-        return None, f"Gemini заблокировал запрос: {block_reason}"
-
-    candidates = data.get("candidates") or []
-    if not candidates:
-        return None, f"Gemini не вернул candidates: {json.dumps(data, ensure_ascii=False)}"
-
-    candidate = candidates[0] or {}
-    finish_reason = candidate.get("finishReason")
-    content = candidate.get("content") or {}
-    parts = content.get("parts") or []
-
-    texts = []
-    for part in parts:
-        text = part.get("text")
+def _extract_yandex_text(data: dict):
+    try:
+        alternatives = data.get("result", {}).get("alternatives", [])
+        if not alternatives:
+            return None, f"Yandex GPT не вернул alternatives: {json.dumps(data, ensure_ascii=False)}"
+        
+        text = alternatives[0].get("message", {}).get("text", "").strip()
         if text:
-            texts.append(text)
-
-    result_text = "\n".join(texts).strip()
-
-    if result_text:
-        return result_text, None
-
-    if finish_reason:
-        return None, f"Gemini не вернул текст. finishReason={finish_reason}"
-
-    return None, f"Gemini не вернул текст: {json.dumps(data, ensure_ascii=False)}"
+            return text, None
+            
+        return None, "Yandex GPT вернул пустой текст."
+    except Exception as e:
+        return None, f"Ошибка парсинга ответа Yandex GPT: {e}. Данные: {json.dumps(data, ensure_ascii=False)}"
 
 
-def _call_gemini(prompt: str):
-    api_key = os.getenv("GEMINI_API_KEY", "") or getattr(settings, "GEMINI_API_KEY", "")
-    model = os.getenv("GEMINI_MODEL", "") or getattr(settings, "GEMINI_MODEL", DEFAULT_MODEL)
-    api_version = os.getenv("GEMINI_API_VERSION", "") or getattr(settings, "GEMINI_API_VERSION", DEFAULT_API_VERSION)
+def _call_yandex(payload_dict: dict):
+    api_key = os.getenv("YANDEX_API_KEY", "") or getattr(settings, "YANDEX_API_KEY", "")
+    folder_id = os.getenv("YANDEX_FOLDER_ID", "") or getattr(settings, "YANDEX_FOLDER_ID", "")
+    model_type = os.getenv("YANDEX_MODEL", "") or getattr(settings, "YANDEX_MODEL", DEFAULT_MODEL)
 
-    if not api_key:
-        return None, "GEMINI_API_KEY не задан", model
+    if not api_key or not folder_id:
+        return None, "YANDEX_API_KEY или YANDEX_FOLDER_ID не заданы", model_type
 
-    url = (
-        f"https://generativelanguage.googleapis.com/{api_version}/models/"
-        f"{model}:generateContent?key={api_key}"
-    )
-
-    payload = _build_gemini_payload(prompt)
+    url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
+    payload = _build_yandex_payload(payload_dict, folder_id, model_type)
 
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json; charset=utf-8",
-            "User-Agent": "ManagersSL/1.0",
+            "Authorization": f"Api-Key {api_key}",
+            "x-folder-id": folder_id,
+            "x-data-logging-enabled": "true"
         },
         method="POST",
     )
@@ -136,21 +141,21 @@ def _call_gemini(prompt: str):
             data = json.loads(raw)
     except urllib.error.HTTPError as exc:
         body = exc.read().decode("utf-8", errors="ignore")
-        logger.exception("Gemini HTTPError. model=%s api_version=%s body=%s", model, api_version, body)
-        return None, f"Gemini HTTPError {exc.code}: {body}", model
+        logger.exception("Yandex HTTPError. model=%s body=%s", model_type, body)
+        return None, f"Yandex HTTPError {exc.code}: {body}", model_type
     except urllib.error.URLError as exc:
-        logger.exception("Gemini URLError. model=%s api_version=%s", model, api_version)
-        return None, f"Gemini URLError: {exc}", model
+        logger.exception("Yandex URLError. model=%s", model_type)
+        return None, f"Yandex URLError: {exc}", model_type
     except Exception as exc:
-        logger.exception("Gemini unknown error. model=%s api_version=%s", model, api_version)
-        return None, str(exc), model
+        logger.exception("Yandex unknown error. model=%s", model_type)
+        return None, str(exc), model_type
 
-    text, error = _extract_gemini_text(data)
+    text, error = _extract_yandex_text(data)
     if error:
-        logger.warning("Gemini empty/bad response: %s", error)
-        return None, error, model
+        logger.warning("Yandex GPT empty/bad response: %s", error)
+        return None, error, model_type
 
-    return text, None, model
+    return text, None, model_type
 
 
 def _build_reports_payload(reports_qs):
@@ -328,29 +333,6 @@ def _build_finance_entries(date_from=None, date_to=None, office_id=None):
     return finance_entries, finance_balance
 
 
-def _build_prompt(payload: dict):
-    return f"""
-Ты — сильный операционный аналитик и помощник администратора.
-
-Сделай итоговый управленческий отчёт на русском языке.
-Пиши конкретно, без воды, с опорой только на данные ниже.
-Если данных мало или они неполные — прямо скажи об этом.
-Не выдумывай факты.
-
-Структура ответа:
-1. Общая картина
-2. Что хорошо
-3. Проблемы и риски
-4. Что видно по офисам
-5. Доходы и расходы
-6. Кто или какой офис выделяется
-7. 5 конкретных рекомендаций администратору
-
-Данные:
-{json.dumps(payload, ensure_ascii=False)}
-""".strip()
-
-
 def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
     reports_qs = DailyReport.objects.select_related("employee", "employee__office").all()
 
@@ -387,8 +369,8 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
 
     if not reports_payload and not finance_entries:
         return {
-            "provider": "gemini",
-            "model": os.getenv("GEMINI_MODEL", "") or getattr(settings, "GEMINI_MODEL", DEFAULT_MODEL),
+            "provider": "yandex",
+            "model": os.getenv("YANDEX_MODEL", "") or getattr(settings, "YANDEX_MODEL", DEFAULT_MODEL),
             "ai_used": False,
             "summary": "Недостаточно данных для AI-анализа: нет отчётов и нет финансовых записей за выбранный период.",
             "error": "Нет данных для анализа",
@@ -399,12 +381,12 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
             },
         }
 
-    prompt = _build_prompt(payload)
-    summary_text, error, model = _call_gemini(prompt)
+    # Вызов Яндекса вместо Gemini
+    summary_text, error, model = _call_yandex(payload)
 
     if summary_text:
         return {
-            "provider": "gemini",
+            "provider": "yandex",
             "model": model,
             "ai_used": True,
             "summary": summary_text,
@@ -421,12 +403,12 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
 
     fallback_text = (
         "AI-резюме не удалось сгенерировать. "
-        "Проверьте GEMINI_API_KEY, GEMINI_MODEL, GEMINI_API_VERSION "
-        "и доступ сервера к Google API. Подробность ошибки есть в поле error."
+        "Проверьте YANDEX_API_KEY, YANDEX_FOLDER_ID и доступ сервера к Yandex Cloud. "
+        "Подробность ошибки есть в логах и в поле error."
     )
 
     return {
-        "provider": "gemini",
+        "provider": "yandex",
         "model": model,
         "ai_used": False,
         "summary": fallback_text,
