@@ -26,8 +26,8 @@ except Exception:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
-# По умолчанию используем основную модель (также можно yandexgpt-lite)
-DEFAULT_MODEL = "yandexgpt"
+# Из скриншота: yandexgpt-5.1/latest
+DEFAULT_MODEL = "yandexgpt-5.1/latest"
 MAX_REPORTS_FOR_PROMPT = 60
 MAX_FINANCE_ENTRIES_FOR_PROMPT = 40
 MAX_REPORT_CONTENT_CHARS = 700
@@ -56,8 +56,7 @@ def _is_income_entry(entry_type: str) -> bool:
     return normalized in {"income", "in", "plus", "credit", "deposit", "приход", "доход"}
 
 
-def _build_yandex_payload(payload_dict: dict, folder_id: str, model_type: str):
-    # В Яндексе системный промпт задает поведение модели
+def _build_yandex_openai_payload(payload_dict: dict, folder_id: str, model_type: str):
     system_prompt = """Ты — сильный операционный аналитик и помощник администратора.
 
 Сделай итоговый управленческий отчёт на русском языке.
@@ -74,10 +73,9 @@ def _build_yandex_payload(payload_dict: dict, folder_id: str, model_type: str):
 6. Кто или какой офис выделяется
 7. 5 конкретных рекомендаций администратору"""
 
-    # Пользовательский промпт передает сами данные
     user_prompt = f"Данные для анализа:\n{json.dumps(payload_dict, ensure_ascii=False)}"
 
-    # Умная сборка URL модели (предотвращает дублирование /latest)
+    # Умная сборка URL модели для OpenAI-совместимого API Яндекса
     if model_type.startswith("gpt://"):
         model_uri = model_type
     elif "/" in model_type:
@@ -86,32 +84,23 @@ def _build_yandex_payload(payload_dict: dict, folder_id: str, model_type: str):
         model_uri = f"gpt://{folder_id}/{model_type}/latest"
 
     return {
-        "modelUri": model_uri,
-        "completionOptions": {
-            "stream": False,
-            "temperature": 0.35,
-            "maxTokens": "2000"
-        },
+        "model": model_uri,
         "messages": [
-            {
-                "role": "system",
-                "text": system_prompt
-            },
-            {
-                "role": "user",
-                "text": user_prompt
-            }
-        ]
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt}
+        ],
+        "temperature": 0.35,
+        "max_tokens": 2000
     }
 
 
-def _extract_yandex_text(data: dict):
+def _extract_yandex_openai_text(data: dict):
     try:
-        alternatives = data.get("result", {}).get("alternatives", [])
-        if not alternatives:
-            return None, f"Yandex GPT не вернул alternatives: {json.dumps(data, ensure_ascii=False)}"
+        choices = data.get("choices", [])
+        if not choices:
+            return None, f"Yandex GPT не вернул choices: {json.dumps(data, ensure_ascii=False)}"
         
-        text = alternatives[0].get("message", {}).get("text", "").strip()
+        text = choices[0].get("message", {}).get("content", "").strip()
         if text:
             return text, None
             
@@ -128,23 +117,17 @@ def _call_yandex(payload_dict: dict):
     if not api_key or not folder_id:
         return None, "YANDEX_API_KEY или YANDEX_FOLDER_ID не заданы", model_type
 
-    url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
-    payload = _build_yandex_payload(payload_dict, folder_id, model_type)
-
-    # Автоматическое определение типа ключа для Яндекса (IAM токен vs API Ключ)
-    if api_key.startswith("t1.") or api_key.startswith("t2."):
-        auth_header = f"Bearer {api_key}"
-    else:
-        auth_header = f"Api-Key {api_key}"
+    # ИСПОЛЬЗУЕМ ENDPOINT ИЗ YANDEX AI STUDIO (совместимый с OpenAI)
+    url = "https://ai.api.cloud.yandex.net/v1/chat/completions"
+    payload = _build_yandex_openai_payload(payload_dict, folder_id, model_type)
 
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
         headers={
-            "Content-Type": "application/json; charset=utf-8",
-            "Authorization": auth_header,
-            "x-folder-id": folder_id,
-            "x-data-logging-enabled": "true"
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",  # OpenAI-совместимый API Яндекса принимает Bearer
+            "x-folder-id": folder_id
         },
         method="POST",
     )
@@ -164,7 +147,7 @@ def _call_yandex(payload_dict: dict):
         logger.exception("Yandex unknown error. model=%s", model_type)
         return None, str(exc), model_type
 
-    text, error = _extract_yandex_text(data)
+    text, error = _extract_yandex_openai_text(data)
     if error:
         logger.warning("Yandex GPT empty/bad response: %s", error)
         return None, error, model_type
@@ -417,7 +400,7 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
 
     fallback_text = (
         "AI-резюме не удалось сгенерировать. "
-        "Проверьте YANDEX_API_KEY, YANDEX_FOLDER_ID и доступ сервера к Yandex Cloud (роль ai.languageModels.user). "
+        "Проверьте YANDEX_API_KEY, YANDEX_FOLDER_ID и доступ сервера к Yandex Cloud. "
         "Подробность ошибки есть в логах и в поле error."
     )
 
