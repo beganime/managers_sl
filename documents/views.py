@@ -1,3 +1,4 @@
+# documents/views.py
 import logging
 
 from django.db import transaction
@@ -28,6 +29,7 @@ from .serializers import (
     KnowledgeTestSerializer,
 )
 from .watermarking import build_approved_document
+from .ai_search import search_knowledge_base  # <-- ИМПОРТИРУЕМ НАШ ИИ
 
 
 logger = logging.getLogger(__name__)
@@ -136,6 +138,18 @@ class InfoSnippetViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Только администратор может удалять справочные записи.')
         instance.delete()
 
+    # ==========================================
+    # НОВЫЙ ЭНДПОИНТ ДЛЯ ЗАПРОСОВ К ИИ
+    # ==========================================
+    @action(detail=False, methods=['post'], url_path='ask_ai')
+    def ask_ai(self, request):
+        query = request.data.get('query', '').strip()
+        if not query:
+            return Response({'detail': 'Введите ваш вопрос'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        answer = search_knowledge_base(query)
+        return Response({'answer': answer}, status=status.HTTP_200_OK)
+
 
 class DocumentTemplateViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = DocumentTemplateSerializer
@@ -218,6 +232,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 document.title = document.template.title
             document.save(update_fields=['title', 'updated_at'])
 
+        from .models import DocumentReview
         review, _ = DocumentReview.objects.get_or_create(document=document)
 
         success, msg = document.generate_document()
@@ -281,6 +296,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        from .models import DocumentReview
         review, _ = DocumentReview.objects.get_or_create(document=doc)
         approved_file = build_approved_document(doc)
         if approved_file is None:
@@ -317,6 +333,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         if not is_admin_user(request.user) and doc.manager_id != request.user.id:
             raise PermissionDenied('Нет прав на перегенерацию документа.')
 
+        from .models import DocumentReview
         review, _ = DocumentReview.objects.get_or_create(document=doc)
         success, msg = doc.generate_document()
         doc.refresh_from_db()
