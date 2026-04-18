@@ -9,6 +9,7 @@ class OfficeFinanceEntrySerializer(serializers.ModelSerializer):
     office_name = serializers.CharField(source='office.city', read_only=True)
     created_by_name = serializers.SerializerMethodField()
     currency_code = serializers.CharField(source='currency.code', read_only=True)
+    category_label = serializers.CharField(source='get_category_display', read_only=True)
 
     class Meta:
         model = OfficeFinanceEntry
@@ -21,6 +22,7 @@ class OfficeFinanceEntrySerializer(serializers.ModelSerializer):
             'entry_type',
             'title',
             'category',
+            'category_label',
             'comment',
             'amount',
             'currency',
@@ -50,7 +52,7 @@ class OfficeFinanceEntrySerializer(serializers.ModelSerializer):
         return bool(
             user
             and user.is_authenticated
-            and (user.is_superuser or getattr(user, 'role', None) == 'admin')
+            and (user.is_superuser or getattr(user, 'role', None) == 'admin' or user.is_staff)
         )
 
     def _get_default_currency(self):
@@ -81,9 +83,24 @@ class OfficeFinanceEntrySerializer(serializers.ModelSerializer):
             if currency:
                 attrs['currency'] = currency
 
-        if not attrs.get('currency'):
+        if not currency:
             raise serializers.ValidationError(
                 {'currency': 'Не найдена валюта по умолчанию. Создай USD в каталоге.'}
             )
+
+        category = attrs.get('category')
+        if not category:
+            attrs['category'] = getattr(self.instance, 'category', None) or 'custom'
+
+        entry_type = attrs.get('entry_type') or getattr(self.instance, 'entry_type', None)
+        if entry_type not in ('income', 'expense'):
+            raise serializers.ValidationError({'entry_type': 'Тип операции должен быть income или expense.'})
+
+        amount = attrs.get('amount')
+        if amount is None and self.instance:
+            amount = self.instance.amount
+
+        if amount is None or amount <= 0:
+            raise serializers.ValidationError({'amount': 'Сумма должна быть больше нуля.'})
 
         return attrs

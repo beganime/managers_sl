@@ -14,6 +14,16 @@ class OfficeFinanceEntry(models.Model):
         ('expense', 'Расход'),
     )
 
+    ENTRY_CATEGORIES = (
+        ('custom', 'Другое'),
+        ('salary', 'Зарплата'),
+        ('visa', 'Виза'),
+        ('air_tickets', 'Авиабилеты'),
+        ('office', 'Офис'),
+        ('utilities', 'Коммунальные расходы'),
+        ('marketing', 'Маркетинг'),
+    )
+
     office = models.ForeignKey(
         'users.Office',
         on_delete=models.CASCADE,
@@ -35,7 +45,13 @@ class OfficeFinanceEntry(models.Model):
         db_index=True,
     )
     title = models.CharField('Название', max_length=255)
-    category = models.CharField('Категория', max_length=100, blank=True)
+    category = models.CharField(
+        'Категория',
+        max_length=100,
+        choices=ENTRY_CATEGORIES,
+        default='custom',
+        db_index=True,
+    )
     comment = models.TextField('Комментарий', blank=True)
     amount = models.DecimalField('Сумма', max_digits=12, decimal_places=2)
     currency = models.ForeignKey(
@@ -84,12 +100,17 @@ class OfficeFinanceEntry(models.Model):
         super().save(*args, **kwargs)
 
 
-def summarize_office_finances(office, date_from=None, date_to=None):
+def summarize_office_finances(office, date_from=None, date_to=None, category=None):
     qs = OfficeFinanceEntry.objects.filter(office=office, is_confirmed=True)
+
     if date_from:
         qs = qs.filter(entry_date__gte=date_from)
+
     if date_to:
         qs = qs.filter(entry_date__lte=date_to)
+
+    if category:
+        qs = qs.filter(category=category)
 
     income = qs.filter(entry_type='income').aggregate(total=Sum('amount_usd'))['total'] or Decimal('0')
     expense = qs.filter(entry_type='expense').aggregate(total=Sum('amount_usd'))['total'] or Decimal('0')

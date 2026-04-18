@@ -6,13 +6,65 @@ import logging
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import models
-from docxtpl import DocxTemplate
 from django.utils import timezone
+from django.utils.text import slugify
+from docxtpl import DocxTemplate
 
 from .review_guard import safe_get_document_review
 
 
 logger = logging.getLogger(__name__)
+
+
+class KnowledgeSection(models.Model):
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='children',
+        verbose_name='Родительский раздел',
+    )
+    title = models.CharField('Название', max_length=255)
+    slug = models.SlugField(
+        'Slug',
+        max_length=255,
+        blank=True,
+        db_index=True,
+        allow_unicode=True,
+    )
+    icon = models.CharField('Иконка', max_length=60, blank=True, default='folder')
+    color = models.CharField('Цвет', max_length=30, blank=True)
+    order = models.PositiveIntegerField('Порядок', default=0)
+    is_active = models.BooleanField('Активен', default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Раздел базы знаний'
+        verbose_name_plural = 'Разделы базы знаний'
+        ordering = ['parent__id', 'order', 'title']
+
+    def __str__(self):
+        return self.full_path
+
+    @property
+    def full_path(self):
+        parts = [self.title]
+        parent = self.parent
+        guard = 0
+
+        while parent and guard < 20:
+            parts.append(parent.title)
+            parent = parent.parent
+            guard += 1
+
+        return ' / '.join(reversed(parts))
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.title, allow_unicode=True) or 'section'
+        super().save(*args, **kwargs)
 
 
 class InfoSnippet(models.Model):
@@ -23,25 +75,46 @@ class InfoSnippet(models.Model):
         ('links', 'Полезные ссылки'),
     )
 
-    category = models.CharField("Категория", max_length=50, choices=CATEGORY_CHOICES)
-    title = models.CharField("Название", max_length=255)
-    content = models.TextField("Содержание (Текст для копирования)")
-    order = models.PositiveIntegerField("Порядок", default=0)
+    section = models.ForeignKey(
+        KnowledgeSection,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='snippets',
+        verbose_name='Раздел',
+    )
+    category = models.CharField(
+        'Категория',
+        max_length=50,
+        choices=CATEGORY_CHOICES,
+        default='faq',
+    )
+    title = models.CharField('Название', max_length=255)
+    content = models.TextField('Содержание (Текст для копирования)')
+    order = models.PositiveIntegerField('Порядок', default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
     class Meta:
-        verbose_name = "База знаний"
-        verbose_name_plural = "База знаний"
-        ordering = ['category', 'order']
+        verbose_name = 'База знаний'
+        verbose_name_plural = 'База знаний'
+        ordering = ['section__order', 'category', 'order', 'title']
 
 
 class KnowledgeTest(models.Model):
-    title = models.CharField("Название теста", max_length=255)
-    description = models.TextField("Описание", blank=True)
-    is_active = models.BooleanField("Активен", default=True)
+    section = models.ForeignKey(
+        KnowledgeSection,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='tests',
+        verbose_name='Раздел',
+    )
+    title = models.CharField('Название теста', max_length=255)
+    description = models.TextField('Описание', blank=True)
+    is_active = models.BooleanField('Активен', default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -49,8 +122,8 @@ class KnowledgeTest(models.Model):
         return self.title
 
     class Meta:
-        verbose_name = "Тест"
-        verbose_name_plural = "Тесты (База знаний)"
+        verbose_name = 'Тест'
+        verbose_name_plural = 'Тесты (База знаний)'
         ordering = ['-created_at']
 
 
@@ -59,26 +132,26 @@ class TestQuestion(models.Model):
         KnowledgeTest,
         on_delete=models.CASCADE,
         related_name='questions',
-        verbose_name="Тест",
+        verbose_name='Тест',
     )
-    text = models.TextField("Текст вопроса")
+    text = models.TextField('Текст вопроса')
     options = models.JSONField(
-        "Варианты ответов",
+        'Варианты ответов',
         default=list,
         help_text='Список строк: ["Вариант 1", "Вариант 2", ...]',
     )
     correct = models.PositiveSmallIntegerField(
-        "Индекс правильного ответа (с 0)",
+        'Индекс правильного ответа (с 0)',
         default=0,
     )
-    order = models.PositiveIntegerField("Порядок", default=0)
+    order = models.PositiveIntegerField('Порядок', default=0)
 
     def __str__(self):
         return self.text[:60]
 
     class Meta:
-        verbose_name = "Вопрос"
-        verbose_name_plural = "Вопросы"
+        verbose_name = 'Вопрос'
+        verbose_name_plural = 'Вопросы'
         ordering = ['order']
 
 
@@ -87,27 +160,27 @@ class KnowledgeTestAttempt(models.Model):
         KnowledgeTest,
         on_delete=models.CASCADE,
         related_name='attempts',
-        verbose_name="Тест",
+        verbose_name='Тест',
     )
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='knowledge_test_attempts',
-        verbose_name="Пользователь",
+        verbose_name='Пользователь',
     )
-    score = models.PositiveIntegerField("Правильных ответов", default=0)
-    total = models.PositiveIntegerField("Всего вопросов", default=0)
-    answers = models.JSONField("Ответы пользователя", default=dict, blank=True)
-    started_at = models.DateTimeField("Начало", auto_now_add=True)
-    completed_at = models.DateTimeField("Завершено", auto_now=True)
+    score = models.PositiveIntegerField('Правильных ответов', default=0)
+    total = models.PositiveIntegerField('Всего вопросов', default=0)
+    answers = models.JSONField('Ответы пользователя', default=dict, blank=True)
+    started_at = models.DateTimeField('Начало', auto_now_add=True)
+    completed_at = models.DateTimeField('Завершено', auto_now=True)
 
     class Meta:
-        verbose_name = "Результат теста"
-        verbose_name_plural = "Результаты тестов"
+        verbose_name = 'Результат теста'
+        verbose_name_plural = 'Результаты тестов'
         ordering = ['-completed_at']
 
     def __str__(self):
-        return f"{self.user} — {self.test} ({self.score}/{self.total})"
+        return f'{self.user} — {self.test} ({self.score}/{self.total})'
 
     @property
     def percent(self):
@@ -117,18 +190,18 @@ class KnowledgeTestAttempt(models.Model):
 
 
 class DocumentTemplate(models.Model):
-    title = models.CharField("Название шаблона", max_length=255)
-    description = models.TextField("Описание для менеджера", blank=True)
-    file = models.FileField("Файл шаблона (DOCX)", upload_to='templates/')
-    is_active = models.BooleanField("Активен", default=True)
+    title = models.CharField('Название шаблона', max_length=255)
+    description = models.TextField('Описание для менеджера', blank=True)
+    file = models.FileField('Файл шаблона (DOCX)', upload_to='templates/')
+    is_active = models.BooleanField('Активен', default=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.title
 
     class Meta:
-        verbose_name = "Шаблон документа"
-        verbose_name_plural = "Шаблоны документов"
+        verbose_name = 'Шаблон документа'
+        verbose_name_plural = 'Шаблоны документов'
 
 
 class TemplateField(models.Model):
@@ -143,34 +216,34 @@ class TemplateField(models.Model):
         DocumentTemplate,
         on_delete=models.CASCADE,
         related_name='fields',
-        verbose_name="Шаблон",
+        verbose_name='Шаблон',
     )
     key = models.CharField(
-        "Ключ (как в docx)",
+        'Ключ (как в docx)',
         max_length=50,
-        help_text="Например: client_fio",
+        help_text='Например: client_fio',
     )
     label = models.CharField(
-        "Название поля (для менеджера)",
+        'Название поля (для менеджера)',
         max_length=255,
-        help_text="Например: ФИО Клиента",
+        help_text='Например: ФИО Клиента',
     )
     field_type = models.CharField(
-        "Тип поля",
+        'Тип поля',
         max_length=20,
         choices=FIELD_TYPES,
         default='text',
     )
-    is_required = models.BooleanField("Обязательное", default=True)
-    order = models.PositiveIntegerField("Порядок вывода", default=0)
+    is_required = models.BooleanField('Обязательное', default=True)
+    order = models.PositiveIntegerField('Порядок вывода', default=0)
 
     class Meta:
-        verbose_name = "Поле шаблона"
-        verbose_name_plural = "Поля шаблона"
+        verbose_name = 'Поле шаблона'
+        verbose_name_plural = 'Поля шаблона'
         ordering = ['order']
 
     def __str__(self):
-        return f"{self.label} ({self.key})"
+        return f'{self.label} ({self.key})'
 
 
 class GeneratedDocument(models.Model):
@@ -185,13 +258,13 @@ class GeneratedDocument(models.Model):
         DocumentTemplate,
         on_delete=models.CASCADE,
         related_name='documents',
-        verbose_name="Шаблон",
+        verbose_name='Шаблон',
     )
     manager = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
         related_name='my_documents',
-        verbose_name="Менеджер",
+        verbose_name='Менеджер',
     )
     deal = models.ForeignKey(
         'analytics.Deal',
@@ -199,18 +272,18 @@ class GeneratedDocument(models.Model):
         null=True,
         blank=True,
         related_name='generated_documents',
-        verbose_name="Сделка",
+        verbose_name='Сделка',
     )
-    title = models.CharField("Название документа", max_length=255, blank=True)
-    context_data = models.JSONField("Введённые данные", default=dict, blank=True)
+    title = models.CharField('Название документа', max_length=255, blank=True)
+    context_data = models.JSONField('Введённые данные', default=dict, blank=True)
     status = models.CharField(
-        "Статус",
+        'Статус',
         max_length=20,
         choices=STATUS_CHOICES,
         default='draft',
     )
     generated_file = models.FileField(
-        "Готовый документ",
+        'Готовый документ',
         upload_to='generated_docs/',
         null=True,
         blank=True,
@@ -222,7 +295,7 @@ class GeneratedDocument(models.Model):
         null=True,
         blank=True,
         related_name='approved_documents',
-        verbose_name="Одобрено администратором",
+        verbose_name='Одобрено администратором',
     )
     approved_at = models.DateTimeField(null=True, blank=True)
 
@@ -233,12 +306,12 @@ class GeneratedDocument(models.Model):
         if self.title:
             return self.title
         if self.deal_id:
-            return f"Документ по сделке #{self.deal_id}"
-        return f"Документ #{self.id} ({self.template.title})"
+            return f'Документ по сделке #{self.deal_id}'
+        return f'Документ #{self.id} ({self.template.title})'
 
     class Meta:
-        verbose_name = "Сгенерированный документ"
-        verbose_name_plural = "Сгенерированные документы"
+        verbose_name = 'Сгенерированный документ'
+        verbose_name_plural = 'Сгенерированные документы'
         ordering = ['-created_at']
 
     @property
@@ -280,7 +353,7 @@ class GeneratedDocument(models.Model):
                 'client_passport_issued_by': client.passport_issued_by or '',
                 'client_address_registration': client.address_registration or '',
                 'manager_full_name': (
-                    f"{self.manager.first_name} {self.manager.last_name}".strip()
+                    f'{self.manager.first_name} {self.manager.last_name}'.strip()
                     or self.manager.email
                 ),
                 'manager_email': self.manager.email or '',
@@ -295,7 +368,7 @@ class GeneratedDocument(models.Model):
 
     def generate_document(self):
         if not self.template.file:
-            return False, "В шаблоне отсутствует файл DOCX."
+            return False, 'В шаблоне отсутствует файл DOCX.'
 
         try:
             self.template.file.open('rb')
@@ -312,12 +385,12 @@ class GeneratedDocument(models.Model):
             doc.save(buffer)
             buffer.seek(0)
 
-            safe_title = "".join(
+            safe_title = ''.join(
                 c for c in str(self.title or self.template.title)
                 if c.isalpha() or c.isdigit() or c in ' -_'
             ).rstrip()
 
-            filename = f"{safe_title or 'document'}_{self.id}.docx".replace(" ", "_")
+            filename = f'{safe_title or "document"}_{self.id}.docx'.replace(' ', '_')
 
             self.generated_file.save(filename, ContentFile(buffer.read()), save=False)
             self.status = 'generated'
@@ -331,10 +404,10 @@ class GeneratedDocument(models.Model):
                 'updated_at',
             ])
 
-            return True, "Документ успешно сгенерирован."
+            return True, 'Документ успешно сгенерирован.'
 
         except Exception as e:
-            msg = f"Ошибка DocxTemplate: {e}"
+            msg = f'Ошибка DocxTemplate: {e}'
             logger.error(msg, exc_info=True)
             self.status = 'error'
             if self.pk:

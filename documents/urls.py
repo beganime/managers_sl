@@ -1,16 +1,18 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
 from .mobile_views import GeneratedDocumentViewSet
 
 from .views import (
-    InfoSnippetViewSet,
     DocumentTemplateViewSet,
-    KnowledgeTestViewSet,
+    InfoSnippetViewSet,
+    KnowledgeSectionViewSet,
     KnowledgeTestAttemptViewSet,
+    KnowledgeTestViewSet,
 )
 
 router = DefaultRouter()
+router.register(r'knowledge-sections', KnowledgeSectionViewSet, basename='knowledge-section')
 router.register(r'snippets', InfoSnippetViewSet, basename='snippet')
 router.register(r'templates', DocumentTemplateViewSet, basename='template')
 router.register(r'generated', GeneratedDocumentViewSet, basename='generateddocument')

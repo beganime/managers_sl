@@ -1,6 +1,7 @@
 import logging
 
 from django.db import transaction
+from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
@@ -9,22 +10,25 @@ from rest_framework.exceptions import APIException, PermissionDenied, Validation
 from rest_framework.response import Response
 
 from .models import (
+    DocumentReview,
     DocumentTemplate,
     GeneratedDocument,
     InfoSnippet,
+    KnowledgeSection,
     KnowledgeTest,
     KnowledgeTestAttempt,
-    DocumentReview, 
-    resolve_document_status
+    resolve_document_status,
 )
 from .serializers import (
     DocumentTemplateSerializer,
     GeneratedDocumentSerializer,
     InfoSnippetSerializer,
+    KnowledgeSectionSerializer,
     KnowledgeTestAttemptSerializer,
     KnowledgeTestSerializer,
 )
 from .watermarking import build_approved_document
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +39,55 @@ def is_admin_user(user):
         and user.is_authenticated
         and (
             user.is_superuser
-            or getattr(user, "role", None) == "admin"
+            or getattr(user, 'role', None) == 'admin'
             or user.is_staff
         )
     )
+
+
+class KnowledgeSectionViewSet(viewsets.ModelViewSet):
+    serializer_class = KnowledgeSectionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = KnowledgeSection.objects.prefetch_related('children').all()
+
+        parent = self.request.query_params.get('parent')
+        if parent == 'null':
+            qs = qs.filter(parent__isnull=True)
+        elif parent:
+            qs = qs.filter(parent_id=parent)
+
+        is_active = self.request.query_params.get('is_active')
+        if is_active in ('1', 'true', '0', 'false'):
+            qs = qs.filter(is_active=is_active in ('1', 'true'))
+
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(title__icontains=search)
+
+        updated_after = self.request.query_params.get('updated_after')
+        if updated_after:
+            dt = parse_datetime(updated_after)
+            if dt:
+                qs = qs.filter(updated_at__gte=dt)
+
+        return qs.order_by('parent__id', 'order', 'title')
+
+    def perform_create(self, serializer):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может создавать разделы.')
+        serializer.save()
+
+    def perform_update(self, serializer):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может изменять разделы.')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может удалять разделы.')
+        instance.delete()
 
 
 class InfoSnippetViewSet(viewsets.ModelViewSet):
@@ -46,29 +95,45 @@ class InfoSnippetViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = InfoSnippet.objects.all()
+        qs = InfoSnippet.objects.select_related('section').all()
 
-        updated_after = self.request.query_params.get("updated_after")
+        section = self.request.query_params.get('section')
+        if section:
+            qs = qs.filter(section_id=section)
+
+        category = self.request.query_params.get('category')
+        if category:
+            qs = qs.filter(category=category)
+
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(content__icontains=search)
+                | Q(section__title__icontains=search)
+            )
+
+        updated_after = self.request.query_params.get('updated_after')
         if updated_after:
             dt = parse_datetime(updated_after)
             if dt:
                 qs = qs.filter(updated_at__gte=dt)
 
-        return qs.order_by("category", "order")
+        return qs.distinct().order_by('section__order', 'category', 'order', 'title')
 
     def perform_create(self, serializer):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied("Только администратор может создавать справочные записи.")
+            raise PermissionDenied('Только администратор может создавать справочные записи.')
         serializer.save()
 
     def perform_update(self, serializer):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied("Только администратор может изменять справочные записи.")
+            raise PermissionDenied('Только администратор может изменять справочные записи.')
         serializer.save()
 
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied("Только администратор может удалять справочные записи.")
+            raise PermissionDenied('Только администратор может удалять справочные записи.')
         instance.delete()
 
 
@@ -77,15 +142,15 @@ class DocumentTemplateViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = DocumentTemplate.objects.filter(is_active=True).prefetch_related("fields")
+        qs = DocumentTemplate.objects.filter(is_active=True).prefetch_related('fields')
 
-        updated_after = self.request.query_params.get("updated_after")
+        updated_after = self.request.query_params.get('updated_after')
         if updated_after:
             dt = parse_datetime(updated_after)
             if dt:
                 qs = qs.filter(updated_at__gte=dt)
 
-        return qs.order_by("-updated_at")
+        return qs.order_by('-updated_at')
 
 
 class GeneratedDocumentViewSet(viewsets.ModelViewSet):
@@ -96,47 +161,47 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         user = self.request.user
 
         qs = GeneratedDocument.objects.select_related(
-            "template",
-            "manager",
-            "deal",
-            "deal__client",
-            "review",
-            "approved_by",
+            'template',
+            'manager',
+            'deal',
+            'deal__client',
+            'review',
+            'approved_by',
         )
 
         if not is_admin_user(user):
             qs = qs.filter(manager=user)
 
-        updated_after = self.request.query_params.get("updated_after")
+        updated_after = self.request.query_params.get('updated_after')
         if updated_after:
             dt = parse_datetime(updated_after)
             if dt:
                 qs = qs.filter(updated_at__gte=dt)
 
-        deal_id = self.request.query_params.get("deal")
+        deal_id = self.request.query_params.get('deal')
         if deal_id:
             qs = qs.filter(deal_id=deal_id)
 
-        status_value = (self.request.query_params.get("status") or "").strip().lower()
+        status_value = (self.request.query_params.get('status') or '').strip().lower()
         if status_value:
-            if status_value == "pending":
-                qs = qs.exclude(review__status__in=["approved", "rejected"]).exclude(status="error")
-            elif status_value == "approved":
-                qs = qs.filter(review__status="approved")
-            elif status_value == "error":
-                qs = qs.filter(status="error")
-            elif status_value == "rejected":
-                qs = qs.filter(review__status="rejected")
+            if status_value == 'pending':
+                qs = qs.exclude(review__status__in=['approved', 'rejected']).exclude(status='error')
+            elif status_value == 'approved':
+                qs = qs.filter(review__status='approved')
+            elif status_value == 'error':
+                qs = qs.filter(status='error')
+            elif status_value == 'rejected':
+                qs = qs.filter(review__status='rejected')
             else:
                 qs = qs.filter(status=status_value)
 
-        return qs.order_by("-created_at")
+        return qs.order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        deal = serializer.validated_data.get("deal")
+        deal = serializer.validated_data.get('deal')
         request_user = request.user
 
         owner = deal.manager if (deal and is_admin_user(request_user)) else request_user
@@ -145,74 +210,74 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         if not document.title:
             if document.deal_id and document.deal and document.deal.client:
                 client = document.deal.client
-                client_name = getattr(client, "full_name", None) or (
+                client_name = getattr(client, 'full_name', None) or (
                     f"{getattr(client, 'first_name', '')} {getattr(client, 'last_name', '')}".strip()
                 )
-                document.title = f"{document.template.title} — {client_name or 'Клиент'}"
+                document.title = f'{document.template.title} — {client_name or "Клиент"}'
             else:
                 document.title = document.template.title
-            document.save(update_fields=["title", "updated_at"])
+            document.save(update_fields=['title', 'updated_at'])
 
         review, _ = DocumentReview.objects.get_or_create(document=document)
 
         success, msg = document.generate_document()
         if not success:
-            logger.error("Ошибка авто-генерации документа #%s: %s", document.id, msg)
+            logger.error('Ошибка авто-генерации документа #%s: %s', document.id, msg)
         else:
-            document.status = "generated"
-            document.save(update_fields=["status", "updated_at"])
+            document.status = 'generated'
+            document.save(update_fields=['status', 'updated_at'])
 
         if review.approved_file:
             review.approved_file.delete(save=False)
             review.approved_file = None
 
-        review.status = "pending"
-        review.rejection_reason = ""
+        review.status = 'pending'
+        review.rejection_reason = ''
         review.reviewed_by = None
         review.reviewed_at = None
         review.save()
 
-        output = self.get_serializer(document, context={"request": request})
+        output = self.get_serializer(document, context={'request': request})
         headers = self.get_success_headers(output.data)
         return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-        if resolve_document_status(instance) == "approved":
-            raise ValidationError("Одобренный документ редактировать нельзя.")
+        if resolve_document_status(instance) == 'approved':
+            raise ValidationError('Одобренный документ редактировать нельзя.')
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-        if resolve_document_status(instance) == "approved":
-            raise ValidationError("Одобренный документ редактировать нельзя.")
+        if resolve_document_status(instance) == 'approved':
+            raise ValidationError('Одобренный документ редактировать нельзя.')
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-        if resolve_document_status(instance) == "approved":
-            raise ValidationError("Одобренный документ удалять нельзя.")
+        if resolve_document_status(instance) == 'approved':
+            raise ValidationError('Одобренный документ удалять нельзя.')
         return super().destroy(request, *args, **kwargs)
 
-    @action(detail=True, methods=["post"], url_path="approve")
+    @action(detail=True, methods=['post'], url_path='approve')
     def approve(self, request, pk=None):
         if not is_admin_user(request.user):
-            raise PermissionDenied("Только администратор может одобрять документы.")
+            raise PermissionDenied('Только администратор может одобрять документы.')
 
         doc = self.get_object()
 
-        if resolve_document_status(doc) == "approved":
-            return Response({"detail": "Документ уже одобрен."}, status=status.HTTP_400_BAD_REQUEST)
+        if resolve_document_status(doc) == 'approved':
+            return Response({'detail': 'Документ уже одобрен.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if doc.status != "generated":
+        if doc.status != 'generated':
             return Response(
-                {"detail": "Одобрять можно только корректно сгенерированный документ."},
+                {'detail': 'Одобрять можно только корректно сгенерированный документ.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
         if not doc.generated_file:
             return Response(
-                {"detail": "У документа отсутствует готовый файл."},
+                {'detail': 'У документа отсутствует готовый файл.'},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -220,7 +285,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         approved_file = build_approved_document(doc)
         if approved_file is None:
             return Response(
-                {"detail": "Не удалось собрать approved-файл с watermark. Проверь DOCUMENT_WATERMARK_IMAGE."},
+                {'detail': 'Не удалось собрать approved-файл с watermark. Проверь DOCUMENT_WATERMARK_IMAGE.'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
@@ -229,68 +294,68 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 review.approved_file.delete(save=False)
 
             review.mark_approved(user=request.user, approved_file=approved_file)
-            doc.status = "approved"
+            doc.status = 'approved'
             doc.approved_by = request.user
             doc.approved_at = review.reviewed_at
-            doc.save(update_fields=["status", "approved_by", "approved_at", "updated_at"])
+            doc.save(update_fields=['status', 'approved_by', 'approved_at', 'updated_at'])
 
         return Response(
             {
-                "detail": "Документ одобрен.",
-                "document": self.get_serializer(doc, context={"request": request}).data,
+                'detail': 'Документ одобрен.',
+                'document': self.get_serializer(doc, context={'request': request}).data,
             },
             status=status.HTTP_200_OK,
         )
 
-    @action(detail=True, methods=["post"], url_path="regenerate")
+    @action(detail=True, methods=['post'], url_path='regenerate')
     def regenerate(self, request, pk=None):
         doc = self.get_object()
 
-        if resolve_document_status(doc) == "approved":
-            raise ValidationError("Одобренный документ перегенерировать нельзя.")
+        if resolve_document_status(doc) == 'approved':
+            raise ValidationError('Одобренный документ перегенерировать нельзя.')
 
         if not is_admin_user(request.user) and doc.manager_id != request.user.id:
-            raise PermissionDenied("Нет прав на перегенерацию документа.")
+            raise PermissionDenied('Нет прав на перегенерацию документа.')
 
         review, _ = DocumentReview.objects.get_or_create(document=doc)
         success, msg = doc.generate_document()
         doc.refresh_from_db()
 
         if success:
-            doc.status = "generated"
-            doc.save(update_fields=["status", "updated_at"])
+            doc.status = 'generated'
+            doc.save(update_fields=['status', 'updated_at'])
 
             if review.approved_file:
                 review.approved_file.delete(save=False)
                 review.approved_file = None
 
-            review.status = "pending"
-            review.rejection_reason = ""
+            review.status = 'pending'
+            review.rejection_reason = ''
             review.reviewed_by = None
             review.reviewed_at = None
             review.save()
 
         return Response(
             {
-                "detail": msg,
-                "document": self.get_serializer(doc, context={"request": request}).data,
+                'detail': msg,
+                'document': self.get_serializer(doc, context={'request': request}).data,
             },
             status=status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST,
         )
 
-    @action(detail=True, methods=["get"], url_path="download")
+    @action(detail=True, methods=['get'], url_path='download')
     def download(self, request, pk=None):
         doc = self.get_object()
 
         if not doc.can_download:
             return Response(
-                {"detail": "Скачивание доступно только после одобрения администратором."},
+                {'detail': 'Скачивание доступно только после одобрения администратором.'},
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        payload = self.get_serializer(doc, context={"request": request}).data
+        payload = self.get_serializer(doc, context={'request': request}).data
         return Response(
-            {"file_url": payload.get("approved_file_url") or payload.get("file_url")},
+            {'file_url': payload.get('approved_file_url') or payload.get('file_url')},
             status=status.HTTP_200_OK,
         )
 
@@ -300,39 +365,51 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = KnowledgeTest.objects.filter(is_active=True).prefetch_related("questions")
+        qs = KnowledgeTest.objects.filter(is_active=True).select_related('section').prefetch_related('questions')
 
-        updated_after = self.request.query_params.get("updated_after")
+        section = self.request.query_params.get('section')
+        if section:
+            qs = qs.filter(section_id=section)
+
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(section__title__icontains=search)
+            )
+
+        updated_after = self.request.query_params.get('updated_after')
         if updated_after:
             dt = parse_datetime(updated_after)
             if dt:
                 qs = qs.filter(updated_at__gte=dt)
 
-        return qs.order_by("-created_at")
+        return qs.distinct().order_by('-created_at')
 
     def perform_create(self, serializer):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied("Только администратор может создавать тесты.")
+            raise PermissionDenied('Только администратор может создавать тесты.')
         serializer.save()
 
     def perform_update(self, serializer):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied("Только администратор может изменять тесты.")
+            raise PermissionDenied('Только администратор может изменять тесты.')
         serializer.save()
 
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied("Только администратор может удалять тесты.")
+            raise PermissionDenied('Только администратор может удалять тесты.')
         instance.delete()
 
-    @action(detail=True, methods=["post"], url_path="submit")
+    @action(detail=True, methods=['post'], url_path='submit')
     def submit(self, request, pk=None):
         test = self.get_object()
-        submitted_answers = request.data.get("answers", {})
+        submitted_answers = request.data.get('answers', {})
 
         if not isinstance(submitted_answers, dict):
             raise ValidationError(
-                {"answers": 'answers должен быть объектом вида {"question_id": index}.'}
+                {'answers': 'answers должен быть объектом вида {"question_id": index}.'}
             )
 
         questions = list(test.questions.all())
@@ -366,22 +443,22 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
             )
         except (ProgrammingError, OperationalError) as exc:
             logger.exception(
-                "Knowledge test submit failed because attempts table is missing or unavailable. test_id=%s user_id=%s",
+                'Knowledge test submit failed because attempts table is missing or unavailable. test_id=%s user_id=%s',
                 test.id,
                 request.user.id,
             )
             raise APIException(
-                "Таблица результатов тестов не создана на сервере. Нужно применить миграции documents."
+                'Таблица результатов тестов не создана на сервере. Нужно применить миграции documents.'
             ) from exc
 
         return Response(
             {
-                "detail": "Результат сохранён.",
-                "attempt": KnowledgeTestAttemptSerializer(
-                    attempt, context={"request": request}
+                'detail': 'Результат сохранён.',
+                'attempt': KnowledgeTestAttemptSerializer(
+                    attempt, context={'request': request}
                 ).data,
-                "score": score,
-                "total": total,
+                'score': score,
+                'total': total,
             },
             status=status.HTTP_201_CREATED,
         )
@@ -392,17 +469,17 @@ class KnowledgeTestAttemptViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = KnowledgeTestAttempt.objects.select_related("user", "test")
+        qs = KnowledgeTestAttempt.objects.select_related('user', 'test')
 
         if not is_admin_user(self.request.user):
             qs = qs.filter(user=self.request.user)
 
-        test_id = self.request.query_params.get("test")
+        test_id = self.request.query_params.get('test')
         if test_id:
             qs = qs.filter(test_id=test_id)
 
-        user_id = self.request.query_params.get("user")
+        user_id = self.request.query_params.get('user')
         if user_id and is_admin_user(self.request.user):
             qs = qs.filter(user_id=user_id)
 
-        return qs.order_by("-completed_at")
+        return qs.order_by('-completed_at')
