@@ -131,12 +131,18 @@ def _call_yandex(payload_dict: dict):
     url = "https://llm.api.cloud.yandex.net/foundationModels/v1/completion"
     payload = _build_yandex_payload(payload_dict, folder_id, model_type)
 
+    # Автоматическое определение типа ключа для Яндекса (IAM токен vs API Ключ)
+    if api_key.startswith("t1.") or api_key.startswith("t2."):
+        auth_header = f"Bearer {api_key}"
+    else:
+        auth_header = f"Api-Key {api_key}"
+
     req = urllib.request.Request(
         url,
         data=json.dumps(payload).encode("utf-8"),
         headers={
             "Content-Type": "application/json; charset=utf-8",
-            "Authorization": f"Api-Key {api_key}",
+            "Authorization": auth_header,
             "x-folder-id": folder_id,
             "x-data-logging-enabled": "true"
         },
@@ -389,7 +395,7 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
             },
         }
 
-    # Вызов Яндекса вместо Gemini
+    # Вызов Яндекса
     summary_text, error, model = _call_yandex(payload)
 
     if summary_text:
@@ -411,7 +417,7 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
 
     fallback_text = (
         "AI-резюме не удалось сгенерировать. "
-        "Проверьте YANDEX_API_KEY, YANDEX_FOLDER_ID и доступ сервера к Yandex Cloud. "
+        "Проверьте YANDEX_API_KEY, YANDEX_FOLDER_ID и доступ сервера к Yandex Cloud (роль ai.languageModels.user). "
         "Подробность ошибки есть в логах и в поле error."
     )
 
