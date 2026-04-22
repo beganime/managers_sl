@@ -1,3 +1,4 @@
+import logging
 from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
@@ -7,9 +8,12 @@ from rest_framework.response import Response
 from .models import DailyReport
 from .serializers import DailyReportSerializer
 
+logger = logging.getLogger(__name__)
+
 try:
     from .ai_summary import build_admin_ai_summary
-except Exception:  # pragma: no cover
+except Exception as e:  # pragma: no cover
+    logger.error(f"CRITICAL ERROR: Не удалось загрузить SL_AI: {e}")
     build_admin_ai_summary = None
 
 
@@ -23,6 +27,7 @@ def is_admin_user(user):
             or user.is_staff
         )
     )
+
 
 
 class DailyReportViewSet(viewsets.ModelViewSet):

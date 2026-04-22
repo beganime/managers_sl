@@ -257,7 +257,7 @@ def _generate_sl_ai_summary(payload: dict) -> str:
             off = r.get("office", "Неизвестный офис")
             preview = r.get("content", "").replace("\n", " ")[:80]
             risks_found.append(f"⚠️ {off} ({emp}): {preview}...")
-            if len(risks_found) >= 5:  # Берем топ-5 проблем, чтобы не перегружать отчет
+            if len(risks_found) >= 5:  # Берем топ-5 проблем
                 break
 
     # 4 и 6. Анализ по офисам и поиск лидера
@@ -297,7 +297,7 @@ def _generate_sl_ai_summary(payload: dict) -> str:
     if finance_balance > 0:
         good_points.append("- Положительное сальдо по финансовым записям офисов.")
     if not good_points:
-         good_points.append("- Сотрудники стабильно заполняют документацию.")
+        good_points.append("- Сотрудники стабильно заполняют документацию.")
     lines.extend(good_points)
     lines.append("")
 
@@ -407,7 +407,6 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
             },
         }
 
-    # Вызов локального алгоритма SL_AI вместо Yandex GPT
     try:
         summary_text = _generate_sl_ai_summary(payload)
         error = None
@@ -419,7 +418,7 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
     return {
         "provider": "SL_AI",
         "model": "rule-based-engine-v1",
-        "ai_used": True,  # Оставляем True для фронтенда, так как логика анализа выполнена
+        "ai_used": True,
         "summary": summary_text,
         "error": error,
         "meta": {
