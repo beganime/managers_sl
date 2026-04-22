@@ -1,26 +1,33 @@
 # documents/ai_search.py
-import json
 import logging
-import os
 import re
-import urllib.error
+import time
 import urllib.parse
-import urllib.request
 from difflib import SequenceMatcher
 from typing import Dict, List, Optional, Tuple
 
-from django.conf import settings
 from documents.models import InfoSnippet, KnowledgeSection
 
 logger = logging.getLogger(__name__)
 
-DEFAULT_MODEL = "yandexgpt-5.1/latest"
+# Локальный AI-поиск Students Life.
+# Внешний ИИ полностью отключён: никаких Yandex GPT / OpenAI / Gemini API.
+# Ответы строятся только локально: приветствия, команды, fuzzy-поиск, база знаний.
 
-MAX_SNIPPETS_FOR_AI = 12
+THINKING_DELAY_SECONDS = 2
+
 MAX_SNIPPETS_FOR_OVERVIEW = 25
-MAX_CONTEXT_CHARS_PER_SNIPPET = 1800
+MAX_SNIPPETS_FOR_ANSWER = 8
+MAX_CONTENT_PREVIEW_CHARS = 700
+MAX_COPY_CONTENT_CHARS = 3000
 MIN_RELEVANCE_SCORE = 2.0
 
+COPY_FENCE = "`" * 3
+
+ASSISTANT_NAME = "ИИ ассистент компании Students Life"
+AUTHOR_NAME = "Ягмуров Бегенч"
+DEVELOPER_NAME = "Ягмуров Бегенч"
+DEVELOPER_CONTACTS = "begenchyagmurow2008@gmail.com / @beganime (телеграм)"
 
 BASE_ASSISTANT_INTRO = (
     "Здравствуйте, я ИИ ассистент компании Students Life, чем могу помочь?"
@@ -41,7 +48,7 @@ BASIC_INTENTS = {
         "phrases": [
             "привет", "здравствуйте", "здравствуй", "добрый день", "доброе утро",
             "добрый вечер", "салам", "hello", "hi", "hey", "првет", "привт",
-            "здраствуйте", "здраствуй", "дарова",
+            "здраствуйте", "здраствуй", "дарова", "салам алейкум",
         ],
     },
     "identity": {
@@ -53,6 +60,43 @@ BASIC_INTENTS = {
             "who are you", "what is your name",
         ],
     },
+    "author": {
+        "answer": (
+            f"Автор ИИ этого проекта — **{AUTHOR_NAME}**.\n\n"
+            f"Разработчик программы — **{DEVELOPER_NAME}**.\n\n"
+            f"Контакты разработчика: **{DEVELOPER_CONTACTS}**."
+        ),
+        "phrases": [
+            "автор ии", "кто автор ии", "автор этого ии", "кто сделал ии",
+            "кто создал ии", "кто автор", "создатель ии", "разработчик ии",
+            "кто разработал ии", "автор ассистента", "кто создал ассистента",
+        ],
+    },
+    "developer": {
+        "answer": (
+            f"Разработчик программы — **{DEVELOPER_NAME}**.\n\n"
+            f"Контакты разработчика: **{DEVELOPER_CONTACTS}**."
+        ),
+        "phrases": [
+            "разработчик программы", "кто разработчик программы", "кто разработал программу",
+            "разработчик приложения", "кто разработчик", "кто сделал программу",
+            "кто сделал приложение", "кто создатель программы", "кто написал программу",
+            "программист", "разраб", "developer",
+        ],
+    },
+    "contacts": {
+        "answer": (
+            f"Контакты разработчика:\n\n"
+            f"- Email: **begenchyagmurow2008@gmail.com**\n"
+            f"- Telegram: **@beganime**"
+        ),
+        "phrases": [
+            "контакты разработчика", "контакт разработчика", "как связаться с разработчиком",
+            "телеграм разработчика", "telegram разработчика", "email разработчика",
+            "почта разработчика", "контакты автора", "контакты программиста",
+            "связь с разработчиком",
+        ],
+    },
     "thanks": {
         "answer": (
             "Пожалуйста. Если нужно, я могу помочь найти информацию в базе знаний "
@@ -61,14 +105,14 @@ BASIC_INTENTS = {
         ),
         "phrases": [
             "спасибо", "благодарю", "рахмет", "thanks", "thank you", "спс",
-            "спосибо", "пасиба",
+            "спосибо", "пасиба", "благодарю вас",
         ],
     },
     "bye": {
         "answer": "Хорошо, обращайтесь. Я всегда могу помочь с поиском по базе знаний Students Life.",
         "phrases": [
             "пока", "до свидания", "увидимся", "bye", "goodbye", "все спасибо",
-            "всё спасибо",
+            "всё спасибо", "до встречи",
         ],
     },
     "help": {
@@ -78,13 +122,17 @@ BASIC_INTENTS = {
             "- информацию про вузы, страны, поступление;\n"
             "- скрипты продаж и ответы клиентам;\n"
             "- документы, визы, оплаты, реквизиты;\n"
-            "- внутренние инструкции и частые вопросы.\n\n"
-            "Например: «найди скрипт для клиента, который сомневается», "
-            "«что есть по вузам Китая», «какие документы нужны для поступления»."
+            "- внутренние инструкции и частые вопросы;\n"
+            "- контакты разработчика или автора ИИ.\n\n"
+            "**Примеры запросов:**\n"
+            "- «Что есть по вузам Китая?»\n"
+            "- «Найди скрипт для клиента, который сомневается»\n"
+            "- «Какие документы нужны для поступления?»\n"
+            "- «Кто разработчик программы?»"
         ),
         "phrases": [
             "что ты умеешь", "помощь", "help", "как пользоваться", "что спросить",
-            "что можешь", "помоги", "инструкция",
+            "что можешь", "помоги", "инструкция", "как с тобой работать",
         ],
     },
 }
@@ -94,49 +142,51 @@ BROWSE_TOPICS = {
     "universities": {
         "label": "вузы / университеты / поступление",
         "aliases": [
-            "вуз", "вузы", "университет", "университеты", "институт", "академия",
-            "поступление", "учеба", "обучение", "страны", "китай", "россия",
-            "турция", "малайзия", "кипр", "казахстан", "узбекистан", "беларусь",
+            "вуз", "вузы", "вузи", "университет", "университеты", "универ",
+            "институт", "академия", "поступление", "паступление", "учеба",
+            "учёба", "обучение", "страны", "китай", "россия", "турция",
+            "малайзия", "кипр", "казахстан", "узбекистан", "беларусь",
             "корея", "европа", "бакалавриат", "магистратура", "foundation",
-            "подкурс", "подготовительный курс",
+            "подкурс", "подготовительный курс", "языковой курс",
         ],
     },
     "sales_scripts": {
         "label": "скрипты продаж",
         "aliases": [
-            "скрипт", "скрипты", "скрипты продаж", "продажи", "возражения",
-            "как ответить клиенту", "что сказать клиенту", "звонок", "переписка",
-            "диалог", "лид", "клиент сомневается", "дожим", "продать",
+            "скрипт", "скрипты", "скрпит", "скрпиты", "скрипты продаж",
+            "продажи", "продажа", "возражения", "как ответить клиенту",
+            "что сказать клиенту", "звонок", "переписка", "диалог", "лид",
+            "клиент сомневается", "дожим", "продать", "продавать",
         ],
     },
     "documents": {
         "label": "документы",
         "aliases": [
-            "документ", "документы", "паспорт", "аттестат", "диплом",
-            "перевод", "нотариус", "справка", "фото", "анкета", "заявление",
-            "доверенность", "сертификат", "легализация", "апостиль",
+            "документ", "документы", "доки", "док", "паспорт", "аттестат",
+            "диплом", "перевод", "нотариус", "справка", "фото", "анкета",
+            "заявление", "доверенность", "сертификат", "легализация", "апостиль",
         ],
     },
     "visa": {
         "label": "визы / приглашения",
         "aliases": [
-            "виза", "визу", "приглашение", "посольство", "консульство",
-            "миграция", "регистрация", "въезд", "выезд", "visa",
+            "виза", "визу", "визы", "приглашение", "приглошение", "посольство",
+            "консульство", "миграция", "регистрация", "въезд", "выезд", "visa",
         ],
     },
     "payments": {
         "label": "оплаты / реквизиты / финансы",
         "aliases": [
-            "оплата", "оплаты", "деньги", "счет", "счёт", "реквизиты",
-            "касса", "чек", "долг", "рассрочка", "скидка", "платеж",
-            "платёж", "доход", "расход",
+            "оплата", "оплаты", "аплата", "деньги", "счет", "счёт", "реквизиты",
+            "касса", "чек", "долг", "рассрочка", "скидка", "платеж", "платёж",
+            "доход", "расход", "финансы",
         ],
     },
     "links": {
         "label": "полезные ссылки",
         "aliases": [
             "ссылка", "ссылки", "сайт", "официальный сайт", "линк", "url",
-            "где посмотреть", "откуда взять",
+            "где посмотреть", "откуда взять", "полезные ссылки",
         ],
     },
 }
@@ -145,14 +195,21 @@ BROWSE_TOPICS = {
 SYNONYMS = {
     "вуз": ["университет", "институт", "академия", "поступление", "обучение"],
     "вузы": ["университеты", "институты", "академии", "поступление", "обучение"],
+    "вузи": ["вузы", "университеты", "поступление"],
     "универ": ["университет", "вуз"],
+    "университет": ["вуз", "поступление", "обучение"],
     "подкурс": ["подготовительный курс", "foundation", "языковой курс"],
     "кб": ["база знаний", "knowledge base"],
     "скрипт": ["скрипты продаж", "продажи", "возражения", "клиент"],
+    "скрпит": ["скрипт", "скрипты продаж"],
+    "скрпиты": ["скрипты", "скрипты продаж"],
     "продажа": ["скрипт", "клиент", "лид", "возражения"],
+    "продажи": ["скрипт", "клиент", "лид", "возражения"],
     "док": ["документ", "документы"],
     "доки": ["документы", "паспорт", "аттестат", "диплом"],
+    "документ": ["документы", "паспорт", "аттестат", "диплом"],
     "оплата": ["платеж", "платёж", "деньги", "касса", "чек"],
+    "аплата": ["оплата", "платеж", "деньги"],
     "счет": ["счёт", "реквизиты", "оплата"],
     "счёт": ["счет", "реквизиты", "оплата"],
     "виза": ["приглашение", "посольство", "консульство"],
@@ -167,80 +224,21 @@ STOP_WORDS = {
     "про", "по", "для", "или", "если", "то", "же", "ли", "из", "на",
     "в", "во", "с", "со", "а", "и", "да", "нет", "найди", "найти",
     "покажи", "скажи", "напиши", "объясни", "информация", "инфу",
+    "дай", "нужна", "нужен", "хочу", "можешь", "пожалуйста",
 }
 
 
-def _build_yandex_openai_payload(
-    system_prompt: str,
-    user_prompt: str,
-    folder_id: str,
-    model_type: str,
-):
-    if model_type.startswith("gpt://"):
-        model_uri = model_type
-    elif "/" in model_type:
-        model_uri = f"gpt://{folder_id}/{model_type}"
-    else:
-        model_uri = f"gpt://{folder_id}/{model_type}/latest"
-
-    return {
-        "model": model_uri,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt},
-        ],
-        "temperature": 0.15,
-        "max_tokens": 2500,
-    }
-
-
-def _call_yandex(system_prompt: str, user_prompt: str):
-    api_key = os.getenv("YANDEX_API_KEY", "") or getattr(settings, "YANDEX_API_KEY", "")
-    folder_id = os.getenv("YANDEX_FOLDER_ID", "") or getattr(settings, "YANDEX_FOLDER_ID", "")
-    model_type = os.getenv("YANDEX_MODEL", "") or getattr(settings, "YANDEX_MODEL", DEFAULT_MODEL)
-
-    if not api_key or not folder_id:
-        return None, "YANDEX_API_KEY или YANDEX_FOLDER_ID не заданы в .env"
-
-    url = "https://ai.api.cloud.yandex.net/v1/chat/completions"
-    payload = _build_yandex_openai_payload(system_prompt, user_prompt, folder_id, model_type)
-
-    if api_key.startswith("t1.") or api_key.startswith("t2."):
-        auth_header = f"Bearer {api_key}"
-    else:
-        auth_header = f"Api-Key {api_key}"
-
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload, ensure_ascii=False).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": auth_header,
-            "x-folder-id": folder_id,
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=60) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            choices = data.get("choices", [])
-            if choices:
-                return choices[0].get("message", {}).get("content", "").strip(), None
-            return None, "Пустой ответ от Yandex GPT"
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="ignore")
-        logger.exception("Yandex HTTPError in AI Search")
-        return None, f"Ошибка API: {exc.code} - {body}"
-    except Exception as exc:
-        logger.exception("Yandex Unknown Error in AI Search")
-        return None, str(exc)
+def _apply_thinking_delay():
+    if THINKING_DELAY_SECONDS and THINKING_DELAY_SECONDS > 0:
+        time.sleep(THINKING_DELAY_SECONDS)
 
 
 def _normalize_text(value: str) -> str:
     text = str(value or "").lower().replace("ё", "е")
     text = text.replace("students life", "studentslife")
-    text = re.sub(r"[^a-zа-я0-9\s\-_/+]", " ", text, flags=re.IGNORECASE)
+    text = text.replace("student's life", "studentslife")
+    text = text.replace("students-life", "studentslife")
+    text = re.sub(r"[^a-zа-я0-9\s\-_/+@.]", " ", text, flags=re.IGNORECASE)
     text = re.sub(r"\s+", " ", text).strip()
     return text
 
@@ -248,20 +246,24 @@ def _normalize_text(value: str) -> str:
 def _tokens(value: str) -> List[str]:
     normalized = _normalize_text(value)
     result = []
-    for token in re.findall(r"[a-zа-я0-9]+", normalized, flags=re.IGNORECASE):
+
+    for token in re.findall(r"[a-zа-я0-9@.]+", normalized, flags=re.IGNORECASE):
         if len(token) <= 2:
             continue
         if token in STOP_WORDS:
             continue
         result.append(token)
+
     return result
 
 
 def _similarity(a: str, b: str) -> float:
     a = _normalize_text(a)
     b = _normalize_text(b)
+
     if not a or not b:
         return 0.0
+
     return SequenceMatcher(None, a, b).ratio()
 
 
@@ -272,8 +274,10 @@ def _token_fuzzy_match(token: str, words: List[str], threshold: float = 0.82) ->
     for word in words:
         if len(word) <= 3:
             continue
+
         if token in word or word in token:
             return True
+
         if SequenceMatcher(None, token, word).ratio() >= threshold:
             return True
 
@@ -291,6 +295,7 @@ def _expand_query_tokens(query: str) -> List[str]:
 
     seen = set()
     clean = []
+
     for item in expanded:
         if item not in seen:
             clean.append(item)
@@ -316,6 +321,7 @@ def _matches_phrase_or_fuzzy(query: str, phrases: List[str], threshold: float = 
 
     query_tokens = _tokens(normalized_query)
     phrase_tokens = []
+
     for phrase in phrases:
         phrase_tokens.extend(_tokens(phrase))
 
@@ -323,6 +329,7 @@ def _matches_phrase_or_fuzzy(query: str, phrases: List[str], threshold: float = 
         return False
 
     matched = 0
+
     for token in query_tokens:
         if _token_fuzzy_match(token, phrase_tokens, threshold=0.78):
             matched += 1
@@ -332,10 +339,28 @@ def _matches_phrase_or_fuzzy(query: str, phrases: List[str], threshold: float = 
 
 def _detect_basic_intent(query: str) -> Optional[str]:
     normalized = _normalize_text(query)
+
     if not normalized:
         return None
 
-    for intent, config in BASIC_INTENTS.items():
+    # Сначала проверяем служебные команды, чтобы запросы типа
+    # «кто автор ИИ» не перехватывались обычным «кто ты».
+    priority_order = [
+        "author",
+        "developer",
+        "contacts",
+        "identity",
+        "hello",
+        "help",
+        "thanks",
+        "bye",
+    ]
+
+    for intent in priority_order:
+        config = BASIC_INTENTS.get(intent)
+        if not config:
+            continue
+
         if _matches_phrase_or_fuzzy(normalized, config["phrases"]):
             return intent
 
@@ -356,15 +381,33 @@ def _get_category_label(category: str) -> str:
     return CATEGORY_LABELS.get(category, category or "Без категории")
 
 
-def _truncate(value: str, limit: int = 500) -> str:
+def _truncate(value: str, limit: int = MAX_CONTENT_PREVIEW_CHARS) -> str:
     text = str(value or "").strip()
+
     if len(text) <= limit:
         return text
+
     return text[:limit].rstrip() + "…"
+
+
+def _copy_block(text: str, limit: int = MAX_COPY_CONTENT_CHARS) -> str:
+    clean_text = str(text or "").strip()
+
+    if not clean_text:
+        return ""
+
+    clean_text = _truncate(clean_text, limit)
+
+    return (
+        f"{COPY_FENCE}\n"
+        f"{clean_text}\n"
+        f"{COPY_FENCE}"
+    )
 
 
 def _internet_search_links(query: str) -> str:
     encoded = urllib.parse.quote_plus(str(query or "").strip())
+
     if not encoded:
         encoded = urllib.parse.quote_plus("Students Life информация")
 
@@ -372,7 +415,7 @@ def _internet_search_links(query: str) -> str:
         "**Можно проверить в интернете:**\n"
         f"- Яндекс: https://yandex.ru/search/?text={encoded}\n"
         f"- Google: https://www.google.com/search?q={encoded}\n\n"
-        "Важно: я могу подсказать направление поиска, но точный корпоративный ответ лучше добавлять в базу знаний, "
+        "Важно: точный корпоративный ответ лучше добавить в базу знаний, "
         "чтобы сотрудники потом находили его внутри приложения."
     )
 
@@ -380,14 +423,21 @@ def _internet_search_links(query: str) -> str:
 def _load_knowledge():
     snippets = list(
         InfoSnippet.objects.select_related("section").all().order_by(
-            "section__order", "category", "order", "title"
+            "section__order",
+            "category",
+            "order",
+            "title",
         )
     )
+
     sections = list(
         KnowledgeSection.objects.filter(is_active=True).select_related("parent").order_by(
-            "parent__id", "order", "title"
+            "parent__id",
+            "order",
+            "title",
         )
     )
+
     return snippets, sections
 
 
@@ -404,7 +454,7 @@ def _score_snippet(query: str, snippet, query_tokens: List[str]) -> float:
     category_norm = _normalize_text(_get_category_label(category))
 
     title_words = _tokens(title_norm)
-    content_words = _tokens(content_norm[:5000])
+    content_words = _tokens(content_norm[:6000])
     section_words = _tokens(section_norm)
     category_words = _tokens(category_norm)
 
@@ -413,34 +463,43 @@ def _score_snippet(query: str, snippet, query_tokens: List[str]) -> float:
 
     if normalized_query and normalized_query in title_norm:
         score += 20
+
     if normalized_query and normalized_query in section_norm:
         score += 16
+
     if normalized_query and normalized_query in content_norm:
         score += 10
 
     for token in query_tokens:
         if token in title_norm:
             score += 7
+
         if token in section_norm:
             score += 6
+
         if token in category_norm:
             score += 5
+
         if token in content_norm:
             score += 2
 
         if _token_fuzzy_match(token, title_words, threshold=0.80):
             score += 4
+
         if _token_fuzzy_match(token, section_words, threshold=0.80):
             score += 4
+
         if _token_fuzzy_match(token, category_words, threshold=0.80):
             score += 3
-        if _token_fuzzy_match(token, content_words[:350], threshold=0.84):
+
+        if _token_fuzzy_match(token, content_words[:400], threshold=0.84):
             score += 1
 
     for topic in BROWSE_TOPICS.values():
         if _matches_phrase_or_fuzzy(query, topic["aliases"], threshold=0.78):
             topic_tokens = _tokens(" ".join(topic["aliases"]))
             haystack = f"{title_norm} {section_norm} {category_norm}"
+
             if any(token in haystack for token in topic_tokens):
                 score += 5
 
@@ -449,8 +508,8 @@ def _score_snippet(query: str, snippet, query_tokens: List[str]) -> float:
 
 def _rank_snippets(query: str, snippets: List) -> List[Tuple[float, object]]:
     query_tokens = _expand_query_tokens(query)
-
     ranked = []
+
     for snippet in snippets:
         score = _score_snippet(query, snippet, query_tokens)
         ranked.append((score, snippet))
@@ -463,6 +522,7 @@ def _rank_snippets(query: str, snippets: List) -> List[Tuple[float, object]]:
         ),
         reverse=True,
     )
+
     return ranked
 
 
@@ -474,6 +534,7 @@ def _detect_browse_topic(query: str) -> Optional[Dict[str, object]]:
                 "label": topic["label"],
                 "aliases": topic["aliases"],
             }
+
     return None
 
 
@@ -485,12 +546,14 @@ def _is_broad_browse_query(query: str) -> bool:
         "покажи раздел", "найди папку", "найди информацию", "информация про",
         "что у нас есть", "что есть по", "есть ли информация", "дай список",
         "покажи все", "покажи всё", "вся информация", "всю информацию",
+        "что есть про", "найди всё", "найди все",
     ]
 
     if any(marker in normalized for marker in broad_markers):
         return True
 
     words = _tokens(query)
+
     if len(words) <= 3 and _detect_browse_topic(query):
         return True
 
@@ -517,6 +580,7 @@ def _find_matching_sections(query: str, sections: List) -> List:
         for token in query_tokens:
             if token in normalized_haystack:
                 score += 4
+
             if _token_fuzzy_match(token, hay_tokens, threshold=0.80):
                 score += 2
 
@@ -524,86 +588,8 @@ def _find_matching_sections(query: str, sections: List) -> List:
             ranked.append((score, section))
 
     ranked.sort(key=lambda item: item[0], reverse=True)
+
     return [item[1] for item in ranked[:10]]
-
-
-def _render_folder_overview(query: str, ranked: List[Tuple[float, object]], sections: List) -> str:
-    topic = _detect_browse_topic(query)
-    topic_label = topic["label"] if topic else "запрошенной теме"
-
-    useful_ranked = [(score, snippet) for score, snippet in ranked if score >= MIN_RELEVANCE_SCORE]
-    useful_snippets = [snippet for _, snippet in useful_ranked[:MAX_SNIPPETS_FOR_OVERVIEW]]
-    matching_sections = _find_matching_sections(query, sections)
-
-    if not useful_snippets and not matching_sections:
-        return (
-            f"Я понял, что вы ищете информацию по теме **«{topic_label}»**, "
-            "но в текущей базе знаний я не нашёл подходящих материалов.\n\n"
-            "Что можно сделать:\n"
-            "1. Попробуйте спросить другими словами.\n"
-            "2. Проверьте, добавлена ли эта информация в базу знаний.\n"
-            "3. Если информация нужна срочно, можно проверить в интернете.\n\n"
-            f"{_internet_search_links(query)}"
-        )
-
-    grouped: Dict[str, List[object]] = {}
-    for snippet in useful_snippets:
-        section_path = _get_section_path(getattr(snippet, "section", None))
-        grouped.setdefault(section_path, []).append(snippet)
-
-    lines = []
-    lines.append(f"Я нашёл информацию по теме **«{topic_label}»** в базе знаний Students Life.")
-    lines.append("")
-
-    if matching_sections:
-        lines.append("**Подходящие разделы / папки:**")
-        for section in matching_sections[:8]:
-            lines.append(f"- { _get_section_path(section) }")
-        lines.append("")
-
-    if grouped:
-        lines.append("**Найденные материалы:**")
-        for section_path, items in grouped.items():
-            lines.append(f"\n📁 **{section_path}**")
-            for snippet in items[:8]:
-                category_label = _get_category_label(getattr(snippet, "category", ""))
-                title = getattr(snippet, "title", "Без названия")
-                content = _truncate(getattr(snippet, "content", ""), 220)
-                lines.append(f"- **{title}** · {category_label}")
-                if content:
-                    lines.append(f"  {content}")
-
-    lines.append("")
-    lines.append(
-        "Что конкретнее вам нужно: условия поступления, документы, цены, скрипт ответа клиенту, "
-        "виза, оплата или конкретный университет/страна?"
-    )
-
-    return "\n".join(lines)
-
-
-def _build_context_text(top_ranked: List[Tuple[float, object]]) -> str:
-    context_parts = []
-
-    for index, (score, snippet) in enumerate(top_ranked, start=1):
-        section_path = _get_section_path(getattr(snippet, "section", None))
-        category_label = _get_category_label(getattr(snippet, "category", ""))
-        title = getattr(snippet, "title", "Без названия")
-        content = _truncate(
-            getattr(snippet, "content", "") or "",
-            MAX_CONTEXT_CHARS_PER_SNIPPET,
-        )
-
-        context_parts.append(
-            f"--- Документ {index} ---\n"
-            f"Релевантность: {round(score, 2)}\n"
-            f"Раздел/папка: {section_path}\n"
-            f"Категория: {category_label}\n"
-            f"Название: {title}\n"
-            f"Текст: {content}"
-        )
-
-    return "\n\n".join(context_parts)
 
 
 def _build_sources_list(top_ranked: List[Tuple[float, object]]) -> str:
@@ -627,72 +613,133 @@ def _build_sources_list(top_ranked: List[Tuple[float, object]]) -> str:
     return "\n".join(sources)
 
 
-def _fallback_local_answer(query: str, top_ranked: List[Tuple[float, object]]) -> str:
-    if not top_ranked:
+def _render_folder_overview(query: str, ranked: List[Tuple[float, object]], sections: List) -> str:
+    topic = _detect_browse_topic(query)
+    topic_label = topic["label"] if topic else "запрошенной теме"
+
+    useful_ranked = [
+        (score, snippet)
+        for score, snippet in ranked
+        if score >= MIN_RELEVANCE_SCORE
+    ]
+
+    useful_snippets = [
+        snippet
+        for _, snippet in useful_ranked[:MAX_SNIPPETS_FOR_OVERVIEW]
+    ]
+
+    matching_sections = _find_matching_sections(query, sections)
+
+    if not useful_snippets and not matching_sections:
         return (
-            "К сожалению, в текущей базе знаний нет точного ответа на этот вопрос.\n\n"
-            "Я могу подсказать направление поиска:\n\n"
+            f"Я понял, что вы ищете информацию по теме **«{topic_label}»**, "
+            "но в текущей базе знаний я не нашёл подходящих материалов.\n\n"
+            "Что можно сделать:\n"
+            "1. Попробуйте спросить другими словами.\n"
+            "2. Проверьте, добавлена ли эта информация в базу знаний.\n"
+            "3. Если информация нужна срочно, можно проверить в интернете.\n\n"
             f"{_internet_search_links(query)}"
         )
 
-    lines = []
-    lines.append("Я нашёл похожую информацию в базе знаний Students Life.")
-    lines.append("")
-    lines.append("**Краткий ответ по найденным материалам:**")
+    grouped: Dict[str, List[object]] = {}
 
-    for index, (_, snippet) in enumerate(top_ranked[:5], start=1):
-        title = getattr(snippet, "title", "Без названия")
-        content = _truncate(getattr(snippet, "content", ""), 500)
+    for snippet in useful_snippets:
         section_path = _get_section_path(getattr(snippet, "section", None))
-        category_label = _get_category_label(getattr(snippet, "category", ""))
+        grouped.setdefault(section_path, []).append(snippet)
 
-        lines.append("")
-        lines.append(f"{index}. **{title}**")
-        lines.append(f"   Раздел: {section_path}")
-        lines.append(f"   Категория: {category_label}")
-        if content:
-            lines.append(f"   {content}")
-
+    lines = []
+    lines.append(f"Я нашёл информацию по теме **«{topic_label}»** в базе знаний Students Life.")
     lines.append("")
-    lines.append("**Источники:**")
-    lines.append(_build_sources_list(top_ranked[:5]))
+
+    if matching_sections:
+        lines.append("**Подходящие разделы / папки:**")
+        for section in matching_sections[:8]:
+            lines.append(f"- {_get_section_path(section)}")
+        lines.append("")
+
+    if grouped:
+        lines.append("**Найденные материалы:**")
+
+        for section_path, items in grouped.items():
+            lines.append("")
+            lines.append(f"📁 **{section_path}**")
+
+            for snippet in items[:8]:
+                category_label = _get_category_label(getattr(snippet, "category", ""))
+                title = getattr(snippet, "title", "Без названия")
+                content = _truncate(getattr(snippet, "content", ""), 280)
+
+                lines.append(f"- **{title}** · {category_label}")
+
+                if content:
+                    lines.append(f"  {content}")
+
     lines.append("")
     lines.append(
-        "Если нужно, уточните вопрос: страна, вуз, клиентская ситуация, документы, оплата или скрипт продаж."
+        "Что конкретнее вам нужно: условия поступления, документы, цены, скрипт ответа клиенту, "
+        "виза, оплата или конкретный университет/страна?"
     )
 
     return "\n".join(lines)
 
 
-def _build_system_prompt() -> str:
-    return (
-        "Ты — корпоративный ИИ ассистент компании Students Life.\n"
-        "Ты помогаешь сотрудникам искать информацию в базе знаний компании.\n\n"
-        "Главные правила:\n"
-        "1. Отвечай дружелюбно, но делово.\n"
-        "2. Основной источник ответа — только документы из блока базы знаний.\n"
-        "3. Не выдумывай факты, цены, правила вузов, визовые условия и сроки.\n"
-        "4. Если точного ответа нет, так и скажи: «В базе знаний нет точного ответа».\n"
-        "5. Если вопрос широкий, перечисли найденные разделы и спроси, что уточнить.\n"
-        "6. Если пользователь спрашивает про интернет, объясни, что лучше проверить актуальность по официальным источникам.\n"
-        "7. В конце обязательно укажи источники из базы знаний.\n"
-        "8. Пиши на русском, если пользователь не просит другой язык.\n"
-        "9. Не называй себя Yandex GPT, ChatGPT или внешней моделью. Ты — ИИ ассистент Students Life.\n"
-        "10. Если в вопросе есть ошибки или опечатки, попытайся понять смысл по контексту.\n"
+def _render_precise_local_answer(query: str, top_ranked: List[Tuple[float, object]]) -> str:
+    if not top_ranked:
+        return _render_no_relevant_answer(query, snippets_count=0)
+
+    lines = []
+    lines.append("Я нашёл подходящую информацию в базе знаний Students Life.")
+    lines.append("")
+    lines.append("**Краткий ответ:**")
+
+    best_score, best_snippet = top_ranked[0]
+    best_title = getattr(best_snippet, "title", "Без названия")
+    best_content = getattr(best_snippet, "content", "") or ""
+    best_section = _get_section_path(getattr(best_snippet, "section", None))
+    best_category = _get_category_label(getattr(best_snippet, "category", ""))
+
+    lines.append(f"Больше всего подходит материал **«{best_title}»**.")
+    lines.append(f"Раздел: **{best_section}**.")
+    lines.append(f"Категория: **{best_category}**.")
+    lines.append("")
+
+    if best_content:
+        lines.append("**Основная информация:**")
+        lines.append(_truncate(best_content, MAX_CONTENT_PREVIEW_CHARS))
+        lines.append("")
+        lines.append("**Текст для копирования:**")
+        lines.append(_copy_block(best_content))
+        lines.append("")
+
+    if len(top_ranked) > 1:
+        lines.append("**Дополнительно найдено:**")
+
+        for index, (_, snippet) in enumerate(top_ranked[1:MAX_SNIPPETS_FOR_ANSWER], start=2):
+            title = getattr(snippet, "title", "Без названия")
+            section_path = _get_section_path(getattr(snippet, "section", None))
+            category_label = _get_category_label(getattr(snippet, "category", ""))
+            content = _truncate(getattr(snippet, "content", ""), 350)
+
+            lines.append("")
+            lines.append(f"{index}. **{title}**")
+            lines.append(f"   Раздел: {section_path}")
+            lines.append(f"   Категория: {category_label}")
+
+            if content:
+                lines.append(f"   {content}")
+                lines.append("   **Текст для копирования:**")
+                lines.append(_copy_block(getattr(snippet, "content", ""), limit=1400))
+
+    lines.append("")
+    lines.append("**Источники:**")
+    lines.append(_build_sources_list(top_ranked[:MAX_SNIPPETS_FOR_ANSWER]))
+    lines.append("")
+    lines.append(
+        "Если нужно, уточните вопрос: страна, вуз, клиентская ситуация, документы, оплата, "
+        "виза или скрипт продаж."
     )
 
-
-def _build_user_prompt(query: str, context_text: str, sources_text: str) -> str:
-    return (
-        f"Вопрос пользователя:\n{query}\n\n"
-        f"НАЙДЕННЫЕ ДОКУМЕНТЫ В БАЗЕ ЗНАНИЙ:\n{context_text}\n\n"
-        f"СПИСОК ИСТОЧНИКОВ:\n{sources_text}\n\n"
-        "Сформируй ответ:\n"
-        "- сначала короткий понятный ответ;\n"
-        "- затем детали из базы знаний;\n"
-        "- затем, если нужно, уточняющий вопрос;\n"
-        "- в конце блок **Источники:**."
-    )
+    return "\n".join(lines)
 
 
 def _render_no_relevant_answer(query: str, snippets_count: int) -> str:
@@ -710,12 +757,20 @@ def _render_no_relevant_answer(query: str, snippets_count: int) -> str:
 def search_knowledge_base(query: str):
     """
     Главная функция для endpoint /ask_ai/.
-    Возвращает строку, потому что documents/views.py ожидает {'answer': answer}.
+    documents/views.py ожидает строку и возвращает её как {'answer': answer}.
+
+    Важно:
+    - внешний ИИ отключён;
+    - ответ формируется локально;
+    - поиск работает по InfoSnippet и KnowledgeSection;
+    - добавлена имитация думания 2 секунды.
     """
     query = str(query or "").strip()
 
     if not query:
         return "Введите ваш вопрос. Например: «что есть по вузам Китая?» или «найди скрипт продаж»."
+
+    _apply_thinking_delay()
 
     basic_intent = _detect_basic_intent(query)
     if basic_intent:
@@ -752,28 +807,6 @@ def search_knowledge_base(query: str):
     if not relevant_ranked:
         return _render_no_relevant_answer(query, snippets_count=len(snippets))
 
-    top_ranked = relevant_ranked[:MAX_SNIPPETS_FOR_AI]
-    context_text = _build_context_text(top_ranked)
-    sources_text = _build_sources_list(top_ranked)
+    top_ranked = relevant_ranked[:MAX_SNIPPETS_FOR_ANSWER]
 
-    system_prompt = _build_system_prompt()
-    user_prompt = _build_user_prompt(query, context_text, sources_text)
-
-    answer, err = _call_yandex(system_prompt, user_prompt)
-
-    if answer:
-        return answer
-
-    logger.warning("Yandex AI Search unavailable, using local fallback. Error: %s", err)
-
-    fallback = _fallback_local_answer(query, top_ranked[:6])
-
-    if err:
-        fallback += (
-            "\n\n"
-            "**Примечание для администратора:** внешний AI сейчас недоступен, "
-            "поэтому показан локальный ответ по найденным материалам.\n"
-            f"Ошибка AI: {err}"
-        )
-
-    return fallback
+    return _render_precise_local_answer(query, top_ranked)
