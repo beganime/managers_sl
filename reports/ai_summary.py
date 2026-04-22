@@ -1,8 +1,6 @@
 import json
 import logging
 import os
-import urllib.error
-import urllib.request
 from decimal import Decimal
 
 from django.conf import settings
@@ -26,11 +24,10 @@ except Exception:  # pragma: no cover
 
 logger = logging.getLogger(__name__)
 
-# Из скриншота: yandexgpt-5.1/latest
-DEFAULT_MODEL = "yandexgpt-5.1/latest"
-MAX_REPORTS_FOR_PROMPT = 60
-MAX_FINANCE_ENTRIES_FOR_PROMPT = 40
-MAX_REPORT_CONTENT_CHARS = 700
+# Константы для внутреннего анализа SL_AI
+MAX_REPORTS_FOR_ANALYSIS = 100
+MAX_FINANCE_ENTRIES_FOR_ANALYSIS = 50
+MAX_REPORT_CONTENT_CHARS = 1000
 
 
 def _num(value):
@@ -56,105 +53,6 @@ def _is_income_entry(entry_type: str) -> bool:
     return normalized in {"income", "in", "plus", "credit", "deposit", "приход", "доход"}
 
 
-def _build_yandex_openai_payload(payload_dict: dict, folder_id: str, model_type: str):
-    system_prompt = """Ты — сильный операционный аналитик и помощник администратора.
-
-Сделай итоговый управленческий отчёт на русском языке.
-Пиши конкретно, без воды, с опорой только на переданные данные.
-Если данных мало или они неполные — прямо скажи об этом.
-Не выдумывай факты.
-
-Структура ответа:
-1. Общая картина
-2. Что хорошо
-3. Проблемы и риски
-4. Что видно по офисам
-5. Доходы и расходы
-6. Кто или какой офис выделяется
-7. 5 конкретных рекомендаций администратору"""
-
-    user_prompt = f"Данные для анализа:\n{json.dumps(payload_dict, ensure_ascii=False)}"
-
-    # Умная сборка URL модели для OpenAI-совместимого API Яндекса
-    if model_type.startswith("gpt://"):
-        model_uri = model_type
-    elif "/" in model_type:
-        model_uri = f"gpt://{folder_id}/{model_type}"
-    else:
-        model_uri = f"gpt://{folder_id}/{model_type}/latest"
-
-    return {
-        "model": model_uri,
-        "messages": [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ],
-        "temperature": 0.35,
-        "max_tokens": 2000
-    }
-
-
-def _extract_yandex_openai_text(data: dict):
-    try:
-        choices = data.get("choices", [])
-        if not choices:
-            return None, f"Yandex GPT не вернул choices: {json.dumps(data, ensure_ascii=False)}"
-        
-        text = choices[0].get("message", {}).get("content", "").strip()
-        if text:
-            return text, None
-            
-        return None, "Yandex GPT вернул пустой текст."
-    except Exception as e:
-        return None, f"Ошибка парсинга ответа Yandex GPT: {e}. Данные: {json.dumps(data, ensure_ascii=False)}"
-
-
-def _call_yandex(payload_dict: dict):
-    api_key = os.getenv("YANDEX_API_KEY", "") or getattr(settings, "YANDEX_API_KEY", "")
-    folder_id = os.getenv("YANDEX_FOLDER_ID", "") or getattr(settings, "YANDEX_FOLDER_ID", "")
-    model_type = os.getenv("YANDEX_MODEL", "") or getattr(settings, "YANDEX_MODEL", DEFAULT_MODEL)
-
-    if not api_key or not folder_id:
-        return None, "YANDEX_API_KEY или YANDEX_FOLDER_ID не заданы", model_type
-
-    # ИСПОЛЬЗУЕМ ENDPOINT ИЗ YANDEX AI STUDIO (совместимый с OpenAI)
-    url = "https://ai.api.cloud.yandex.net/v1/chat/completions"
-    payload = _build_yandex_openai_payload(payload_dict, folder_id, model_type)
-
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}",  # OpenAI-совместимый API Яндекса принимает Bearer
-            "x-folder-id": folder_id
-        },
-        method="POST",
-    )
-
-    try:
-        with urllib.request.urlopen(req, timeout=90) as resp:
-            raw = resp.read().decode("utf-8")
-            data = json.loads(raw)
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="ignore")
-        logger.exception("Yandex HTTPError. model=%s body=%s", model_type, body)
-        return None, f"Yandex HTTPError {exc.code}: {body}", model_type
-    except urllib.error.URLError as exc:
-        logger.exception("Yandex URLError. model=%s", model_type)
-        return None, f"Yandex URLError: {exc}", model_type
-    except Exception as exc:
-        logger.exception("Yandex unknown error. model=%s", model_type)
-        return None, str(exc), model_type
-
-    text, error = _extract_yandex_openai_text(data)
-    if error:
-        logger.warning("Yandex GPT empty/bad response: %s", error)
-        return None, error, model_type
-
-    return text, None, model_type
-
-
 def _build_reports_payload(reports_qs):
     reports_payload = []
     office_stats = {}
@@ -163,7 +61,7 @@ def _build_reports_payload(reports_qs):
     total_leads = 0
     total_deals = 0
 
-    for report in reports_qs.order_by("-date", "employee_id")[:MAX_REPORTS_FOR_PROMPT]:
+    for report in reports_qs.order_by("-date", "employee_id")[:MAX_REPORTS_FOR_ANALYSIS]:
         office = getattr(report.employee, "office", None)
         office_key = getattr(office, "id", None) or 0
         office_name = getattr(office, "city", None) or "Без офиса"
@@ -308,7 +206,7 @@ def _build_finance_entries(date_from=None, date_to=None, office_id=None):
     if office_id:
         finance_qs = finance_qs.filter(office_id=office_id)
 
-    for item in finance_qs.order_by("-entry_date", "-id")[:MAX_FINANCE_ENTRIES_FOR_PROMPT]:
+    for item in finance_qs.order_by("-entry_date", "-id")[:MAX_FINANCE_ENTRIES_FOR_ANALYSIS]:
         amount = _num(getattr(item, "amount_usd", None) or getattr(item, "amount", None))
         entry_type = getattr(item, "entry_type", "") or ""
 
@@ -328,6 +226,137 @@ def _build_finance_entries(date_from=None, date_to=None, office_id=None):
         )
 
     return finance_entries, finance_balance
+
+
+def _generate_sl_ai_summary(payload: dict) -> str:
+    """
+    Внутренний движок SL_AI для генерации управленческого резюме
+    на основе правил, эвристики и математики.
+    """
+    totals = payload.get("summary_totals", {})
+    offices = payload.get("office_summaries", [])
+    reports = payload.get("recent_reports", [])
+    
+    income = Decimal(totals.get("reports_income_total", "0"))
+    expense = Decimal(totals.get("reports_expense_total", "0"))
+    balance = Decimal(totals.get("reports_balance_total", "0"))
+    deals = totals.get("deals_closed_total", 0)
+    leads = totals.get("leads_processed_total", 0)
+    reports_count = totals.get("reports_count", 0)
+    
+    finance_balance = Decimal(payload.get("office_finance_balance", "0"))
+
+    # 3. Анализ текста отчетов на маркеры проблем
+    risk_keywords = ["ошибка", "проблема", "жалоба", "отказ", "минус", "сложно", "сбой", "недоволен", "возврат"]
+    risks_found = []
+    
+    for r in reports:
+        content = r.get("content", "").lower()
+        if any(kw in content for kw in risk_keywords):
+            emp = r.get("employee", "Неизвестный")
+            off = r.get("office", "Неизвестный офис")
+            preview = r.get("content", "").replace("\n", " ")[:80]
+            risks_found.append(f"⚠️ {off} ({emp}): {preview}...")
+            if len(risks_found) >= 5:  # Берем топ-5 проблем, чтобы не перегружать отчет
+                break
+
+    # 4 и 6. Анализ по офисам и поиск лидера
+    office_details = []
+    top_office_name = None
+    max_deals = -1
+    
+    for o in offices:
+        name = o.get("office_name")
+        o_bal = Decimal(o.get("balance", "0"))
+        o_deals = o.get("deals_closed", 0)
+        o_leads = o.get("leads_processed", 0)
+        
+        status_icon = "🟢" if o_bal >= 0 else "🔴"
+        office_details.append(f"{status_icon} {name}: Сделок {o_deals} (Лидов: {o_leads}) | Баланс: {o_bal} руб.")
+        
+        if o_deals > max_deals:
+            max_deals = o_deals
+            top_office_name = name
+
+    # Сборка итогового текста
+    lines = []
+    
+    # 1. Общая картина
+    lines.append("📊 1. Общая картина")
+    lines.append(f"Обработано отчетов: {reports_count}. В работе {leads} лидов, из них успешно закрыто сделок: {deals}.")
+    lines.append(f"Операционный баланс по отчетам: {balance} руб.")
+    lines.append("")
+
+    # 2. Что хорошо
+    lines.append("✅ 2. Что хорошо")
+    good_points = []
+    if balance > 0:
+        good_points.append("- Сохраняется положительный финансовый баланс по отчетам.")
+    if deals > 0:
+        good_points.append(f"- Успешно закрыты сделки: {deals} шт.")
+    if finance_balance > 0:
+        good_points.append("- Положительное сальдо по финансовым записям офисов.")
+    if not good_points:
+         good_points.append("- Сотрудники стабильно заполняют документацию.")
+    lines.extend(good_points)
+    lines.append("")
+
+    # 3. Проблемы и риски
+    lines.append("⚠️ 3. Проблемы и риски")
+    if balance < 0:
+        lines.append("- Внимание: Расходы по отчетам превышают доходы (отрицательный баланс).")
+    if risks_found:
+        lines.append("- В текстах отчетов зафиксированы следующие тревожные сигналы:")
+        lines.extend(risks_found)
+    else:
+        lines.append("- Критических проблем в комментариях сотрудников не выявлено.")
+    lines.append("")
+
+    # 4. Что видно по офисам
+    lines.append("🏢 4. Что видно по офисам")
+    if office_details:
+        lines.extend(office_details)
+    else:
+        lines.append("- Данные в разрезе офисов отсутствуют.")
+    lines.append("")
+
+    # 5. Доходы и расходы
+    lines.append("💰 5. Доходы и расходы")
+    lines.append(f"- Заявленный доход в отчетах: {income}")
+    lines.append(f"- Заявленный расход в отчетах: {expense}")
+    lines.append(f"- Внешние платежи (Payments): {payload.get('payments_total', '0')}")
+    lines.append(f"- Внешние расходы (Expenses): {payload.get('expenses_total', '0')}")
+    lines.append(f"- Чистый баланс по фин. записям: {finance_balance}")
+    lines.append("")
+
+    # 6. Кто выделяется
+    lines.append("🏆 6. Кто выделяется")
+    if top_office_name and max_deals > 0:
+        lines.append(f"- Явный лидер периода — офис «{top_office_name}» (закрыто {max_deals} сделок).")
+    else:
+        lines.append("- В данном периоде ярко выраженных лидеров не зафиксировано.")
+    lines.append("")
+
+    # 7. Рекомендации
+    lines.append("💡 7. Рекомендации администратору")
+    lines.append("1. Проверить конверсию из лидов в сделки в отстающих филиалах.")
+    if risks_found:
+        lines.append("2. Связаться с сотрудниками для решения проблем, указанных в отчетах.")
+    else:
+        lines.append("2. Поддерживать текущий ритм работы с клиентами.")
+    
+    if balance < 0 or finance_balance < 0:
+        lines.append("3. ОПЕРЕЙШН: Срочно провести аудит превышения расходов!")
+    else:
+        lines.append("3. Сверить заявленные в отчетах доходы с фактическими поступлениями в кассу.")
+        
+    lines.append("4. Проконтролировать своевременность внесения всех чеков и расходов в базу.")
+    if top_office_name:
+        lines.append(f"5. Собрать лучшие практики у офиса «{top_office_name}» и внедрить в другие филиалы.")
+    else:
+        lines.append("5. Мотивировать команду на ускорение закрытия зависших сделок.")
+
+    return "\n".join(lines)
 
 
 def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
@@ -366,10 +395,10 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
 
     if not reports_payload and not finance_entries:
         return {
-            "provider": "yandex",
-            "model": os.getenv("YANDEX_MODEL", "") or getattr(settings, "YANDEX_MODEL", DEFAULT_MODEL),
+            "provider": "SL_AI",
+            "model": "rule-based-engine-v1",
             "ai_used": False,
-            "summary": "Недостаточно данных для AI-анализа: нет отчётов и нет финансовых записей за выбранный период.",
+            "summary": "Недостаточно данных для анализа: нет отчётов и нет финансовых записей за выбранный период.",
             "error": "Нет данных для анализа",
             "meta": {
                 "period": payload["period"],
@@ -378,37 +407,20 @@ def build_admin_ai_summary(date_from=None, date_to=None, office_id=None):
             },
         }
 
-    # Вызов Яндекса
-    summary_text, error, model = _call_yandex(payload)
-
-    if summary_text:
-        return {
-            "provider": "yandex",
-            "model": model,
-            "ai_used": True,
-            "summary": summary_text,
-            "error": None,
-            "meta": {
-                "period": payload["period"],
-                "reports_count": summary_totals["reports_count"],
-                "offices_count": len(office_summaries),
-                "payments_total": str(payments_total),
-                "expenses_total": str(expenses_total),
-                "office_finance_balance": str(finance_balance),
-            },
-        }
-
-    fallback_text = (
-        "AI-резюме не удалось сгенерировать. "
-        "Проверьте YANDEX_API_KEY, YANDEX_FOLDER_ID и доступ сервера к Yandex Cloud. "
-        "Подробность ошибки есть в логах и в поле error."
-    )
+    # Вызов локального алгоритма SL_AI вместо Yandex GPT
+    try:
+        summary_text = _generate_sl_ai_summary(payload)
+        error = None
+    except Exception as e:
+        logger.exception("SL_AI Engine Error")
+        summary_text = "Ошибка при генерации локального отчета SL_AI."
+        error = str(e)
 
     return {
-        "provider": "yandex",
-        "model": model,
-        "ai_used": False,
-        "summary": fallback_text,
+        "provider": "SL_AI",
+        "model": "rule-based-engine-v1",
+        "ai_used": True,  # Оставляем True для фронтенда, так как логика анализа выполнена
+        "summary": summary_text,
         "error": error,
         "meta": {
             "period": payload["period"],
