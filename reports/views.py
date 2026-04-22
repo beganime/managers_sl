@@ -10,13 +10,6 @@ from .serializers import DailyReportSerializer
 
 logger = logging.getLogger(__name__)
 
-try:
-    from .ai_summary import build_admin_ai_summary
-except Exception as e:  # pragma: no cover
-    logger.error(f"CRITICAL ERROR: Не удалось загрузить SL_AI: {e}")
-    build_admin_ai_summary = None
-
-
 def is_admin_user(user):
     return bool(
         user
@@ -27,8 +20,6 @@ def is_admin_user(user):
             or user.is_staff
         )
     )
-
-
 
 class DailyReportViewSet(viewsets.ModelViewSet):
     serializer_class = DailyReportSerializer
@@ -117,7 +108,8 @@ class DailyReportViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED,
         )
 
-    @action(detail=False, methods=["get"], url_path="ai_summary")
+    # 🔴 ИЗМЕНЕНИЯ ЗДЕСЬ: Добавлен POST, динамический импорт и перехват ошибок
+    @action(detail=False, methods=["get", "post"], url_path="ai_summary")
     def ai_summary(self, request):
         if not is_admin_user(request.user):
             return Response(
@@ -125,22 +117,55 @@ class DailyReportViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN,
             )
 
-        if build_admin_ai_summary is None:
-            return Response(
-                {"detail": "AI summary helper не найден на сервере."},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE,
-            )
-
-        date_from = request.query_params.get("date_from")
-        date_to = request.query_params.get("date_to")
-        office_id = request.query_params.get("office")
+        # 1. Поддержка и GET, и POST запросов от фронтенда
+        if request.method == "POST":
+            date_from = request.data.get("date_from")
+            date_to = request.data.get("date_to")
+            office_id = request.data.get("office")
+        else:
+            date_from = request.query_params.get("date_from")
+            date_to = request.query_params.get("date_to")
+            office_id = request.query_params.get("office")
 
         office_id = int(office_id) if office_id and str(office_id).isdigit() else None
 
-        result = build_admin_ai_summary(
-            date_from=date_from,
-            date_to=date_to,
-            office_id=office_id,
-        )
+        # 2. Пытаемся загрузить функцию. Если файл битый - отдадим ошибку прям в JSON
+        try:
+            from .ai_summary import build_admin_ai_summary
+        except Exception as e:
+            import traceback
+            logger.error(f"Import Error in ai_summary: {traceback.format_exc()}")
+            return Response(
+                {
+                    "detail": "Ошибка импорта файла ai_summary.py",
+                    "python_error": str(e),
+                    "trace": traceback.format_exc()
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
-        return Response(result, status=status.HTTP_200_OK)
+        if build_admin_ai_summary is None:
+            return Response(
+                {"detail": "Функция build_admin_ai_summary равна None."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        # 3. Вызываем сам ИИ и ловим ошибки вычислений
+        try:
+            result = build_admin_ai_summary(
+                date_from=date_from,
+                date_to=date_to,
+                office_id=office_id,
+            )
+            return Response(result, status=status.HTTP_200_OK)
+        except Exception as e:
+            import traceback
+            logger.error(f"Runtime Error in ai_summary: {traceback.format_exc()}")
+            return Response(
+                {
+                    "detail": "Ошибка внутри движка SL_AI.",
+                    "python_error": str(e),
+                    "trace": traceback.format_exc()
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
