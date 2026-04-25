@@ -13,6 +13,41 @@ from .models import Lead
 from .serializers import LeadSerializer, MobileLeadSerializer
 
 
+def clean_header(value, max_length=None) -> str:
+    value = str(value or '').strip()
+
+    if max_length and len(value) > max_length:
+        return value[:max_length]
+
+    return value
+
+
+def get_client_ip(request) -> str | None:
+    """
+    Берём реальный IP без изменения frontend/mobile.
+    Работает за nginx/proxy, если он передаёт X-Forwarded-For или X-Real-IP.
+    """
+    cloudflare_ip = request.META.get('HTTP_CF_CONNECTING_IP')
+    if cloudflare_ip:
+        return clean_header(cloudflare_ip, 45)
+
+    x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+    if x_forwarded_for:
+        first_ip = x_forwarded_for.split(',')[0].strip()
+        if first_ip:
+            return clean_header(first_ip, 45)
+
+    x_real_ip = request.META.get('HTTP_X_REAL_IP')
+    if x_real_ip:
+        return clean_header(x_real_ip, 45)
+
+    remote_addr = request.META.get('REMOTE_ADDR')
+    if remote_addr:
+        return clean_header(remote_addr, 45)
+
+    return None
+
+
 class IsAuthorizedAPIClient(BasePermission):
     """Разрешает доступ для создания лидов с сайта по API-ключу."""
 
@@ -23,16 +58,33 @@ class IsAuthorizedAPIClient(BasePermission):
 
 
 class LeadCreateThrottle(AnonRateThrottle):
-    # Ограничение по IP: максимум 3 заявки в минуту
+    """
+    Ограничение по IP: максимум 3 заявки в минуту.
+    IP берётся из proxy headers, чтобы боты не обходили лимит через nginx.
+    """
     rate = '3/min'
     scope = 'leads_create'
+
+    def get_ident(self, request):
+        return get_client_ip(request) or super().get_ident(request)
 
 
 class LeadCreateAPIView(CreateAPIView):
     queryset = Lead.objects.all()
     serializer_class = LeadSerializer
     permission_classes = [IsAuthorizedAPIClient]
-    throttle_classes = [LeadCreateThrottle]  # Добавляем защиту от DDoS/спама
+    throttle_classes = [LeadCreateThrottle]
+
+    def perform_create(self, serializer):
+        request = self.request
+
+        serializer.save(
+            submitter_ip=get_client_ip(request),
+            submitter_user_agent=clean_header(request.META.get('HTTP_USER_AGENT'), 2000),
+            submitter_referer=clean_header(request.META.get('HTTP_REFERER'), 1000),
+            submitter_origin=clean_header(request.META.get('HTTP_ORIGIN'), 255),
+            submitter_host=clean_header(request.META.get('HTTP_HOST'), 255),
+        )
 
 
 class LeadViewSet(viewsets.ModelViewSet):
@@ -100,9 +152,14 @@ class LeadViewSet(viewsets.ModelViewSet):
                 | Q(country__icontains=search)
                 | Q(departure_city__icontains=search)
                 | Q(arrival_city__icontains=search)
+                | Q(submitter_ip__icontains=search)
+                | Q(submitter_user_agent__icontains=search)
+                | Q(submitter_origin__icontains=search)
+                | Q(submitter_host__icontains=search)
             )
 
         ordering = self.request.query_params.get('ordering') or '-created_at'
+
         allowed = {
             'created_at',
             '-created_at',

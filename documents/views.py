@@ -29,7 +29,7 @@ from .serializers import (
     KnowledgeTestSerializer,
 )
 from .watermarking import build_approved_document
-from .ai_search import search_knowledge_base  # <-- ИМПОРТИРУЕМ НАШ ИИ
+from .ai_search import search_knowledge_base
 
 
 logger = logging.getLogger(__name__)
@@ -77,18 +77,14 @@ class KnowledgeSectionViewSet(viewsets.ModelViewSet):
         return qs.order_by('parent__id', 'order', 'title')
 
     def perform_create(self, serializer):
-        if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может создавать разделы.')
         serializer.save()
 
     def perform_update(self, serializer):
-        if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может изменять разделы.')
         serializer.save()
 
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может удалять разделы.')
+            raise PermissionDenied('Удалять разделы может только администратор.')
         instance.delete()
 
 
@@ -124,29 +120,26 @@ class InfoSnippetViewSet(viewsets.ModelViewSet):
         return qs.distinct().order_by('section__order', 'category', 'order', 'title')
 
     def perform_create(self, serializer):
-        if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может создавать справочные записи.')
         serializer.save()
 
     def perform_update(self, serializer):
-        if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может изменять справочные записи.')
         serializer.save()
 
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может удалять справочные записи.')
+            raise PermissionDenied('Удалять записи базы знаний может только администратор.')
         instance.delete()
 
-    # ==========================================
-    # НОВЫЙ ЭНДПОИНТ ДЛЯ ЗАПРОСОВ К ИИ
-    # ==========================================
     @action(detail=False, methods=['post'], url_path='ask_ai')
     def ask_ai(self, request):
         query = request.data.get('query', '').strip()
+
         if not query:
-            return Response({'detail': 'Введите ваш вопрос'}, status=status.HTTP_400_BAD_REQUEST)
-        
+            return Response(
+                {'detail': 'Введите ваш вопрос'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         answer = search_knowledge_base(query)
         return Response({'answer': answer}, status=status.HTTP_200_OK)
 
@@ -197,6 +190,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             qs = qs.filter(deal_id=deal_id)
 
         status_value = (self.request.query_params.get('status') or '').strip().lower()
+
         if status_value:
             if status_value == 'pending':
                 qs = qs.exclude(review__status__in=['approved', 'rejected']).exclude(status='error')
@@ -230,12 +224,13 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 document.title = f'{document.template.title} — {client_name or "Клиент"}'
             else:
                 document.title = document.template.title
+
             document.save(update_fields=['title', 'updated_at'])
 
-        from .models import DocumentReview
         review, _ = DocumentReview.objects.get_or_create(document=document)
 
         success, msg = document.generate_document()
+
         if not success:
             logger.error('Ошибка авто-генерации документа #%s: %s', document.id, msg)
         else:
@@ -254,24 +249,31 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
 
         output = self.get_serializer(document, context={'request': request})
         headers = self.get_success_headers(output.data)
+
         return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+
         if resolve_document_status(instance) == 'approved':
             raise ValidationError('Одобренный документ редактировать нельзя.')
+
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
+
         if resolve_document_status(instance) == 'approved':
             raise ValidationError('Одобренный документ редактировать нельзя.')
+
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
+
         if resolve_document_status(instance) == 'approved':
             raise ValidationError('Одобренный документ удалять нельзя.')
+
         return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], url_path='approve')
@@ -282,7 +284,10 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         doc = self.get_object()
 
         if resolve_document_status(doc) == 'approved':
-            return Response({'detail': 'Документ уже одобрен.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {'detail': 'Документ уже одобрен.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         if doc.status != 'generated':
             return Response(
@@ -296,9 +301,9 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        from .models import DocumentReview
         review, _ = DocumentReview.objects.get_or_create(document=doc)
         approved_file = build_approved_document(doc)
+
         if approved_file is None:
             return Response(
                 {'detail': 'Не удалось собрать approved-файл с watermark. Проверь DOCUMENT_WATERMARK_IMAGE.'},
@@ -310,6 +315,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 review.approved_file.delete(save=False)
 
             review.mark_approved(user=request.user, approved_file=approved_file)
+
             doc.status = 'approved'
             doc.approved_by = request.user
             doc.approved_at = review.reviewed_at
@@ -333,7 +339,6 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         if not is_admin_user(request.user) and doc.manager_id != request.user.id:
             raise PermissionDenied('Нет прав на перегенерацию документа.')
 
-        from .models import DocumentReview
         review, _ = DocumentReview.objects.get_or_create(document=doc)
         success, msg = doc.generate_document()
         doc.refresh_from_db()
@@ -371,6 +376,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             )
 
         payload = self.get_serializer(doc, context={'request': request}).data
+
         return Response(
             {'file_url': payload.get('approved_file_url') or payload.get('file_url')},
             status=status.HTTP_200_OK,
@@ -405,18 +411,14 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
         return qs.distinct().order_by('-created_at')
 
     def perform_create(self, serializer):
-        if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может создавать тесты.')
         serializer.save()
 
     def perform_update(self, serializer):
-        if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может изменять тесты.')
         serializer.save()
 
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
-            raise PermissionDenied('Только администратор может удалять тесты.')
+            raise PermissionDenied('Удалять тесты может только администратор.')
         instance.delete()
 
     @action(detail=True, methods=['post'], url_path='submit')
@@ -447,6 +449,7 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
                 continue
 
             normalized_answers[qid_str] = answer_index
+
             if answer_index == question.correct:
                 score += 1
 
@@ -472,7 +475,8 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
             {
                 'detail': 'Результат сохранён.',
                 'attempt': KnowledgeTestAttemptSerializer(
-                    attempt, context={'request': request}
+                    attempt,
+                    context={'request': request},
                 ).data,
                 'score': score,
                 'total': total,
