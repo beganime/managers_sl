@@ -315,11 +315,17 @@ class GeneratedDocument(models.Model):
         ordering = ['-created_at']
 
     @property
-    def can_download(self) -> bool:
+    def can_download_original(self) -> bool:
+        return bool(self.generated_file)
+
+    @property
+    def can_download_approved(self) -> bool:
         review = safe_get_document_review(self)
-        if review:
-            return review.status == 'approved' and bool(review.approved_file)
-        return self.status == 'approved' and bool(self.generated_file)
+        return bool(review and review.status == 'approved' and review.approved_file)
+
+    @property
+    def can_download(self) -> bool:
+        return self.can_download_original or self.can_download_approved
 
     def _parse_context_data(self):
         context = self.context_data or {}

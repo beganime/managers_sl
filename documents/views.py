@@ -10,6 +10,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.response import Response
 
+from .ai_search import search_knowledge_base
 from .models import (
     DocumentReview,
     DocumentTemplate,
@@ -29,7 +30,6 @@ from .serializers import (
     KnowledgeTestSerializer,
 )
 from .watermarking import build_approved_document
-from .ai_search import search_knowledge_base
 
 
 logger = logging.getLogger(__name__)
@@ -133,12 +133,8 @@ class InfoSnippetViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['post'], url_path='ask_ai')
     def ask_ai(self, request):
         query = request.data.get('query', '').strip()
-
         if not query:
-            return Response(
-                {'detail': 'Введите ваш вопрос'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'detail': 'Введите ваш вопрос'}, status=status.HTTP_400_BAD_REQUEST)
 
         answer = search_knowledge_base(query)
         return Response({'answer': answer}, status=status.HTTP_200_OK)
@@ -190,7 +186,6 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             qs = qs.filter(deal_id=deal_id)
 
         status_value = (self.request.query_params.get('status') or '').strip().lower()
-
         if status_value:
             if status_value == 'pending':
                 qs = qs.exclude(review__status__in=['approved', 'rejected']).exclude(status='error')
@@ -230,7 +225,6 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         review, _ = DocumentReview.objects.get_or_create(document=document)
 
         success, msg = document.generate_document()
-
         if not success:
             logger.error('Ошибка авто-генерации документа #%s: %s', document.id, msg)
         else:
@@ -249,31 +243,24 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
 
         output = self.get_serializer(document, context={'request': request})
         headers = self.get_success_headers(output.data)
-
         return Response(output.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
-
         if resolve_document_status(instance) == 'approved':
             raise ValidationError('Одобренный документ редактировать нельзя.')
-
         return super().update(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
         instance = self.get_object()
-
         if resolve_document_status(instance) == 'approved':
             raise ValidationError('Одобренный документ редактировать нельзя.')
-
         return super().partial_update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
-
         if resolve_document_status(instance) == 'approved':
             raise ValidationError('Одобренный документ удалять нельзя.')
-
         return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], url_path='approve')
@@ -284,10 +271,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         doc = self.get_object()
 
         if resolve_document_status(doc) == 'approved':
-            return Response(
-                {'detail': 'Документ уже одобрен.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'detail': 'Документ уже одобрен.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if doc.status != 'generated':
             return Response(
@@ -315,7 +299,6 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
                 review.approved_file.delete(save=False)
 
             review.mark_approved(user=request.user, approved_file=approved_file)
-
             doc.status = 'approved'
             doc.approved_by = request.user
             doc.approved_at = review.reviewed_at
@@ -365,20 +348,70 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST,
         )
 
+    def _build_download_payload(self, doc, request):
+        payload = self.get_serializer(doc, context={'request': request}).data
+        return {
+            'document_id': doc.id,
+            'status': payload.get('status'),
+            'review_status': payload.get('review_status'),
+            'original_file_url': payload.get('original_file_url') or payload.get('file_url'),
+            'approved_file_url': payload.get('approved_file_url'),
+            'can_download_original': bool(payload.get('original_file_url') or payload.get('file_url')),
+            'can_download_approved': bool(payload.get('approved_file_url')),
+        }
+
     @action(detail=True, methods=['get'], url_path='download')
     def download(self, request, pk=None):
         doc = self.get_object()
+        data = self._build_download_payload(doc, request)
 
-        if not doc.can_download:
+        if not data['can_download_original'] and not data['can_download_approved']:
             return Response(
-                {'detail': 'Скачивание доступно только после одобрения администратором.'},
-                status=status.HTTP_403_FORBIDDEN,
+                {'detail': 'У документа пока нет доступных файлов для скачивания.'},
+                status=status.HTTP_404_NOT_FOUND,
             )
 
+        return Response(data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'], url_path='download-original')
+    def download_original(self, request, pk=None):
+        doc = self.get_object()
         payload = self.get_serializer(doc, context={'request': request}).data
+        original_url = payload.get('original_file_url') or payload.get('file_url')
+
+        if not original_url:
+            return Response(
+                {'detail': 'Оригинальный файл без watermark ещё не готов.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
         return Response(
-            {'file_url': payload.get('approved_file_url') or payload.get('file_url')},
+            {
+                'document_id': doc.id,
+                'file_url': original_url,
+                'type': 'original',
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @action(detail=True, methods=['get'], url_path='download-approved')
+    def download_approved(self, request, pk=None):
+        doc = self.get_object()
+        payload = self.get_serializer(doc, context={'request': request}).data
+        approved_url = payload.get('approved_file_url')
+
+        if not approved_url:
+            return Response(
+                {'detail': 'Файл с watermark ещё не одобрен или не собран.'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
+        return Response(
+            {
+                'document_id': doc.id,
+                'file_url': approved_url,
+                'type': 'approved',
+            },
             status=status.HTTP_200_OK,
         )
 
@@ -449,7 +482,6 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
                 continue
 
             normalized_answers[qid_str] = answer_index
-
             if answer_index == question.correct:
                 score += 1
 
@@ -475,8 +507,7 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
             {
                 'detail': 'Результат сохранён.',
                 'attempt': KnowledgeTestAttemptSerializer(
-                    attempt,
-                    context={'request': request},
+                    attempt, context={'request': request}
                 ).data,
                 'score': score,
                 'total': total,
