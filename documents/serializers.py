@@ -1,4 +1,5 @@
 # documents/serializers.py
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from analytics.models import Deal
@@ -8,12 +9,15 @@ from .models import (
     GeneratedDocument,
     InfoSnippet,
     KnowledgeSection,
+    KnowledgeSectionAttachment,
     KnowledgeTest,
     KnowledgeTestAttempt,
     TemplateField,
     TestQuestion,
 )
 from .review_guard import safe_get_document_review
+
+User = get_user_model()
 
 
 def build_absolute_file_url(request, field):
@@ -31,8 +35,20 @@ def build_absolute_file_url(request, field):
     return url
 
 
-class KnowledgeSectionSerializer(serializers.ModelSerializer):
-    children = serializers.SerializerMethodField()
+class KnowledgeUserMiniSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ('id', 'first_name', 'last_name', 'full_name', 'email')
+
+    def get_full_name(self, obj):
+        return f'{obj.first_name} {obj.last_name}'.strip() or obj.email
+
+
+class KnowledgeSectionMiniSerializer(serializers.ModelSerializer):
+    cover_image_url = serializers.SerializerMethodField()
+    file_url = serializers.SerializerMethodField()
     full_path = serializers.CharField(read_only=True)
 
     class Meta:
@@ -42,23 +58,127 @@ class KnowledgeSectionSerializer(serializers.ModelSerializer):
             'parent',
             'title',
             'slug',
+            'description',
             'icon',
             'color',
+            'cover_image_url',
+            'file_url',
+            'external_url',
+            'full_path',
+        )
+
+    def get_cover_image_url(self, obj):
+        return build_absolute_file_url(self.context.get('request'), obj.cover_image)
+
+    def get_file_url(self, obj):
+        return build_absolute_file_url(self.context.get('request'), obj.file)
+
+
+class KnowledgeSectionAttachmentSerializer(serializers.ModelSerializer):
+    uploaded_by_data = KnowledgeUserMiniSerializer(source='uploaded_by', read_only=True)
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = KnowledgeSectionAttachment
+        fields = (
+            'id',
+            'section',
+            'uploaded_by',
+            'uploaded_by_data',
+            'title',
+            'attachment_type',
+            'file',
+            'file_url',
+            'url',
+            'note',
+            'order',
+            'created_at',
+        )
+        read_only_fields = ('uploaded_by', 'created_at')
+        extra_kwargs = {
+            'file': {'required': False, 'allow_null': True},
+            'url': {'required': False, 'allow_blank': True},
+            'title': {'required': False, 'allow_blank': True},
+            'note': {'required': False, 'allow_blank': True},
+            'order': {'required': False},
+        }
+
+    def get_file_url(self, obj):
+        return build_absolute_file_url(self.context.get('request'), obj.file)
+
+    def validate(self, attrs):
+        attachment_type = attrs.get('attachment_type') or getattr(self.instance, 'attachment_type', 'file')
+        file_value = attrs.get('file') or getattr(self.instance, 'file', None)
+        url_value = attrs.get('url') or getattr(self.instance, 'url', '')
+
+        if attachment_type in ('file', 'image') and not file_value:
+            raise serializers.ValidationError({'file': 'Для файла/фото нужно загрузить файл.'})
+        if attachment_type == 'link' and not str(url_value or '').strip():
+            raise serializers.ValidationError({'url': 'Для ссылки нужно указать URL.'})
+        return attrs
+
+
+class KnowledgeSectionSerializer(serializers.ModelSerializer):
+    children = serializers.SerializerMethodField()
+    attachments = KnowledgeSectionAttachmentSerializer(many=True, read_only=True)
+    responsible_users_data = KnowledgeUserMiniSerializer(source='responsible_users', many=True, read_only=True)
+    created_by_data = KnowledgeUserMiniSerializer(source='created_by', read_only=True)
+    full_path = serializers.CharField(read_only=True)
+    cover_image_url = serializers.SerializerMethodField()
+    file_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = KnowledgeSection
+        fields = (
+            'id',
+            'parent',
+            'title',
+            'slug',
+            'description',
+            'icon',
+            'color',
+            'cover_image',
+            'cover_image_url',
+            'file',
+            'file_url',
+            'external_url',
+            'responsible_users',
+            'responsible_users_data',
+            'created_by',
+            'created_by_data',
             'order',
             'is_active',
             'created_at',
             'updated_at',
             'full_path',
             'children',
+            'attachments',
         )
+        read_only_fields = ('created_by', 'created_at', 'updated_at')
+        extra_kwargs = {
+            'cover_image': {'required': False, 'allow_null': True},
+            'file': {'required': False, 'allow_null': True},
+            'external_url': {'required': False, 'allow_blank': True},
+            'description': {'required': False, 'allow_blank': True},
+            'responsible_users': {'required': False},
+            'order': {'required': False},
+            'is_active': {'required': False},
+        }
 
     def get_children(self, obj):
         children = obj.children.all().order_by('order', 'title')
-        return KnowledgeSectionSerializer(children, many=True, context=self.context).data
+        return KnowledgeSectionMiniSerializer(children, many=True, context=self.context).data
+
+    def get_cover_image_url(self, obj):
+        return build_absolute_file_url(self.context.get('request'), obj.cover_image)
+
+    def get_file_url(self, obj):
+        return build_absolute_file_url(self.context.get('request'), obj.file)
 
 
 class InfoSnippetSerializer(serializers.ModelSerializer):
     section_title = serializers.CharField(source='section.title', read_only=True)
+    section_data = KnowledgeSectionMiniSerializer(source='section', read_only=True)
 
     class Meta:
         model = InfoSnippet
@@ -66,12 +186,19 @@ class InfoSnippetSerializer(serializers.ModelSerializer):
             'id',
             'section',
             'section_title',
+            'section_data',
             'category',
             'title',
             'content',
+            'content_format',
             'order',
             'updated_at',
         )
+        extra_kwargs = {
+            'content_format': {'required': False},
+            'section': {'required': False, 'allow_null': True},
+            'order': {'required': False},
+        }
 
 
 class TestQuestionSerializer(serializers.ModelSerializer):
@@ -91,6 +218,7 @@ class TestQuestionSerializer(serializers.ModelSerializer):
 class KnowledgeTestSerializer(serializers.ModelSerializer):
     questions = TestQuestionSerializer(many=True)
     section_title = serializers.CharField(source='section.title', read_only=True)
+    section_data = KnowledgeSectionMiniSerializer(source='section', read_only=True)
 
     class Meta:
         model = KnowledgeTest
@@ -98,6 +226,7 @@ class KnowledgeTestSerializer(serializers.ModelSerializer):
             'id',
             'section',
             'section_title',
+            'section_data',
             'title',
             'description',
             'is_active',

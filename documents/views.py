@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.db.utils import OperationalError, ProgrammingError
 from django.utils.dateparse import parse_datetime
-from rest_framework import permissions, status, viewsets
+from rest_framework import parsers, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
 from rest_framework.response import Response
@@ -17,6 +17,7 @@ from .models import (
     GeneratedDocument,
     InfoSnippet,
     KnowledgeSection,
+    KnowledgeSectionAttachment,
     KnowledgeTest,
     KnowledgeTestAttempt,
     resolve_document_status,
@@ -25,6 +26,7 @@ from .serializers import (
     DocumentTemplateSerializer,
     GeneratedDocumentSerializer,
     InfoSnippetSerializer,
+    KnowledgeSectionAttachmentSerializer,
     KnowledgeSectionSerializer,
     KnowledgeTestAttemptSerializer,
     KnowledgeTestSerializer,
@@ -50,9 +52,15 @@ def is_admin_user(user):
 class KnowledgeSectionViewSet(viewsets.ModelViewSet):
     serializer_class = KnowledgeSectionSerializer
     permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
 
     def get_queryset(self):
-        qs = KnowledgeSection.objects.prefetch_related('children').all()
+        qs = (
+            KnowledgeSection.objects
+            .select_related('parent', 'created_by')
+            .prefetch_related('children', 'responsible_users', 'attachments')
+            .all()
+        )
 
         parent = self.request.query_params.get('parent')
         if parent == 'null':
@@ -60,13 +68,21 @@ class KnowledgeSectionViewSet(viewsets.ModelViewSet):
         elif parent:
             qs = qs.filter(parent_id=parent)
 
+        responsible = self.request.query_params.get('responsible')
+        if responsible:
+            qs = qs.filter(responsible_users__id=responsible)
+
         is_active = self.request.query_params.get('is_active')
         if is_active in ('1', 'true', '0', 'false'):
             qs = qs.filter(is_active=is_active in ('1', 'true'))
 
         search = self.request.query_params.get('search')
         if search:
-            qs = qs.filter(title__icontains=search)
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(external_url__icontains=search)
+            )
 
         updated_after = self.request.query_params.get('updated_after')
         if updated_after:
@@ -74,10 +90,10 @@ class KnowledgeSectionViewSet(viewsets.ModelViewSet):
             if dt:
                 qs = qs.filter(updated_at__gte=dt)
 
-        return qs.order_by('parent__id', 'order', 'title')
+        return qs.distinct().order_by('parent__id', 'order', 'title')
 
     def perform_create(self, serializer):
-        serializer.save()
+        serializer.save(created_by=self.request.user)
 
     def perform_update(self, serializer):
         serializer.save()
@@ -85,6 +101,36 @@ class KnowledgeSectionViewSet(viewsets.ModelViewSet):
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
             raise PermissionDenied('Удалять разделы может только администратор.')
+        instance.delete()
+
+
+class KnowledgeSectionAttachmentViewSet(viewsets.ModelViewSet):
+    serializer_class = KnowledgeSectionAttachmentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
+
+    def get_queryset(self):
+        qs = KnowledgeSectionAttachment.objects.select_related('section', 'uploaded_by')
+
+        section = self.request.query_params.get('section')
+        if section:
+            qs = qs.filter(section_id=section)
+
+        attachment_type = self.request.query_params.get('attachment_type')
+        if attachment_type:
+            qs = qs.filter(attachment_type=attachment_type)
+
+        return qs.order_by('order', '-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(uploaded_by=self.request.user)
+
+    def perform_update(self, serializer):
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Удалять файлы/ссылки может только администратор.')
         instance.delete()
 
 
@@ -109,6 +155,7 @@ class InfoSnippetViewSet(viewsets.ModelViewSet):
                 Q(title__icontains=search)
                 | Q(content__icontains=search)
                 | Q(section__title__icontains=search)
+                | Q(section__description__icontains=search)
             )
 
         updated_after = self.request.query_params.get('updated_after')
@@ -120,7 +167,7 @@ class InfoSnippetViewSet(viewsets.ModelViewSet):
         return qs.distinct().order_by('section__order', 'category', 'order', 'title')
 
     def perform_create(self, serializer):
-        serializer.save()
+        serializer.save(content_format=serializer.validated_data.get('content_format') or 'markdown')
 
     def perform_update(self, serializer):
         serializer.save()

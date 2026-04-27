@@ -6,6 +6,7 @@ from .mobile_views import GeneratedDocumentViewSet
 from .views import (
     DocumentTemplateViewSet,
     InfoSnippetViewSet,
+    KnowledgeSectionAttachmentViewSet,
     KnowledgeSectionViewSet,
     KnowledgeTestAttemptViewSet,
     KnowledgeTestViewSet,
@@ -13,6 +14,7 @@ from .views import (
 
 router = DefaultRouter()
 router.register(r'knowledge-sections', KnowledgeSectionViewSet, basename='knowledge-section')
+router.register(r'knowledge-section-attachments', KnowledgeSectionAttachmentViewSet, basename='knowledge-section-attachment')
 router.register(r'snippets', InfoSnippetViewSet, basename='snippet')
 router.register(r'templates', DocumentTemplateViewSet, basename='template')
 router.register(r'generated', GeneratedDocumentViewSet, basename='generateddocument')

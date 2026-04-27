@@ -33,8 +33,36 @@ class KnowledgeSection(models.Model):
         db_index=True,
         allow_unicode=True,
     )
+    description = models.TextField('Описание раздела / Markdown', blank=True, default='')
     icon = models.CharField('Иконка', max_length=60, blank=True, default='folder')
     color = models.CharField('Цвет', max_length=30, blank=True)
+    cover_image = models.ImageField(
+        'Фото / обложка раздела',
+        upload_to='knowledge_sections/images/',
+        blank=True,
+        null=True,
+    )
+    file = models.FileField(
+        'Файл раздела',
+        upload_to='knowledge_sections/files/',
+        blank=True,
+        null=True,
+    )
+    external_url = models.URLField('Ссылка раздела', max_length=1000, blank=True, default='')
+    responsible_users = models.ManyToManyField(
+        settings.AUTH_USER_MODEL,
+        blank=True,
+        related_name='responsible_knowledge_sections',
+        verbose_name='Ответственные сотрудники',
+    )
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_knowledge_sections',
+        verbose_name='Кто создал',
+    )
     order = models.PositiveIntegerField('Порядок', default=0)
     is_active = models.BooleanField('Активен', default=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -67,12 +95,56 @@ class KnowledgeSection(models.Model):
         super().save(*args, **kwargs)
 
 
+class KnowledgeSectionAttachment(models.Model):
+    TYPE_CHOICES = (
+        ('file', 'Файл'),
+        ('image', 'Фото'),
+        ('link', 'Ссылка'),
+    )
+
+    section = models.ForeignKey(
+        KnowledgeSection,
+        on_delete=models.CASCADE,
+        related_name='attachments',
+        verbose_name='Раздел базы знаний',
+    )
+    uploaded_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='knowledge_section_attachments',
+        verbose_name='Кто добавил',
+    )
+    title = models.CharField('Название', max_length=255, blank=True, default='')
+    attachment_type = models.CharField('Тип', max_length=20, choices=TYPE_CHOICES, default='file')
+    file = models.FileField('Файл / фото', upload_to='knowledge_sections/attachments/', blank=True, null=True)
+    url = models.URLField('Ссылка', max_length=1000, blank=True, default='')
+    note = models.TextField('Описание / комментарий', blank=True, default='')
+    order = models.PositiveIntegerField('Порядок', default=0)
+    created_at = models.DateTimeField('Добавлено', auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Файл/ссылка раздела базы знаний'
+        verbose_name_plural = 'Файлы и ссылки разделов базы знаний'
+        ordering = ['order', '-created_at']
+
+    def __str__(self):
+        return self.title or self.url or f'Attachment #{self.id}'
+
+
 class InfoSnippet(models.Model):
     CATEGORY_CHOICES = (
         ('script', 'Скрипты продаж'),
         ('faq', 'Ответы на частые вопросы'),
         ('requisites', 'Реквизиты и Счета'),
         ('links', 'Полезные ссылки'),
+    )
+
+    CONTENT_FORMAT_CHOICES = (
+        ('markdown', 'Markdown'),
+        ('plain', 'Обычный текст'),
+        ('html', 'HTML'),
     )
 
     section = models.ForeignKey(
@@ -90,7 +162,13 @@ class InfoSnippet(models.Model):
         default='faq',
     )
     title = models.CharField('Название', max_length=255)
-    content = models.TextField('Содержание (Текст для копирования)')
+    content = models.TextField('Содержание')
+    content_format = models.CharField(
+        'Формат текста',
+        max_length=20,
+        choices=CONTENT_FORMAT_CHOICES,
+        default='markdown',
+    )
     order = models.PositiveIntegerField('Порядок', default=0)
     updated_at = models.DateTimeField(auto_now=True)
 
