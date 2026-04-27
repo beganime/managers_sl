@@ -35,6 +35,27 @@ def build_absolute_file_url(request, field):
     return url
 
 
+def _copy_payload(data):
+    return data.copy() if hasattr(data, 'copy') else dict(data or {})
+
+
+def _first_file(request, names):
+    files = getattr(request, 'FILES', {}) if request else {}
+    for name in names:
+        if name in files:
+            return files[name]
+    return None
+
+
+def _normalize_attachment_type(value):
+    value = str(value or '').strip().lower()
+    if value in ('photo', 'picture', 'img'):
+        return 'image'
+    if value in ('url', 'external_url'):
+        return 'link'
+    return value or 'file'
+
+
 class KnowledgeUserMiniSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
 
@@ -101,15 +122,40 @@ class KnowledgeSectionAttachmentSerializer(serializers.ModelSerializer):
             'title': {'required': False, 'allow_blank': True},
             'note': {'required': False, 'allow_blank': True},
             'order': {'required': False},
+            'attachment_type': {'required': False},
         }
+
+    def to_internal_value(self, data):
+        payload = _copy_payload(data)
+        request = self.context.get('request')
+
+        if 'type' in payload and 'attachment_type' not in payload:
+            payload['attachment_type'] = payload.get('type')
+
+        payload['attachment_type'] = _normalize_attachment_type(payload.get('attachment_type'))
+
+        if 'file' not in payload:
+            file_obj = _first_file(request, ('file', 'image', 'photo', 'attachment', 'upload', 'document'))
+            if file_obj:
+                payload['file'] = file_obj
+
+        return super().to_internal_value(payload)
 
     def get_file_url(self, obj):
         return build_absolute_file_url(self.context.get('request'), obj.file)
 
     def validate(self, attrs):
-        attachment_type = attrs.get('attachment_type') or getattr(self.instance, 'attachment_type', 'file')
+        request = self.context.get('request')
+        attachment_type = _normalize_attachment_type(attrs.get('attachment_type') or getattr(self.instance, 'attachment_type', 'file'))
+        attrs['attachment_type'] = attachment_type
+
         file_value = attrs.get('file') or getattr(self.instance, 'file', None)
         url_value = attrs.get('url') or getattr(self.instance, 'url', '')
+
+        if not file_value:
+            file_value = _first_file(request, ('file', 'image', 'photo', 'attachment', 'upload', 'document'))
+            if file_value:
+                attrs['file'] = file_value
 
         if attachment_type in ('file', 'image') and not file_value:
             raise serializers.ValidationError({'file': 'Для файла/фото нужно загрузить файл.'})
@@ -163,7 +209,29 @@ class KnowledgeSectionSerializer(serializers.ModelSerializer):
             'responsible_users': {'required': False},
             'order': {'required': False},
             'is_active': {'required': False},
+            'icon': {'required': False, 'allow_blank': True},
+            'color': {'required': False, 'allow_blank': True},
         }
+
+    def to_internal_value(self, data):
+        payload = _copy_payload(data)
+        request = self.context.get('request')
+
+        if 'cover_image' not in payload:
+            cover = _first_file(request, ('cover_image', 'image', 'photo', 'cover', 'upload'))
+            if cover:
+                payload['cover_image'] = cover
+
+        if 'file' not in payload:
+            file_obj = _first_file(request, ('file', 'document', 'attachment'))
+            if file_obj:
+                payload['file'] = file_obj
+
+        parent = payload.get('parent')
+        if parent in ('', 'null', 'undefined'):
+            payload['parent'] = None
+
+        return super().to_internal_value(payload)
 
     def get_children(self, obj):
         children = obj.children.all().order_by('order', 'title')
@@ -199,6 +267,12 @@ class InfoSnippetSerializer(serializers.ModelSerializer):
             'section': {'required': False, 'allow_null': True},
             'order': {'required': False},
         }
+
+    def to_internal_value(self, data):
+        payload = _copy_payload(data)
+        if payload.get('section') in ('', 'null', 'undefined'):
+            payload['section'] = None
+        return super().to_internal_value(payload)
 
 
 class TestQuestionSerializer(serializers.ModelSerializer):
@@ -319,6 +393,7 @@ class TemplateFieldSerializer(serializers.ModelSerializer):
 
 class DocumentTemplateSerializer(serializers.ModelSerializer):
     fields = TemplateFieldSerializer(many=True, read_only=True)
+    fields_config = serializers.SerializerMethodField()
     file_url = serializers.SerializerMethodField()
 
     class Meta:
@@ -326,16 +401,23 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'title',
+            'name',
             'description',
             'file_url',
             'is_active',
             'updated_at',
             'fields',
+            'fields_config',
         )
+
+    name = serializers.CharField(source='title', read_only=True)
 
     def get_file_url(self, obj):
         request = self.context.get('request')
         return build_absolute_file_url(request, obj.file)
+
+    def get_fields_config(self, obj):
+        return TemplateFieldSerializer(obj.fields.all().order_by('order'), many=True).data
 
 
 class GeneratedDocumentSerializer(serializers.ModelSerializer):
@@ -407,10 +489,31 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         )
+        extra_kwargs = {
+            'context_data': {'required': False},
+            'title': {'required': False, 'allow_blank': True},
+        }
+
+    def to_internal_value(self, data):
+        payload = _copy_payload(data)
+
+        if 'template' in payload and 'template_id' not in payload:
+            payload['template_id'] = payload.pop('template')
+
+        if 'deal' in payload and 'deal_id' not in payload:
+            payload['deal_id'] = payload.pop('deal')
+
+        if payload.get('deal_id') in ('', 'null', 'undefined'):
+            payload['deal_id'] = None
+
+        if payload.get('context_data') in ('', None):
+            payload['context_data'] = {}
+
+        return super().to_internal_value(payload)
 
     def validate(self, attrs):
         if self.instance is None and 'template' not in attrs:
-            raise serializers.ValidationError({'template_id': 'Поле template_id обязательно.'})
+            raise serializers.ValidationError({'template_id': 'Поле template_id/template обязательно.'})
         return attrs
 
     def get_manager_name(self, obj):

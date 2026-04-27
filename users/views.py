@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from .access_models import OfficeTarget, UserAccessProfile
-from .models import User, Office, ManagerSalary
+from .models import ManagerSalary, Office, User
 from .permissions import IsAdminRole, is_admin_user
 from .serializers import (
     OfficeDashboardSerializer,
@@ -14,6 +14,18 @@ from .serializers import (
 )
 
 
+def _copy_payload(data):
+    return data.copy() if hasattr(data, 'copy') else dict(data or {})
+
+
+def _first_file(request, names):
+    files = getattr(request, 'FILES', {}) if request else {}
+    for name in names:
+        if name in files:
+            return files[name]
+    return None
+
+
 class OfficeViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Office.objects.all().select_related('target_profile')
     serializer_class = OfficeSerializer
@@ -21,12 +33,7 @@ class OfficeViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.select_related(
-        'office',
-        'managersalary',
-        'access_profile',
-        'access_profile__managed_office',
-    ).all()
+    queryset = User.objects.select_related('office', 'managersalary', 'access_profile', 'access_profile__managed_office').all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
     parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
@@ -39,31 +46,34 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         if not is_admin_user(self.request.user):
-            raise permissions.PermissionDenied("Только администратор может создавать сотрудников")
+            raise permissions.PermissionDenied('Только администратор может создавать сотрудников')
         serializer.save()
 
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
-            raise permissions.PermissionDenied("Только администратор может удалять сотрудников")
+            raise permissions.PermissionDenied('Только администратор может удалять сотрудников')
         instance.delete()
 
     @action(detail=False, methods=['get', 'patch'], url_path='me')
     def me(self, request):
         if request.method == 'PATCH':
-            data = request.data.copy()
+            data = _copy_payload(request.data)
             data.pop('role', None)
             data.pop('is_superuser', None)
             data.pop('is_staff', None)
 
-            if 'avatar' in request.FILES:
-                data['avatar'] = request.FILES['avatar']
+            avatar = _first_file(request, ('avatar', 'image', 'photo', 'file', 'upload'))
+            if avatar:
+                data['avatar'] = avatar
 
-            serializer = self.get_serializer(
-                request.user,
-                data=data,
-                partial=True,
-                context={'request': request},
-            )
+            remove_avatar = request.data.get('remove_avatar')
+            if remove_avatar in ('1', 'true', 'True', True):
+                data['remove_avatar'] = True
+
+            if data.get('dob') in ('', 'null', 'undefined'):
+                data['dob'] = None
+
+            serializer = self.get_serializer(request.user, data=data, partial=True, context={'request': request})
             serializer.is_valid(raise_exception=True)
             serializer.save()
             return Response(serializer.data)
@@ -74,13 +84,7 @@ class UserViewSet(viewsets.ModelViewSet):
     def salary(self, request, pk=None):
         user = self.get_object()
         sal, _ = ManagerSalary.objects.get_or_create(manager=user)
-        allowed = (
-            'monthly_plan',
-            'fixed_salary',
-            'commission_percent',
-            'motivation_target',
-            'motivation_reward',
-        )
+        allowed = ('monthly_plan', 'fixed_salary', 'commission_percent', 'motivation_target', 'motivation_reward')
         for field in allowed:
             if field in request.data:
                 setattr(sal, field, request.data[field])
@@ -92,12 +96,7 @@ class UserViewSet(viewsets.ModelViewSet):
         user = self.get_object()
         profile, _ = UserAccessProfile.objects.get_or_create(user=user)
 
-        serializer = UserAccessProfileSerializer(
-            profile,
-            data=request.data,
-            partial=True,
-            context={'request': request},
-        )
+        serializer = UserAccessProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -115,12 +114,7 @@ class UserViewSet(viewsets.ModelViewSet):
             target_serializer.is_valid(raise_exception=True)
             target_serializer.save()
 
-        return Response(
-            {
-                'detail': 'Профиль доступа обновлён',
-                'access_profile': UserAccessProfileSerializer(profile, context={'request': request}).data,
-            }
-        )
+        return Response({'detail': 'Профиль доступа обновлён', 'access_profile': UserAccessProfileSerializer(profile, context={'request': request}).data})
 
     @action(detail=False, methods=['get'], url_path='me/office_dashboard')
     def office_dashboard(self, request):
@@ -149,24 +143,14 @@ class UserViewSet(viewsets.ModelViewSet):
     def pay_salary(self, request, pk=None):
         user = self.get_object()
         if not hasattr(user, 'managersalary'):
-            return Response(
-                {'detail': 'Нет финансового профиля'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'detail': 'Нет финансового профиля'}, status=status.HTTP_400_BAD_REQUEST)
 
         amount = float(user.managersalary.current_balance)
         if amount <= 0:
-            return Response(
-                {'detail': 'Нет средств к выплате'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'detail': 'Нет средств к выплате'}, status=status.HTTP_400_BAD_REQUEST)
 
         from analytics.models import TransactionHistory
 
-        TransactionHistory.objects.create(
-            manager=user,
-            amount=-amount,
-            description=f'Выплата зарплаты (администратор {request.user.get_full_name()})',
-        )
+        TransactionHistory.objects.create(manager=user, amount=-amount, description=f'Выплата зарплаты (администратор {request.user.get_full_name()})')
         user.managersalary.reset_balance()
         return Response({'detail': f'Выплачено ${amount:.2f}'})

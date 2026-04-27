@@ -28,8 +28,10 @@ class SupportMessage(models.Model):
     category = models.CharField('Категория', max_length=30, choices=CATEGORY_CHOICES, default='support')
     subject = models.CharField('Тема', max_length=255)
     message = models.TextField('Сообщение')
+    photo = models.ImageField('Фото из приложения', upload_to='support/photos/', blank=True, null=True)
+    file = models.FileField('Файл из приложения', upload_to='support/files/', blank=True, null=True)
     status = models.CharField('Статус', max_length=30, choices=STATUS_CHOICES, default='new', db_index=True)
-    admin_note = models.TextField('Заметка администратора', blank=True, default='')
+    admin_note = models.TextField('Заметка администратора / ответ', blank=True, default='')
     created_at = models.DateTimeField('Создано', auto_now_add=True)
     updated_at = models.DateTimeField('Обновлено', auto_now=True)
 

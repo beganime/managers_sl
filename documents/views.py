@@ -33,7 +33,6 @@ from .serializers import (
 )
 from .watermarking import build_approved_document
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -47,6 +46,57 @@ def is_admin_user(user):
             or user.is_staff
         )
     )
+
+
+def _copy_payload(data):
+    return data.copy() if hasattr(data, 'copy') else dict(data or {})
+
+
+def _first_file(request, names):
+    files = getattr(request, 'FILES', {}) if request else {}
+    for name in names:
+        if name in files:
+            return files[name]
+    return None
+
+
+def _normalize_knowledge_section_data(request):
+    data = _copy_payload(request.data)
+
+    if 'cover_image' not in data:
+        cover = _first_file(request, ('cover_image', 'image', 'photo', 'cover', 'upload'))
+        if cover:
+            data['cover_image'] = cover
+
+    if 'file' not in data:
+        file_obj = _first_file(request, ('file', 'document', 'attachment'))
+        if file_obj:
+            data['file'] = file_obj
+
+    if data.get('parent') in ('', 'null', 'undefined'):
+        data['parent'] = None
+
+    return data
+
+
+def _normalize_attachment_data(request):
+    data = _copy_payload(request.data)
+
+    if 'type' in data and 'attachment_type' not in data:
+        data['attachment_type'] = data.get('type')
+
+    attachment_type = str(data.get('attachment_type') or '').lower()
+    if attachment_type in ('photo', 'picture', 'img'):
+        data['attachment_type'] = 'image'
+    elif attachment_type in ('url', 'external_url'):
+        data['attachment_type'] = 'link'
+
+    if 'file' not in data:
+        file_obj = _first_file(request, ('file', 'image', 'photo', 'attachment', 'upload', 'document'))
+        if file_obj:
+            data['file'] = file_obj
+
+    return data
 
 
 class KnowledgeSectionViewSet(viewsets.ModelViewSet):
@@ -92,11 +142,26 @@ class KnowledgeSectionViewSet(viewsets.ModelViewSet):
 
         return qs.distinct().order_by('parent__id', 'order', 'title')
 
-    def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+    def create(self, request, *args, **kwargs):
+        data = _normalize_knowledge_section_data(request)
+        serializer = self.get_serializer(data=data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(created_by=request.user)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def perform_update(self, serializer):
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        data = _normalize_knowledge_section_data(request)
+        serializer = self.get_serializer(instance, data=data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
@@ -122,11 +187,26 @@ class KnowledgeSectionAttachmentViewSet(viewsets.ModelViewSet):
 
         return qs.order_by('order', '-created_at')
 
-    def perform_create(self, serializer):
-        serializer.save(uploaded_by=self.request.user)
+    def create(self, request, *args, **kwargs):
+        data = _normalize_attachment_data(request)
+        serializer = self.get_serializer(data=data, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save(uploaded_by=request.user)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    def perform_update(self, serializer):
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        data = _normalize_attachment_data(request)
+        serializer = self.get_serializer(instance, data=data, partial=partial, context={'request': request})
+        serializer.is_valid(raise_exception=True)
         serializer.save()
+        return Response(serializer.data)
+
+    def partial_update(self, request, *args, **kwargs):
+        kwargs['partial'] = True
+        return self.update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
         if not is_admin_user(self.request.user):
@@ -248,7 +328,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         return qs.order_by('-created_at')
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
 
         deal = serializer.validated_data.get('deal')
@@ -321,25 +401,16 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'Документ уже одобрен.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if doc.status != 'generated':
-            return Response(
-                {'detail': 'Одобрять можно только корректно сгенерированный документ.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'detail': 'Одобрять можно только корректно сгенерированный документ.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not doc.generated_file:
-            return Response(
-                {'detail': 'У документа отсутствует готовый файл.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            return Response({'detail': 'У документа отсутствует готовый файл.'}, status=status.HTTP_400_BAD_REQUEST)
 
         review, _ = DocumentReview.objects.get_or_create(document=doc)
         approved_file = build_approved_document(doc)
 
         if approved_file is None:
-            return Response(
-                {'detail': 'Не удалось собрать approved-файл с watermark. Проверь DOCUMENT_WATERMARK_IMAGE.'},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            return Response({'detail': 'Не удалось собрать approved-файл с watermark. Проверь DOCUMENT_WATERMARK_IMAGE.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         with transaction.atomic():
             if review.approved_file:
@@ -351,13 +422,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             doc.approved_at = review.reviewed_at
             doc.save(update_fields=['status', 'approved_by', 'approved_at', 'updated_at'])
 
-        return Response(
-            {
-                'detail': 'Документ одобрен.',
-                'document': self.get_serializer(doc, context={'request': request}).data,
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response({'detail': 'Документ одобрен.', 'document': self.get_serializer(doc, context={'request': request}).data}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='regenerate')
     def regenerate(self, request, pk=None):
@@ -387,13 +452,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             review.reviewed_at = None
             review.save()
 
-        return Response(
-            {
-                'detail': msg,
-                'document': self.get_serializer(doc, context={'request': request}).data,
-            },
-            status=status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST,
-        )
+        return Response({'detail': msg, 'document': self.get_serializer(doc, context={'request': request}).data}, status=status.HTTP_200_OK if success else status.HTTP_400_BAD_REQUEST)
 
     def _build_download_payload(self, doc, request):
         payload = self.get_serializer(doc, context={'request': request}).data
@@ -413,10 +472,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         data = self._build_download_payload(doc, request)
 
         if not data['can_download_original'] and not data['can_download_approved']:
-            return Response(
-                {'detail': 'У документа пока нет доступных файлов для скачивания.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({'detail': 'У документа пока нет доступных файлов для скачивания.'}, status=status.HTTP_404_NOT_FOUND)
 
         return Response(data, status=status.HTTP_200_OK)
 
@@ -427,19 +483,9 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         original_url = payload.get('original_file_url') or payload.get('file_url')
 
         if not original_url:
-            return Response(
-                {'detail': 'Оригинальный файл без watermark ещё не готов.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({'detail': 'Оригинальный файл без watermark ещё не готов.'}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(
-            {
-                'document_id': doc.id,
-                'file_url': original_url,
-                'type': 'original',
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response({'document_id': doc.id, 'file_url': original_url, 'type': 'original'}, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['get'], url_path='download-approved')
     def download_approved(self, request, pk=None):
@@ -448,19 +494,9 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         approved_url = payload.get('approved_file_url')
 
         if not approved_url:
-            return Response(
-                {'detail': 'Файл с watermark ещё не одобрен или не собран.'},
-                status=status.HTTP_404_NOT_FOUND,
-            )
+            return Response({'detail': 'Файл с watermark ещё не одобрен или не собран.'}, status=status.HTTP_404_NOT_FOUND)
 
-        return Response(
-            {
-                'document_id': doc.id,
-                'file_url': approved_url,
-                'type': 'approved',
-            },
-            status=status.HTTP_200_OK,
-        )
+        return Response({'document_id': doc.id, 'file_url': approved_url, 'type': 'approved'}, status=status.HTTP_200_OK)
 
 
 class KnowledgeTestViewSet(viewsets.ModelViewSet):
@@ -476,11 +512,7 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
 
         search = self.request.query_params.get('search')
         if search:
-            qs = qs.filter(
-                Q(title__icontains=search)
-                | Q(description__icontains=search)
-                | Q(section__title__icontains=search)
-            )
+            qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search) | Q(section__title__icontains=search))
 
         updated_after = self.request.query_params.get('updated_after')
         if updated_after:
@@ -507,9 +539,7 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
         submitted_answers = request.data.get('answers', {})
 
         if not isinstance(submitted_answers, dict):
-            raise ValidationError(
-                {'answers': 'answers должен быть объектом вида {"question_id": index}.'}
-            )
+            raise ValidationError({'answers': 'answers должен быть объектом вида {"question_id": index}.'})
 
         questions = list(test.questions.all())
         total = len(questions)
@@ -533,34 +563,12 @@ class KnowledgeTestViewSet(viewsets.ModelViewSet):
                 score += 1
 
         try:
-            attempt = KnowledgeTestAttempt.objects.create(
-                test=test,
-                user=request.user,
-                score=score,
-                total=total,
-                answers=normalized_answers,
-            )
+            attempt = KnowledgeTestAttempt.objects.create(test=test, user=request.user, score=score, total=total, answers=normalized_answers)
         except (ProgrammingError, OperationalError) as exc:
-            logger.exception(
-                'Knowledge test submit failed because attempts table is missing or unavailable. test_id=%s user_id=%s',
-                test.id,
-                request.user.id,
-            )
-            raise APIException(
-                'Таблица результатов тестов не создана на сервере. Нужно применить миграции documents.'
-            ) from exc
+            logger.exception('Knowledge test submit failed because attempts table is missing or unavailable. test_id=%s user_id=%s', test.id, request.user.id)
+            raise APIException('Таблица результатов тестов не создана на сервере. Нужно применить миграции documents.') from exc
 
-        return Response(
-            {
-                'detail': 'Результат сохранён.',
-                'attempt': KnowledgeTestAttemptSerializer(
-                    attempt, context={'request': request}
-                ).data,
-                'score': score,
-                'total': total,
-            },
-            status=status.HTTP_201_CREATED,
-        )
+        return Response({'detail': 'Результат сохранён.', 'attempt': KnowledgeTestAttemptSerializer(attempt, context={'request': request}).data, 'score': score, 'total': total}, status=status.HTTP_201_CREATED)
 
 
 class KnowledgeTestAttemptViewSet(viewsets.ReadOnlyModelViewSet):
