@@ -78,7 +78,7 @@ class LeadCreateAPIView(CreateAPIView):
     def perform_create(self, serializer):
         request = self.request
 
-        serializer.save(
+        lead = serializer.save(
             submitter_ip=get_client_ip(request),
             submitter_user_agent=clean_header(request.META.get('HTTP_USER_AGENT'), 2000),
             submitter_referer=clean_header(request.META.get('HTTP_REFERER'), 1000),
@@ -86,6 +86,11 @@ class LeadCreateAPIView(CreateAPIView):
             submitter_host=clean_header(request.META.get('HTTP_HOST'), 255),
         )
 
+        try:
+            from notifications.firebase import notify_admins_about_new_lead
+            notify_admins_about_new_lead(lead)
+        except Exception:
+            pass
 
 class LeadViewSet(viewsets.ModelViewSet):
     serializer_class = MobileLeadSerializer

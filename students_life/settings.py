@@ -123,8 +123,9 @@ INSTALLED_APPS = [
     'timetracking',
     'reports',
     'mailing',
+    'notifications',
+    'support',
 ]
-
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',

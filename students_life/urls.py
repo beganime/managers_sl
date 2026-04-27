@@ -1,4 +1,3 @@
-# students_life/urls.py
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
@@ -48,6 +47,8 @@ urlpatterns = [
     path('api/', include('gamification.urls')),
     path('api/', include('documents.urls')),
     path('api/', include('users.urls')),
+    path('api/', include('notifications.urls')),
+    path('api/', include('support.urls')),
 ]
 
 if settings.DEBUG:
