@@ -42,17 +42,13 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         params = self.request.query_params
 
-        mine = str(params.get('mine', '')).lower()
-        created_by_me = str(params.get('created_by_me', '')).lower()
-        pinned = str(params.get('pinned', '')).lower()
-
-        if mine in ('1', 'true', 'yes'):
+        if str(params.get('mine', '')).lower() in ('1', 'true', 'yes'):
             qs = qs.filter(assigned_to=user)
 
-        if created_by_me in ('1', 'true', 'yes'):
+        if str(params.get('created_by_me', '')).lower() in ('1', 'true', 'yes'):
             qs = qs.filter(created_by=user)
 
-        if pinned in ('1', 'true', 'yes'):
+        if str(params.get('pinned', '')).lower() in ('1', 'true', 'yes'):
             qs = qs.filter(is_pinned=True)
 
         task_status = params.get('status')
@@ -74,13 +70,13 @@ class TaskViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         task = self.get_object()
         if not self._can_manage_task(self.request.user, task):
-            raise permissions.PermissionDenied('Недостаточно прав для изменения задачи')
+            raise permissions.PermissionDenied('Недостаточно прав для изменения задачи.')
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):
         task = self.get_object()
         if not self._can_manage_task(request.user, task):
-            return Response({'detail': 'Недостаточно прав для удаления задачи'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Недостаточно прав для удаления задачи.'}, status=status.HTTP_403_FORBIDDEN)
         self.perform_destroy(task)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -88,7 +84,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     def toggle_pin(self, request, pk=None):
         task = self.get_object()
         if not self._can_manage_task(request.user, task):
-            return Response({'detail': 'Недостаточно прав'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Недостаточно прав.'}, status=status.HTTP_403_FORBIDDEN)
 
         task.is_pinned = not task.is_pinned
         task.save(update_fields=['is_pinned', 'updated_at'])
@@ -98,7 +94,7 @@ class TaskViewSet(viewsets.ModelViewSet):
     def toggle_done(self, request, pk=None):
         task = self.get_object()
         if not self._can_manage_task(request.user, task):
-            return Response({'detail': 'Недостаточно прав'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Недостаточно прав.'}, status=status.HTTP_403_FORBIDDEN)
 
         task.status = 'done' if task.status != 'done' else 'todo'
         task.save(update_fields=['status', 'updated_at'])
@@ -155,6 +151,7 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+
         qs = Project.objects.select_related('created_by', 'office').prefetch_related(
             'participants',
             'responsible_users',
@@ -167,6 +164,7 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
             'attachments',
         )
 
+        # Админ видит всё. Обычный сотрудник видит только проекты, где он участвует.
         if not self.is_admin(user):
             qs = qs.filter(
                 Q(created_by=user) | Q(participants=user) | Q(responsible_users=user),
@@ -199,7 +197,16 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
         search = params.get('search')
         if search:
-            qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search))
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(city__icontains=search)
+                | Q(office__city__icontains=search)
+                | Q(participants__first_name__icontains=search)
+                | Q(participants__last_name__icontains=search)
+                | Q(responsible_users__first_name__icontains=search)
+                | Q(responsible_users__last_name__icontains=search)
+            ).distinct()
 
         updated_after = params.get('updated_after')
         if updated_after:
@@ -218,16 +225,29 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
         project = serializer.save(created_by=self.request.user)
         project.participants.add(self.request.user)
 
+        for user in project.responsible_users.all():
+            project.participants.add(user)
+
     def perform_update(self, serializer):
         project = self.get_object()
+
         if not self.can_manage_project(self.request.user, project):
-            raise permissions.PermissionDenied('Изменять проект может создатель или администратор.')
-        serializer.save()
+            raise permissions.PermissionDenied('Изменять проект может только создатель или администратор.')
+
+        project = serializer.save()
+
+        if project.created_by_id:
+            project.participants.add(project.created_by_id)
+
+        for user in project.responsible_users.all():
+            project.participants.add(user)
 
     def destroy(self, request, *args, **kwargs):
         project = self.get_object()
+
         if not self.can_manage_project(request.user, project):
-            return Response({'detail': 'Удалять проект может создатель или администратор.'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Удалять проект может только создатель или администратор.'}, status=status.HTTP_403_FORBIDDEN)
+
         return super().destroy(request, *args, **kwargs)
 
     @action(detail=True, methods=['post'], url_path='toggle-hidden')
@@ -243,12 +263,13 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='add-participant')
     def add_participant(self, request, pk=None):
         project = self.get_object()
+
         if not self.can_manage_project(request.user, project):
-            return Response({'detail': 'Нет прав'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Нет прав.'}, status=status.HTTP_403_FORBIDDEN)
 
         user_id = request.data.get('user') or request.data.get('user_id')
         if not user_id:
-            return Response({'detail': 'user_id обязателен'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'user_id обязателен.'}, status=status.HTTP_400_BAD_REQUEST)
 
         project.participants.add(user_id)
         return Response(self.get_serializer(project).data)
@@ -256,14 +277,19 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], url_path='remove-participant')
     def remove_participant(self, request, pk=None):
         project = self.get_object()
+
         if not self.can_manage_project(request.user, project):
-            return Response({'detail': 'Нет прав'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Нет прав.'}, status=status.HTTP_403_FORBIDDEN)
 
         user_id = request.data.get('user') or request.data.get('user_id')
         if not user_id:
-            return Response({'detail': 'user_id обязателен'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'user_id обязателен.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if project.created_by_id and int(user_id) == int(project.created_by_id):
+            return Response({'detail': 'Нельзя убрать создателя из участников проекта.'}, status=status.HTTP_400_BAD_REQUEST)
 
         project.participants.remove(user_id)
+        project.responsible_users.remove(user_id)
         return Response(self.get_serializer(project).data)
 
 
@@ -273,6 +299,7 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
+
         qs = ProjectTask.objects.select_related(
             'project',
             'parent',
@@ -317,6 +344,7 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
     def perform_create(self, serializer):
         project = serializer.validated_data.get('project')
         parent = serializer.validated_data.get('parent')
+        assigned_to = serializer.validated_data.get('assigned_to')
 
         if not self.can_access_project(self.request.user, project):
             raise permissions.PermissionDenied('Нет доступа к проекту.')
@@ -324,7 +352,12 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
         if parent and parent.project_id != project.id:
             raise permissions.PermissionDenied('Подзадача должна быть внутри того же проекта.')
 
-        serializer.save(created_by=self.request.user)
+        item = serializer.save(created_by=self.request.user)
+
+        if assigned_to:
+            project.participants.add(assigned_to)
+
+        return item
 
     def perform_update(self, serializer):
         item = self.get_object()
@@ -341,6 +374,7 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
         parent = serializer.validated_data.get('parent')
         project = serializer.validated_data.get('project') or item.project
+        assigned_to = serializer.validated_data.get('assigned_to')
 
         if parent and parent.project_id != project.id:
             raise permissions.PermissionDenied('Подзадача должна быть внутри того же проекта.')
@@ -350,11 +384,14 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
         serializer.save()
 
+        if assigned_to:
+            project.participants.add(assigned_to)
+
     def destroy(self, request, *args, **kwargs):
         item = self.get_object()
 
         if not self.can_access_project(request.user, item.project):
-            return Response({'detail': 'Нет доступа'}, status=status.HTTP_403_FORBIDDEN)
+            return Response({'detail': 'Нет доступа.'}, status=status.HTTP_403_FORBIDDEN)
 
         if not self.can_manage_project_task(request.user, item):
             return Response({'detail': 'Удалять задачу может только создатель или администратор.'}, status=status.HTTP_403_FORBIDDEN)
@@ -387,12 +424,16 @@ class ProjectAttachmentViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         project = serializer.validated_data.get('project')
+
         if not self.can_access_project(self.request.user, project):
             raise permissions.PermissionDenied('Нет доступа к проекту.')
+
         serializer.save(uploaded_by=self.request.user)
 
     def perform_update(self, serializer):
         attachment = self.get_object()
+
         if not self.can_access_project(self.request.user, attachment.project):
             raise permissions.PermissionDenied('Нет доступа к проекту.')
+
         serializer.save()

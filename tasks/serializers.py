@@ -6,6 +6,14 @@ from .models import Project, ProjectAttachment, ProjectTask, Task
 User = get_user_model()
 
 
+def is_admin_user(user):
+    return bool(
+        user
+        and user.is_authenticated
+        and (user.is_superuser or user.is_staff or getattr(user, 'role', None) == 'admin')
+    )
+
+
 class TaskUserMiniSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
 
@@ -77,10 +85,12 @@ class ProjectAttachmentSerializer(serializers.ModelSerializer):
     def get_file_url(self, obj):
         if not obj.file:
             return None
+
         try:
             url = obj.file.url
         except Exception:
             return None
+
         request = self.context.get('request')
         return request.build_absolute_uri(url) if request else url
 
@@ -91,14 +101,18 @@ class ProjectAttachmentSerializer(serializers.ModelSerializer):
 
         if attachment_type in ('file', 'image') and not file_value:
             raise serializers.ValidationError({'file': 'Для файла/фото нужно загрузить файл.'})
+
         if attachment_type == 'link' and not str(url_value or '').strip():
             raise serializers.ValidationError({'url': 'Для ссылки нужно указать URL.'})
+
         return attrs
 
 
 class ProjectSubtaskSerializer(serializers.ModelSerializer):
     assigned_to_data = TaskUserMiniSerializer(source='assigned_to', read_only=True)
     created_by_data = TaskUserMiniSerializer(source='created_by', read_only=True)
+    subtasks_count = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectTask
@@ -106,6 +120,7 @@ class ProjectSubtaskSerializer(serializers.ModelSerializer):
             'id',
             'project',
             'parent',
+            'subtasks_count',
             'title',
             'description',
             'assigned_to',
@@ -116,9 +131,35 @@ class ProjectSubtaskSerializer(serializers.ModelSerializer):
             'priority',
             'deadline',
             'order',
+            'can_manage',
             'created_at',
             'updated_at',
         )
+        read_only_fields = (
+            'created_by',
+            'created_at',
+            'updated_at',
+            'subtasks_count',
+            'can_manage',
+        )
+
+    def get_subtasks_count(self, obj):
+        try:
+            return obj.subtasks.count()
+        except Exception:
+            return 0
+
+    def get_can_manage(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if is_admin_user(user):
+            return True
+
+        if not user or not user.is_authenticated:
+            return False
+
+        return obj.created_by_id == user.id
 
 
 class ProjectTaskSerializer(serializers.ModelSerializer):
@@ -126,6 +167,8 @@ class ProjectTaskSerializer(serializers.ModelSerializer):
     created_by_data = TaskUserMiniSerializer(source='created_by', read_only=True)
     subtasks = serializers.SerializerMethodField()
     subtasks_count = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
+    can_change_status = serializers.SerializerMethodField()
 
     class Meta:
         model = ProjectTask
@@ -145,10 +188,20 @@ class ProjectTaskSerializer(serializers.ModelSerializer):
             'priority',
             'deadline',
             'order',
+            'can_manage',
+            'can_change_status',
             'created_at',
             'updated_at',
         )
-        read_only_fields = ('created_by', 'created_at', 'updated_at', 'subtasks', 'subtasks_count')
+        read_only_fields = (
+            'created_by',
+            'created_at',
+            'updated_at',
+            'subtasks',
+            'subtasks_count',
+            'can_manage',
+            'can_change_status',
+        )
         extra_kwargs = {
             'parent': {'required': False, 'allow_null': True},
             'assigned_to': {'required': False, 'allow_null': True},
@@ -157,7 +210,11 @@ class ProjectTaskSerializer(serializers.ModelSerializer):
         }
 
     def get_subtasks(self, obj):
-        qs = obj.subtasks.select_related('assigned_to', 'created_by').order_by('status', 'order', '-updated_at')
+        qs = obj.subtasks.select_related(
+            'assigned_to',
+            'created_by',
+        ).order_by('status', 'order', '-updated_at')
+
         return ProjectSubtaskSerializer(qs, many=True, context=self.context).data
 
     def get_subtasks_count(self, obj):
@@ -165,6 +222,36 @@ class ProjectTaskSerializer(serializers.ModelSerializer):
             return obj.subtasks.count()
         except Exception:
             return 0
+
+    def get_can_manage(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if is_admin_user(user):
+            return True
+
+        if not user or not user.is_authenticated:
+            return False
+
+        return obj.created_by_id == user.id
+
+    def get_can_change_status(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if is_admin_user(user):
+            return True
+
+        if not user or not user.is_authenticated:
+            return False
+
+        return (
+            obj.created_by_id == user.id
+            or obj.assigned_to_id == user.id
+            or obj.project.created_by_id == user.id
+            or obj.project.participants.filter(id=user.id).exists()
+            or obj.project.responsible_users.filter(id=user.id).exists()
+        )
 
     def validate(self, attrs):
         project = attrs.get('project') or getattr(self.instance, 'project', None)
@@ -183,9 +270,17 @@ class ProjectSerializer(serializers.ModelSerializer):
     created_by_data = TaskUserMiniSerializer(source='created_by', read_only=True)
     participants_data = TaskUserMiniSerializer(source='participants', many=True, read_only=True)
     responsible_users_data = TaskUserMiniSerializer(source='responsible_users', many=True, read_only=True)
+
     items = serializers.SerializerMethodField()
     attachments = ProjectAttachmentSerializer(many=True, read_only=True)
     office_city = serializers.CharField(source='office.city', read_only=True)
+
+    can_manage = serializers.SerializerMethodField()
+    is_member = serializers.SerializerMethodField()
+    progress_percent = serializers.SerializerMethodField()
+    tasks_count = serializers.SerializerMethodField()
+    done_tasks_count = serializers.SerializerMethodField()
+    subtasks_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -206,12 +301,30 @@ class ProjectSerializer(serializers.ModelSerializer):
             'deadline',
             'is_hidden',
             'is_pinned',
+            'can_manage',
+            'is_member',
+            'progress_percent',
+            'tasks_count',
+            'done_tasks_count',
+            'subtasks_count',
             'items',
             'attachments',
             'created_at',
             'updated_at',
         )
-        read_only_fields = ('created_by', 'created_at', 'updated_at', 'items', 'attachments')
+        read_only_fields = (
+            'created_by',
+            'created_at',
+            'updated_at',
+            'items',
+            'attachments',
+            'can_manage',
+            'is_member',
+            'progress_percent',
+            'tasks_count',
+            'done_tasks_count',
+            'subtasks_count',
+        )
         extra_kwargs = {
             'participants': {'required': False},
             'responsible_users': {'required': False},
@@ -222,19 +335,86 @@ class ProjectSerializer(serializers.ModelSerializer):
             'is_pinned': {'required': False},
         }
 
+    def _request_user(self):
+        request = self.context.get('request')
+        return getattr(request, 'user', None)
+
+    def get_can_manage(self, obj):
+        user = self._request_user()
+
+        if is_admin_user(user):
+            return True
+
+        if not user or not user.is_authenticated:
+            return False
+
+        return obj.created_by_id == user.id
+
+    def get_is_member(self, obj):
+        user = self._request_user()
+
+        if is_admin_user(user):
+            return True
+
+        if not user or not user.is_authenticated:
+            return False
+
+        return (
+            obj.created_by_id == user.id
+            or obj.participants.filter(id=user.id).exists()
+            or obj.responsible_users.filter(id=user.id).exists()
+        )
+
+    def get_tasks_count(self, obj):
+        try:
+            return obj.items.filter(parent__isnull=True).count()
+        except Exception:
+            return 0
+
+    def get_done_tasks_count(self, obj):
+        try:
+            return obj.items.filter(parent__isnull=True, status='done').count()
+        except Exception:
+            return 0
+
+    def get_subtasks_count(self, obj):
+        try:
+            return obj.items.filter(parent__isnull=False).count()
+        except Exception:
+            return 0
+
+    def get_progress_percent(self, obj):
+        try:
+            root_tasks = obj.items.filter(parent__isnull=True)
+            total = root_tasks.count()
+
+            if total <= 0:
+                return 100 if obj.status == 'done' else 0
+
+            done = root_tasks.filter(status='done').count()
+            return round((done / total) * 100)
+        except Exception:
+            return 0
+
     def get_items(self, obj):
         qs = obj.items.filter(parent__isnull=True).select_related(
             'assigned_to',
             'created_by',
-        ).prefetch_related('subtasks')
+        ).prefetch_related(
+            'subtasks',
+            'subtasks__assigned_to',
+            'subtasks__created_by',
+        ).order_by('status', 'order', '-updated_at')
+
         return ProjectTaskSerializer(qs, many=True, context=self.context).data
 
     def validate(self, attrs):
         request = self.context.get('request')
         user = getattr(request, 'user', None)
-        is_admin = bool(user and user.is_authenticated and (user.is_superuser or user.is_staff or getattr(user, 'role', None) == 'admin'))
+        is_admin = is_admin_user(user)
 
         if not is_admin:
             attrs.pop('is_hidden', None)
             attrs.pop('is_pinned', None)
+
         return attrs
