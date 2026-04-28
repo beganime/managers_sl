@@ -96,7 +96,7 @@ class ProjectAttachmentSerializer(serializers.ModelSerializer):
         return attrs
 
 
-class ProjectTaskSerializer(serializers.ModelSerializer):
+class ProjectSubtaskSerializer(serializers.ModelSerializer):
     assigned_to_data = TaskUserMiniSerializer(source='assigned_to', read_only=True)
     created_by_data = TaskUserMiniSerializer(source='created_by', read_only=True)
 
@@ -105,6 +105,7 @@ class ProjectTaskSerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'project',
+            'parent',
             'title',
             'description',
             'assigned_to',
@@ -118,19 +119,71 @@ class ProjectTaskSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         )
-        read_only_fields = ('created_by', 'created_at', 'updated_at')
+
+
+class ProjectTaskSerializer(serializers.ModelSerializer):
+    assigned_to_data = TaskUserMiniSerializer(source='assigned_to', read_only=True)
+    created_by_data = TaskUserMiniSerializer(source='created_by', read_only=True)
+    subtasks = serializers.SerializerMethodField()
+    subtasks_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectTask
+        fields = (
+            'id',
+            'project',
+            'parent',
+            'subtasks',
+            'subtasks_count',
+            'title',
+            'description',
+            'assigned_to',
+            'assigned_to_data',
+            'created_by',
+            'created_by_data',
+            'status',
+            'priority',
+            'deadline',
+            'order',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = ('created_by', 'created_at', 'updated_at', 'subtasks', 'subtasks_count')
         extra_kwargs = {
+            'parent': {'required': False, 'allow_null': True},
             'assigned_to': {'required': False, 'allow_null': True},
             'deadline': {'required': False, 'allow_null': True},
             'order': {'required': False},
         }
+
+    def get_subtasks(self, obj):
+        qs = obj.subtasks.select_related('assigned_to', 'created_by').order_by('status', 'order', '-updated_at')
+        return ProjectSubtaskSerializer(qs, many=True, context=self.context).data
+
+    def get_subtasks_count(self, obj):
+        try:
+            return obj.subtasks.count()
+        except Exception:
+            return 0
+
+    def validate(self, attrs):
+        project = attrs.get('project') or getattr(self.instance, 'project', None)
+        parent = attrs.get('parent') or getattr(self.instance, 'parent', None)
+
+        if parent and project and parent.project_id != project.id:
+            raise serializers.ValidationError({'parent': 'Подзадача должна быть внутри того же проекта.'})
+
+        if self.instance and parent and parent.id == self.instance.id:
+            raise serializers.ValidationError({'parent': 'Задача не может быть родителем самой себя.'})
+
+        return attrs
 
 
 class ProjectSerializer(serializers.ModelSerializer):
     created_by_data = TaskUserMiniSerializer(source='created_by', read_only=True)
     participants_data = TaskUserMiniSerializer(source='participants', many=True, read_only=True)
     responsible_users_data = TaskUserMiniSerializer(source='responsible_users', many=True, read_only=True)
-    items = ProjectTaskSerializer(many=True, read_only=True)
+    items = serializers.SerializerMethodField()
     attachments = ProjectAttachmentSerializer(many=True, read_only=True)
     office_city = serializers.CharField(source='office.city', read_only=True)
 
@@ -158,7 +211,7 @@ class ProjectSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         )
-        read_only_fields = ('created_by', 'created_at', 'updated_at')
+        read_only_fields = ('created_by', 'created_at', 'updated_at', 'items', 'attachments')
         extra_kwargs = {
             'participants': {'required': False},
             'responsible_users': {'required': False},
@@ -168,6 +221,13 @@ class ProjectSerializer(serializers.ModelSerializer):
             'is_hidden': {'required': False},
             'is_pinned': {'required': False},
         }
+
+    def get_items(self, obj):
+        qs = obj.items.filter(parent__isnull=True).select_related(
+            'assigned_to',
+            'created_by',
+        ).prefetch_related('subtasks')
+        return ProjectTaskSerializer(qs, many=True, context=self.context).data
 
     def validate(self, attrs):
         request = self.context.get('request')

@@ -131,6 +131,9 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
             'participants',
             'responsible_users',
             'items',
+            'items__assigned_to',
+            'items__created_by',
+            'items__subtasks',
             'attachments',
         )
 
@@ -235,7 +238,7 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = ProjectTask.objects.select_related('project', 'assigned_to', 'created_by')
+        qs = ProjectTask.objects.select_related('project', 'parent', 'assigned_to', 'created_by').prefetch_related('subtasks')
 
         if not self.is_admin(user):
             qs = qs.filter(
@@ -250,6 +253,13 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
         if project_id:
             qs = qs.filter(project_id=project_id)
 
+        parent = self.request.query_params.get('parent')
+        if parent:
+            if str(parent).lower() in ('root', 'null', 'none', '0'):
+                qs = qs.filter(parent__isnull=True)
+            else:
+                qs = qs.filter(parent_id=parent)
+
         status_value = self.request.query_params.get('status')
         if status_value:
             qs = qs.filter(status=status_value)
@@ -258,18 +268,29 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
         if assigned_to:
             qs = qs.filter(assigned_to_id=assigned_to)
 
-        return qs.order_by('status', 'order', '-updated_at')
+        return qs.order_by('parent_id', 'status', 'order', '-updated_at')
 
     def perform_create(self, serializer):
         project = serializer.validated_data.get('project')
+        parent = serializer.validated_data.get('parent')
+
         if not self.can_access_project(self.request.user, project):
             raise permissions.PermissionDenied('Нет доступа к проекту.')
+
+        if parent and parent.project_id != project.id:
+            raise permissions.PermissionDenied('Подзадача должна быть внутри того же проекта.')
+
         serializer.save(created_by=self.request.user)
 
     def perform_update(self, serializer):
         item = self.get_object()
         if not self.can_access_project(self.request.user, item.project):
             raise permissions.PermissionDenied('Нет доступа к проекту.')
+
+        parent = serializer.validated_data.get('parent')
+        if parent and parent.project_id != item.project_id:
+            raise permissions.PermissionDenied('Подзадача должна быть внутри того же проекта.')
+
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):

@@ -129,6 +129,14 @@ class ProjectTask(models.Model):
     )
 
     project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='items', verbose_name='Проект')
+    parent = models.ForeignKey(
+        'self',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        related_name='subtasks',
+        verbose_name='Родительская задача',
+    )
     title = models.CharField('Задача', max_length=255)
     description = models.TextField('Описание / Markdown', blank=True, default='')
     assigned_to = models.ForeignKey(
@@ -157,7 +165,7 @@ class ProjectTask(models.Model):
     class Meta:
         verbose_name = 'Задача проекта'
         verbose_name_plural = 'Задачи проектов'
-        ordering = ['status', 'order', '-updated_at']
+        ordering = ['parent_id', 'status', 'order', '-updated_at']
 
     def __str__(self):
         return self.title
