@@ -14,7 +14,11 @@ from .serializers import (
 
 
 def is_admin_user(user):
-    return bool(user and user.is_authenticated and (user.is_superuser or user.is_staff or getattr(user, 'role', None) == 'admin'))
+    return bool(
+        user
+        and user.is_authenticated
+        and (user.is_superuser or user.is_staff or getattr(user, 'role', None) == 'admin')
+    )
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -106,8 +110,12 @@ class ProjectAccessMixin:
         return is_admin_user(user)
 
     def can_access_project(self, user, project):
+        if not user or not user.is_authenticated or not project:
+            return False
+
         if self.is_admin(user):
             return True
+
         return (
             project.created_by_id == user.id
             or project.participants.filter(id=user.id).exists()
@@ -115,9 +123,29 @@ class ProjectAccessMixin:
         )
 
     def can_manage_project(self, user, project):
+        if not user or not user.is_authenticated or not project:
+            return False
+
         if self.is_admin(user):
             return True
+
         return project.created_by_id == user.id
+
+    def can_manage_project_task(self, user, task):
+        if not user or not user.is_authenticated or not task:
+            return False
+
+        if self.is_admin(user):
+            return True
+
+        return task.created_by_id == user.id
+
+    def is_status_only_update(self, request):
+        if request.method not in ('PATCH', 'PUT'):
+            return False
+
+        keys = set((request.data or {}).keys())
+        return bool(keys) and keys.issubset({'status'})
 
 
 class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
@@ -134,6 +162,8 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
             'items__assigned_to',
             'items__created_by',
             'items__subtasks',
+            'items__subtasks__assigned_to',
+            'items__subtasks__created_by',
             'attachments',
         )
 
@@ -204,6 +234,7 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
     def toggle_hidden(self, request, pk=None):
         if not self.is_admin(request.user):
             return Response({'detail': 'Только администратор может скрывать проекты.'}, status=status.HTTP_403_FORBIDDEN)
+
         project = self.get_object()
         project.is_hidden = not project.is_hidden
         project.save(update_fields=['is_hidden', 'updated_at'])
@@ -214,9 +245,11 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
         project = self.get_object()
         if not self.can_manage_project(request.user, project):
             return Response({'detail': 'Нет прав'}, status=status.HTTP_403_FORBIDDEN)
+
         user_id = request.data.get('user') or request.data.get('user_id')
         if not user_id:
             return Response({'detail': 'user_id обязателен'}, status=status.HTTP_400_BAD_REQUEST)
+
         project.participants.add(user_id)
         return Response(self.get_serializer(project).data)
 
@@ -225,9 +258,11 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
         project = self.get_object()
         if not self.can_manage_project(request.user, project):
             return Response({'detail': 'Нет прав'}, status=status.HTTP_403_FORBIDDEN)
+
         user_id = request.data.get('user') or request.data.get('user_id')
         if not user_id:
             return Response({'detail': 'user_id обязателен'}, status=status.HTTP_400_BAD_REQUEST)
+
         project.participants.remove(user_id)
         return Response(self.get_serializer(project).data)
 
@@ -238,7 +273,16 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        qs = ProjectTask.objects.select_related('project', 'parent', 'assigned_to', 'created_by').prefetch_related('subtasks')
+        qs = ProjectTask.objects.select_related(
+            'project',
+            'parent',
+            'assigned_to',
+            'created_by',
+        ).prefetch_related(
+            'subtasks',
+            'subtasks__assigned_to',
+            'subtasks__created_by',
+        )
 
         if not self.is_admin(user):
             qs = qs.filter(
@@ -284,19 +328,37 @@ class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         item = self.get_object()
+
         if not self.can_access_project(self.request.user, item.project):
             raise permissions.PermissionDenied('Нет доступа к проекту.')
 
+        if self.is_status_only_update(self.request):
+            serializer.save()
+            return
+
+        if not self.can_manage_project_task(self.request.user, item):
+            raise permissions.PermissionDenied('Редактировать задачу может только создатель или администратор.')
+
         parent = serializer.validated_data.get('parent')
-        if parent and parent.project_id != item.project_id:
+        project = serializer.validated_data.get('project') or item.project
+
+        if parent and parent.project_id != project.id:
             raise permissions.PermissionDenied('Подзадача должна быть внутри того же проекта.')
+
+        if parent and parent.id == item.id:
+            raise permissions.PermissionDenied('Задача не может быть родителем самой себя.')
 
         serializer.save()
 
     def destroy(self, request, *args, **kwargs):
         item = self.get_object()
+
         if not self.can_access_project(request.user, item.project):
             return Response({'detail': 'Нет доступа'}, status=status.HTTP_403_FORBIDDEN)
+
+        if not self.can_manage_project_task(request.user, item):
+            return Response({'detail': 'Удалять задачу может только создатель или администратор.'}, status=status.HTTP_403_FORBIDDEN)
+
         return super().destroy(request, *args, **kwargs)
 
 
