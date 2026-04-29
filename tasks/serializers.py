@@ -1,7 +1,14 @@
 from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
-from .models import Project, ProjectAttachment, ProjectTask, Task
+from .models import (
+    Project,
+    ProjectAttachment,
+    ProjectSection,
+    ProjectSectionPost,
+    ProjectTask,
+    Task,
+)
 
 User = get_user_model()
 
@@ -53,6 +60,133 @@ class TaskSerializer(serializers.ModelSerializer):
             'client': {'required': False, 'allow_null': True},
             'deadline': {'required': False, 'allow_null': True},
         }
+
+
+class ProjectSectionPostSerializer(serializers.ModelSerializer):
+    created_by_data = TaskUserMiniSerializer(source='created_by', read_only=True)
+    updated_by_data = TaskUserMiniSerializer(source='updated_by', read_only=True)
+    section_title = serializers.CharField(source='section.title', read_only=True)
+    project = serializers.IntegerField(source='section.project_id', read_only=True)
+    project_title = serializers.CharField(source='section.project.title', read_only=True)
+    display_copy_text = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectSectionPost
+        fields = (
+            'id',
+            'section',
+            'section_title',
+            'project',
+            'project_title',
+            'title',
+            'body',
+            'copy_text',
+            'display_copy_text',
+            'note',
+            'is_pinned',
+            'created_by',
+            'created_by_data',
+            'updated_by',
+            'updated_by_data',
+            'can_manage',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = (
+            'created_by',
+            'updated_by',
+            'created_at',
+            'updated_at',
+            'display_copy_text',
+            'can_manage',
+        )
+        extra_kwargs = {
+            'title': {'required': False, 'allow_blank': True},
+            'body': {'required': False, 'allow_blank': True},
+            'copy_text': {'required': False, 'allow_blank': True},
+            'note': {'required': False, 'allow_blank': True},
+            'is_pinned': {'required': False},
+        }
+
+    def get_display_copy_text(self, obj):
+        return obj.copy_text or obj.body or obj.title or ''
+
+    def get_can_manage(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if is_admin_user(user):
+            return True
+
+        if not user or not user.is_authenticated:
+            return False
+
+        return (
+            obj.created_by_id == user.id
+            or obj.section.created_by_id == user.id
+            or obj.section.project.created_by_id == user.id
+        )
+
+
+class ProjectSectionSerializer(serializers.ModelSerializer):
+    created_by_data = TaskUserMiniSerializer(source='created_by', read_only=True)
+    posts = ProjectSectionPostSerializer(many=True, read_only=True)
+    posts_count = serializers.SerializerMethodField()
+    can_manage = serializers.SerializerMethodField()
+
+    class Meta:
+        model = ProjectSection
+        fields = (
+            'id',
+            'project',
+            'title',
+            'description',
+            'color',
+            'icon',
+            'order',
+            'is_pinned',
+            'created_by',
+            'created_by_data',
+            'posts',
+            'posts_count',
+            'can_manage',
+            'created_at',
+            'updated_at',
+        )
+        read_only_fields = (
+            'created_by',
+            'created_at',
+            'updated_at',
+            'posts',
+            'posts_count',
+            'can_manage',
+        )
+        extra_kwargs = {
+            'description': {'required': False, 'allow_blank': True},
+            'color': {'required': False, 'allow_blank': True},
+            'icon': {'required': False, 'allow_blank': True},
+            'order': {'required': False},
+            'is_pinned': {'required': False},
+        }
+
+    def get_posts_count(self, obj):
+        try:
+            return obj.posts.count()
+        except Exception:
+            return 0
+
+    def get_can_manage(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+
+        if is_admin_user(user):
+            return True
+
+        if not user or not user.is_authenticated:
+            return False
+
+        return obj.created_by_id == user.id or obj.project.created_by_id == user.id
 
 
 class ProjectAttachmentSerializer(serializers.ModelSerializer):
@@ -281,6 +415,8 @@ class ProjectSerializer(serializers.ModelSerializer):
     tasks_count = serializers.SerializerMethodField()
     done_tasks_count = serializers.SerializerMethodField()
     subtasks_count = serializers.SerializerMethodField()
+    sections_count = serializers.SerializerMethodField()
+    posts_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Project
@@ -307,6 +443,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             'tasks_count',
             'done_tasks_count',
             'subtasks_count',
+            'sections_count',
+            'posts_count',
             'items',
             'attachments',
             'created_at',
@@ -324,6 +462,8 @@ class ProjectSerializer(serializers.ModelSerializer):
             'tasks_count',
             'done_tasks_count',
             'subtasks_count',
+            'sections_count',
+            'posts_count',
         )
         extra_kwargs = {
             'participants': {'required': False},
@@ -380,6 +520,18 @@ class ProjectSerializer(serializers.ModelSerializer):
     def get_subtasks_count(self, obj):
         try:
             return obj.items.filter(parent__isnull=False).count()
+        except Exception:
+            return 0
+
+    def get_sections_count(self, obj):
+        try:
+            return obj.sections.count()
+        except Exception:
+            return 0
+
+    def get_posts_count(self, obj):
+        try:
+            return ProjectSectionPost.objects.filter(section__project=obj).count()
         except Exception:
             return 0
 

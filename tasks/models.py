@@ -114,6 +114,79 @@ class Project(models.Model):
         return self.title
 
 
+class ProjectSection(models.Model):
+    project = models.ForeignKey(
+        Project,
+        on_delete=models.CASCADE,
+        related_name='sections',
+        verbose_name='Проект',
+    )
+    title = models.CharField('Название раздела', max_length=255)
+    description = models.TextField('Описание раздела', blank=True, default='')
+    color = models.CharField('Цвет', max_length=32, blank=True, default='')
+    icon = models.CharField('Иконка', max_length=64, blank=True, default='')
+    order = models.PositiveIntegerField('Порядок', default=0)
+    is_pinned = models.BooleanField('Закреплён', default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_project_sections',
+        verbose_name='Кто создал раздел',
+    )
+    created_at = models.DateTimeField('Создан', auto_now_add=True)
+    updated_at = models.DateTimeField('Обновлён', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Раздел проекта'
+        verbose_name_plural = 'Разделы проектов'
+        ordering = ['-is_pinned', 'order', '-updated_at']
+
+    def __str__(self):
+        return f'{self.project}: {self.title}'
+
+
+class ProjectSectionPost(models.Model):
+    section = models.ForeignKey(
+        ProjectSection,
+        on_delete=models.CASCADE,
+        related_name='posts',
+        verbose_name='Раздел',
+    )
+    title = models.CharField('Заголовок записи', max_length=255, blank=True, default='')
+    body = models.TextField('Информация / текст поста', blank=True, default='')
+    copy_text = models.TextField('Текст для копирования', blank=True, default='')
+    note = models.TextField('Внутренняя заметка', blank=True, default='')
+    is_pinned = models.BooleanField('Закреплена', default=False)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='created_project_section_posts',
+        verbose_name='Кто заполнил',
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='updated_project_section_posts',
+        verbose_name='Кто обновил',
+    )
+    created_at = models.DateTimeField('Создана', auto_now_add=True)
+    updated_at = models.DateTimeField('Обновлена', auto_now=True)
+
+    class Meta:
+        verbose_name = 'Запись раздела проекта'
+        verbose_name_plural = 'Записи разделов проектов'
+        ordering = ['-is_pinned', '-updated_at']
+
+    def __str__(self):
+        return self.title or f'Запись #{self.id}'
+
+
 class ProjectTask(models.Model):
     STATUS_CHOICES = (
         ('todo', 'Нужно сделать'),

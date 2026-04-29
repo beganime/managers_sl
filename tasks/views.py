@@ -4,9 +4,11 @@ from rest_framework import parsers, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from .models import Project, ProjectAttachment, ProjectTask, Task
+from .models import Project, ProjectAttachment, ProjectSection, ProjectSectionPost, ProjectTask, Task
 from .serializers import (
     ProjectAttachmentSerializer,
+    ProjectSectionPostSerializer,
+    ProjectSectionSerializer,
     ProjectSerializer,
     ProjectTaskSerializer,
     TaskSerializer,
@@ -136,6 +138,28 @@ class ProjectAccessMixin:
 
         return task.created_by_id == user.id
 
+    def can_manage_project_section(self, user, section):
+        if not user or not user.is_authenticated or not section:
+            return False
+
+        if self.is_admin(user):
+            return True
+
+        return section.created_by_id == user.id or section.project.created_by_id == user.id
+
+    def can_manage_project_post(self, user, post):
+        if not user or not user.is_authenticated or not post:
+            return False
+
+        if self.is_admin(user):
+            return True
+
+        return (
+            post.created_by_id == user.id
+            or post.section.created_by_id == user.id
+            or post.section.project.created_by_id == user.id
+        )
+
     def is_status_only_update(self, request):
         if request.method not in ('PATCH', 'PUT'):
             return False
@@ -162,9 +186,13 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
             'items__subtasks__assigned_to',
             'items__subtasks__created_by',
             'attachments',
+            'sections',
+            'sections__created_by',
+            'sections__posts',
+            'sections__posts__created_by',
+            'sections__posts__updated_by',
         )
 
-        # Админ видит всё. Обычный сотрудник видит только проекты, где он участвует.
         if not self.is_admin(user):
             qs = qs.filter(
                 Q(created_by=user) | Q(participants=user) | Q(responsible_users=user),
@@ -206,6 +234,11 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
                 | Q(participants__last_name__icontains=search)
                 | Q(responsible_users__first_name__icontains=search)
                 | Q(responsible_users__last_name__icontains=search)
+                | Q(sections__title__icontains=search)
+                | Q(sections__description__icontains=search)
+                | Q(sections__posts__title__icontains=search)
+                | Q(sections__posts__body__icontains=search)
+                | Q(sections__posts__copy_text__icontains=search)
             ).distinct()
 
         updated_after = params.get('updated_after')
@@ -291,6 +324,146 @@ class ProjectViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
         project.participants.remove(user_id)
         project.responsible_users.remove(user_id)
         return Response(self.get_serializer(project).data)
+
+
+class ProjectSectionViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
+    serializer_class = ProjectSectionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        qs = ProjectSection.objects.select_related(
+            'project',
+            'project__created_by',
+            'created_by',
+        ).prefetch_related(
+            'posts',
+            'posts__created_by',
+            'posts__updated_by',
+        )
+
+        if not self.is_admin(user):
+            qs = qs.filter(
+                Q(project__created_by=user)
+                | Q(project__participants=user)
+                | Q(project__responsible_users=user),
+                project__is_hidden=False,
+            ).distinct()
+
+        project_id = self.request.query_params.get('project')
+        if project_id:
+            qs = qs.filter(project_id=project_id)
+
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(posts__title__icontains=search)
+                | Q(posts__body__icontains=search)
+                | Q(posts__copy_text__icontains=search)
+            ).distinct()
+
+        return qs.order_by('-is_pinned', 'order', '-updated_at')
+
+    def perform_create(self, serializer):
+        project = serializer.validated_data.get('project')
+
+        if not self.can_access_project(self.request.user, project):
+            raise permissions.PermissionDenied('Нет доступа к проекту.')
+
+        section = serializer.save(created_by=self.request.user)
+
+        if self.request.user.is_authenticated:
+            section.project.participants.add(self.request.user)
+
+    def perform_update(self, serializer):
+        section = self.get_object()
+
+        if not self.can_manage_project_section(self.request.user, section):
+            raise permissions.PermissionDenied('Изменять раздел может создатель раздела, создатель проекта или администратор.')
+
+        serializer.save()
+
+    def destroy(self, request, *args, **kwargs):
+        section = self.get_object()
+
+        if not self.can_manage_project_section(request.user, section):
+            return Response({'detail': 'Удалять раздел может создатель раздела, создатель проекта или администратор.'}, status=status.HTTP_403_FORBIDDEN)
+
+        return super().destroy(request, *args, **kwargs)
+
+
+class ProjectSectionPostViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
+    serializer_class = ProjectSectionPostSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        qs = ProjectSectionPost.objects.select_related(
+            'section',
+            'section__project',
+            'section__project__created_by',
+            'section__created_by',
+            'created_by',
+            'updated_by',
+        )
+
+        if not self.is_admin(user):
+            qs = qs.filter(
+                Q(section__project__created_by=user)
+                | Q(section__project__participants=user)
+                | Q(section__project__responsible_users=user),
+                section__project__is_hidden=False,
+            ).distinct()
+
+        project_id = self.request.query_params.get('project')
+        if project_id:
+            qs = qs.filter(section__project_id=project_id)
+
+        section_id = self.request.query_params.get('section')
+        if section_id:
+            qs = qs.filter(section_id=section_id)
+
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(body__icontains=search)
+                | Q(copy_text__icontains=search)
+                | Q(note__icontains=search)
+            )
+
+        return qs.order_by('-is_pinned', '-updated_at')
+
+    def perform_create(self, serializer):
+        section = serializer.validated_data.get('section')
+
+        if not self.can_access_project(self.request.user, section.project):
+            raise permissions.PermissionDenied('Нет доступа к проекту.')
+
+        post = serializer.save(created_by=self.request.user, updated_by=self.request.user)
+
+        if self.request.user.is_authenticated:
+            post.section.project.participants.add(self.request.user)
+
+    def perform_update(self, serializer):
+        post = self.get_object()
+
+        if not self.can_manage_project_post(self.request.user, post):
+            raise permissions.PermissionDenied('Изменять запись может тот, кто её заполнил, создатель раздела, создатель проекта или администратор.')
+
+        serializer.save(updated_by=self.request.user)
+
+    def destroy(self, request, *args, **kwargs):
+        post = self.get_object()
+
+        if not self.can_manage_project_post(request.user, post):
+            return Response({'detail': 'Удалять запись может тот, кто её заполнил, создатель раздела, создатель проекта или администратор.'}, status=status.HTTP_403_FORBIDDEN)
+
+        return super().destroy(request, *args, **kwargs)
 
 
 class ProjectTaskViewSet(ProjectAccessMixin, viewsets.ModelViewSet):
