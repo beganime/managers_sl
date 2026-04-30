@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -19,9 +20,69 @@ logger = logging.getLogger(__name__)
 
 EXECUTOR_WORD = "исполнитель"
 
+CONSENT_TEMPLATE_PREFIX = "согласие"
+DEFAULT_WATERMARK_WIDTH_MM = 40
+
 
 def _mm_to_pt(value_mm: float) -> float:
     return float(value_mm) * 72.0 / 25.4
+
+
+def _normalize_title(value: str) -> str:
+    """
+    Нормализуем название шаблона/документа, чтобы проверка работала стабильно:
+    - убираем лишние пробелы;
+    - приводим к нижнему регистру;
+    - заменяем ё на е;
+    - убираем кавычки и невидимые символы в начале.
+    """
+    text = str(value or "")
+    text = text.replace("\ufeff", "")
+    text = text.replace("ё", "е").replace("Ё", "Е")
+    text = text.strip()
+
+    text = re.sub(r"^[\s\"'«»“”„.,:;()\[\]{}\-–—_]+", "", text)
+    text = re.sub(r"\s+", " ", text)
+
+    return text.casefold()
+
+
+def _document_title_candidates(generated_document, source_docx_path: Path | None = None) -> list[str]:
+    candidates: list[str] = []
+
+    template = getattr(generated_document, "template", None)
+    template_title = getattr(template, "title", "") if template else ""
+    document_title = getattr(generated_document, "title", "") or ""
+
+    if template_title:
+        candidates.append(str(template_title))
+
+    if document_title:
+        candidates.append(str(document_title))
+
+    if source_docx_path is not None:
+        candidates.append(source_docx_path.stem)
+
+    return candidates
+
+
+def _is_consent_document(generated_document, source_docx_path: Path | None = None) -> bool:
+    """
+    Если шаблон/документ начинается со слова 'СОГЛАСИЕ',
+    approved PDF делаем без watermark.
+    """
+    for title in _document_title_candidates(generated_document, source_docx_path):
+        normalized = _normalize_title(title)
+
+        if normalized.startswith(CONSENT_TEMPLATE_PREFIX):
+            logger.info(
+                "Document %s matched consent template rule. Title=%r. Watermark will be skipped.",
+                getattr(generated_document, "id", None),
+                title,
+            )
+            return True
+
+    return False
 
 
 def _candidate_watermark_paths(raw: str) -> list[Path]:
@@ -40,10 +101,13 @@ def _candidate_watermark_paths(raw: str) -> list[Path]:
 
     unique: list[Path] = []
     seen = set()
+
     for item in candidates:
         key = str(item)
+
         if key in seen:
             continue
+
         seen.add(key)
         unique.append(item)
 
@@ -52,11 +116,13 @@ def _candidate_watermark_paths(raw: str) -> list[Path]:
 
 def _get_watermark_path():
     raw = getattr(settings, "DOCUMENT_WATERMARK_IMAGE", "") or os.getenv("DOCUMENT_WATERMARK_IMAGE", "")
+
     if not raw:
         logger.error("DOCUMENT_WATERMARK_IMAGE is empty")
         return None
 
     candidates = _candidate_watermark_paths(raw)
+
     for candidate in candidates:
         try:
             if candidate.exists() and candidate.is_file():
@@ -75,11 +141,13 @@ def _get_watermark_path():
 
 def _get_soffice_binary() -> str | None:
     env_value = os.getenv("LIBREOFFICE_BIN", "").strip()
+
     if env_value:
         return env_value
 
     for name in ("soffice", "libreoffice"):
         path = shutil.which(name)
+
         if path:
             return path
 
@@ -89,6 +157,7 @@ def _get_soffice_binary() -> str | None:
 
 def _resolve_source_docx_path(generated_document) -> Path | None:
     source_field = getattr(generated_document, "generated_file", None)
+
     if not source_field:
         logger.error("Generated document %s has no generated_file", getattr(generated_document, "id", None))
         return None
@@ -118,6 +187,7 @@ def _resolve_source_docx_path(generated_document) -> Path | None:
 
 def _convert_docx_to_pdf(source_docx_path: Path, workdir: Path) -> Path | None:
     soffice_bin = _get_soffice_binary()
+
     if not soffice_bin:
         return None
 
@@ -163,6 +233,7 @@ def _convert_docx_to_pdf(source_docx_path: Path, workdir: Path) -> Path | None:
         return None
 
     output_pdf_path = workdir / f"{input_docx_path.stem}.pdf"
+
     if not output_pdf_path.exists():
         logger.error(
             "LibreOffice did not create PDF for %s. Expected path: %s",
@@ -185,8 +256,19 @@ def _get_image_ratio(watermark_path: Path) -> float:
 
 
 def _get_default_width_pt() -> float:
+    """
+    Размер watermark по умолчанию — 40 мм, то есть примерно 4.0 см.
+
+    Если на сервере задан DOCUMENT_WATERMARK_WIDTH_MM в .env/settings.py,
+    он будет иметь приоритет. Поэтому если там стоит 31, нужно заменить на 40.
+    """
     width_mm = float(
-        getattr(settings, "DOCUMENT_WATERMARK_WIDTH_MM", os.getenv("DOCUMENT_WATERMARK_WIDTH_MM", 35)) or 35
+        getattr(
+            settings,
+            "DOCUMENT_WATERMARK_WIDTH_MM",
+            os.getenv("DOCUMENT_WATERMARK_WIDTH_MM", DEFAULT_WATERMARK_WIDTH_MM),
+        )
+        or DEFAULT_WATERMARK_WIDTH_MM
     )
     return _mm_to_pt(width_mm)
 
@@ -203,6 +285,7 @@ def _find_executor_rect_on_last_page(page):
     ]
 
     rects = []
+
     for variant in search_variants:
         try:
             rects.extend(page.search_for(variant))
@@ -220,11 +303,14 @@ def _find_executor_rect_on_last_page(page):
         words = []
 
     matched_word_rects = []
+
     for item in words:
         if len(item) < 5:
             continue
+
         x0, y0, x1, y1, word = item[:5]
         normalized = str(word or "").strip(" \t\r\n:;,.()[]{}\"'").casefold()
+
         if normalized == EXECUTOR_WORD:
             matched_word_rects.append(pymupdf.Rect(x0, y0, x1, y1))
 
@@ -250,7 +336,8 @@ def _build_rect_centered_on_word(page, word_rect, watermark_path: Path):
             settings,
             "DOCUMENT_WATERMARK_EXECUTOR_SCALE",
             os.getenv("DOCUMENT_WATERMARK_EXECUTOR_SCALE", 1.8),
-        ) or 1.8
+        )
+        or 1.8
     )
 
     default_width_pt = _get_default_width_pt()
@@ -271,6 +358,7 @@ def _build_rect_centered_on_word(page, word_rect, watermark_path: Path):
         shift = -x0
         x0 += shift
         x1 += shift
+
     if x1 > page_rect.width:
         shift = x1 - page_rect.width
         x0 -= shift
@@ -280,6 +368,7 @@ def _build_rect_centered_on_word(page, word_rect, watermark_path: Path):
         shift = -y0
         y0 += shift
         y1 += shift
+
     if y1 > page_rect.height:
         shift = y1 - page_rect.height
         y0 -= shift
@@ -371,25 +460,42 @@ def _apply_watermark_to_last_pdf_page(source_pdf_path: Path, watermark_path: Pat
         pdf.close()
 
 
+def _build_approved_name(source_docx_path: Path, without_watermark: bool = False) -> str:
+    prefix = "approved_no_watermark" if without_watermark else "approved"
+    safe_stem = source_docx_path.stem or "document"
+    return f"generated_documents/approved/{prefix}_{safe_stem}.pdf"
+
+
 def build_approved_document(generated_document):
     source_docx_path = _resolve_source_docx_path(generated_document)
-    if source_docx_path is None:
-        return None
 
-    watermark_path = _get_watermark_path()
-    if watermark_path is None:
-        logger.error("Watermark path could not be resolved")
+    if source_docx_path is None:
         return None
 
     with tempfile.TemporaryDirectory(prefix="approved_pdf_") as tmp_dir_raw:
         tmp_dir = Path(tmp_dir_raw)
 
         source_pdf_path = _convert_docx_to_pdf(source_docx_path, tmp_dir)
+
         if source_pdf_path is None:
             logger.error(
                 "Failed to convert DOCX to PDF for document %s",
                 getattr(generated_document, "id", None),
             )
+            return None
+
+        if _is_consent_document(generated_document, source_docx_path):
+            approved_name = _build_approved_name(source_docx_path, without_watermark=True)
+            logger.info(
+                "Approved PDF for document %s created without watermark because template starts with СОГЛАСИЕ.",
+                getattr(generated_document, "id", None),
+            )
+            return ContentFile(source_pdf_path.read_bytes(), name=approved_name)
+
+        watermark_path = _get_watermark_path()
+
+        if watermark_path is None:
+            logger.error("Watermark path could not be resolved")
             return None
 
         approved_pdf_path = tmp_dir / f"approved_{source_docx_path.stem}.pdf"
@@ -399,6 +505,7 @@ def build_approved_document(generated_document):
             watermark_path=watermark_path,
             output_pdf_path=approved_pdf_path,
         )
+
         if not success or not approved_pdf_path.exists():
             logger.error(
                 "Failed to build approved PDF with watermark for document %s",
@@ -406,5 +513,5 @@ def build_approved_document(generated_document):
             )
             return None
 
-        approved_name = f"generated_documents/approved/approved_{source_docx_path.stem}.pdf"
+        approved_name = _build_approved_name(source_docx_path, without_watermark=False)
         return ContentFile(approved_pdf_path.read_bytes(), name=approved_name)
