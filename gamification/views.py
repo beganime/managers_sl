@@ -1,21 +1,23 @@
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
-from rest_framework import permissions, status, viewsets
+from rest_framework import parsers, permissions, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from analytics.models import FinancialPeriod
 from users.permissions import is_admin_user
 
 from .firebase_service import send_push_to_tokens
-from .models import Leaderboard, Notification
+from .models import Leaderboard, Notification, TutorialVideo
 from .push_models import DeviceToken, PushBroadcast
 from .serializers import (
     DeviceTokenSerializer,
     LeaderboardSerializer,
     NotificationSerializer,
     PushBroadcastSerializer,
+    TutorialVideoSerializer,
 )
 
 
@@ -142,6 +144,46 @@ class PushBroadcastViewSet(viewsets.ModelViewSet):
                 'firebase': result,
             }
         )
+
+
+class TutorialVideoViewSet(viewsets.ModelViewSet):
+    serializer_class = TutorialVideoSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [parsers.JSONParser, parsers.FormParser, parsers.MultiPartParser]
+
+    def get_queryset(self):
+        qs = TutorialVideo.objects.all()
+
+        search = self.request.query_params.get('search')
+        if search:
+            qs = qs.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+            )
+
+        updated_after = self.request.query_params.get('updated_after')
+        if updated_after:
+            dt = parse_datetime(updated_after)
+            if dt:
+                qs = qs.filter(updated_at__gte=dt)
+
+        return qs.distinct().order_by('-created_at')
+
+    def _ensure_admin(self):
+        if not is_admin_user(self.request.user):
+            raise PermissionDenied('Только администратор может изменять видеоуроки.')
+
+    def perform_create(self, serializer):
+        self._ensure_admin()
+        serializer.save()
+
+    def perform_update(self, serializer):
+        self._ensure_admin()
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        self._ensure_admin()
+        instance.delete()
 
 
 class LeaderboardViewSet(viewsets.ReadOnlyModelViewSet):
