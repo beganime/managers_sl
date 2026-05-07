@@ -48,6 +48,21 @@ def is_admin_user(user):
     )
 
 
+def can_delete_knowledge_section(user, section):
+    """
+    Раздел базы знаний может удалить:
+    - администратор;
+    - пользователь, который сам создал этот раздел.
+    """
+    if is_admin_user(user):
+        return True
+
+    if not user or not user.is_authenticated:
+        return False
+
+    return getattr(section, 'created_by_id', None) == user.id
+
+
 def _copy_payload(data):
     return data.copy() if hasattr(data, 'copy') else dict(data or {})
 
@@ -164,8 +179,9 @@ class KnowledgeSectionViewSet(viewsets.ModelViewSet):
         return self.update(request, *args, **kwargs)
 
     def perform_destroy(self, instance):
-        if not is_admin_user(self.request.user):
-            raise PermissionDenied('Удалять разделы может только администратор.')
+        if not can_delete_knowledge_section(self.request.user, instance):
+            raise PermissionDenied('Удалить раздел может только администратор или пользователь, который создал этот раздел.')
+
         instance.delete()
 
 
