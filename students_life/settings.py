@@ -124,6 +124,8 @@ INSTALLED_APPS = [
     'apps.organizations',
     'apps.employees',
     'apps.crm',
+    'apps.education.apps.EducationConfig',
+    'apps.erp_services.apps.ErpServicesConfig',
 ]
 
 MIDDLEWARE = [

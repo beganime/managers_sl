@@ -51,6 +51,8 @@ urlpatterns = [
     path('api/', include('support.urls')),
 
     path('api/v1/crm/', include('apps.crm.urls')),
+    path('api/v1/education/', include('apps.education.urls')),
+    path('api/v1/services/', include('apps.erp_services.urls')),
 ]
 
 if settings.DEBUG:

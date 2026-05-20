@@ -1,7 +1,8 @@
 from django.apps import AppConfig
 
 
-class EduConfig(AppConfig):
+class EducationConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.education'
-    verbose_name = 'Study catalog'
+    verbose_name = 'ERP: Education'
+
