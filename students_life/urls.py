@@ -49,6 +49,8 @@ urlpatterns = [
     path('api/', include('users.urls')),
     path('api/', include('notifications.urls')),
     path('api/', include('support.urls')),
+
+    path('api/v1/crm/', include('apps.crm.urls')),
 ]
 
 if settings.DEBUG:
