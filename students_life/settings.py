@@ -111,6 +111,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
 
+    # Current production apps. Do not remove until the ERP modules are migrated and tested.
     'users',
     'catalog',
     'clients',
@@ -125,6 +126,11 @@ INSTALLED_APPS = [
     'mailing',
     'notifications',
     'support',
+
+    # New ERP rebuild layer. Sprint 1 foundation.
+    'apps.core',
+    'apps.organizations',
+    'apps.employees',
 ]
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
@@ -256,99 +262,4 @@ CACHES = {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
         'LOCATION': 'managers-sl-cache',
     }
-}
-
-PWA_APP_NAME = 'Managers SL'
-PWA_APP_DESCRIPTION = 'Students Life ERP System'
-PWA_APP_THEME_COLOR = '#D50000'
-PWA_APP_BACKGROUND_COLOR = '#ffffff'
-PWA_APP_DISPLAY = 'standalone'
-PWA_APP_SCOPE = '/'
-PWA_APP_ORIENTATION = 'any'
-PWA_APP_START_URL = '/admin/'
-PWA_APP_STATUS_BAR_COLOR = 'default'
-PWA_APP_ICONS = [
-    {'src': '/static/logo.ico', 'sizes': '160x160', 'type': 'image/png'},
-    {'src': '/static/logo.ico', 'sizes': '512x512', 'type': 'image/png'},
-]
-PWA_APP_ICONS_APPLE = [
-    {'src': '/static/logo.ico', 'sizes': '160x160', 'type': 'image/png'},
-]
-PWA_APP_SPLASH_SCREEN = [
-    {'src': '/static/logo.ico', 'media': '(device-width: 320px) and (device-height: 568px)'}
-]
-PWA_APP_DIR = 'ltr'
-PWA_APP_LANG = 'ru-ru'
-
-UNFOLD = {
-    "SITE_TITLE": "Managers SL",
-    "SITE_HEADER": "Students Life ERP",
-    "SITE_URL": "/admin/",
-    "SITE_ICON": lambda request: static("logo.ico"),
-    "DASHBOARD_CALLBACK": "students_life.dashboard.dashboard_callback",
-    "SIDEBAR": {
-        "show_search": True,
-        "show_all_applications": False,
-        "navigation": "students_life.dashboard.get_navigation",
-    },
-    "COLORS": {
-        "primary": {
-            "50": "255 235 238", "100": "255 205 210", "200": "239 154 154",
-            "300": "229 115 115", "400": "239 83 80", "500": "244 67 54",
-            "600": "229 57 53", "700": "211 47 47", "800": "198 40 40", "900": "183 28 28",
-        },
-        "secondary": {
-            "50": "248 250 252", "100": "241 245 249", "200": "226 232 240",
-            "300": "203 213 225", "400": "148 163 184", "500": "100 116 139",
-            "600": "71 85 105", "700": "51 65 85", "800": "30 41 59", "900": "15 23 42",
-        },
-        "success": {
-            "50": "240 253 244", "100": "220 252 231", "200": "187 247 208",
-            "300": "134 239 172", "400": "74 222 128", "500": "34 197 94",
-            "600": "22 163 74", "700": "21 128 61", "800": "22 101 52", "900": "20 83 45",
-        },
-        "warning": {
-            "50": "255 251 235", "100": "254 243 199", "200": "253 230 138",
-            "300": "252 211 77", "400": "251 191 36", "500": "245 158 11",
-            "600": "217 119 6", "700": "180 83 9", "800": "146 64 14", "900": "120 53 15",
-        },
-        "danger": {
-            "50": "254 242 242", "100": "254 226 226", "200": "254 202 202",
-            "300": "252 165 165", "400": "248 113 113", "500": "239 68 68",
-            "600": "220 38 38", "700": "185 28 28", "800": "153 27 27", "900": "127 29 29",
-        },
-        "info": {
-            "50": "239 246 255", "100": "219 234 254", "200": "191 219 254",
-            "300": "147 197 253", "400": "96 165 250", "500": "59 130 246",
-            "600": "37 99 235", "700": "29 78 216", "800": "30 64 175", "900": "30 58 138",
-        },
-        "default": {
-            "50": "248 250 252", "100": "241 245 249", "200": "226 232 240",
-            "300": "203 213 225", "400": "148 163 184", "500": "100 116 139",
-            "600": "71 85 105", "700": "51 65 85", "800": "30 41 59", "900": "15 23 42",
-        },
-    },
-}
-
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'formatters': {
-        'verbose': {
-            'format': '%(asctime)s [%(levelname)s] %(name)s: %(message)s',
-        },
-        'simple': {
-            'format': '%(levelname)s %(name)s: %(message)s',
-        },
-    },
-    'handlers': {
-        'console': {
-            'class': 'logging.StreamHandler',
-            'formatter': 'verbose' if not DEBUG else 'simple',
-        },
-    },
-    'root': {
-        'handlers': ['console'],
-        'level': os.environ.get('LOG_LEVEL', 'INFO'),
-    },
 }
