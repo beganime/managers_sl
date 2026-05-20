@@ -32,7 +32,6 @@ ALLOWED_HOSTS = env_list(
 
 CORS_ALLOW_CREDENTIALS = True
 
-
 from corsheaders.defaults import default_headers, default_methods
 
 CORS_ALLOW_ALL_ORIGINS = env_bool('CORS_ALLOW_ALL_ORIGINS', False)
@@ -87,14 +86,12 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
 SECURE_REFERRER_POLICY = 'same-origin'
 
-
 INSTALLED_APPS = [
     'unfold',
     'unfold.contrib.filters',
     'unfold.contrib.forms',
     'unfold.contrib.import_export',
     'pwa',
-
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -102,7 +99,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'django.contrib.humanize',
-
     'django_cleanup',
     'import_export',
     'smart_selects',
@@ -110,8 +106,6 @@ INSTALLED_APPS = [
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
-
-    # Current production apps. Do not remove until the ERP modules are migrated and tested.
     'users',
     'catalog',
     'clients',
@@ -126,12 +120,12 @@ INSTALLED_APPS = [
     'mailing',
     'notifications',
     'support',
-
-    # New ERP rebuild layer. Sprint 1 foundation.
     'apps.core',
     'apps.organizations',
     'apps.employees',
+    'apps.crm',
 ]
+
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -162,7 +156,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'students_life.wsgi.application'
 
-
 USE_SQLITE = env_bool('USE_SQLITE', False)
 
 if USE_SQLITE:
@@ -182,9 +175,7 @@ else:
             'HOST': os.environ.get('DB_HOST', 'db'),
             'PORT': os.environ.get('DB_PORT', '5432'),
             'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '60')),
-            'OPTIONS': {
-                'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10')),
-            },
+            'OPTIONS': {'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10'))},
         }
     }
 
@@ -197,19 +188,16 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-LEADS_API_KEY = os.environ.get('LEADS_API_KEY', 'super_secret_key_manager_sl_2026')
+LEADS_API_KEY = os.environ.get('LEADS_API_KEY', '')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
-    'DEFAULT_PERMISSION_CLASSES': (
-        'rest_framework.permissions.IsAuthenticated',
-    ),
+    'DEFAULT_PERMISSION_CLASSES': ('rest_framework.permissions.IsAuthenticated',),
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
     'PAGE_SIZE': 50,
-    # Добавлены настройки троттлинга
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
         'rest_framework.throttling.UserRateThrottle'
@@ -217,7 +205,7 @@ REST_FRAMEWORK = {
     'DEFAULT_THROTTLE_RATES': {
         'anon': '30/min',
         'user': '60/min',
-        'leads_create': '3/min', # Спец-лимит: 3 заявки в минуту с одного IP
+        'leads_create': '3/min',
     }
 }
 
