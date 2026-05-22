@@ -132,6 +132,7 @@ INSTALLED_APPS = [
     'apps.projects_v2.apps.ProjectsV2Config',
     'apps.knowledge.apps.KnowledgeConfig',
     'apps.customfields.apps.CustomFieldsConfig',
+    'apps.erp_notifications.apps.ErpNotificationsConfig',
 ]
 
 MIDDLEWARE = [
@@ -252,6 +253,22 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CELERY_BROKER_URL = os.environ.get('CELERY_BROKER_URL', 'redis://redis:6379/0')
+CELERY_RESULT_BACKEND = os.environ.get('CELERY_RESULT_BACKEND', 'redis://redis:6379/1')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = USE_TZ
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = int(os.environ.get('CELERY_TASK_TIME_LIMIT', '1800'))
+CELERY_TASK_SOFT_TIME_LIMIT = int(os.environ.get('CELERY_TASK_SOFT_TIME_LIMIT', '1500'))
+CELERY_TASK_ALWAYS_EAGER = env_bool('CELERY_TASK_ALWAYS_EAGER', False)
+
+ATTENDANCE_AUTO_CLOSE_HOUR = int(os.environ.get('ATTENDANCE_AUTO_CLOSE_HOUR', '23'))
+ATTENDANCE_AUTO_CLOSE_MINUTE = int(os.environ.get('ATTENDANCE_AUTO_CLOSE_MINUTE', '0'))
+TASK_REMINDER_HOURS_AHEAD = int(os.environ.get('TASK_REMINDER_HOURS_AHEAD', '24'))
 
 CACHES = {
     'default': {

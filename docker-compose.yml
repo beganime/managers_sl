@@ -17,6 +17,21 @@ services:
       timeout: 5s
       retries: 10
 
+  redis:
+    image: redis:7-alpine
+    container_name: managers_sl_redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_net
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   web:
     build: .
     container_name: managers_sl_web
@@ -25,6 +40,8 @@ services:
       - .env
     depends_on:
       db:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       - ./media:/app/media
@@ -45,6 +62,46 @@ services:
       timeout: 5s
       retries: 10
       start_period: 60s
+
+  celery:
+    build: .
+    container_name: managers_sl_celery
+    restart: unless-stopped
+    command: celery -A students_life worker -l info
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./secrets:/app/secrets:ro
+      - ./branding:/app/branding:ro
+    networks:
+      - app_net
+
+  celery-beat:
+    build: .
+    container_name: managers_sl_celery_beat
+    restart: unless-stopped
+    command: celery -A students_life beat -l info
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./media:/app/media
+      - ./staticfiles:/app/staticfiles
+      - ./secrets:/app/secrets:ro
+      - ./branding:/app/branding:ro
+    networks:
+      - app_net
 
   nginx:
     image: nginx:1.25-alpine
@@ -67,6 +124,7 @@ services:
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
   app_net:
