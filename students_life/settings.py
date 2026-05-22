@@ -130,6 +130,8 @@ INSTALLED_APPS = [
     'apps.erp_documents.apps.ErpDocumentsConfig',
     'apps.attendance.apps.AttendanceConfig',
     'apps.projects_v2.apps.ProjectsV2Config',
+    'apps.knowledge.apps.KnowledgeConfig',
+    'apps.customfields.apps.CustomFieldsConfig',
 ]
 
 MIDDLEWARE = [
