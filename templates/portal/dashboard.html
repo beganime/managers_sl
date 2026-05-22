@@ -1,0 +1,62 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="metric-grid">
+    {% for metric in metrics %}
+        <a class="metric" href="{{ metric.url }}">
+            <div class="metric-top">
+                <span>{{ metric.label }}</span>
+                <i data-lucide="{{ metric.icon }}"></i>
+            </div>
+            <div class="metric-value">{{ metric.value }}</div>
+        </a>
+    {% endfor %}
+</section>
+
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">My Leads</h2><a class="pill" href="{% url 'portal:leads' %}">Open</a></div>
+        <div class="panel-body">{% include "portal/partials/dashboard_leads.html" with items=my_leads %}</div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">My Clients</h2><a class="pill" href="{% url 'portal:clients' %}">Open</a></div>
+        <div class="panel-body">{% include "portal/partials/dashboard_clients.html" with items=my_clients %}</div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Applications</h2><a class="pill" href="{% url 'portal:applications' %}">Open</a></div>
+        <div class="panel-body">{% include "portal/partials/dashboard_applications.html" with items=my_applications %}</div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Tasks</h2><a class="pill" href="{% url 'portal:tasks' %}">Open</a></div>
+        <div class="panel-body">{% include "portal/partials/dashboard_tasks.html" with items=my_tasks %}</div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Workday</h2><a class="pill" href="{% url 'portal:workday' %}">Open</a></div>
+        <div class="panel-body">
+            {% if workday %}
+                <div class="list-row">
+                    <div>
+                        <div class="strong">{{ workday.date }}</div>
+                        <div class="muted small">{{ workday.total_work_hours }} h logged</div>
+                    </div>
+                    <span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span>
+                </div>
+            {% else %}
+                <div class="empty">Employee profile is required to start a workday.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Payments</h2><a class="pill" href="{% url 'portal:finance' %}">Open</a></div>
+        <div class="panel-body">{% include "portal/partials/dashboard_payments.html" with items=recent_payments %}</div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Documents</h2><a class="pill" href="{% url 'portal:documents' %}">Open</a></div>
+        <div class="panel-body">{% include "portal/partials/dashboard_documents.html" with items=recent_documents %}</div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Notifications</h2><span class="pill">{{ unread_notifications_count }} unread</span></div>
+        <div class="panel-body">{% include "portal/partials/dashboard_notifications.html" with items=notifications %}</div>
+    </div>
+</section>
+{% endblock %}

@@ -133,6 +133,7 @@ INSTALLED_APPS = [
     'apps.knowledge.apps.KnowledgeConfig',
     'apps.customfields.apps.CustomFieldsConfig',
     'apps.erp_notifications.apps.ErpNotificationsConfig',
+    'apps.portal.apps.PortalConfig',
 ]
 
 MIDDLEWARE = [

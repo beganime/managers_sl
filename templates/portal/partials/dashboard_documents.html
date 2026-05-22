@@ -1,0 +1,15 @@
+{% if items %}
+<div class="list">
+    {% for item in items %}
+        <div class="list-row">
+            <div>
+                <div class="strong">{{ item.title|default:item.template.name }}</div>
+                <div class="muted small">{% if item.client %}{{ item.client.full_name }}{% else %}No client{% endif %}</div>
+            </div>
+            <span class="pill {% if item.status == 'approved' %}ok{% elif item.status == 'rejected' or item.status == 'error' %}danger{% else %}warn{% endif %}">{{ item.get_status_display }}</span>
+        </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty">No documents.</div>
+{% endif %}

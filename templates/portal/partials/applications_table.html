@@ -1,0 +1,19 @@
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>Client</th><th>University</th><th>Program</th><th>Country</th><th>Status</th><th>Updated</th></tr></thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <td><span class="strong">{{ item.client.full_name }}</span><div class="muted small">{{ item.client.phone }}</div></td>
+                <td>{{ item.university_name|default:"-" }}</td>
+                <td>{{ item.program_name|default:"-" }}<div class="muted small">{{ item.degree|default:"" }}{% if item.intake %} · {{ item.intake }}{% endif %}</div></td>
+                <td>{{ item.country|default:"-" }}</td>
+                <td><span class="pill">{{ item.get_status_display }}</span></td>
+                <td>{{ item.updated_at|date:"Y-m-d H:i" }}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6"><div class="empty">No applications found.</div></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,29 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">{{ table_title }}</h2>
+        <span class="pill">{{ total_count }} total</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Search">
+                {% if status_choices %}
+                    <select class="select" name="status" style="width:220px;">
+                        <option value="">All statuses</option>
+                        {% for value,label in status_choices %}
+                            <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Apply</button>
+            </div>
+        </form>
+        <div id="portal-table">
+            {% include table_template %}
+        </div>
+    </div>
+</section>
+{% endblock %}

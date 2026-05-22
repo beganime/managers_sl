@@ -1,0 +1,101 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Today</h2>
+            {% if workday %}
+                <span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span>
+            {% endif %}
+        </div>
+        <div class="panel-body">
+            {% if workday %}
+                <div class="grid cols-3">
+                    <div>
+                        <div class="muted small">Date</div>
+                        <div class="strong">{{ workday.date }}</div>
+                    </div>
+                    <div>
+                        <div class="muted small">Started</div>
+                        <div class="strong">{% if workday.started_at %}{{ workday.started_at|date:"H:i" }}{% else %}-{% endif %}</div>
+                    </div>
+                    <div>
+                        <div class="muted small">Hours</div>
+                        <div class="strong">{{ workday.total_work_hours }}</div>
+                    </div>
+                </div>
+                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;">
+                    <form method="post" action="{% url 'portal:workday_start' %}">
+                        {% csrf_token %}
+                        <button class="btn primary" type="submit"><i data-lucide="play"></i>Start</button>
+                    </form>
+                    <form method="post" action="{% url 'portal:workday_close' %}">
+                        {% csrf_token %}
+                        <button class="btn danger" type="submit"><i data-lucide="square"></i>Close</button>
+                    </form>
+                </div>
+            {% else %}
+                <div class="empty">Employee profile is required.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Daily Report</h2></div>
+        <div class="panel-body">
+            <form method="post" action="{% url 'portal:workday_report' %}" class="grid">
+                {% csrf_token %}
+                <textarea class="textarea" name="content" rows="5" placeholder="Report"></textarea>
+                <input class="input" name="results" placeholder="Results">
+                <input class="input" name="plans" placeholder="Plans">
+                <input class="input" name="problems" placeholder="Problems">
+                <button class="btn primary" type="submit"><i data-lucide="send"></i>Submit</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="grid cols-2" style="margin-top:16px;">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Recent Reports</h2></div>
+        <div class="panel-body">
+            {% if reports %}
+                <div class="list">
+                {% for item in reports %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.date }}</div>
+                            <div class="muted small">{{ item.content|truncatechars:120 }}</div>
+                        </div>
+                        <span class="pill ok">{{ item.submitted_at|date:"H:i" }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No reports.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">History</h2></div>
+        <div class="panel-body">
+            {% if history %}
+                <div class="list">
+                {% for item in history %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.date }}</div>
+                            <div class="muted small">{{ item.total_work_hours }} h</div>
+                        </div>
+                        <span class="pill">{{ item.get_status_display }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No workdays.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

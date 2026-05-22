@@ -24,6 +24,7 @@ urlpatterns = [
     path('privacy/', TemplateView.as_view(template_name='privacy.html'), name='privacy'),
     path('privacy.html', RedirectView.as_view(url='/privacy/', permanent=True)),
 
+    path('portal/', include('apps.portal.urls')),
     path('admin/', admin.site.urls),
     path('favicon.ico', RedirectView.as_view(url=settings.STATIC_URL + 'logo.ico', permanent=True)),
     path('', include('pwa.urls')),

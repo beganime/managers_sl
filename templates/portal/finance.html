@@ -1,0 +1,81 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="metric-grid" style="grid-template-columns: repeat(3, minmax(180px, 1fr));">
+    <div class="metric">
+        <div class="metric-top"><span>Revenue this month</span><i data-lucide="trending-up"></i></div>
+        <div class="metric-value">${{ payment_total_usd|floatformat:2 }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric-top"><span>Expenses this month</span><i data-lucide="trending-down"></i></div>
+        <div class="metric-value">${{ expense_total_usd|floatformat:2 }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric-top"><span>Open deals</span><i data-lucide="briefcase-business"></i></div>
+        <div class="metric-value">{{ open_deals_count }}</div>
+    </div>
+</section>
+
+<section class="grid cols-3">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Payments</h2></div>
+        <div class="panel-body">
+            {% if recent_payments %}
+                <div class="list">
+                {% for item in recent_payments %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.client.full_name }}</div>
+                            <div class="muted small">{{ item.payment_date }} · {{ item.method }}</div>
+                        </div>
+                        <span class="pill {% if item.is_confirmed %}ok{% else %}warn{% endif %}">${{ item.amount_usd|floatformat:2 }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No payments.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Deals</h2></div>
+        <div class="panel-body">
+            {% if recent_deals %}
+                <div class="list">
+                {% for item in recent_deals %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.title }}</div>
+                            <div class="muted small">{{ item.client.full_name }}</div>
+                        </div>
+                        <span class="pill {% if item.payment_status == 'paid_full' %}ok{% elif item.payment_status == 'cancelled' or item.payment_status == 'refunded' %}danger{% else %}warn{% endif %}">{{ item.get_payment_status_display }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No deals.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Expenses</h2></div>
+        <div class="panel-body">
+            {% if recent_expenses %}
+                <div class="list">
+                {% for item in recent_expenses %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.title }}</div>
+                            <div class="muted small">{{ item.date }} · {{ item.category.name }}</div>
+                        </div>
+                        <span class="pill {% if item.is_confirmed %}ok{% else %}warn{% endif %}">${{ item.amount_usd|floatformat:2 }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No expenses.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

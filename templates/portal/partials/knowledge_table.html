@@ -1,0 +1,19 @@
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>Article</th><th>Category</th><th>Author</th><th>Views</th><th>Status</th><th>Published</th></tr></thead>
+        <tbody>
+        {% for item in items %}
+            <tr>
+                <td><span class="strong">{{ item.title }}</span><div class="muted small">{{ item.summary|truncatechars:90 }}</div></td>
+                <td>{% if item.category %}{{ item.category.name }}{% else %}-{% endif %}</td>
+                <td>{{ item.author.get_full_name|default:item.author.email|default:"-" }}</td>
+                <td>{{ item.views_count }}</td>
+                <td><span class="pill {% if item.status == 'published' %}ok{% elif item.status == 'archived' %}danger{% else %}warn{% endif %}">{{ item.get_status_display }}</span></td>
+                <td>{% if item.published_at %}{{ item.published_at|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6"><div class="empty">No articles found.</div></td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
