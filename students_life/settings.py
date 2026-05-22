@@ -128,6 +128,7 @@ INSTALLED_APPS = [
     'apps.erp_services.apps.ErpServicesConfig',
     'apps.finance.apps.FinanceConfig',
     'apps.erp_documents.apps.ErpDocumentsConfig',
+    'apps.attendance.apps.AttendanceConfig',
 ]
 
 MIDDLEWARE = [
