@@ -1,44 +1,108 @@
 {% extends "portal/base.html" %}
 
 {% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Инструкция по веб-кабинету ManagerSL</h2>
+        <a class="btn secondary" href="{% url 'portal:admin_data_help' %}"><i data-lucide="database"></i>Как заполнить базу</a>
+    </div>
+    <div class="panel-body">
+        <p class="muted" style="margin:0;">Эта страница объясняет ежедневную работу в портале: вход, CRM, рабочий день, финансы, документы, календарь и различия между сотрудником и администратором.</p>
+    </div>
+</section>
+
 <section class="grid cols-2">
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Daily work</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Вход и выход</h2></div>
         <div class="panel-body">
             <div class="list">
-                <div class="list-row"><div><div class="strong">Start workday</div><div class="muted small">Open Workday and press Start. The system records the start time.</div></div><a class="pill" href="{% url 'portal:workday' %}">Open</a></div>
-                <div class="list-row"><div><div class="strong">Submit daily report</div><div class="muted small">Write results, plans and problems before closing the day.</div></div><a class="pill" href="{% url 'portal:workday' %}">Report</a></div>
-                <div class="list-row"><div><div class="strong">Close workday</div><div class="muted small">Close the day after the report. Regular starts and closes improve rating.</div></div><a class="pill" href="{% url 'portal:rating' %}">Rating</a></div>
+                <div class="list-row"><div><div class="strong">Как войти</div><div class="muted small">Откройте сайт manager-sl.ru. Если вы не авторизованы, система покажет страницу входа веб-кабинета. Используйте email и пароль пользователя.</div></div><span class="pill">/portal/login/</span></div>
+                <div class="list-row"><div><div class="strong">Куда попадаете после входа</div><div class="muted small">После успешного входа открывается дашборд: /portal/dashboard/.</div></div><span class="pill ok">Главная</span></div>
+                <div class="list-row"><div><div class="strong">Как выйти</div><div class="muted small">Нажмите кнопку профиля в верхней панели и выберите “Выйти”. На телефоне выход есть в раскрывающемся меню.</div></div><span class="pill warn">Безопасность</span></div>
             </div>
         </div>
     </div>
+
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">CRM flow</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Дашборд</h2></div>
+        <div class="panel-body">
+            <p class="muted">Верхняя часть дашборда показывает только самое важное: состояние рабочего дня, ближайшие события, лиды, клиенты, заявки, задачи, платежи, документы и уведомления.</p>
+            <p class="muted">Администратор дополнительно видит доходы, расходы, прибыль, сотрудников, рабочие дни, проекты и быстрые действия для админки.</p>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Рабочий день</h2></div>
+        <div class="panel-body">
+            <ol class="muted" style="margin:0; padding-left:20px; display:grid; gap:8px;">
+                <li>Откройте “Рабочий день” или нажмите кнопку на дашборде.</li>
+                <li>Нажмите “Начать рабочий день”. Система зафиксирует время старта.</li>
+                <li>В конце дня заполните ежедневный отчёт: результаты, планы, проблемы.</li>
+                <li>Нажмите “Закрыть рабочий день”. Регулярные старты, отчёты и закрытия улучшают рейтинг.</li>
+                <li>Если часто не закрывать день, это будет видно руководителю и повлияет на активность.</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">CRM</h2></div>
         <div class="panel-body">
             <div class="list">
-                <div class="list-row"><div><div class="strong">Add lead</div><div class="muted small">Create a lead in CRM with source, phone, direction and comment.</div></div><a class="pill" href="{% url 'portal:leads' %}">Leads</a></div>
-                <div class="list-row"><div><div class="strong">Convert lead</div><div class="muted small">Use lead convert action in API/admin to create a CRM client.</div></div><a class="pill" href="{% url 'portal:clients' %}">Clients</a></div>
-                <div class="list-row"><div><div class="strong">Create application</div><div class="muted small">Attach university, program, intake and status to the client.</div></div><a class="pill" href="{% url 'portal:applications' %}">Applications</a></div>
+                <div class="list-row"><div><div class="strong">Лиды</div><div class="muted small">Добавляйте контакты новых студентов, источник, телефон, страну, интересующую программу и комментарий.</div></div><a class="pill" href="{% url 'portal:leads' %}">Лиды</a></div>
+                <div class="list-row"><div><div class="strong">Клиенты</div><div class="muted small">После обработки лида создаётся клиент. В клиенте хранится паспортная информация, статус, комментарии и доступы.</div></div><a class="pill" href="{% url 'portal:clients' %}">Клиенты</a></div>
+                <div class="list-row"><div><div class="strong">Заявки</div><div class="muted small">Создавайте заявку на поступление: страна, ВУЗ, программа, язык, набор, статус и даты.</div></div><a class="pill" href="{% url 'portal:applications' %}">Заявки</a></div>
             </div>
         </div>
     </div>
+
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Finance and documents</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Задачи и проекты</h2></div>
+        <div class="panel-body">
+            <p class="muted">На странице “Задачи” можно создать задачу прямо из портала: выбрать проект, раздел, исполнителя, дедлайн, приоритет, статус и описание. Задачи с дедлайном автоматически отображаются в календаре.</p>
+            <p class="muted">Проекты работают как рабочие доски: внутри проекта есть разделы, задачи, комментарии, чек-листы, файлы и наблюдатели. Если проекта ещё нет, администратор создаёт его через админку.</p>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Финансы</h2></div>
         <div class="panel-body">
             <div class="list">
-                <div class="list-row"><div><div class="strong">Add income or expense</div><div class="muted small">Use Finance buttons. Admin confirms payments and expenses.</div></div><a class="pill" href="{% url 'portal:finance' %}">Finance</a></div>
-                <div class="list-row"><div><div class="strong">Generate document</div><div class="muted small">Choose template, client, application or deal. With stamp requires admin approval.</div></div><a class="pill" href="{% url 'portal:documents' %}">Documents</a></div>
-                <div class="list-row"><div><div class="strong">Download document</div><div class="muted small">Download is available only when document rules allow it. Downloads are logged.</div></div><a class="pill" href="{% url 'portal:documents' %}">Logs</a></div>
+                <div class="list-row"><div><div class="strong">Доход</div><div class="muted small">Откройте “Финансы” → “Добавить доход”, выберите кассу, сумму, валюту, дату и источник. Доход увеличивает баланс кассы.</div></div><a class="pill ok" href="{% url 'portal:finance_income' %}">Доход</a></div>
+                <div class="list-row"><div><div class="strong">Расход</div><div class="muted small">Откройте “Финансы” → “Добавить расход”, выберите категорию, кассу, сумму, валюту и комментарий. Администратор подтверждает расход.</div></div><a class="pill warn" href="{% url 'portal:finance_expense' %}">Расход</a></div>
+                <div class="list-row"><div><div class="strong">Отчёты</div><div class="muted small">В отчётах видны доходы, расходы, прибыль, периоды и балансы по офисам.</div></div><a class="pill" href="{% url 'portal:finance_reports' %}">Отчёты</a></div>
             </div>
         </div>
     </div>
+
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Projects, knowledge and reports</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Календарь</h2></div>
+        <div class="panel-body">
+            <p class="muted">Календарь показывает месяц с понедельника по воскресенье. Внутри дней отображаются дедлайны задач, даты заявок, рабочие события и дни рождения сотрудников. Можно переключать месяц и год.</p>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">ВУЗы, программы и база знаний</h2></div>
+        <div class="panel-body">
+            <p class="muted">В разделе “Вузы” хранится каталог стран, городов, ВУЗов, программ, стоимостей, наборов и документов. После добавления ВУЗа обязательно добавьте ему программы.</p>
+            <p class="muted">В базе знаний будут инструкции, скрипты продаж, FAQ, материалы по визам, документам, поступлению в Россию и Китай, работе с агентами.</p>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Документы</h2></div>
+        <div class="panel-body">
+            <p class="muted">Менеджер выбирает клиента, заявку или сделку, затем шаблон документа. Документ без печати можно скачать как DOCX. Документ с печатью должен пройти одобрение администратора и скачивается как PDF. Скачивания логируются.</p>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Что видит сотрудник и администратор</h2></div>
         <div class="panel-body">
             <div class="list">
-                <div class="list-row"><div><div class="strong">Tasks and projects</div><div class="muted small">Create sections, assign tasks, comment, check lists and close completed work.</div></div><a class="pill" href="{% url 'portal:projects' %}">Projects</a></div>
-                <div class="list-row"><div><div class="strong">Knowledge base</div><div class="muted small">Read instructions, files, scripts and tests. Mark important articles as read.</div></div><a class="pill" href="{% url 'portal:knowledge' %}">Knowledge</a></div>
-                <div class="list-row"><div><div class="strong">Reports</div><div class="muted small">Admins see company-wide reports. Employees see their office and personal scope.</div></div><a class="pill" href="{% url 'portal:reports' %}">Reports</a></div>
+                <div class="list-row"><div><div class="strong">Обычный сотрудник</div><div class="muted small">Видит свой офис, своих лидов, клиентов, заявки, задачи, рабочий день, документы, рейтинг и события офиса.</div></div><span class="pill">Свой доступ</span></div>
+                <div class="list-row"><div><div class="strong">Директор офиса</div><div class="muted small">Видит сотрудников и данные своего офиса, финансы офиса, рейтинг офиса и отчёты по офису.</div></div><span class="pill">Офис</span></div>
+                <div class="list-row"><div><div class="strong">Администратор</div><div class="muted small">Видит всю компанию, подтверждает платежи и расходы, проверяет документы, управляет сотрудниками и отчётами.</div></div><span class="pill ok">Всё</span></div>
             </div>
         </div>
     </div>

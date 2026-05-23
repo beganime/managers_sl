@@ -1,0 +1,75 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">{% if edit_object %}Редактировать программу{% else %}Добавить программу{% endif %}</h2>
+            {% if edit_object %}<a class="pill" href="{% url 'portal:programs' %}">Новая программа</a>{% endif %}
+        </div>
+        <div class="panel-body">
+            <form method="post" class="grid">
+                {% csrf_token %}
+                {% if edit_object %}<input type="hidden" name="object_id" value="{{ edit_object.id }}">{% endif %}
+                {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="grid cols-2">
+                    <label><span class="muted small">ВУЗ</span>{{ form.university }}{% if form.university.errors %}<span class="form-errors">{{ form.university.errors }}</span>{% endif %}</label>
+                    <label><span class="muted small">Степень</span>{{ form.degree }}</label>
+                    <label><span class="muted small">Название программы</span>{{ form.name }}{% if form.name.errors %}<span class="form-errors">{{ form.name.errors }}</span>{% endif %}</label>
+                    <label><span class="muted small">Факультет</span>{{ form.faculty }}</label>
+                    <label><span class="muted small">Язык обучения</span>{{ form.language }}</label>
+                    <label><span class="muted small">Срок обучения</span>{{ form.duration }}</label>
+                </div>
+                <label><span class="muted small">Описание</span>{{ form.description }}</label>
+                <label><span class="muted small">Требования к поступлению</span>{{ form.admission_requirements }}</label>
+                <div class="filters">
+                    <label style="display:flex; align-items:center; gap:8px;">{{ form.is_active }} <span>Активна</span></label>
+                    <label style="display:flex; align-items:center; gap:8px;">{{ form.is_archived }} <span>В архиве</span></label>
+                </div>
+                <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить программу</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Что добавить после программы</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">Стоимость обучения</div><div class="muted small">Для каждой программы добавьте ProgramFee в админке: валюта, обучение, сервисный сбор.</div></div><a class="pill" href="/admin/education/programfee/add/">Стоимость</a></div>
+                <div class="list-row"><div><div class="strong">Наборы / intakes</div><div class="muted small">Укажите даты начала и дедлайны подачи документов.</div></div><a class="pill" href="/admin/education/intake/add/">Intake</a></div>
+                <div class="list-row"><div><div class="strong">Документы</div><div class="muted small">Добавьте список обязательных документов для ВУЗа или программы.</div></div><a class="pill" href="/admin/education/requireddocument/add/">Документ</a></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Список программ</h2>
+        <span class="pill">{{ total_count }} всего</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по программе, ВУЗу, языку">
+                <select class="select" name="university" style="width:260px;">
+                    <option value="">Все ВУЗы</option>
+                    {% for university in universities %}
+                        <option value="{{ university.id }}" {% if selected_university == university.id|stringformat:"s" %}selected{% endif %}>{{ university.name }}</option>
+                    {% endfor %}
+                </select>
+                <select class="select" name="status" style="width:220px;">
+                    <option value="">Все степени</option>
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div id="portal-table">
+            {% include table_template %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">{% if edit_object %}Редактировать ВУЗ{% else %}Добавить ВУЗ{% endif %}</h2>
+            {% if edit_object %}<a class="pill" href="{% url 'portal:universities' %}">Новый ВУЗ</a>{% endif %}
+        </div>
+        <div class="panel-body">
+            <form method="post" class="grid">
+                {% csrf_token %}
+                {% if edit_object %}<input type="hidden" name="object_id" value="{{ edit_object.id }}">{% endif %}
+                {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="grid cols-2">
+                    <label><span class="muted small">Страна</span>{{ form.country }}{% if form.country.errors %}<span class="form-errors">{{ form.country.errors }}</span>{% endif %}</label>
+                    <label><span class="muted small">Город</span>{{ form.city }}{% if form.city.errors %}<span class="form-errors">{{ form.city.errors }}</span>{% endif %}</label>
+                    <label><span class="muted small">Название ВУЗа</span>{{ form.name }}{% if form.name.errors %}<span class="form-errors">{{ form.name.errors }}</span>{% endif %}</label>
+                    <label><span class="muted small">Юридическое название</span>{{ form.legal_name }}</label>
+                    <label><span class="muted small">Валюта страны</span>{{ form.local_currency }}</label>
+                    <label><span class="muted small">Сайт</span>{{ form.website }}</label>
+                    <label><span class="muted small">Email</span>{{ form.email }}</label>
+                    <label><span class="muted small">Телефон</span>{{ form.phone }}</label>
+                </div>
+                <label><span class="muted small">Адрес</span>{{ form.address }}</label>
+                <label><span class="muted small">Описание</span>{{ form.description }}</label>
+                <label><span class="muted small">Условия поступления</span>{{ form.admission_requirements }}</label>
+                <label style="display:flex; align-items:center; gap:8px;">{{ form.is_active }} <span>ВУЗ активен</span></label>
+                <div class="filters">
+                    <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить ВУЗ</button>
+                    <a class="btn" href="{% url 'portal:programs' %}"><i data-lucide="library-big"></i>Добавить программу</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Как заполнять каталог</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">1. Сначала страна и город</div><div class="muted small">Если страны или города нет в списке, добавьте их через админку.</div></div><a class="pill" href="/admin/education/country/add/">Страна</a></div>
+                <div class="list-row"><div><div class="strong">2. Затем ВУЗ</div><div class="muted small">Укажите название, страну, город, сайт и контакты.</div></div><span class="pill ok">Обязательно</span></div>
+                <div class="list-row"><div><div class="strong">3. После ВУЗа добавьте программы</div><div class="muted small">У ВУЗа должны быть программы, стоимость, наборы и документы.</div></div><a class="pill ok" href="{% url 'portal:programs' %}">Программы</a></div>
+                <div class="list-row"><div><div class="strong">Подробная инструкция</div><div class="muted small">Порядок заполнения всей базы данных описан отдельно.</div></div><a class="pill" href="{% url 'portal:admin_data_help' %}">Открыть</a></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Список ВУЗов</h2>
+        <span class="pill">{{ total_count }} всего</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по ВУЗу, стране, городу">
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div id="portal-table">
+            {% include table_template %}
+        </div>
+    </div>
+</section>
+{% endblock %}

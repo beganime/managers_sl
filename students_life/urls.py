@@ -8,6 +8,7 @@ from django.views.generic import RedirectView, TemplateView
 
 from rest_framework_simplejwt.views import TokenRefreshView
 
+from apps.portal.views import PortalHomeView
 from users.auth_views import LoginView, LogoutView
 from students_life.api_views import HealthCheckView, AppConfigView, DashboardSummaryView
 
@@ -18,7 +19,7 @@ def my_profile_redirect(request):
 
 
 urlpatterns = [
-    path('', RedirectView.as_view(url='/admin/', permanent=False)),
+    path('', PortalHomeView.as_view(), name='home'),
     path('admin/profile/', my_profile_redirect, name='my_profile'),
 
     path('privacy/', TemplateView.as_view(template_name='privacy.html'), name='privacy'),

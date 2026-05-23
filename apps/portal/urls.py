@@ -1,6 +1,7 @@
 from django.urls import path
 
 from .views import (
+    AdminDataHelpView,
     ApplicationsView,
     CalendarView,
     ClientsView,
@@ -15,6 +16,8 @@ from .views import (
     LeadsView,
     NotificationsView,
     PortalIndexView,
+    PortalLoginView,
+    PortalLogoutView,
     ProfileView,
     ProgramsView,
     ProjectsView,
@@ -34,10 +37,13 @@ app_name = 'portal'
 
 urlpatterns = [
     path('', PortalIndexView.as_view(), name='index'),
+    path('login/', PortalLoginView.as_view(), name='login'),
+    path('logout/', PortalLogoutView.as_view(), name='logout'),
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('settings/', SettingsView.as_view(), name='settings'),
     path('help/', HelpView.as_view(), name='help'),
+    path('help/admin-data/', AdminDataHelpView.as_view(), name='admin_data_help'),
     path('leads/', LeadsView.as_view(), name='leads'),
     path('clients/', ClientsView.as_view(), name='clients'),
     path('applications/', ApplicationsView.as_view(), name='applications'),

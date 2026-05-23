@@ -8,6 +8,7 @@
                 <th>Programs</th>
                 <th>Contacts</th>
                 <th>Status</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -19,9 +20,15 @@
                     <td>{{ item.programs.count }}</td>
                     <td>{{ item.phone|default:"-" }}</td>
                     <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Active,Inactive" }}</span></td>
+                    <td>
+                        <div class="filters">
+                            <a class="pill" href="{% url 'portal:universities' %}?edit={{ item.id }}">Edit</a>
+                            <a class="pill ok" href="{% url 'portal:programs' %}?university={{ item.id }}">Add program</a>
+                        </div>
+                    </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="6"><div class="empty">No universities found.</div></td></tr>
+                <tr><td colspan="7"><div class="empty">No universities found.</div></td></tr>
             {% endfor %}
         </tbody>
     </table>

@@ -1,0 +1,74 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">{% if edit_object %}Редактировать задачу{% else %}Создать задачу{% endif %}</h2>
+            {% if edit_object %}<a class="pill" href="{% url 'portal:tasks' %}">Новая задача</a>{% endif %}
+        </div>
+        <div class="panel-body">
+            <form method="post" class="grid">
+                {% csrf_token %}
+                {% if edit_object %}<input type="hidden" name="object_id" value="{{ edit_object.id }}">{% endif %}
+                {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="grid cols-2">
+                    <label><span class="muted small">Проект</span>{{ form.project }}{% if form.project.errors %}<span class="form-errors">{{ form.project.errors }}</span>{% endif %}</label>
+                    <label><span class="muted small">Раздел проекта</span>{{ form.section }}{% if form.section.errors %}<span class="form-errors">{{ form.section.errors }}</span>{% endif %}</label>
+                    <label><span class="muted small">Название задачи</span>{{ form.title }}{% if form.title.errors %}<span class="form-errors">{{ form.title.errors }}</span>{% endif %}</label>
+                    <label><span class="muted small">Исполнитель</span>{{ form.assigned_to }}</label>
+                    <label><span class="muted small">Приоритет</span>{{ form.priority }}</label>
+                    <label><span class="muted small">Статус</span>{{ form.status }}</label>
+                    <label><span class="muted small">Дедлайн</span>{{ form.deadline }}{% if form.deadline.errors %}<span class="form-errors">{{ form.deadline.errors }}</span>{% endif %}</label>
+                </div>
+                <label><span class="muted small">Описание</span>{{ form.description }}</label>
+                <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить задачу</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Быстрые правила</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">Исполнитель</div><div class="muted small">Выберите сотрудника, который отвечает за выполнение.</div></div><span class="pill">Важно</span></div>
+                <div class="list-row"><div><div class="strong">Дедлайн</div><div class="muted small">Задачи с дедлайном появятся в календаре.</div></div><a class="pill" href="{% url 'portal:calendar' %}">Календарь</a></div>
+                <div class="list-row"><div><div class="strong">Статус</div><div class="muted small">Используйте To do, In progress, Review, Done или Cancelled.</div></div><span class="pill ok">Asana flow</span></div>
+                <div class="list-row"><div><div class="strong">Проекты</div><div class="muted small">Если проекта ещё нет, администратор может создать его в админке.</div></div><a class="pill" href="/admin/projects_v2/project/add/">Создать</a></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Список задач</h2>
+        <span class="pill">{{ total_count }} всего</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по задаче, проекту, описанию">
+                <select class="select" name="status" style="width:220px;">
+                    <option value="">Все статусы</option>
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <select class="select" name="assignee" style="width:240px;">
+                    <option value="">Все сотрудники</option>
+                    {% for assignee in assignees %}
+                        <option value="{{ assignee.id }}" {% if current_assignee == assignee.id|stringformat:"s" %}selected{% endif %}>{{ assignee.get_full_name|default:assignee.email }}</option>
+                    {% endfor %}
+                </select>
+                <input class="input" type="date" name="deadline_from" value="{{ deadline_from }}" style="width:170px;">
+                <input class="input" type="date" name="deadline_to" value="{{ deadline_to }}" style="width:170px;">
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div id="portal-table">
+            {% include table_template %}
+        </div>
+    </div>
+</section>
+{% endblock %}

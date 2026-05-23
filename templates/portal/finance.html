@@ -22,11 +22,9 @@
 
 <section class="toolbar">
     <div class="filters">
-        <a class="btn primary" href="{% url 'admin:finance_income_add' %}"><i data-lucide="plus"></i>Add income</a>
-        <a class="btn secondary" href="{% url 'admin:finance_expense_add' %}"><i data-lucide="minus"></i>Add expense</a>
-        <a class="btn" href="{% url 'portal:finance_income' %}"><i data-lucide="list-plus"></i>Income list</a>
-        <a class="btn" href="{% url 'portal:finance_expense' %}"><i data-lucide="list-minus"></i>Expense list</a>
-        <a class="btn" href="{% url 'portal:finance_reports' %}"><i data-lucide="bar-chart-3"></i>Reports</a>
+        <a class="btn primary" href="{% url 'portal:finance_income' %}"><i data-lucide="plus"></i>Добавить доход</a>
+        <a class="btn secondary" href="{% url 'portal:finance_expense' %}"><i data-lucide="minus"></i>Добавить расход</a>
+        <a class="btn" href="{% url 'portal:finance_reports' %}"><i data-lucide="bar-chart-3"></i>Отчёты</a>
     </div>
 </section>
 

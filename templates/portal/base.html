@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,7 +11,7 @@
         :root {
             --bg: #f6f7f9;
             --panel: #ffffff;
-            --panel-2: #f1f5f3;
+            --panel-soft: #f1f5f3;
             --text: #17201c;
             --muted: #66746e;
             --line: #dce3df;
@@ -20,6 +20,8 @@
             --danger: #b42318;
             --warn: #a15c07;
             --ok: #137333;
+            --nav: #10231d;
+            --nav-active: #173b31;
             --shadow: 0 1px 2px rgba(16, 24, 40, .06);
         }
         * { box-sizing: border-box; }
@@ -34,21 +36,21 @@
         }
         a { color: inherit; text-decoration: none; }
         button, input, select, textarea { font: inherit; }
-        .shell { min-height: 100vh; display: grid; grid-template-columns: 248px minmax(0, 1fr); }
+        .shell { min-height: 100vh; display: grid; grid-template-columns: 272px minmax(0, 1fr); }
         .sidebar {
             position: sticky;
             top: 0;
             height: 100vh;
-            background: #10231d;
+            background: var(--nav);
             color: #f8faf9;
             border-right: 1px solid #17362d;
             padding: 18px 14px;
             overflow-y: auto;
         }
-        .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 20px; }
+        .brand { display: flex; align-items: center; gap: 10px; padding: 4px 8px 18px; }
         .brand-mark {
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
             border-radius: 8px;
             background: #d7f2e7;
             color: #0f4a39;
@@ -58,37 +60,138 @@
         }
         .brand-title { font-size: 15px; font-weight: 750; }
         .brand-subtitle { font-size: 12px; color: #b9c8c2; margin-top: 1px; }
-        .nav { display: grid; gap: 4px; }
-        .nav a {
+        .nav { display: grid; gap: 8px; }
+        .nav-group {
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, .02);
+            overflow: hidden;
+        }
+        .nav-group summary {
+            min-height: 42px;
+            padding: 10px;
             display: flex;
             align-items: center;
             gap: 10px;
-            min-height: 38px;
+            cursor: pointer;
+            color: #eef6f3;
+            list-style: none;
+            font-weight: 720;
+        }
+        .nav-group summary::-webkit-details-marker { display: none; }
+        .nav-group summary::after {
+            content: "";
+            width: 8px;
+            height: 8px;
+            margin-left: auto;
+            border-right: 2px solid #b9c8c2;
+            border-bottom: 2px solid #b9c8c2;
+            transform: rotate(45deg);
+            transition: transform .16s ease;
+        }
+        .nav-group[open] summary::after { transform: rotate(225deg); }
+        .nav-group.active summary { background: var(--nav-active); }
+        .nav-sub { display: grid; gap: 2px; padding: 4px 6px 8px; }
+        .nav-sub a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-height: 36px;
             padding: 8px 10px;
             border-radius: 8px;
             color: #d9e5e1;
         }
-        .nav a:hover, .nav a.active { background: #173b31; color: #ffffff; }
+        .nav-sub a:hover, .nav-sub a.active { background: #1e493d; color: #ffffff; }
         .nav svg, .icon { width: 18px; height: 18px; flex: 0 0 18px; }
         .content { min-width: 0; }
         .topbar {
-            height: 64px;
+            min-height: 64px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 16px;
             padding: 0 28px;
-            background: rgba(246, 247, 249, .9);
+            background: rgba(246, 247, 249, .94);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--line);
             position: sticky;
             top: 0;
-            z-index: 10;
+            z-index: 20;
         }
-        .topbar h1 { margin: 0; font-size: 22px; font-weight: 760; }
-        .topbar-meta { display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 13px; }
-        .main { padding: 24px 28px 40px; }
+        .topbar h1 { margin: 0; font-size: 22px; font-weight: 760; line-height: 1.2; }
+        .topbar-meta { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: 13px; }
+        .profile-menu { position: relative; }
+        .dropdown {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            width: 260px;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 12px 32px rgba(16, 24, 40, .16);
+            z-index: 40;
+            padding: 8px;
+        }
+        .dropdown a, .dropdown button {
+            width: 100%;
+            min-height: 38px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 0;
+            background: transparent;
+            border-radius: 8px;
+            padding: 8px 10px;
+            text-align: left;
+            color: var(--text);
+            cursor: pointer;
+        }
+        .dropdown a:hover, .dropdown button:hover { background: var(--panel-soft); }
+        .main { padding: 24px 28px 46px; }
         .mobile-menu { display: none; }
+        .mobile-panel {
+            display: none;
+            position: fixed;
+            left: 12px;
+            right: 12px;
+            top: 72px;
+            max-height: calc(100vh - 148px);
+            overflow-y: auto;
+            background: #fff;
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            box-shadow: 0 16px 36px rgba(16, 24, 40, .16);
+            z-index: 35;
+            padding: 12px;
+        }
+        .mobile-panel-grid { display: grid; gap: 12px; }
+        .mobile-panel-title { font-weight: 760; margin-bottom: 8px; }
+        .mobile-links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+        .mobile-links a { border: 1px solid var(--line); border-radius: 8px; padding: 10px; display: flex; gap: 8px; align-items: center; }
+        .bottom-nav {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 34;
+            background: #fff;
+            border-top: 1px solid var(--line);
+            padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+            grid-template-columns: repeat(5, minmax(0, 1fr));
+            box-shadow: 0 -8px 24px rgba(16, 24, 40, .08);
+        }
+        .bottom-nav a {
+            display: grid;
+            place-items: center;
+            gap: 3px;
+            min-height: 48px;
+            color: var(--muted);
+            border-radius: 8px;
+            font-size: 11px;
+        }
+        .bottom-nav a.active { color: var(--accent); background: #ecf4f1; font-weight: 720; }
         .panel {
             background: var(--panel);
             border: 1px solid var(--line);
@@ -109,7 +212,7 @@
         .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-        .metric-grid { display: grid; grid-template-columns: repeat(7, minmax(120px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .metric-grid { display: grid; grid-template-columns: repeat(4, minmax(160px, 1fr)); gap: 12px; margin-bottom: 18px; }
         .metric {
             background: var(--panel);
             border: 1px solid var(--line);
@@ -121,7 +224,7 @@
             align-content: space-between;
         }
         .metric-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 12px; }
-        .metric-value { font-size: 26px; font-weight: 780; margin-top: 12px; }
+        .metric-value { font-size: 26px; font-weight: 780; margin-top: 12px; line-height: 1.1; }
         .toolbar {
             display: flex;
             align-items: center;
@@ -160,7 +263,7 @@
         .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
         .btn.secondary { background: #ecf4f1; border-color: #cfe1da; color: #0f4a39; }
         .btn.danger { background: #fff3f0; border-color: #f3b8ad; color: var(--danger); }
-        .table-wrap { overflow-x: auto; }
+        .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 760px; }
         th, td { padding: 11px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
         th { color: var(--muted); font-size: 12px; font-weight: 720; background: #fbfcfb; }
@@ -194,39 +297,41 @@
             border-bottom: 1px solid var(--line);
         }
         .list-row:last-child { border-bottom: 0; }
+        .form-errors { color: var(--danger); font-size: 12px; display: grid; gap: 4px; margin-top: 6px; }
         .messages { display: grid; gap: 8px; margin-bottom: 14px; }
         .message { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
         .message.success { border-color: #bde6ca; background: #eefaf2; }
         .message.error { border-color: #efb8ad; background: #fff3f0; }
+        .message.warning { border-color: #f3d6a5; background: #fff8ea; }
         [x-cloak] { display: none !important; }
         @media (max-width: 1180px) {
-            .metric-grid { grid-template-columns: repeat(4, minmax(120px, 1fr)); }
+            .metric-grid { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
             .grid.cols-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .grid.cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
         @media (max-width: 860px) {
             .shell { grid-template-columns: 1fr; }
-            .sidebar {
-                position: fixed;
-                inset: 0 auto 0 0;
-                width: 280px;
-                z-index: 30;
-                transform: translateX(-100%);
-                transition: transform .18s ease;
-            }
-            .sidebar.open { transform: translateX(0); }
+            .sidebar { display: none; }
             .mobile-menu { display: inline-flex; }
-            .topbar { padding: 0 16px; }
-            .main { padding: 18px 16px 32px; }
+            .mobile-panel { display: block; }
+            .topbar { padding: 0 14px; }
+            .topbar h1 { font-size: 18px; }
+            .topbar-meta .desktop-only { display: none; }
+            .main { padding: 18px 14px 92px; }
             .metric-grid, .grid.cols-2, .grid.cols-3, .grid.cols-4 { grid-template-columns: 1fr; }
             .toolbar { align-items: stretch; flex-direction: column; }
             .filters { width: 100%; }
+            .filters > * { flex: 1 1 100%; }
             .search-input { width: 100%; }
+            .bottom-nav { display: grid; }
+            .dropdown { right: -4px; width: min(280px, calc(100vw - 28px)); }
+            .mobile-links { grid-template-columns: 1fr; }
         }
     </style>
 </head>
-<body x-data="{ sidebarOpen: false }" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+<body x-data="{ mobilePanelOpen: false, profileOpen: false }" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <div class="shell">
-        <aside class="sidebar" :class="{ 'open': sidebarOpen }" @click.outside="sidebarOpen = false">
+        <aside class="sidebar">
             <div class="brand">
                 <div class="brand-mark">SL</div>
                 <div>
@@ -235,28 +340,77 @@
                 </div>
             </div>
             <nav class="nav">
-                {% for item in nav_items %}
-                    <a href="{{ item.url }}" class="{% if item.name == active_page %}active{% endif %}" @click="sidebarOpen = false">
-                        <i data-lucide="{{ item.icon }}"></i>
-                        <span>{{ item.label }}</span>
-                    </a>
+                {% for group in nav_groups %}
+                    <details class="nav-group {% if group.is_active %}active{% endif %}" {% if group.is_active %}open{% endif %}>
+                        <summary>
+                            <i data-lucide="{{ group.icon }}"></i>
+                            <span>{{ group.label }}</span>
+                        </summary>
+                        <div class="nav-sub">
+                            {% for item in group.items %}
+                                <a href="{{ item.url }}" class="{% if item.is_active %}active{% endif %}">
+                                    <i data-lucide="{{ item.icon }}"></i>
+                                    <span>{{ item.label }}</span>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </details>
                 {% endfor %}
             </nav>
         </aside>
 
         <div class="content">
             <header class="topbar">
-                <div style="display:flex; align-items:center; gap:12px;">
-                    <button type="button" class="btn mobile-menu" @click="sidebarOpen = true" aria-label="Open navigation">
+                <div style="display:flex; align-items:center; gap:12px; min-width:0;">
+                    <button type="button" class="btn mobile-menu" @click="mobilePanelOpen = !mobilePanelOpen" aria-label="Открыть меню">
                         <i data-lucide="menu"></i>
                     </button>
                     <h1>{{ page_title }}</h1>
                 </div>
                 <div class="topbar-meta">
-                    <span class="pill">{{ unread_notifications_count }} unread</span>
-                    <span>{{ display_name }}</span>
+                    <a class="pill" href="{% url 'portal:notifications' %}">{{ unread_notifications_count }} новых</a>
+                    <div class="profile-menu" @click.outside="profileOpen = false">
+                        <button type="button" class="btn" @click="profileOpen = !profileOpen">
+                            <i data-lucide="user-round"></i>
+                            <span class="desktop-only">{{ display_name }}</span>
+                        </button>
+                        <div class="dropdown" x-show="profileOpen" x-cloak>
+                            <a href="{% url 'portal:profile' %}"><i data-lucide="user-round"></i>Профиль</a>
+                            <a href="{% url 'portal:settings' %}"><i data-lucide="settings"></i>Настройки</a>
+                            <a href="{% url 'portal:help' %}"><i data-lucide="circle-help"></i>Помощь</a>
+                            {% if can_access_admin %}
+                                <a href="/admin/"><i data-lucide="shield-check"></i>Админка</a>
+                            {% endif %}
+                            <form method="post" action="{% url 'portal:logout' %}">
+                                {% csrf_token %}
+                                <button type="submit"><i data-lucide="log-out"></i>Выйти</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </header>
+
+            <div class="mobile-panel" x-show="mobilePanelOpen" x-cloak @click.outside="mobilePanelOpen = false">
+                <div class="mobile-panel-grid">
+                    {% for group in nav_groups %}
+                        <div>
+                            <div class="mobile-panel-title">{{ group.label }}</div>
+                            <div class="mobile-links">
+                                {% for item in group.items %}
+                                    <a href="{{ item.url }}" class="{% if item.is_active %}active{% endif %}" @click="mobilePanelOpen = false">
+                                        <i data-lucide="{{ item.icon }}"></i>
+                                        <span>{{ item.label }}</span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                    <form method="post" action="{% url 'portal:logout' %}">
+                        {% csrf_token %}
+                        <button class="btn danger" type="submit" style="width:100%;"><i data-lucide="log-out"></i>Выйти</button>
+                    </form>
+                </div>
+            </div>
 
             <main class="main">
                 {% if messages %}
@@ -270,6 +424,16 @@
             </main>
         </div>
     </div>
+
+    <nav class="bottom-nav" aria-label="Мобильная навигация">
+        {% for item in mobile_nav_items %}
+            <a href="{{ item.url }}" class="{% if item.is_active %}active{% endif %}">
+                <i data-lucide="{{ item.icon }}"></i>
+                <span>{{ item.label }}</span>
+            </a>
+        {% endfor %}
+    </nav>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             if (window.lucide) window.lucide.createIcons();

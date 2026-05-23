@@ -3,26 +3,31 @@
 {% block content %}
 <section class="grid cols-2">
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Access</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Права доступа</h2></div>
         <div class="panel-body">
             {% if employee_profile %}
                 <div class="list">
-                    <div class="list-row"><span class="muted">Company scope</span><span class="pill">{{ access.can_see_all_company|yesno:"All company,Limited" }}</span></div>
-                    <div class="list-row"><span class="muted">Office scope</span><span class="pill">{{ access.can_see_all_office|yesno:"All office,Limited" }}</span></div>
-                    <div class="list-row"><span class="muted">Finance</span><span class="pill">{{ access.can_manage_finance|yesno:"Manage,View" }}</span></div>
-                    <div class="list-row"><span class="muted">Documents</span><span class="pill">{{ access.can_manage_documents|yesno:"Manage,View" }}</span></div>
-                    <div class="list-row"><span class="muted">Catalog</span><span class="pill">{{ access.can_manage_catalog|yesno:"Manage,View" }}</span></div>
+                    <div class="list-row"><span class="muted">Компания</span><span class="pill">{{ access.can_see_all_company|yesno:"Вся компания,Ограничено" }}</span></div>
+                    <div class="list-row"><span class="muted">Офис</span><span class="pill">{{ access.can_see_all_office|yesno:"Весь офис,Ограничено" }}</span></div>
+                    <div class="list-row"><span class="muted">Финансы</span><span class="pill">{{ access.can_manage_finance|yesno:"Управление,Просмотр" }}</span></div>
+                    <div class="list-row"><span class="muted">Документы</span><span class="pill">{{ access.can_manage_documents|yesno:"Управление,Просмотр" }}</span></div>
+                    <div class="list-row"><span class="muted">Каталог ВУЗов</span><span class="pill">{{ access.can_manage_catalog|yesno:"Управление,Просмотр" }}</span></div>
                 </div>
             {% else %}
-                <div class="empty">Settings are limited until EmployeeProfile is connected.</div>
+                <div class="empty">Настройки ограничены, пока администратор не создаст EmployeeProfile.</div>
             {% endif %}
         </div>
     </div>
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">System links</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Системные ссылки</h2></div>
         <div class="panel-body">
             <div class="list">
-                <a class="list-row" href="/admin/"><span class="strong">Django Unfold admin</span><span class="pill">Open</span></a>
+                <a class="list-row" href="{% url 'portal:profile' %}"><span class="strong">Редактировать профиль</span><span class="pill">Профиль</span></a>
+                <a class="list-row" href="{% url 'portal:help' %}"><span class="strong">Инструкция по порталу</span><span class="pill">Помощь</span></a>
+                <a class="list-row" href="{% url 'portal:admin_data_help' %}"><span class="strong">Как заполнить базу данных</span><span class="pill">Админка</span></a>
+                {% if can_access_admin %}
+                    <a class="list-row" href="/admin/"><span class="strong">Django Unfold админка</span><span class="pill">Открыть</span></a>
+                {% endif %}
                 {% for item in api_links %}
                     <a class="list-row" href="{{ item.url }}"><span class="strong">{{ item.label }}</span><span class="pill">API</span></a>
                 {% endfor %}
