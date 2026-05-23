@@ -1,0 +1,95 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Profile</h2>
+            <span class="pill">{{ user.get_role_display }}</span>
+        </div>
+        <div class="panel-body">
+            <form method="post" enctype="multipart/form-data" class="grid">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="profile">
+                <div class="grid cols-2">
+                    <label>
+                        <span class="muted small">First name</span>
+                        <input class="input" name="first_name" value="{{ user.first_name }}">
+                    </label>
+                    <label>
+                        <span class="muted small">Last name</span>
+                        <input class="input" name="last_name" value="{{ user.last_name }}">
+                    </label>
+                    <label>
+                        <span class="muted small">Middle name</span>
+                        <input class="input" name="middle_name" value="{{ user.middle_name }}">
+                    </label>
+                    <label>
+                        <span class="muted small">Email</span>
+                        <input class="input" value="{{ user.email }}" disabled>
+                    </label>
+                    <label>
+                        <span class="muted small">Birthday</span>
+                        <input class="input" type="date" name="dob" value="{{ user.dob|date:'Y-m-d' }}">
+                    </label>
+                    <label>
+                        <span class="muted small">Work status</span>
+                        <select class="select" name="work_status">
+                            {% for value,label in work_status_choices %}
+                                <option value="{{ value }}" {% if user.work_status == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                </div>
+                <label>
+                    <span class="muted small">Social contacts</span>
+                    <input class="input" name="social_contacts" value="{{ user.social_contacts }}" placeholder="Telegram, WhatsApp, Instagram">
+                </label>
+                <label>
+                    <span class="muted small">Job description</span>
+                    <textarea class="textarea" name="job_description" rows="4">{{ user.job_description }}</textarea>
+                </label>
+                <label>
+                    <span class="muted small">Avatar</span>
+                    <input class="input" type="file" name="avatar" accept="image/*">
+                </label>
+                <button class="btn primary" type="submit"><i data-lucide="save"></i>Save profile</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid">
+        <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Employee card</h2></div>
+            <div class="panel-body">
+                {% if employee_profile %}
+                    <div class="list">
+                        <div class="list-row"><span class="muted">Company</span><span class="strong">{{ employee_profile.company.name }}</span></div>
+                        <div class="list-row"><span class="muted">Office</span><span class="strong">{{ employee_profile.office.name|default:"-" }}</span></div>
+                        <div class="list-row"><span class="muted">Department</span><span class="strong">{{ employee_profile.department.name|default:"-" }}</span></div>
+                        <div class="list-row"><span class="muted">Position</span><span class="strong">{{ employee_profile.position.name|default:"-" }}</span></div>
+                        <div class="list-row"><span class="muted">ERP role</span><span class="strong">{{ employee_profile.role.name }}</span></div>
+                        <div class="list-row"><span class="muted">Rating</span><span class="pill ok">{{ employee_profile.rating }}</span></div>
+                    </div>
+                {% else %}
+                    <div class="empty">Employee profile is not connected yet.</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Password</h2></div>
+            <div class="panel-body">
+                <form method="post" class="grid">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="password">
+                    <input class="input" type="password" name="old_password" placeholder="Current password">
+                    <input class="input" type="password" name="new_password1" placeholder="New password">
+                    <input class="input" type="password" name="new_password2" placeholder="Repeat new password">
+                    <button class="btn secondary" type="submit"><i data-lucide="key-round"></i>Change password</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

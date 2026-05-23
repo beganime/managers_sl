@@ -1,0 +1,26 @@
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Service</th>
+                <th>Category</th>
+                <th>Price</th>
+                <th>Public</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.code }}</div></td>
+                    <td>{{ item.category.name }}</td>
+                    <td>{{ item.price_client|floatformat:2 }} {{ item.currency.code|default:"" }}</td>
+                    <td><span class="pill">{{ item.is_public|yesno:"Public,Internal" }}</span></td>
+                    <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Active,Inactive" }}</span></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5"><div class="empty">No services found.</div></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

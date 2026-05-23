@@ -13,6 +13,20 @@
     {% endfor %}
 </section>
 
+{% if admin_metrics %}
+<section class="metric-grid" style="grid-template-columns: repeat(6, minmax(140px, 1fr));">
+    {% for metric in admin_metrics %}
+        <div class="metric">
+            <div class="metric-top">
+                <span>{{ metric.label }}</span>
+                <i data-lucide="{{ metric.icon }}"></i>
+            </div>
+            <div class="metric-value">{% if metric.money %}${{ metric.value|floatformat:2 }}{% else %}{{ metric.value }}{% endif %}</div>
+        </div>
+    {% endfor %}
+</section>
+{% endif %}
+
 <section class="grid cols-2">
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">My Leads</h2><a class="pill" href="{% url 'portal:leads' %}">Open</a></div>
@@ -29,6 +43,26 @@
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Tasks</h2><a class="pill" href="{% url 'portal:tasks' %}">Open</a></div>
         <div class="panel-body">{% include "portal/partials/dashboard_tasks.html" with items=my_tasks %}</div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Projects</h2><a class="pill" href="{% url 'portal:projects' %}">Open</a></div>
+        <div class="panel-body">
+            {% if my_projects %}
+                <div class="list">
+                {% for item in my_projects %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.title }}</div>
+                            <div class="muted small">{{ item.progress_percent }}% done</div>
+                        </div>
+                        <span class="pill">{{ item.get_status_display }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No active projects.</div>
+            {% endif %}
+        </div>
     </div>
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Workday</h2><a class="pill" href="{% url 'portal:workday' %}">Open</a></div>
@@ -57,6 +91,66 @@
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Notifications</h2><span class="pill">{{ unread_notifications_count }} unread</span></div>
         <div class="panel-body">{% include "portal/partials/dashboard_notifications.html" with items=notifications %}</div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Calendar</h2><a class="pill" href="{% url 'portal:calendar' %}">Open</a></div>
+        <div class="panel-body">
+            {% if calendar_events %}
+                <div class="list">
+                {% for event in calendar_events %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ event.title }}</div>
+                            <div class="muted small">{{ event.type }}{% if event.details %} В· {{ event.details }}{% endif %}</div>
+                        </div>
+                        <span class="pill">{{ event.date|date:"d M" }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No upcoming events.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Birthdays</h2><a class="pill" href="{% url 'portal:calendar' %}">Calendar</a></div>
+        <div class="panel-body">
+            {% if birthday_people %}
+                <div class="list">
+                {% for item in birthday_people %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.user.get_full_name|default:item.user.email }}</div>
+                            <div class="muted small">{{ item.office.name|default:item.company.name }}</div>
+                        </div>
+                        <span class="pill">{{ item.user.dob|date:"d M" }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No birthdays this month.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Knowledge</h2><a class="pill" href="{% url 'portal:knowledge' %}">Open</a></div>
+        <div class="panel-body">
+            {% if knowledge_items %}
+                <div class="list">
+                {% for item in knowledge_items %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.title }}</div>
+                            <div class="muted small">{{ item.summary|default:item.category.name|truncatechars:96 }}</div>
+                        </div>
+                        <span class="pill">{{ item.get_status_display }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No knowledge articles yet.</div>
+            {% endif %}
+        </div>
     </div>
 </section>
 {% endblock %}

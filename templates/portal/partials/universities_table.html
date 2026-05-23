@@ -1,0 +1,28 @@
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>University</th>
+                <th>Country</th>
+                <th>City</th>
+                <th>Programs</th>
+                <th>Contacts</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td><div class="strong">{{ item.name }}</div><div class="muted small">{{ item.website|default:item.email }}</div></td>
+                    <td>{{ item.country.name }}</td>
+                    <td>{{ item.city.name|default:"-" }}</td>
+                    <td>{{ item.programs.count }}</td>
+                    <td>{{ item.phone|default:"-" }}</td>
+                    <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Active,Inactive" }}</span></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6"><div class="empty">No universities found.</div></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

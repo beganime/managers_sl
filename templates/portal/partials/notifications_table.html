@@ -1,0 +1,26 @@
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Notification</th>
+                <th>Type</th>
+                <th>Priority</th>
+                <th>Status</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.body|truncatechars:120 }}</div></td>
+                    <td><span class="pill">{{ item.get_notification_type_display }}</span></td>
+                    <td>{{ item.get_priority_display }}</td>
+                    <td><span class="pill {% if item.is_read %}ok{% else %}warn{% endif %}">{{ item.get_status_display }}</span></td>
+                    <td>{{ item.created_at|date:"d M Y H:i" }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5"><div class="empty">No notifications found.</div></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

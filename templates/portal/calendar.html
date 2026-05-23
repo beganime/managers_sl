@@ -1,0 +1,62 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Upcoming events</h2><span class="pill">{{ events|length }} events</span></div>
+        <div class="panel-body">
+            {% if events %}
+                <div class="list">
+                {% for event in events %}
+                    <a class="list-row" href="{{ event.url }}">
+                        <div>
+                            <div class="strong">{{ event.title }}</div>
+                            <div class="muted small">{{ event.type }}{% if event.details %} В· {{ event.details }}{% endif %}</div>
+                        </div>
+                        <span class="pill">{{ event.date|date:"d M Y" }}</span>
+                    </a>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No calendar events.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="grid">
+        <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Task deadlines</h2></div>
+            <div class="panel-body">
+                {% if upcoming_tasks %}
+                    <div class="list">
+                    {% for item in upcoming_tasks %}
+                        <div class="list-row">
+                            <div><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.project.title }}</div></div>
+                            <span class="pill warn">{{ item.deadline|date:"d M H:i" }}</span>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty">No task deadlines.</div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">Birthdays</h2></div>
+            <div class="panel-body">
+                {% if birthdays %}
+                    <div class="list">
+                    {% for item in birthdays %}
+                        <div class="list-row">
+                            <div><div class="strong">{{ item.user.get_full_name|default:item.user.email }}</div><div class="muted small">{{ item.office.name|default:item.company.name }}</div></div>
+                            <span class="pill ok">{{ item.user.dob|date:"d M" }}</span>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="empty">No birthdays configured.</div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

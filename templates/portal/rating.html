@@ -1,0 +1,48 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Employee rating</h2>
+        <span class="pill">{{ rating_rows|length }} employees</span>
+    </div>
+    <div class="panel-body table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Employee</th>
+                    <th>Office</th>
+                    <th>Score</th>
+                    <th>Leads</th>
+                    <th>Clients</th>
+                    <th>Applications</th>
+                    <th>Revenue</th>
+                    <th>Tasks</th>
+                    <th>Workdays</th>
+                    <th>Missed</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rating_rows %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td><div class="strong">{{ row.profile.user.get_full_name|default:row.profile.user.email }}</div><div class="muted small">{{ row.profile.position.name|default:row.profile.role.name }}</div></td>
+                        <td>{{ row.profile.office.name|default:"-" }}</td>
+                        <td><span class="pill ok">{{ row.score }}</span></td>
+                        <td>{{ row.leads_count }}</td>
+                        <td>{{ row.clients_count }}</td>
+                        <td>{{ row.applications_count }}</td>
+                        <td>${{ row.payments_usd|floatformat:2 }}</td>
+                        <td>{{ row.tasks_done }}</td>
+                        <td>{{ row.started_days }}/{{ row.closed_days }}</td>
+                        <td>{{ row.missed_days }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="11"><div class="empty">No employees in rating scope.</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

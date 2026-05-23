@@ -1,0 +1,28 @@
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Program</th>
+                <th>University</th>
+                <th>Degree</th>
+                <th>Language</th>
+                <th>Duration</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td><div class="strong">{{ item.name }}</div><div class="muted small">{{ item.faculty|default:"-" }}</div></td>
+                    <td><div>{{ item.university.name }}</div><div class="muted small">{{ item.university.country.name }}</div></td>
+                    <td><span class="pill">{{ item.get_degree_display }}</span></td>
+                    <td>{{ item.language|default:"-" }}</td>
+                    <td>{{ item.duration|default:"-" }}</td>
+                    <td><span class="pill {% if item.is_active and not item.is_archived %}ok{% else %}warn{% endif %}">{% if item.is_archived %}Archived{% else %}{{ item.is_active|yesno:"Active,Inactive" }}{% endif %}</span></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6"><div class="empty">No programs found.</div></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

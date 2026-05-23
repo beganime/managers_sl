@@ -1,10 +1,13 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model, update_session_auth_hash
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Count, Q, Sum
 from django.shortcuts import redirect
 from django.urls import reverse
+from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.views import View
 from django.views.generic import TemplateView
@@ -12,28 +15,41 @@ from django.views.generic import TemplateView
 from apps.attendance.models import DailyReport, WorkDay
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, Lead
+from apps.education.models import Program, University
 from apps.erp_documents.models import GeneratedDocument
 from apps.erp_notifications.models import Notification
-from apps.finance.models import Deal, Expense, FinancialPeriod, Payment
+from apps.employees.models import EmployeeProfile
+from apps.erp_services.models import Service
+from apps.finance.models import Cashbox, Deal, Expense, FinancialPeriod, Income, Payment
 from apps.knowledge.models import KnowledgeArticle, KnowledgeTestAttempt
 from apps.projects_v2.models import Project, ProjectTask
 
 
 PAGE_SIZE = 25
+User = get_user_model()
 
 
 NAV_ITEMS = (
     {'name': 'dashboard', 'label': 'Dashboard', 'icon': 'layout-dashboard'},
+    {'name': 'profile', 'label': 'Profile', 'icon': 'user-round'},
     {'name': 'leads', 'label': 'Leads', 'icon': 'radar'},
     {'name': 'clients', 'label': 'Clients', 'icon': 'users'},
     {'name': 'applications', 'label': 'Applications', 'icon': 'file-check-2'},
+    {'name': 'universities', 'label': 'Universities', 'icon': 'graduation-cap'},
+    {'name': 'programs', 'label': 'Programs', 'icon': 'library-big'},
+    {'name': 'services', 'label': 'Services', 'icon': 'briefcase-business'},
     {'name': 'tasks', 'label': 'Tasks', 'icon': 'check-square'},
     {'name': 'projects', 'label': 'Projects', 'icon': 'folder-kanban'},
+    {'name': 'calendar', 'label': 'Calendar', 'icon': 'calendar-days'},
     {'name': 'finance', 'label': 'Finance', 'icon': 'wallet-cards'},
     {'name': 'documents', 'label': 'Documents', 'icon': 'file-text'},
     {'name': 'knowledge', 'label': 'Knowledge', 'icon': 'book-open-check'},
     {'name': 'workday', 'label': 'Workday', 'icon': 'timer'},
+    {'name': 'rating', 'label': 'Rating', 'icon': 'trophy'},
+    {'name': 'notifications', 'label': 'Notifications', 'icon': 'bell'},
     {'name': 'reports', 'label': 'Reports', 'icon': 'bar-chart-3'},
+    {'name': 'settings', 'label': 'Settings', 'icon': 'settings'},
+    {'name': 'help', 'label': 'Help', 'icon': 'circle-help'},
 )
 
 
@@ -181,6 +197,100 @@ def workday_queryset(user):
     return qs.filter(employee_scope_q(user, manager_field='employee'))
 
 
+def employee_queryset(user):
+    qs = EmployeeProfile.objects.select_related('user', 'company', 'office', 'department', 'position', 'role')
+    if is_erp_admin(user):
+        return qs
+
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.filter(user=user)
+
+    access = getattr(employee, 'access', None)
+    role_type = employee.role.role_type if employee.role_id else None
+    if role_type == 'company_owner' or (access and access.can_see_all_company):
+        return qs.filter(company=employee.company)
+    if role_type == 'office_director' or (access and access.can_see_all_office):
+        if employee.office_id:
+            return qs.filter(company=employee.company, office=employee.office)
+        return qs.filter(company=employee.company)
+    if employee.office_id:
+        return qs.filter(company=employee.company, office=employee.office)
+    return qs.filter(company=employee.company)
+
+
+def university_queryset(user):
+    qs = University.objects.select_related('company', 'country', 'city', 'local_currency')
+    if is_erp_admin(user):
+        return qs
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.filter(company__isnull=True)
+    return qs.filter(Q(company=employee.company) | Q(company__isnull=True))
+
+
+def program_queryset(user):
+    universities = university_queryset(user).values('id')
+    return Program.objects.select_related('university', 'university__country').prefetch_related('fees', 'intakes').filter(university_id__in=universities)
+
+
+def service_queryset(user):
+    qs = Service.objects.select_related('company', 'category', 'currency').prefetch_related('prices')
+    if is_erp_admin(user):
+        return qs
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.filter(company__isnull=True, is_public=True)
+    return qs.filter(Q(company=employee.company) | Q(company__isnull=True), is_public=True)
+
+
+def next_annual_date(source_date, today):
+    try:
+        event_date = date(today.year, source_date.month, source_date.day)
+    except ValueError:
+        event_date = date(today.year, 2, 28)
+    if event_date < today:
+        try:
+            event_date = date(today.year + 1, source_date.month, source_date.day)
+        except ValueError:
+            event_date = date(today.year + 1, 2, 28)
+    return event_date
+
+
+def build_calendar_events(user, limit_count=30):
+    today = timezone.localdate()
+    events = []
+
+    for task in task_queryset(user).filter(deadline__isnull=False, deadline__date__gte=today).order_by('deadline')[:20]:
+        events.append({
+            'date': task.deadline.date(),
+            'type': 'Task',
+            'title': task.title,
+            'details': task.project.title if task.project_id else '',
+            'url': reverse('portal:tasks'),
+        })
+
+    for application in application_queryset(user).filter(submitted_at__isnull=False, submitted_at__gte=today).order_by('submitted_at')[:15]:
+        events.append({
+            'date': application.submitted_at,
+            'type': 'Application',
+            'title': application.client.full_name,
+            'details': application.university_name or application.program_name,
+            'url': reverse('portal:applications'),
+        })
+
+    for profile in employee_queryset(user).filter(user__dob__isnull=False)[:50]:
+        events.append({
+            'date': next_annual_date(profile.user.dob, today),
+            'type': 'Birthday',
+            'title': full_name(profile.user),
+            'details': profile.office.name if profile.office_id else profile.company.name,
+            'url': reverse('portal:calendar'),
+        })
+
+    return sorted(events, key=lambda item: item['date'])[:limit_count]
+
+
 def apply_search(qs, query, fields):
     if not query:
         return qs
@@ -269,8 +379,16 @@ class DashboardView(PortalContextMixin, TemplateView):
         applications = application_queryset(user)
         tasks = task_queryset(user)
         payments = payment_queryset(user)
+        expenses = expense_queryset(user)
+        projects = project_queryset(user)
         documents = document_queryset(user)
         notifications = notification_queryset(user)
+        workdays = workday_queryset(user)
+        employee_profiles = employee_queryset(user)
+        confirmed_payments = payments.filter(is_confirmed=True)
+        confirmed_expenses = expenses.filter(is_confirmed=True)
+        revenue_month = confirmed_payments.filter(payment_date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
+        expense_month = confirmed_expenses.filter(date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
 
         context.update({
             'metrics': [
@@ -282,17 +400,109 @@ class DashboardView(PortalContextMixin, TemplateView):
                 {'label': 'Documents', 'value': documents.filter(status__in=[GeneratedDocument.STATUS_PENDING, GeneratedDocument.STATUS_GENERATED]).count(), 'icon': 'file-text', 'url': reverse('portal:documents')},
                 {'label': 'Notifications', 'value': notifications.filter(read_at__isnull=True).exclude(status=Notification.STATUS_READ).count(), 'icon': 'bell', 'url': reverse('portal:dashboard')},
             ],
+            'admin_metrics': [
+                {'label': 'Revenue this month', 'value': revenue_month, 'icon': 'trending-up', 'money': True},
+                {'label': 'Expenses this month', 'value': expense_month, 'icon': 'trending-down', 'money': True},
+                {'label': 'Net profit', 'value': revenue_month - expense_month, 'icon': 'chart-no-axes-combined', 'money': True},
+                {'label': 'Employees', 'value': employee_profiles.filter(is_active=True).count(), 'icon': 'id-card'},
+                {'label': 'Started today', 'value': workdays.filter(date=today).exclude(status=WorkDay.STATUS_NOT_STARTED).count(), 'icon': 'timer'},
+                {'label': 'Open projects', 'value': projects.exclude(status__in=[Project.STATUS_DONE, Project.STATUS_ARCHIVED]).count(), 'icon': 'folder-kanban'},
+            ] if is_erp_admin(user) or user.is_staff else [],
             'my_leads': limit(leads.exclude(status__in=['converted', 'lost', 'spam']).order_by('-created_at'), 6),
             'my_clients': limit(clients.order_by('-updated_at'), 6),
             'my_applications': limit(applications.order_by('-updated_at'), 6),
             'my_tasks': limit(tasks.filter(Q(assigned_to=user) | Q(watchers__user=user)).exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).distinct().order_by('deadline', '-updated_at'), 6),
+            'my_projects': limit(projects.order_by('-updated_at'), 6),
             'workday': get_today_workday(user),
             'recent_payments': limit(payments.order_by('-payment_date', '-created_at'), 6),
             'recent_documents': limit(documents.order_by('-created_at'), 6),
             'notifications': limit(notifications.order_by('-created_at'), 8),
+            'birthday_people': employee_profiles.filter(user__dob__month=today.month).order_by('user__dob__day')[:8],
+            'calendar_events': build_calendar_events(user, limit_count=8),
+            'knowledge_items': limit(knowledge_queryset(user).order_by('-is_featured', '-published_at', '-updated_at'), 5),
             'today': today,
         })
         return context
+
+
+class ProfileView(PortalContextMixin, TemplateView):
+    template_name = 'portal/profile.html'
+    active_page = 'profile'
+    page_title = 'Profile'
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        action = request.POST.get('action', 'profile')
+
+        if action == 'password':
+            form = PasswordChangeForm(user, request.POST)
+            if form.is_valid():
+                updated_user = form.save()
+                update_session_auth_hash(request, updated_user)
+                messages.success(request, 'Password updated.')
+            else:
+                messages.error(request, 'Password was not updated. Check the fields and try again.')
+            return redirect('portal:profile')
+
+        user.first_name = request.POST.get('first_name', '').strip()
+        user.last_name = request.POST.get('last_name', '').strip()
+        user.middle_name = request.POST.get('middle_name', '').strip()
+        user.social_contacts = request.POST.get('social_contacts', '').strip()
+        user.job_description = request.POST.get('job_description', '').strip()
+        user.work_status = request.POST.get('work_status') or user.work_status
+        dob = parse_date(request.POST.get('dob') or '')
+        user.dob = dob
+        if 'avatar' in request.FILES:
+            user.avatar = request.FILES['avatar']
+        user.save(update_fields=[
+            'first_name',
+            'last_name',
+            'middle_name',
+            'social_contacts',
+            'job_description',
+            'work_status',
+            'dob',
+            'avatar',
+            'updated_at',
+        ])
+        messages.success(request, 'Profile updated.')
+        return redirect('portal:profile')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'work_status_choices': User.STATUS_CHOICES,
+            'password_form': PasswordChangeForm(self.request.user),
+        })
+        return context
+
+
+class SettingsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/settings.html'
+    active_page = 'settings'
+    page_title = 'Settings'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        employee = context.get('employee_profile')
+        context.update({
+            'access': getattr(employee, 'access', None) if employee else None,
+            'api_links': [
+                {'label': 'CRM API', 'url': '/api/v1/crm/'},
+                {'label': 'Education API', 'url': '/api/v1/education/'},
+                {'label': 'Services API', 'url': '/api/v1/services/'},
+                {'label': 'Finance API', 'url': '/api/v1/finance/'},
+                {'label': 'Documents API', 'url': '/api/v1/documents/'},
+                {'label': 'Attendance API', 'url': '/api/v1/attendance/'},
+            ],
+        })
+        return context
+
+
+class HelpView(PortalContextMixin, TemplateView):
+    template_name = 'portal/help.html'
+    active_page = 'help'
+    page_title = 'Help'
 
 
 class ListPageMixin(PortalContextMixin, TemplateView):
@@ -334,6 +544,55 @@ class ListPageMixin(PortalContextMixin, TemplateView):
         if context['is_htmx']:
             self.template_name = self.table_template
         return context
+
+
+class UniversitiesView(ListPageMixin):
+    active_page = 'universities'
+    page_title = 'Universities'
+    table_template = 'portal/partials/universities_table.html'
+    search_fields = ('name', 'legal_name', 'country__name', 'city__name', 'description')
+    status_field = ''
+    default_ordering = 'country__name'
+
+    def get_queryset(self):
+        qs = university_queryset(self.request.user)
+        is_active = bool_param(self.request.GET.get('is_active'))
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active)
+        return qs
+
+
+class ProgramsView(ListPageMixin):
+    active_page = 'programs'
+    page_title = 'Programs'
+    table_template = 'portal/partials/programs_table.html'
+    search_fields = ('name', 'faculty', 'language', 'university__name', 'university__country__name')
+    status_choices = Program.DEGREE_CHOICES
+    status_field = 'degree'
+    default_ordering = 'university__name'
+
+    def get_queryset(self):
+        qs = program_queryset(self.request.user)
+        university = self.request.GET.get('university')
+        if university:
+            qs = qs.filter(university_id=university)
+        return qs
+
+
+class ServicesView(ListPageMixin):
+    active_page = 'services'
+    page_title = 'Services'
+    table_template = 'portal/partials/services_table.html'
+    search_fields = ('title', 'code', 'description', 'category__name')
+    status_field = ''
+    default_ordering = 'sort_order'
+
+    def get_queryset(self):
+        qs = service_queryset(self.request.user)
+        is_active = bool_param(self.request.GET.get('is_active'))
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active)
+        return qs
 
 
 class LeadsView(ListPageMixin):
@@ -404,14 +663,77 @@ class FinanceView(PortalContextMixin, TemplateView):
         payments = payment_queryset(user)
         deals = deal_queryset(user)
         expenses = expense_queryset(user)
+        incomes = Income.objects.select_related('company', 'office', 'cashbox', 'currency').filter(employee_scope_q(user))
         current_month = timezone.localdate().replace(day=1)
+        cashboxes = Cashbox.objects.select_related('company', 'office', 'currency').filter(employee_scope_q(user))
         context.update({
             'payment_total_usd': payments.filter(is_confirmed=True, payment_date__gte=current_month).aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'income_total_usd': incomes.filter(date__gte=current_month).aggregate(total=Sum('amount_usd'))['total'] or 0,
             'expense_total_usd': expenses.filter(is_confirmed=True, date__gte=current_month).aggregate(total=Sum('amount_usd'))['total'] or 0,
             'open_deals_count': deals.exclude(payment_status__in=[Deal.PAYMENT_STATUS_FULL, Deal.PAYMENT_STATUS_CANCELLED, Deal.PAYMENT_STATUS_REFUNDED]).count(),
+            'cashboxes': limit(cashboxes.order_by('office__name', 'name'), 8),
             'recent_payments': limit(payments.order_by('-payment_date', '-created_at')),
+            'recent_incomes': limit(incomes.order_by('-date', '-created_at')),
             'recent_deals': limit(deals.order_by('-created_at')),
             'recent_expenses': limit(expenses.order_by('-date', '-created_at')),
+        })
+        return context
+
+
+class FinanceIncomeView(PortalContextMixin, TemplateView):
+    template_name = 'portal/finance_records.html'
+    active_page = 'finance'
+    page_title = 'Income'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        qs = Income.objects.select_related('company', 'office', 'cashbox', 'currency').filter(employee_scope_q(self.request.user))
+        qs = apply_search(qs, self.request.GET.get('q'), ('title', 'source', 'comment', 'cashbox__name'))
+        context.update({
+            'record_type': 'income',
+            'records': limit(qs.order_by('-date', '-created_at'), 50),
+            'total_usd': qs.aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'query': self.request.GET.get('q', ''),
+        })
+        return context
+
+
+class FinanceExpenseView(PortalContextMixin, TemplateView):
+    template_name = 'portal/finance_records.html'
+    active_page = 'finance'
+    page_title = 'Expenses'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        qs = expense_queryset(self.request.user)
+        qs = apply_search(qs, self.request.GET.get('q'), ('title', 'comment', 'category__name', 'employee__email'))
+        context.update({
+            'record_type': 'expense',
+            'records': limit(qs.order_by('-date', '-created_at'), 50),
+            'total_usd': qs.aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'query': self.request.GET.get('q', ''),
+        })
+        return context
+
+
+class FinanceReportsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/finance_reports.html'
+    active_page = 'finance'
+    page_title = 'Finance Reports'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        month_start = timezone.localdate().replace(day=1)
+        payments = payment_queryset(self.request.user).filter(is_confirmed=True)
+        expenses = expense_queryset(self.request.user).filter(is_confirmed=True)
+        incomes = Income.objects.select_related('company', 'office', 'cashbox', 'currency').filter(employee_scope_q(self.request.user))
+        office_rows = payments.values('office__name').annotate(total=Sum('amount_usd'), count=Count('id')).order_by('-total')[:12]
+        context.update({
+            'month_revenue_usd': payments.filter(payment_date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'month_income_usd': incomes.filter(date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'month_expense_usd': expenses.filter(date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'office_rows': office_rows,
+            'periods': FinancialPeriod.objects.select_related('company', 'office').filter(employee_scope_q(self.request.user)).order_by('-start_date')[:12],
         })
         return context
 
@@ -512,6 +834,87 @@ class WorkdayCloseView(WorkdayActionMixin):
         except ValueError as exc:
             messages.error(request, str(exc))
         return self.redirect_back()
+
+
+class CalendarView(PortalContextMixin, TemplateView):
+    template_name = 'portal/calendar.html'
+    active_page = 'calendar'
+    page_title = 'Calendar'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        context.update({
+            'events': build_calendar_events(self.request.user, limit_count=80),
+            'upcoming_tasks': task_queryset(self.request.user).filter(deadline__isnull=False, deadline__date__gte=today).order_by('deadline')[:12],
+            'birthdays': employee_queryset(self.request.user).filter(user__dob__isnull=False).order_by('user__dob__month', 'user__dob__day')[:50],
+        })
+        return context
+
+
+class RatingView(PortalContextMixin, TemplateView):
+    template_name = 'portal/rating.html'
+    active_page = 'rating'
+    page_title = 'Rating'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        today = timezone.localdate()
+        month_start = today.replace(day=1)
+        rows = []
+        for profile in employee_queryset(self.request.user).filter(is_active=True):
+            user = profile.user
+            leads_count = Lead.objects.filter(manager=user, created_at__date__gte=month_start).count()
+            clients_count = Client.objects.filter(manager=user).exclude(status__in=['archive', 'rejected']).count()
+            applications_count = Application.objects.filter(manager=user, created_at__date__gte=month_start).count()
+            payments_usd = Payment.objects.filter(manager=user, is_confirmed=True, payment_date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0
+            tasks_done = ProjectTask.objects.filter(assigned_to=user, status=ProjectTask.STATUS_DONE, completed_at__date__gte=month_start).count()
+            workdays = WorkDay.objects.filter(employee=user, date__gte=month_start)
+            started_days = workdays.exclude(status=WorkDay.STATUS_NOT_STARTED).count()
+            closed_days = workdays.filter(status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()
+            missed_days = workdays.filter(status=WorkDay.STATUS_MISSED).count()
+            score = (
+                leads_count * 2
+                + clients_count * 3
+                + applications_count * 4
+                + int(payments_usd or 0) // 100
+                + tasks_done * 3
+                + started_days
+                + closed_days * 2
+                - missed_days * 5
+            )
+            rows.append({
+                'profile': profile,
+                'score': score,
+                'leads_count': leads_count,
+                'clients_count': clients_count,
+                'applications_count': applications_count,
+                'payments_usd': payments_usd,
+                'tasks_done': tasks_done,
+                'started_days': started_days,
+                'closed_days': closed_days,
+                'missed_days': missed_days,
+            })
+        context['rating_rows'] = sorted(rows, key=lambda item: item['score'], reverse=True)
+        return context
+
+
+class NotificationsView(ListPageMixin):
+    active_page = 'notifications'
+    page_title = 'Notifications'
+    table_template = 'portal/partials/notifications_table.html'
+    search_fields = ('title', 'body', 'recipient__email', 'sender__email')
+    status_choices = Notification.STATUS_CHOICES
+    default_ordering = '-created_at'
+
+    def get_queryset(self):
+        qs = notification_queryset(self.request.user)
+        unread = bool_param(self.request.GET.get('unread'))
+        if unread is True:
+            qs = qs.filter(read_at__isnull=True).exclude(status=Notification.STATUS_READ)
+        elif unread is False:
+            qs = qs.filter(Q(read_at__isnull=False) | Q(status=Notification.STATUS_READ))
+        return qs
 
 
 class ReportsView(PortalContextMixin, TemplateView):

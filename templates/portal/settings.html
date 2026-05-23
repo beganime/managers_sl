@@ -1,0 +1,33 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Access</h2></div>
+        <div class="panel-body">
+            {% if employee_profile %}
+                <div class="list">
+                    <div class="list-row"><span class="muted">Company scope</span><span class="pill">{{ access.can_see_all_company|yesno:"All company,Limited" }}</span></div>
+                    <div class="list-row"><span class="muted">Office scope</span><span class="pill">{{ access.can_see_all_office|yesno:"All office,Limited" }}</span></div>
+                    <div class="list-row"><span class="muted">Finance</span><span class="pill">{{ access.can_manage_finance|yesno:"Manage,View" }}</span></div>
+                    <div class="list-row"><span class="muted">Documents</span><span class="pill">{{ access.can_manage_documents|yesno:"Manage,View" }}</span></div>
+                    <div class="list-row"><span class="muted">Catalog</span><span class="pill">{{ access.can_manage_catalog|yesno:"Manage,View" }}</span></div>
+                </div>
+            {% else %}
+                <div class="empty">Settings are limited until EmployeeProfile is connected.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">System links</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <a class="list-row" href="/admin/"><span class="strong">Django Unfold admin</span><span class="pill">Open</span></a>
+                {% for item in api_links %}
+                    <a class="list-row" href="{{ item.url }}"><span class="strong">{{ item.label }}</span><span class="pill">API</span></a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,38 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="metric-grid" style="grid-template-columns: repeat(3, minmax(180px, 1fr));">
+    <div class="metric"><div class="metric-top"><span>Payments</span><i data-lucide="trending-up"></i></div><div class="metric-value">${{ month_revenue_usd|floatformat:2 }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Income</span><i data-lucide="circle-dollar-sign"></i></div><div class="metric-value">${{ month_income_usd|floatformat:2 }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Expenses</span><i data-lucide="trending-down"></i></div><div class="metric-value">${{ month_expense_usd|floatformat:2 }}</div></div>
+</section>
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Office revenue</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                {% for row in office_rows %}
+                    <div class="list-row"><span class="strong">{{ row.office__name|default:"No office" }}</span><span class="pill">${{ row.total|floatformat:2 }}</span></div>
+                {% empty %}
+                    <div class="empty">No revenue yet.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Financial periods</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                {% for item in periods %}
+                    <div class="list-row">
+                        <div><div class="strong">{{ item.start_date }} - {{ item.end_date }}</div><div class="muted small">{{ item.office.name|default:item.company.name }}</div></div>
+                        <span class="pill {% if item.is_closed %}ok{% else %}warn{% endif %}">${{ item.net_profit_usd|floatformat:2 }}</span>
+                    </div>
+                {% empty %}
+                    <div class="empty">No periods.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,10 +1,14 @@
 {% extends "portal/base.html" %}
 
 {% block content %}
-<section class="metric-grid" style="grid-template-columns: repeat(3, minmax(180px, 1fr));">
+<section class="metric-grid" style="grid-template-columns: repeat(4, minmax(180px, 1fr));">
     <div class="metric">
         <div class="metric-top"><span>Revenue this month</span><i data-lucide="trending-up"></i></div>
         <div class="metric-value">${{ payment_total_usd|floatformat:2 }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric-top"><span>Other income</span><i data-lucide="circle-dollar-sign"></i></div>
+        <div class="metric-value">${{ income_total_usd|floatformat:2 }}</div>
     </div>
     <div class="metric">
         <div class="metric-top"><span>Expenses this month</span><i data-lucide="trending-down"></i></div>
@@ -15,6 +19,35 @@
         <div class="metric-value">{{ open_deals_count }}</div>
     </div>
 </section>
+
+<section class="toolbar">
+    <div class="filters">
+        <a class="btn primary" href="{% url 'admin:finance_income_add' %}"><i data-lucide="plus"></i>Add income</a>
+        <a class="btn secondary" href="{% url 'admin:finance_expense_add' %}"><i data-lucide="minus"></i>Add expense</a>
+        <a class="btn" href="{% url 'portal:finance_income' %}"><i data-lucide="list-plus"></i>Income list</a>
+        <a class="btn" href="{% url 'portal:finance_expense' %}"><i data-lucide="list-minus"></i>Expense list</a>
+        <a class="btn" href="{% url 'portal:finance_reports' %}"><i data-lucide="bar-chart-3"></i>Reports</a>
+    </div>
+</section>
+
+{% if cashboxes %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><h2 class="panel-title">Cashboxes</h2></div>
+    <div class="panel-body">
+        <div class="grid cols-4">
+            {% for item in cashboxes %}
+                <div class="panel" style="box-shadow:none;">
+                    <div class="panel-body">
+                        <div class="muted small">{{ item.office.name|default:item.company.name }}</div>
+                        <div class="strong">{{ item.name }}</div>
+                        <div class="metric-value" style="font-size:22px;">{{ item.balance|floatformat:2 }} {{ item.currency.code }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <section class="grid cols-3">
     <div class="panel">
@@ -34,6 +67,26 @@
                 </div>
             {% else %}
                 <div class="empty">No payments.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Income</h2></div>
+        <div class="panel-body">
+            {% if recent_incomes %}
+                <div class="list">
+                {% for item in recent_incomes %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ item.title }}</div>
+                            <div class="muted small">{{ item.date }} В· {{ item.source|default:item.cashbox.name }}</div>
+                        </div>
+                        <span class="pill ok">${{ item.amount_usd|floatformat:2 }}</span>
+                    </div>
+                {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">No income.</div>
             {% endif %}
         </div>
     </div>

@@ -1,0 +1,46 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Daily work</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">Start workday</div><div class="muted small">Open Workday and press Start. The system records the start time.</div></div><a class="pill" href="{% url 'portal:workday' %}">Open</a></div>
+                <div class="list-row"><div><div class="strong">Submit daily report</div><div class="muted small">Write results, plans and problems before closing the day.</div></div><a class="pill" href="{% url 'portal:workday' %}">Report</a></div>
+                <div class="list-row"><div><div class="strong">Close workday</div><div class="muted small">Close the day after the report. Regular starts and closes improve rating.</div></div><a class="pill" href="{% url 'portal:rating' %}">Rating</a></div>
+            </div>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">CRM flow</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">Add lead</div><div class="muted small">Create a lead in CRM with source, phone, direction and comment.</div></div><a class="pill" href="{% url 'portal:leads' %}">Leads</a></div>
+                <div class="list-row"><div><div class="strong">Convert lead</div><div class="muted small">Use lead convert action in API/admin to create a CRM client.</div></div><a class="pill" href="{% url 'portal:clients' %}">Clients</a></div>
+                <div class="list-row"><div><div class="strong">Create application</div><div class="muted small">Attach university, program, intake and status to the client.</div></div><a class="pill" href="{% url 'portal:applications' %}">Applications</a></div>
+            </div>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Finance and documents</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">Add income or expense</div><div class="muted small">Use Finance buttons. Admin confirms payments and expenses.</div></div><a class="pill" href="{% url 'portal:finance' %}">Finance</a></div>
+                <div class="list-row"><div><div class="strong">Generate document</div><div class="muted small">Choose template, client, application or deal. With stamp requires admin approval.</div></div><a class="pill" href="{% url 'portal:documents' %}">Documents</a></div>
+                <div class="list-row"><div><div class="strong">Download document</div><div class="muted small">Download is available only when document rules allow it. Downloads are logged.</div></div><a class="pill" href="{% url 'portal:documents' %}">Logs</a></div>
+            </div>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Projects, knowledge and reports</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">Tasks and projects</div><div class="muted small">Create sections, assign tasks, comment, check lists and close completed work.</div></div><a class="pill" href="{% url 'portal:projects' %}">Projects</a></div>
+                <div class="list-row"><div><div class="strong">Knowledge base</div><div class="muted small">Read instructions, files, scripts and tests. Mark important articles as read.</div></div><a class="pill" href="{% url 'portal:knowledge' %}">Knowledge</a></div>
+                <div class="list-row"><div><div class="strong">Reports</div><div class="muted small">Admins see company-wide reports. Employees see their office and personal scope.</div></div><a class="pill" href="{% url 'portal:reports' %}">Reports</a></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
