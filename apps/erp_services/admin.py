@@ -46,10 +46,10 @@ class ServiceCategoryAdmin(ModelAdmin):
 
 @admin.register(Service)
 class ServiceAdmin(HideRealCostMixin, ModelAdmin):
-    list_display = ('title', 'code', 'category', 'company', 'price_client', 'currency', 'is_public', 'is_active')
+    list_display = ('title', 'code', 'category', 'company', 'price_client', 'currency', 'created_by', 'is_public', 'is_active')
     list_filter = ('is_active', 'is_public', 'company', 'category', 'currency')
     search_fields = ('title', 'code', 'description', 'category__name', 'company__name')
-    autocomplete_fields = ('company', 'category', 'currency')
+    autocomplete_fields = ('company', 'category', 'currency', 'created_by', 'updated_by')
     readonly_fields = ('created_at', 'updated_at')
 
 
@@ -60,4 +60,3 @@ class ServicePriceAdmin(HideRealCostMixin, ModelAdmin):
     search_fields = ('service__title', 'service__code', 'currency__code', 'notes')
     autocomplete_fields = ('service', 'currency')
     readonly_fields = ('created_at', 'updated_at')
-

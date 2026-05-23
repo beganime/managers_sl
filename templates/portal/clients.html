@@ -1,0 +1,99 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">{% if edit_object %}Редактировать клиента{% else %}Добавить клиента вручную{% endif %}</h2>
+        {% if edit_object %}<a class="pill" href="{% url 'portal:clients' %}">Новый клиент</a>{% endif %}
+    </div>
+    <div class="panel-body">
+        <form method="post" class="grid">
+            {% csrf_token %}
+            {% if edit_object %}<input type="hidden" name="object_id" value="{{ edit_object.id }}">{% endif %}
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            <details open>
+                <summary class="strong">Основное</summary>
+                <div class="grid cols-3" style="margin-top:12px;">
+                    <label><span class="muted small">ФИО</span>{{ form.full_name }}{{ form.full_name.errors }}</label>
+                    <label><span class="muted small">Телефон</span>{{ form.phone }}{{ form.phone.errors }}</label>
+                    <label><span class="muted small">Email</span>{{ form.email }}{{ form.email.errors }}</label>
+                    <label><span class="muted small">Направление</span>{{ form.direction }}</label>
+                    <label><span class="muted small">Статус</span>{{ form.status }}</label>
+                    <label><span class="muted small">Источник</span>{{ form.lead_source }}</label>
+                    <label><span class="muted small">Менеджер</span>{{ form.manager }}</label>
+                    <label><span class="muted small">Офис</span>{{ form.office }}</label>
+                </div>
+                <label style="display:block; margin-top:12px;"><span class="muted small">Комментарий</span>{{ form.comments }}</label>
+            </details>
+            <details>
+                <summary class="strong">Личные данные</summary>
+                <div class="grid cols-3" style="margin-top:12px;">
+                    <label><span class="muted small">Дата рождения</span>{{ form.dob }}</label>
+                    <label><span class="muted small">Гражданство</span>{{ form.citizenship }}</label>
+                    <label><span class="muted small">Город</span>{{ form.city }}</label>
+                    <label><span class="muted small">Адрес проживания</span>{{ form.address }}</label>
+                    <label><span class="muted small">Адрес регистрации</span>{{ form.address_registration }}</label>
+                </div>
+            </details>
+            <details>
+                <summary class="strong">Паспорт</summary>
+                <div class="grid cols-3" style="margin-top:12px;">
+                    <label><span class="muted small">Внутренний паспорт</span>{{ form.passport_local_num }}</label>
+                    <label><span class="muted small">Загранпаспорт</span>{{ form.passport_inter_num }}</label>
+                    <label><span class="muted small">Кем выдан</span>{{ form.passport_issued_by }}</label>
+                    <label><span class="muted small">Дата выдачи</span>{{ form.passport_issued_date }}</label>
+                    <label><span class="muted small">Срок действия</span>{{ form.passport_valid_until }}</label>
+                    <label><span class="muted small">Место рождения</span>{{ form.passport_birth_place }}</label>
+                </div>
+            </details>
+            <details>
+                <summary class="strong">Родственник и образование</summary>
+                <div class="grid cols-3" style="margin-top:12px;">
+                    <label><span class="muted small">ФИО родственника</span>{{ form.relative_full_name }}</label>
+                    <label><span class="muted small">Кем приходится</span>{{ form.relative_relation }}</label>
+                    <label><span class="muted small">Телефон родственника</span>{{ form.relative_phone }}</label>
+                    <label><span class="muted small">Место работы родственника</span>{{ form.relative_workplace }}</label>
+                    <label><span class="muted small">Текущее образование</span>{{ form.current_education }}</label>
+                    <label><span class="muted small">Текущий вуз / школа</span>{{ form.current_school }}</label>
+                    <label><span class="muted small">Страна текущего обучения</span>{{ form.current_study_country }}</label>
+                    <label><span class="muted small">Интересующая страна</span>{{ form.interested_country }}</label>
+                    <label><span class="muted small">Интересующий вуз</span>{{ form.interested_university }}</label>
+                    <label><span class="muted small">Интересующая программа</span>{{ form.interested_program }}</label>
+                </div>
+            </details>
+            <details>
+                <summary class="strong">Документы</summary>
+                <div class="filters" style="margin-top:12px;">
+                    <label>{{ form.has_passport }} Паспорт</label>
+                    <label>{{ form.has_education_doc }} Аттестат/диплом</label>
+                    <label>{{ form.has_translation }} Перевод</label>
+                    <label>{{ form.has_photo }} Фото</label>
+                </div>
+            </details>
+            <div class="filters">
+                <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить клиента</button>
+                {% if edit_object %}<a class="btn secondary" href="{% url 'portal:client_document_create' edit_object.id %}"><i data-lucide="file-plus-2"></i>Создать документ</a>{% endif %}
+            </div>
+        </form>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Клиенты</h2><span class="pill">{{ total_count }} всего</span></div>
+    <div class="panel-body">
+        <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по клиенту, телефону, email">
+                <select class="select" name="status" style="width:220px;">
+                    <option value="">Все статусы</option>
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div id="portal-table">{% include table_template %}</div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">{{ article.title }}</h2>
+            <div class="muted small">{{ article.category.name|default:"Без папки" }} · {{ article.views_count }} просмотров</div>
+        </div>
+        <div class="filters">
+            <button class="btn secondary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('article-copy-text').innerText)"><i data-lucide="copy"></i>Скопировать текст</button>
+            <a class="btn" href="{% url 'portal:knowledge_edit_article' article.id %}"><i data-lucide="square-pen"></i>Редактировать</a>
+        </div>
+    </div>
+    <div class="panel-body">
+        {% if article.summary %}<p class="muted">{{ article.summary }}</p>{% endif %}
+        <div id="article-copy-text" style="white-space:pre-wrap; line-height:1.6;">{{ article.content }}</div>
+        {% if article.attachments.all %}
+            <hr style="border:0; border-top:1px solid var(--line); margin:18px 0;">
+            <h3 style="margin:0 0 10px;">Файлы и ссылки</h3>
+            <div class="list">
+                {% for attachment in article.attachments.all %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ attachment.title|default:attachment.get_attachment_type_display }}</div>
+                            <div class="muted small">{{ attachment.note }}</div>
+                        </div>
+                        {% if attachment.file %}<a class="pill" href="{{ attachment.file.url }}">Скачать</a>{% elif attachment.url %}<a class="pill" href="{{ attachment.url }}">Открыть</a>{% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

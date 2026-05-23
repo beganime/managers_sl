@@ -1,0 +1,33 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">{% if folder %}Редактировать папку{% else %}Создать папку{% endif %}</h2>
+        <a class="pill" href="{% url 'portal:knowledge' %}">База знаний</a>
+    </div>
+    <div class="panel-body">
+        <form method="post" class="grid">
+            {% csrf_token %}
+            <div class="grid cols-2">
+                <label><span class="muted small">Родительская папка</span>{{ form.parent }}</label>
+                <label><span class="muted small">Название</span>{{ form.name }}</label>
+                <label><span class="muted small">Код</span>{{ form.code }}</label>
+                <label><span class="muted small">Иконка</span>{{ form.icon }}</label>
+                <label><span class="muted small">Цвет</span>{{ form.color }}</label>
+            </div>
+            <label><span class="muted small">Описание</span>{{ form.description }}</label>
+            <div class="filters">
+                <label>{{ form.is_public }} Видна сотрудникам</label>
+                <label>{{ form.is_active }} Активна</label>
+            </div>
+            <div class="filters">
+                <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить папку</button>
+                {% if folder %}
+                    <button class="btn danger" type="submit" name="action" value="delete"><i data-lucide="trash-2"></i>Удалить</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

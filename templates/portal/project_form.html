@@ -1,0 +1,31 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">{% if project %}Редактировать проект{% else %}Создать проект{% endif %}</h2>
+        <a class="pill" href="{% url 'portal:projects' %}">К списку</a>
+    </div>
+    <div class="panel-body">
+        <form method="post" class="grid">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="grid cols-2">
+                <label><span class="muted small">Название</span>{{ form.title }}{{ form.title.errors }}</label>
+                <label><span class="muted small">Код</span>{{ form.code }}</label>
+                <label><span class="muted small">Статус</span>{{ form.status }}</label>
+                <label><span class="muted small">Дедлайн</span>{{ form.deadline }}</label>
+                <label><span class="muted small">Владелец</span>{{ form.owner }}</label>
+                <label><span class="muted small">Закрепить</span>{{ form.is_pinned }}</label>
+            </div>
+            <label><span class="muted small">Описание</span>{{ form.description }}</label>
+            <div class="grid cols-2">
+                <label><span class="muted small">Участники</span>{{ form.participants }}</label>
+                <label><span class="muted small">Ответственные</span>{{ form.responsible_users }}</label>
+            </div>
+            <label>{{ form.is_active }} Активен</label>
+            <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить проект</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

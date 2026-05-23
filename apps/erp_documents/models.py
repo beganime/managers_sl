@@ -2,6 +2,7 @@ import io
 from pathlib import Path
 from uuid import uuid4
 
+import fitz
 from django.conf import settings
 from django.core.files.base import ContentFile
 from django.db import models, transaction
@@ -57,9 +58,15 @@ class DocumentTemplate(TimeStampedModel, ActiveModel):
     )
     name = models.CharField('Name', max_length=255, db_index=True)
     code = models.SlugField('Code', max_length=100, db_index=True)
+    document_type = models.CharField('Document type', max_length=100, blank=True)
     description = models.TextField('Description', blank=True)
     file = models.FileField('DOCX template', upload_to=template_upload_path)
     requires_approval = models.BooleanField('Requires approval', default=True)
+    allow_without_stamp = models.BooleanField('Allow DOCX without stamp', default=True)
+    allow_with_stamp = models.BooleanField('Allow PDF with stamp', default=True)
+    jinja_variables = models.JSONField('Jinja variables', default=list, blank=True)
+    stamp_settings = models.JSONField('Stamp settings', default=dict, blank=True)
+    watermark_settings = models.JSONField('Watermark settings', default=dict, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         verbose_name='Created by',
@@ -83,8 +90,30 @@ class DocumentTemplate(TimeStampedModel, ActiveModel):
     def __str__(self):
         return self.name
 
+    def save(self, *args, **kwargs):
+        if not self.code:
+            self.code = slugify(self.name)[:100] or f'template-{self.pk or "new"}'
+        super().save(*args, **kwargs)
+
 
 class DocumentTemplateField(TimeStampedModel, OrderedModel):
+    SOURCE_CLIENT = 'client'
+    SOURCE_APPLICATION = 'application'
+    SOURCE_DEAL = 'deal'
+    SOURCE_MANAGER = 'manager'
+    SOURCE_COMPANY = 'company'
+    SOURCE_OFFICE = 'office'
+    SOURCE_CUSTOM = 'custom'
+    SOURCE_CHOICES = (
+        (SOURCE_CLIENT, 'Client'),
+        (SOURCE_APPLICATION, 'Application'),
+        (SOURCE_DEAL, 'Deal'),
+        (SOURCE_MANAGER, 'Manager'),
+        (SOURCE_COMPANY, 'Company'),
+        (SOURCE_OFFICE, 'Office'),
+        (SOURCE_CUSTOM, 'Custom'),
+    )
+
     FIELD_TYPE_TEXT = 'text'
     FIELD_TYPE_TEXTAREA = 'textarea'
     FIELD_TYPE_NUMBER = 'number'
@@ -107,6 +136,8 @@ class DocumentTemplateField(TimeStampedModel, OrderedModel):
         related_name='fields',
     )
     key = models.SlugField('Key', max_length=100)
+    jinja_key = models.CharField('Jinja key', max_length=150, blank=True)
+    data_source = models.CharField('Data source', max_length=32, choices=SOURCE_CHOICES, default=SOURCE_CUSTOM, db_index=True)
     label = models.CharField('Label', max_length=255)
     field_type = models.CharField('Field type', max_length=32, choices=FIELD_TYPE_CHOICES, default=FIELD_TYPE_TEXT)
     default_value = models.CharField('Default value', max_length=255, blank=True)
@@ -125,6 +156,11 @@ class DocumentTemplateField(TimeStampedModel, OrderedModel):
 
     def __str__(self):
         return f'{self.template}: {self.label}'
+
+    def save(self, *args, **kwargs):
+        if not self.jinja_key:
+            self.jinja_key = self.key
+        super().save(*args, **kwargs)
 
 
 class GeneratedDocument(TimeStampedModel):
@@ -212,7 +248,12 @@ class GeneratedDocument(TimeStampedModel):
 
     @property
     def can_download_original(self):
-        return bool(self.generated_file and self.status == self.STATUS_APPROVED)
+        return bool(self.generated_file and self.status in {
+            self.STATUS_GENERATED,
+            self.STATUS_PENDING,
+            self.STATUS_APPROVED,
+            self.STATUS_REJECTED,
+        })
 
     @property
     def can_download_approved(self):
@@ -232,6 +273,15 @@ class GeneratedDocument(TimeStampedModel):
         manager = self.manager
 
         if company:
+            context['company'] = {
+                'name': company.name,
+                'legal_name': company.legal_name,
+                'phone': company.phone,
+                'email': company.email,
+                'address': company.address,
+                'city': company.city,
+                'country': company.country,
+            }
             context.update({
                 'company_name': company.name,
                 'company_legal_name': company.legal_name,
@@ -241,6 +291,13 @@ class GeneratedDocument(TimeStampedModel):
             })
 
         if office:
+            context['office'] = {
+                'name': office.name,
+                'city': office.city,
+                'address': office.address,
+                'phone': office.phone,
+                'email': office.email,
+            }
             context.update({
                 'office_name': office.name,
                 'office_city': office.city,
@@ -250,6 +307,14 @@ class GeneratedDocument(TimeStampedModel):
             })
 
         if manager:
+            context['manager'] = {
+                'first_name': getattr(manager, 'first_name', ''),
+                'last_name': getattr(manager, 'last_name', ''),
+                'middle_name': getattr(manager, 'middle_name', ''),
+                'name': user_display_name(manager),
+                'email': getattr(manager, 'email', ''),
+                'phone': getattr(manager, 'phone', ''),
+            }
             context.update({
                 'manager_name': user_display_name(manager),
                 'manager_email': getattr(manager, 'email', ''),
@@ -257,20 +322,53 @@ class GeneratedDocument(TimeStampedModel):
             })
 
         if client:
+            context['client'] = {
+                'full_name': client.full_name,
+                'phone': client.phone,
+                'email': client.email or '',
+                'dob': safe_text(client.dob),
+                'citizenship': client.citizenship,
+                'city': client.city,
+                'address': client.address,
+                'address_registration': client.address_registration,
+                'passport_local_num': client.passport_local_num,
+                'passport_inter_num': client.passport_inter_num,
+                'passport_issued_by': client.passport_issued_by,
+                'passport_issued_date': safe_text(client.passport_issued_date),
+                'passport_valid_until': safe_text(getattr(client, 'passport_valid_until', '')),
+                'passport_birth_place': getattr(client, 'passport_birth_place', ''),
+                'direction': getattr(client, 'direction', ''),
+                'interested_country': getattr(client, 'interested_country', ''),
+                'interested_university': getattr(client, 'interested_university', ''),
+                'interested_program': getattr(client, 'interested_program', ''),
+            }
             context.update({
                 'client_full_name': client.full_name,
                 'client_phone': client.phone,
                 'client_email': client.email or '',
+                'client_dob': safe_text(client.dob),
                 'client_citizenship': client.citizenship,
                 'client_city': client.city,
                 'client_address': client.address,
+                'client_address_registration': client.address_registration,
                 'client_passport_local_num': client.passport_local_num,
                 'client_passport_inter_num': client.passport_inter_num,
                 'client_passport_issued_by': client.passport_issued_by,
                 'client_passport_issued_date': safe_text(client.passport_issued_date),
+                'client_passport_valid_until': safe_text(getattr(client, 'passport_valid_until', '')),
+                'client_passport_birth_place': getattr(client, 'passport_birth_place', ''),
             })
 
         if application:
+            context['application'] = {
+                'university_name': application.university_name,
+                'program_name': application.program_name,
+                'country': application.country,
+                'degree': application.degree,
+                'language': application.language,
+                'intake': application.intake,
+                'status': application.get_status_display(),
+            }
             context.update({
                 'application_university_name': application.university_name,
                 'application_program_name': application.program_name,
@@ -282,6 +380,18 @@ class GeneratedDocument(TimeStampedModel):
             })
 
         if deal:
+            context['deal'] = {
+                'title': deal.title,
+                'type': deal.get_deal_type_display(),
+                'university_name': deal.university_name,
+                'program_name': deal.program_name,
+                'service_title': deal.service.title if deal.service_id else '',
+                'price_client': safe_text(deal.price_client),
+                'currency': deal.currency.code if deal.currency_id else '',
+                'total_to_pay_usd': safe_text(deal.total_to_pay_usd),
+                'paid_amount_usd': safe_text(deal.paid_amount_usd),
+                'payment_status': deal.get_payment_status_display(),
+            }
             context.update({
                 'deal_title': deal.title,
                 'deal_type': deal.get_deal_type_display(),
@@ -452,6 +562,21 @@ class DocumentApproval(TimeStampedModel):
 
 
 class StampRule(TimeStampedModel, ActiveModel, OrderedModel):
+    POSITION_BOTTOM_LEFT = 'bottom_left'
+    POSITION_BOTTOM_RIGHT = 'bottom_right'
+    POSITION_TOP_LEFT = 'top_left'
+    POSITION_TOP_RIGHT = 'top_right'
+    POSITION_CENTER = 'center'
+    POSITION_CUSTOM = 'custom'
+    POSITION_CHOICES = (
+        (POSITION_BOTTOM_LEFT, 'Bottom left'),
+        (POSITION_BOTTOM_RIGHT, 'Bottom right'),
+        (POSITION_TOP_LEFT, 'Top left'),
+        (POSITION_TOP_RIGHT, 'Top right'),
+        (POSITION_CENTER, 'Center'),
+        (POSITION_CUSTOM, 'Custom'),
+    )
+
     company = models.ForeignKey(
         Company,
         verbose_name='Company',
@@ -479,6 +604,16 @@ class StampRule(TimeStampedModel, ActiveModel, OrderedModel):
     name = models.CharField('Name', max_length=150)
     stamp_image = models.ImageField('Stamp image', upload_to=stamp_upload_path)
     width_mm = models.PositiveIntegerField('Width, mm', default=40)
+    height_mm = models.PositiveIntegerField('Height, mm', default=40)
+    position = models.CharField('Position', max_length=32, choices=POSITION_CHOICES, default=POSITION_BOTTOM_LEFT)
+    x_mm = models.DecimalField('X, mm', max_digits=8, decimal_places=2, null=True, blank=True)
+    y_mm = models.DecimalField('Y, mm', max_digits=8, decimal_places=2, null=True, blank=True)
+    opacity = models.DecimalField('Opacity', max_digits=4, decimal_places=2, default=1)
+    watermark_enabled = models.BooleanField('Watermark enabled', default=False)
+    watermark_text = models.CharField('Watermark text', max_length=255, blank=True)
+    watermark_image = models.ImageField('Watermark image', upload_to=stamp_upload_path, null=True, blank=True)
+    watermark_position = models.CharField('Watermark position', max_length=32, choices=POSITION_CHOICES, default=POSITION_CENTER)
+    watermark_opacity = models.DecimalField('Watermark opacity', max_digits=4, decimal_places=2, default=0.15)
 
     class Meta:
         verbose_name = 'Stamp rule'
@@ -564,18 +699,95 @@ def build_approved_document_file(document, with_stamp=False):
     if not rule or not rule.stamp_image:
         raise ValueError('Active stamp rule with stamp image is required for approval with stamp.')
 
-    source_path = Path(document.generated_file.path)
-    docx = DocxDocument(source_path)
-    for section in docx.sections:
-        footer = section.footer
-        paragraph = footer.paragraphs[0] if footer.paragraphs else footer.add_paragraph()
-        paragraph.alignment = WD_ALIGN_PARAGRAPH.LEFT
-        run = paragraph.add_run()
-        run.add_picture(rule.stamp_image.path, width=Mm(rule.width_mm))
+    context = document.build_context()
+    pdf = fitz.open()
+    page = pdf.new_page(width=595, height=842)
+    margin = 42
+    title = document.title or document.template.name
+    page.insert_textbox(
+        fitz.Rect(margin, 36, 553, 82),
+        title,
+        fontsize=16,
+        fontname='helv',
+        color=(0.07, 0.13, 0.11),
+        align=1,
+    )
 
+    lines = [
+        f'Template: {document.template.name}',
+        f'Client: {context.get("client_full_name", "")}',
+        f'Phone: {context.get("client_phone", "")}',
+        f'Email: {context.get("client_email", "")}',
+        f'Citizenship: {context.get("client_citizenship", "")}',
+        f'Passport: {context.get("client_passport_inter_num", "") or context.get("client_passport_local_num", "")}',
+        f'Application: {context.get("application_university_name", "")} {context.get("application_program_name", "")}',
+        f'Manager: {context.get("manager_name", "")}',
+        f'Company: {context.get("company_name", "")}',
+        f'Office: {context.get("office_city", "")} {context.get("office_address", "")}',
+        f'Approved at: {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}',
+    ]
+    page.insert_textbox(
+        fitz.Rect(margin, 108, 553, 500),
+        '\n'.join(line for line in lines if line.strip()),
+        fontsize=11,
+        fontname='helv',
+        color=(0.12, 0.16, 0.14),
+        lineheight=1.35,
+    )
+
+    if rule.watermark_enabled:
+        if rule.watermark_image:
+            page.insert_image(fitz.Rect(150, 260, 445, 555), filename=rule.watermark_image.path, overlay=False)
+        elif rule.watermark_text:
+            page.insert_textbox(
+                fitz.Rect(80, 320, 515, 420),
+                rule.watermark_text,
+                fontsize=34,
+                fontname='helv',
+                color=(0.78, 0.82, 0.80),
+                align=1,
+                overlay=False,
+            )
+
+    stamp_rect = stamp_rect_for_rule(rule, page.rect)
+    page.insert_image(stamp_rect, filename=rule.stamp_image.path, keep_proportion=True, overlay=True)
+    page.insert_textbox(
+        fitz.Rect(margin, 770, 553, 810),
+        'Verified electronic document',
+        fontsize=9,
+        fontname='helv',
+        color=(0.38, 0.44, 0.41),
+        align=1,
+    )
     buffer = io.BytesIO()
-    docx.save(buffer)
+    pdf.save(buffer)
+    pdf.close()
     buffer.seek(0)
 
     base = slugify(document.title or document.template.name) or 'approved-document'
-    return f'{base}-stamped-{uuid4().hex[:10]}.docx', ContentFile(buffer.getvalue())
+    return f'{base}-stamped-{uuid4().hex[:10]}.pdf', ContentFile(buffer.getvalue())
+
+
+def mm_to_pt(value):
+    return float(value or 0) * 72 / 25.4
+
+
+def stamp_rect_for_rule(rule, page_rect):
+    width = mm_to_pt(rule.width_mm)
+    height = mm_to_pt(rule.height_mm or rule.width_mm)
+    margin = mm_to_pt(18)
+    if rule.position == StampRule.POSITION_CUSTOM and rule.x_mm is not None and rule.y_mm is not None:
+        x = mm_to_pt(rule.x_mm)
+        y = mm_to_pt(rule.y_mm)
+        return fitz.Rect(x, y, x + width, y + height)
+    if rule.position == StampRule.POSITION_BOTTOM_RIGHT:
+        return fitz.Rect(page_rect.width - margin - width, page_rect.height - margin - height, page_rect.width - margin, page_rect.height - margin)
+    if rule.position == StampRule.POSITION_TOP_LEFT:
+        return fitz.Rect(margin, margin, margin + width, margin + height)
+    if rule.position == StampRule.POSITION_TOP_RIGHT:
+        return fitz.Rect(page_rect.width - margin - width, margin, page_rect.width - margin, margin + height)
+    if rule.position == StampRule.POSITION_CENTER:
+        x = (page_rect.width - width) / 2
+        y = (page_rect.height - height) / 2
+        return fitz.Rect(x, y, x + width, y + height)
+    return fitz.Rect(margin, page_rect.height - margin - height, margin + width, page_rect.height - margin)

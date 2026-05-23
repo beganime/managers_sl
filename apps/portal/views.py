@@ -1,4 +1,5 @@
 import calendar
+import json
 from collections import defaultdict
 from datetime import date, timedelta
 
@@ -7,8 +8,10 @@ from django.contrib.auth import get_user_model, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
+from django.core.files.base import ContentFile
+from django.http import FileResponse, Http404
 from django.db.models import Count, Q, Sum
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils.dateparse import parse_date
 from django.utils import timezone
@@ -17,22 +20,36 @@ from django.views.generic import TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
 from apps.core.permissions import get_employee_profile, is_erp_admin
-from apps.crm.models import Application, Client, Lead
+from apps.crm.models import Application, Client, Lead, LeadSource
 from apps.education.models import City, Country, Currency, Program, University
-from apps.erp_documents.models import GeneratedDocument
+from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
 from apps.erp_notifications.models import Notification
 from apps.employees.models import EmployeeProfile
-from apps.erp_services.models import Service
+from apps.erp_services.models import Service, ServiceCategory
 from apps.finance.models import Cashbox, Deal, Expense, ExpenseCategory, FinancialPeriod, Income, Payment, Transaction
-from apps.knowledge.models import KnowledgeArticle, KnowledgeTestAttempt
+from apps.knowledge.models import KnowledgeArticle, KnowledgeCategory, KnowledgeTestAttempt
+from apps.organizations.models import Office
 from apps.portal.forms import (
+    PortalClientForm,
+    PortalDealForm,
+    PortalDocumentGenerateForm,
     PortalExpenseForm,
     PortalIncomeForm,
+    PortalKnowledgeArticleForm,
+    PortalKnowledgeCategoryForm,
+    PortalPaymentForm,
     PortalProgramForm,
+    PortalProjectForm,
+    PortalProjectSectionForm,
+    PortalServiceForm,
+    PortalTaskAttachmentForm,
+    PortalTaskChecklistForm,
+    PortalTaskChecklistItemForm,
+    PortalTaskCommentForm,
     PortalTaskForm,
     PortalUniversityForm,
 )
-from apps.projects_v2.models import Project, ProjectSection, ProjectTask
+from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAttachment, TaskChecklist, TaskChecklistItem, TaskComment
 
 
 PAGE_SIZE = 25
@@ -297,6 +314,16 @@ def document_queryset(user):
     return qs.filter(Q(manager=user) | Q(client__shared_with=user)).distinct()
 
 
+def document_template_queryset(user):
+    qs = DocumentTemplate.objects.select_related('company').prefetch_related('fields').filter(is_active=True)
+    if is_erp_admin(user):
+        return qs
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.filter(company__isnull=True)
+    return qs.filter(Q(company=employee.company) | Q(company__isnull=True))
+
+
 def knowledge_queryset(user):
     qs = KnowledgeArticle.objects.select_related('company', 'office', 'category', 'author').filter(is_active=True)
     if is_erp_admin(user):
@@ -348,6 +375,18 @@ def employee_queryset(user):
     return qs.filter(company=employee.company)
 
 
+def office_queryset(user):
+    qs = Office.objects.select_related('company').filter(is_active=True)
+    if is_erp_admin(user):
+        return qs
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.none()
+    if employee.office_id:
+        return qs.filter(company=employee.company, id=employee.office_id)
+    return qs.filter(company=employee.company)
+
+
 def university_queryset(user):
     qs = University.objects.select_related('company', 'country', 'city', 'local_currency')
     if is_erp_admin(user):
@@ -365,6 +404,26 @@ def program_queryset(user):
 
 def service_queryset(user):
     qs = Service.objects.select_related('company', 'category', 'currency').prefetch_related('prices')
+    if is_erp_admin(user):
+        return qs
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.filter(company__isnull=True, is_public=True)
+    return qs.filter(Q(company=employee.company) | Q(company__isnull=True), is_public=True)
+
+
+def service_category_queryset(user):
+    qs = ServiceCategory.objects.select_related('company').filter(is_active=True)
+    if is_erp_admin(user):
+        return qs
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.filter(company__isnull=True)
+    return qs.filter(Q(company=employee.company) | Q(company__isnull=True))
+
+
+def knowledge_category_queryset(user):
+    qs = KnowledgeCategory.objects.select_related('company', 'parent').filter(is_active=True)
     if is_erp_admin(user):
         return qs
     employee = get_employee_profile(user)
@@ -405,6 +464,37 @@ def can_confirm_finance(user):
     employee = get_employee_profile(user)
     access = getattr(employee, 'access', None) if employee else None
     return bool(access and access.can_manage_finance)
+
+
+def can_delete_admin(user):
+    return bool(user.is_staff or user.is_superuser or is_erp_admin(user))
+
+
+def can_edit_owned(user, owner=None, participants=None):
+    if can_delete_admin(user):
+        return True
+    if owner and owner == user:
+        return True
+    if participants is not None and participants.filter(pk=user.pk).exists():
+        return True
+    return False
+
+
+def request_ip(request):
+    forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if forwarded:
+        return forwarded.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
+
+
+def log_document_download(request, document, file_type):
+    DocumentDownloadLog.objects.create(
+        document=document,
+        user=request.user,
+        file_type=file_type,
+        ip_address=request_ip(request),
+        user_agent=request.META.get('HTTP_USER_AGENT', ''),
+    )
 
 
 def next_annual_date(source_date, today):
@@ -968,6 +1058,7 @@ class ProgramsView(ListPageMixin):
 
 
 class ServicesView(ListPageMixin):
+    template_name = 'portal/services.html'
     active_page = 'services'
     page_title = 'Услуги'
     table_template = 'portal/partials/services_table.html'
@@ -982,6 +1073,67 @@ class ServicesView(ListPageMixin):
             qs = qs.filter(is_active=is_active)
         return qs
 
+    def get_edit_object(self):
+        edit_id = self.request.GET.get('edit') or self.request.POST.get('object_id')
+        if not edit_id:
+            return None
+        return service_queryset(self.request.user).filter(pk=edit_id).first()
+
+    def get_form(self, data=None, instance=None):
+        return PortalServiceForm(
+            data=data,
+            instance=instance,
+            categories=service_category_queryset(self.request.user).order_by('sort_order', 'name'),
+            currencies=Currency.objects.order_by('code'),
+        )
+
+    def get_extra_context(self, qs):
+        edit_object = self.get_edit_object()
+        return {
+            'form': self.get_form(instance=edit_object),
+            'edit_object': edit_object,
+            'can_delete_items': can_delete_admin(self.request.user),
+        }
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action', 'save')
+        service = self.get_edit_object()
+        if action == 'delete' and service and can_delete_admin(request.user):
+            service.delete()
+            messages.success(request, 'Услуга удалена.')
+            return redirect('portal:services')
+
+        form = self.get_form(data=request.POST, instance=service)
+        if form.is_valid():
+            employee = get_employee_profile(request.user)
+            category = form.cleaned_data.get('category')
+            category_name = (form.cleaned_data.get('category_name') or '').strip()
+            if not category and category_name:
+                company = employee.company if employee else None
+                category, _ = ServiceCategory.objects.get_or_create(
+                    company=company,
+                    code=(category_name.lower().replace(' ', '-')[:80] or 'service-category'),
+                    defaults={'name': category_name, 'description': ''},
+                )
+            item = form.save(commit=False)
+            if employee and not is_erp_admin(request.user):
+                item.company = employee.company
+            elif employee and not item.company_id:
+                item.company = employee.company
+            item.category = category
+            if not item.code:
+                item.code = (item.title.lower().replace(' ', '-')[:80] or f'service-{item.pk or "new"}')
+            if not item.pk:
+                item.created_by = request.user
+            item.updated_by = request.user
+            item.save()
+            messages.success(request, 'Услуга сохранена.')
+            return redirect('portal:services')
+        context = self.get_context_data()
+        context['form'] = form
+        context['edit_object'] = service
+        return self.render_to_response(context)
+
 
 class LeadsView(ListPageMixin):
     active_page = 'leads'
@@ -995,6 +1147,7 @@ class LeadsView(ListPageMixin):
 
 
 class ClientsView(ListPageMixin):
+    template_name = 'portal/clients.html'
     active_page = 'clients'
     page_title = 'Клиенты'
     table_template = 'portal/partials/clients_table.html'
@@ -1003,6 +1156,151 @@ class ClientsView(ListPageMixin):
 
     def get_queryset(self):
         return client_queryset(self.request.user).select_related('manager')
+
+    def get_edit_object(self):
+        edit_id = self.request.GET.get('edit') or self.request.POST.get('object_id')
+        if not edit_id:
+            return None
+        return client_queryset(self.request.user).filter(pk=edit_id).first()
+
+    def get_form(self, data=None, instance=None):
+        return PortalClientForm(
+            data=data,
+            instance=instance,
+            managers=portal_user_queryset(self.request.user),
+            offices=office_queryset(self.request.user),
+            sources=LeadSource.objects.filter(is_active=True).order_by('name'),
+        )
+
+    def get_extra_context(self, qs):
+        edit_object = self.get_edit_object()
+        return {
+            'form': self.get_form(instance=edit_object),
+            'edit_object': edit_object,
+        }
+
+    def post(self, request, *args, **kwargs):
+        client = self.get_edit_object()
+        form = self.get_form(data=request.POST, instance=client)
+        if form.is_valid():
+            employee = get_employee_profile(request.user)
+            item = form.save(commit=False)
+            if employee:
+                item.company = employee.company
+                if not item.office_id and employee.office_id:
+                    item.office = employee.office
+            if not item.manager_id:
+                item.manager = request.user
+            item.save()
+            form.save_m2m()
+            messages.success(request, 'Клиент сохранён.')
+            return redirect('portal:clients')
+        context = self.get_context_data()
+        context['form'] = form
+        context['edit_object'] = client
+        return self.render_to_response(context)
+
+
+class ClientDetailView(PortalContextMixin, TemplateView):
+    template_name = 'portal/client_detail.html'
+    active_page = 'clients'
+    page_title = 'Карточка клиента'
+
+    def get_client(self):
+        return get_object_or_404(client_queryset(self.request.user), pk=self.kwargs['pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        client = self.get_client()
+        context.update({
+            'client': client,
+            'applications': application_queryset(self.request.user).filter(client=client).order_by('-created_at'),
+            'deals': deal_queryset(self.request.user).filter(client=client).order_by('-created_at'),
+            'documents': document_queryset(self.request.user).filter(client=client).order_by('-created_at'),
+        })
+        return context
+
+
+class ClientDocumentCreateView(PortalContextMixin, TemplateView):
+    template_name = 'portal/client_document_form.html'
+    active_page = 'documents'
+    page_title = 'Создать документ'
+
+    def get_client(self):
+        return get_object_or_404(client_queryset(self.request.user), pk=self.kwargs['pk'])
+
+    def get_form(self, data=None):
+        client = self.get_client()
+        return PortalDocumentGenerateForm(
+            data=data,
+            templates=document_template_queryset(self.request.user).order_by('name'),
+            applications=application_queryset(self.request.user).filter(client=client).order_by('-created_at'),
+            deals=deal_queryset(self.request.user).filter(client=client).order_by('-created_at'),
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        client = self.get_client()
+        template = document_template_queryset(self.request.user).first()
+        preview_document = None
+        if template:
+            employee = get_employee_profile(self.request.user)
+            preview_document = GeneratedDocument(
+                company=client.company,
+                office=client.office or (employee.office if employee else None),
+                template=template,
+                client=client,
+                manager=client.manager or self.request.user,
+            )
+        context.update({
+            'client': client,
+            'form': context.get('form') or self.get_form(),
+            'preview_context': preview_document.build_context() if preview_document else {},
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        client = self.get_client()
+        form = self.get_form(data=request.POST)
+        if form.is_valid():
+            template = form.cleaned_data['template']
+            application = form.cleaned_data.get('application')
+            deal = form.cleaned_data.get('deal')
+            context_data = {}
+            raw_context = (form.cleaned_data.get('context_data') or '').strip()
+            if raw_context:
+                try:
+                    context_data = json.loads(raw_context)
+                except json.JSONDecodeError:
+                    messages.error(request, 'Дополнительные данные должны быть валидным JSON.')
+                    context = self.get_context_data()
+                    context['form'] = form
+                    return self.render_to_response(context)
+
+            employee = get_employee_profile(request.user)
+            document = GeneratedDocument.objects.create(
+                company=client.company,
+                office=client.office or (employee.office if employee else None),
+                template=template,
+                client=client,
+                application=application,
+                deal=deal,
+                manager=request.user,
+                title=form.cleaned_data.get('title') or f'{template.name} - {client.full_name}',
+                context_data=context_data,
+            )
+            try:
+                document.generate_file()
+                messages.success(request, 'Документ создан. DOCX без печати доступен для скачивания.')
+            except Exception as exc:
+                document.status = GeneratedDocument.STATUS_ERROR
+                document.generation_error = str(exc)
+                document.save(update_fields=['status', 'generation_error', 'updated_at'])
+                messages.error(request, f'Ошибка генерации документа: {exc}')
+            return redirect('portal:documents')
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
 
 
 class ApplicationsView(ListPageMixin):
@@ -1084,6 +1382,7 @@ class TasksView(ListPageMixin):
 
 
 class ProjectsView(ListPageMixin):
+    template_name = 'portal/projects.html'
     active_page = 'projects'
     page_title = 'Проекты'
     table_template = 'portal/partials/projects_table.html'
@@ -1093,6 +1392,207 @@ class ProjectsView(ListPageMixin):
 
     def get_queryset(self):
         return project_queryset(self.request.user)
+
+    def get_extra_context(self, qs):
+        return {'can_delete_items': can_delete_admin(self.request.user)}
+
+
+class ProjectCreateView(PortalContextMixin, TemplateView):
+    template_name = 'portal/project_form.html'
+    active_page = 'projects'
+    page_title = 'Создать проект'
+
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if not pk:
+            return None
+        project = get_object_or_404(project_queryset(self.request.user), pk=pk)
+        if not can_edit_owned(self.request.user, owner=project.created_by or project.owner, participants=project.participants):
+            raise Http404
+        return project
+
+    def get_form(self, data=None, instance=None):
+        return PortalProjectForm(data=data, instance=instance, employees=portal_user_queryset(self.request.user))
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        project = self.get_object()
+        context.update({
+            'project': project,
+            'form': context.get('form') or self.get_form(instance=project),
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        project = self.get_object()
+        form = self.get_form(data=request.POST, instance=project)
+        if form.is_valid():
+            employee = get_employee_profile(request.user)
+            item = form.save(commit=False)
+            if employee and not item.company_id:
+                item.company = employee.company
+            if employee and employee.office_id and not item.office_id:
+                item.office = employee.office
+            if not item.created_by_id:
+                item.created_by = request.user
+            if not item.owner_id:
+                item.owner = request.user
+            if not item.code:
+                item.code = (item.title.lower().replace(' ', '-')[:100] or f'project-{item.pk or "new"}')
+            item.save()
+            form.save_m2m()
+            item.participants.add(request.user)
+            messages.success(request, 'Проект сохранён.')
+            return redirect('portal:project_detail', pk=item.pk)
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
+
+
+class ProjectDetailView(PortalContextMixin, TemplateView):
+    template_name = 'portal/project_detail.html'
+    active_page = 'projects'
+    page_title = 'Проект'
+
+    def get_project(self):
+        return get_object_or_404(project_queryset(self.request.user), pk=self.kwargs['pk'])
+
+    def post(self, request, *args, **kwargs):
+        project = self.get_project()
+        action = request.POST.get('action')
+        if action == 'delete_project' and can_delete_admin(request.user):
+            project.delete()
+            messages.success(request, 'Проект удалён.')
+            return redirect('portal:projects')
+        if action == 'add_section':
+            form = PortalProjectSectionForm(request.POST)
+            if form.is_valid():
+                section = form.save(commit=False)
+                section.project = project
+                section.save()
+                messages.success(request, 'Раздел добавлен.')
+            else:
+                messages.error(request, 'Раздел не сохранён. Проверьте поля.')
+        return redirect('portal:project_detail', pk=project.pk)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        project = self.get_project()
+        tasks = ProjectTask.objects.filter(project=project).select_related('section', 'assigned_to', 'created_by').prefetch_related('comments', 'checklists__items', 'attachments')
+        context.update({
+            'project': project,
+            'sections': project.sections.filter(is_active=True).order_by('sort_order', 'title'),
+            'tasks': tasks.order_by('section__sort_order', 'deadline', '-updated_at'),
+            'section_form': PortalProjectSectionForm(),
+            'can_edit_project': can_edit_owned(self.request.user, owner=project.created_by or project.owner, participants=project.participants),
+            'can_delete_project': can_delete_admin(self.request.user),
+        })
+        return context
+
+
+class ProjectTaskCreateView(PortalContextMixin, TemplateView):
+    template_name = 'portal/project_task_form.html'
+    active_page = 'projects'
+    page_title = 'Создать задачу'
+
+    def get_project(self):
+        return get_object_or_404(project_queryset(self.request.user), pk=self.kwargs['pk'])
+
+    def get_task(self):
+        task_id = self.kwargs.get('task_id')
+        if not task_id:
+            return None
+        return get_object_or_404(task_queryset(self.request.user), pk=task_id, project=self.get_project())
+
+    def get_form(self, data=None, instance=None):
+        project = self.get_project()
+        return PortalTaskForm(
+            data=data,
+            instance=instance,
+            projects=Project.objects.filter(pk=project.pk),
+            sections=project.sections.filter(is_active=True).order_by('sort_order', 'title'),
+            employees=portal_user_queryset(self.request.user),
+        )
+
+    def post(self, request, *args, **kwargs):
+        project = self.get_project()
+        task = self.get_task()
+        if request.POST.get('action') == 'delete' and task and (can_delete_admin(request.user) or task.created_by_id == request.user.id):
+            task.delete()
+            messages.success(request, 'Задача удалена.')
+            return redirect('portal:project_detail', pk=project.pk)
+        form = self.get_form(data=request.POST, instance=task)
+        if form.is_valid():
+            item = form.save(commit=False)
+            item.project = project
+            if not item.created_by_id:
+                item.created_by = request.user
+            if item.status == ProjectTask.STATUS_DONE and not item.completed_by_id:
+                item.completed_by = request.user
+            item.save()
+            messages.success(request, 'Задача сохранена.')
+            return redirect('portal:project_detail', pk=project.pk)
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        task = self.get_task()
+        context.update({
+            'project': self.get_project(),
+            'task': task,
+            'form': context.get('form') or self.get_form(instance=task),
+        })
+        return context
+
+
+class ProjectTaskActionView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request, pk, task_id):
+        project = get_object_or_404(project_queryset(request.user), pk=pk)
+        task = get_object_or_404(task_queryset(request.user), pk=task_id, project=project)
+        action = request.POST.get('action')
+        if action == 'comment':
+            form = PortalTaskCommentForm(request.POST)
+            if form.is_valid():
+                comment = form.save(commit=False)
+                comment.task = task
+                comment.author = request.user
+                comment.save()
+                messages.success(request, 'Комментарий добавлен.')
+        elif action == 'checklist':
+            form = PortalTaskChecklistForm(request.POST)
+            if form.is_valid():
+                checklist = form.save(commit=False)
+                checklist.task = task
+                checklist.save()
+                messages.success(request, 'Чек-лист добавлен.')
+        elif action == 'checklist_item':
+            checklist = get_object_or_404(TaskChecklist, pk=request.POST.get('checklist'), task=task)
+            form = PortalTaskChecklistItemForm(request.POST)
+            if form.is_valid():
+                item = form.save(commit=False)
+                item.checklist = checklist
+                item.done_by = request.user if item.is_done else None
+                item.save()
+                messages.success(request, 'Пункт чек-листа добавлен.')
+        elif action == 'attachment':
+            form = PortalTaskAttachmentForm(request.POST, request.FILES)
+            if form.is_valid():
+                attachment = form.save(commit=False)
+                attachment.task = task
+                attachment.uploaded_by = request.user
+                attachment.save()
+                messages.success(request, 'Файл или ссылка добавлены.')
+        elif action == 'complete':
+            task.complete(user=request.user)
+            messages.success(request, 'Задача закрыта.')
+        elif action == 'reopen':
+            task.reopen()
+            messages.success(request, 'Задача открыта заново.')
+        return redirect('portal:project_detail', pk=project.pk)
 
 
 class FinanceView(PortalContextMixin, TemplateView):
@@ -1229,6 +1729,106 @@ class FinanceExpenseView(PortalContextMixin, TemplateView):
         return context
 
 
+class FinanceDealsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/finance_deals.html'
+    active_page = 'finance'
+    page_title = 'Сделки'
+
+    def get_form(self, data=None):
+        return PortalDealForm(
+            data=data,
+            clients=client_queryset(self.request.user).order_by('-updated_at'),
+            applications=application_queryset(self.request.user).order_by('-created_at'),
+            services=service_queryset(self.request.user).filter(is_active=True).order_by('category__name', 'title'),
+            currencies=Currency.objects.order_by('code'),
+        )
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form(data=request.POST)
+        if form.is_valid():
+            employee = get_employee_profile(request.user)
+            deal = form.save(commit=False)
+            if employee:
+                deal.company = employee.company
+                if not deal.office_id:
+                    deal.office = employee.office
+            else:
+                deal.company = deal.client.company
+                deal.office = deal.client.office
+            deal.manager = request.user
+            if deal.service_id:
+                service = deal.service
+                if not deal.title:
+                    deal.title = service.title
+                if not deal.price_client:
+                    deal.price_client = service.price_client
+                if not deal.currency_id and service.currency_id:
+                    deal.currency = service.currency
+            deal.save()
+            messages.success(request, 'Сделка сохранена.')
+            return redirect('portal:finance_deals')
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        qs = deal_queryset(self.request.user)
+        qs = apply_search(qs, self.request.GET.get('q'), ('title', 'client__full_name', 'service__title', 'comment'))
+        context.update({
+            'form': context.get('form') or self.get_form(),
+            'deals': limit(qs.order_by('-created_at'), 50),
+            'query': self.request.GET.get('q', ''),
+        })
+        return context
+
+
+class FinancePaymentsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/finance_payments.html'
+    active_page = 'finance'
+    page_title = 'Платежи'
+
+    def get_form(self, data=None):
+        return PortalPaymentForm(
+            data=data,
+            deals=deal_queryset(self.request.user).order_by('-created_at'),
+            cashboxes=cashbox_queryset(self.request.user).filter(is_active=True).order_by('office__name', 'name'),
+            currencies=Currency.objects.order_by('code'),
+        )
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form(data=request.POST)
+        if form.is_valid():
+            deal = form.cleaned_data['deal']
+            payment = form.save(commit=False)
+            payment.company = deal.company
+            payment.office = deal.office
+            payment.client = deal.client
+            payment.manager = request.user
+            payment.save()
+            if request.POST.get('confirm_now') and can_confirm_finance(request.user):
+                payment.confirm(user=request.user)
+                messages.success(request, 'Платёж добавлен и подтверждён.')
+            else:
+                messages.success(request, 'Платёж добавлен и ожидает подтверждения.')
+            return redirect('portal:finance_payments')
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        qs = payment_queryset(self.request.user)
+        qs = apply_search(qs, self.request.GET.get('q'), ('client__full_name', 'deal__title', 'comment'))
+        context.update({
+            'form': context.get('form') or self.get_form(),
+            'payments': limit(qs.order_by('-payment_date', '-created_at'), 50),
+            'query': self.request.GET.get('q', ''),
+            'can_confirm_finance': can_confirm_finance(self.request.user),
+        })
+        return context
+
+
 class FinanceReportsView(PortalContextMixin, TemplateView):
     template_name = 'portal/finance_reports.html'
     active_page = 'finance'
@@ -1252,6 +1852,7 @@ class FinanceReportsView(PortalContextMixin, TemplateView):
 
 
 class DocumentsView(ListPageMixin):
+    template_name = 'portal/documents.html'
     active_page = 'documents'
     page_title = 'Документы'
     table_template = 'portal/partials/documents_table.html'
@@ -1261,20 +1862,220 @@ class DocumentsView(ListPageMixin):
     def get_queryset(self):
         return document_queryset(self.request.user)
 
+    def get_extra_context(self, qs):
+        return {
+            'pending_documents': qs.filter(status=GeneratedDocument.STATUS_PENDING).count(),
+            'can_review_documents': can_delete_admin(self.request.user),
+        }
 
-class KnowledgeView(ListPageMixin):
+
+class DocumentActionView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def get_document(self, request, pk):
+        return get_object_or_404(document_queryset(request.user), pk=pk)
+
+    def post(self, request, pk, action):
+        document = self.get_document(request, pk)
+        try:
+            if action == 'submit':
+                document.submit_for_approval(user=request.user, comment=request.POST.get('comment', ''))
+                messages.success(request, 'Документ отправлен на подтверждение.')
+            elif action == 'approve':
+                if not can_delete_admin(request.user):
+                    raise PermissionError('Недостаточно прав.')
+                document.approve(user=request.user, with_stamp=request.POST.get('with_stamp') == '1', comment=request.POST.get('comment', ''))
+                messages.success(request, 'Документ подтверждён.')
+            elif action == 'reject':
+                if not can_delete_admin(request.user):
+                    raise PermissionError('Недостаточно прав.')
+                document.reject(user=request.user, reason=request.POST.get('reason', ''))
+                messages.success(request, 'Документ отклонён.')
+        except Exception as exc:
+            messages.error(request, str(exc))
+        return redirect('portal:documents')
+
+    def get(self, request, pk, action):
+        document = self.get_document(request, pk)
+        if action == 'download-original':
+            if not document.can_download_original:
+                raise Http404
+            log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_ORIGINAL)
+            return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.generated_file.name.split('/')[-1])
+        if action == 'download-approved':
+            if not document.can_download_approved:
+                raise Http404
+            log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
+            return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.approved_file.name.split('/')[-1])
+        raise Http404
+
+
+class KnowledgeView(PortalContextMixin, TemplateView):
+    template_name = 'portal/knowledge.html'
     active_page = 'knowledge'
     page_title = 'База знаний'
-    table_template = 'portal/partials/knowledge_table.html'
-    search_fields = ('title', 'summary', 'content', 'category__name')
-    status_choices = KnowledgeArticle.STATUS_CHOICES
 
-    def get_queryset(self):
-        return knowledge_queryset(self.request.user)
+    def get_folder(self):
+        folder_id = self.kwargs.get('pk')
+        if not folder_id:
+            return None
+        return get_object_or_404(knowledge_category_queryset(self.request.user), pk=folder_id)
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        folder = self.get_folder()
+        query = self.request.GET.get('q', '')
+        categories = knowledge_category_queryset(self.request.user)
+        articles = knowledge_queryset(self.request.user)
+        if folder:
+            child_folders = categories.filter(parent=folder)
+            folder_articles = articles.filter(category=folder)
+            breadcrumbs = []
+            current = folder
+            while current:
+                breadcrumbs.append(current)
+                current = current.parent
+            breadcrumbs.reverse()
+        else:
+            child_folders = categories.filter(parent__isnull=True)
+            folder_articles = articles.filter(category__isnull=True)
+            breadcrumbs = []
+        if query:
+            folder_articles = apply_search(articles, query, ('title', 'summary', 'content', 'category__name'))
+            child_folders = apply_search(categories, query, ('name', 'description'))
+        context.update({
+            'folder': folder,
+            'breadcrumbs': breadcrumbs,
+            'folders': child_folders.order_by('sort_order', 'name'),
+            'articles': folder_articles.order_by('-is_featured', '-updated_at')[:80],
+            'query': query,
+            'can_delete_items': can_delete_admin(self.request.user),
+        })
         context['attempts'] = KnowledgeTestAttempt.objects.filter(user=self.request.user).select_related('test').order_by('-created_at')[:8]
+        return context
+
+
+class KnowledgeFolderCreateView(PortalContextMixin, TemplateView):
+    template_name = 'portal/knowledge_folder_form.html'
+    active_page = 'knowledge'
+    page_title = 'Папка базы знаний'
+
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if not pk:
+            return None
+        return get_object_or_404(knowledge_category_queryset(self.request.user), pk=pk)
+
+    def get_form(self, data=None, instance=None):
+        categories = knowledge_category_queryset(self.request.user).exclude(pk=instance.pk if instance else None)
+        return PortalKnowledgeCategoryForm(data=data, instance=instance, categories=categories)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        folder = self.get_object()
+        context.update({
+            'folder': folder,
+            'form': context.get('form') or self.get_form(instance=folder),
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        folder = self.get_object()
+        if request.POST.get('action') == 'delete' and folder and can_delete_admin(request.user):
+            parent_id = folder.parent_id
+            folder.delete()
+            messages.success(request, 'Папка удалена.')
+            return redirect('portal:knowledge_folder', pk=parent_id) if parent_id else redirect('portal:knowledge')
+        form = self.get_form(data=request.POST, instance=folder)
+        if form.is_valid():
+            employee = get_employee_profile(request.user)
+            item = form.save(commit=False)
+            if employee and not item.company_id:
+                item.company = employee.company
+            if not item.code:
+                item.code = (item.name.lower().replace(' ', '-')[:100] or f'folder-{item.pk or "new"}')
+            if not item.created_by_id:
+                item.created_by = request.user
+            item.save()
+            messages.success(request, 'Папка сохранена.')
+            return redirect('portal:knowledge_folder', pk=item.pk)
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
+
+
+class KnowledgeArticleCreateView(PortalContextMixin, TemplateView):
+    template_name = 'portal/knowledge_article_form.html'
+    active_page = 'knowledge'
+    page_title = 'Статья базы знаний'
+
+    def get_object(self):
+        pk = self.kwargs.get('pk')
+        if not pk:
+            return None
+        return get_object_or_404(knowledge_queryset(self.request.user), pk=pk)
+
+    def get_form(self, data=None, files=None, instance=None):
+        return PortalKnowledgeArticleForm(
+            data=data,
+            files=files,
+            instance=instance,
+            categories=knowledge_category_queryset(self.request.user).order_by('sort_order', 'name'),
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        article = self.get_object()
+        context.update({
+            'article': article,
+            'form': context.get('form') or self.get_form(instance=article),
+            'can_delete_article': bool(article and can_delete_admin(self.request.user)),
+        })
+        return context
+
+    def post(self, request, *args, **kwargs):
+        article = self.get_object()
+        if request.POST.get('action') == 'delete' and article and can_delete_admin(request.user):
+            category_id = article.category_id
+            article.delete()
+            messages.success(request, 'Статья удалена.')
+            return redirect('portal:knowledge_folder', pk=category_id) if category_id else redirect('portal:knowledge')
+        form = self.get_form(data=request.POST, files=request.FILES, instance=article)
+        if form.is_valid():
+            employee = get_employee_profile(request.user)
+            item = form.save(commit=False)
+            if employee and not item.company_id:
+                item.company = employee.company
+                item.office = employee.office
+            if not item.author_id:
+                item.author = request.user
+            item.updated_by = request.user
+            item.save()
+            form.save_attachment(item, request.user)
+            messages.success(request, 'Статья сохранена.')
+            return redirect('portal:knowledge_article', pk=item.pk)
+        context = self.get_context_data()
+        context['form'] = form
+        return self.render_to_response(context)
+
+
+class KnowledgeArticleView(PortalContextMixin, TemplateView):
+    template_name = 'portal/knowledge_article.html'
+    active_page = 'knowledge'
+    page_title = 'Статья'
+
+    def get_article(self):
+        return get_object_or_404(knowledge_queryset(self.request.user).prefetch_related('attachments'), pk=self.kwargs['pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        article = self.get_article()
+        article.mark_read(self.request.user)
+        context.update({
+            'article': article,
+            'can_edit_article': True,
+            'can_delete_article': can_delete_admin(self.request.user),
+        })
         return context
 
 

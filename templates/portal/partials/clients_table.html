@@ -1,15 +1,20 @@
 <div class="table-wrap">
     <table>
-        <thead><tr><th>Name</th><th>Contact</th><th>Location</th><th>Manager</th><th>Status</th><th>Updated</th></tr></thead>
+        <thead><tr><th>Client</th><th>Contact</th><th>Interest</th><th>Manager</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>
         {% for item in items %}
             <tr>
-                <td><span class="strong">{{ item.full_name }}</span>{% if item.is_priority %}<div class="small"><span class="pill warn">Priority</span></div>{% endif %}</td>
+                <td><a class="strong" href="{% url 'portal:client_detail' item.id %}">{{ item.full_name }}</a>{% if item.is_priority %}<div class="small"><span class="pill warn">Priority</span></div>{% endif %}</td>
                 <td>{{ item.phone }}<div class="muted small">{{ item.email|default:"" }}</div></td>
-                <td>{{ item.city|default:"-" }}<div class="muted small">{{ item.citizenship|default:"" }}</div></td>
+                <td>{{ item.get_direction_display|default:item.interested_country|default:"-" }}<div class="muted small">{{ item.interested_university|default:item.interested_program|default:item.city }}</div></td>
                 <td>{{ item.manager.get_full_name|default:item.manager.email }}</td>
                 <td><span class="pill">{{ item.get_status_display }}</span></td>
-                <td>{{ item.updated_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                    <div class="filters">
+                        <a class="pill" href="{% url 'portal:clients' %}?edit={{ item.id }}">Edit</a>
+                        <a class="pill ok" href="{% url 'portal:client_document_create' item.id %}">Document</a>
+                    </div>
+                </td>
             </tr>
         {% empty %}
             <tr><td colspan="6"><div class="empty">No clients found.</div></td></tr>

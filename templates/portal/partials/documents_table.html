@@ -1,6 +1,6 @@
 <div class="table-wrap">
     <table>
-        <thead><tr><th>Document</th><th>Template</th><th>Client</th><th>Manager</th><th>Status</th><th>Created</th></tr></thead>
+        <thead><tr><th>Document</th><th>Template</th><th>Client</th><th>Manager</th><th>Status</th><th>Actions</th></tr></thead>
         <tbody>
         {% for item in items %}
             <tr>
@@ -9,7 +9,19 @@
                 <td>{% if item.client %}{{ item.client.full_name }}{% else %}-{% endif %}</td>
                 <td>{{ item.manager.get_full_name|default:item.manager.email }}</td>
                 <td><span class="pill {% if item.status == 'approved' %}ok{% elif item.status == 'rejected' or item.status == 'error' %}danger{% else %}warn{% endif %}">{{ item.get_status_display }}</span></td>
-                <td>{{ item.created_at|date:"Y-m-d H:i" }}</td>
+                <td>
+                    <div class="filters">
+                        {% if item.can_download_original %}
+                            <a class="pill" href="{% url 'portal:document_action' item.id 'download-original' %}">DOCX</a>
+                        {% endif %}
+                        {% if item.status == 'generated' or item.status == 'rejected' %}
+                            <form method="post" action="{% url 'portal:document_action' item.id 'submit' %}">{% csrf_token %}<button class="pill warn" type="submit">Submit</button></form>
+                        {% endif %}
+                        {% if item.can_download_approved %}
+                            <a class="pill ok" href="{% url 'portal:document_action' item.id 'download-approved' %}">PDF</a>
+                        {% endif %}
+                    </div>
+                </td>
             </tr>
         {% empty %}
             <tr><td colspan="6"><div class="empty">No documents found.</div></td></tr>

@@ -1,0 +1,61 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">{% if edit_object %}Редактировать услугу{% else %}Добавить услугу{% endif %}</h2>
+            {% if edit_object %}<a class="pill" href="{% url 'portal:services' %}">Новая услуга</a>{% endif %}
+        </div>
+        <div class="panel-body">
+            <form method="post" class="grid">
+                {% csrf_token %}
+                {% if edit_object %}<input type="hidden" name="object_id" value="{{ edit_object.id }}">{% endif %}
+                {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="grid cols-2">
+                    <label><span class="muted small">Категория</span>{{ form.category }}{{ form.category.errors }}</label>
+                    <label><span class="muted small">Новая категория</span>{{ form.category_name }}{{ form.category_name.errors }}</label>
+                    <label><span class="muted small">Название</span>{{ form.title }}{{ form.title.errors }}</label>
+                    <label><span class="muted small">Код</span>{{ form.code }}</label>
+                    <label><span class="muted small">Цена для клиента</span>{{ form.price_client }}</label>
+                    <label><span class="muted small">Себестоимость</span>{{ form.real_cost }}</label>
+                    <label><span class="muted small">Валюта</span>{{ form.currency }}</label>
+                </div>
+                <label><span class="muted small">Описание</span>{{ form.description }}</label>
+                <div class="filters">
+                    <label>{{ form.is_active }} Активна</label>
+                    <label>{{ form.is_public }} Публичная</label>
+                </div>
+                <div class="filters">
+                    <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить услугу</button>
+                    {% if edit_object and can_delete_items %}
+                        <button class="btn danger" type="submit" name="action" value="delete"><i data-lucide="trash-2"></i>Удалить</button>
+                    {% endif %}
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Как использовать услуги</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">Сделка</div><div class="muted small">При создании сделки можно выбрать услугу, цена и валюта подтянутся автоматически.</div></div><a class="pill" href="{% url 'portal:finance_deals' %}">Сделки</a></div>
+                <div class="list-row"><div><div class="strong">Себестоимость</div><div class="muted small">Поле real_cost хранится для финансового анализа и доступно админам/бухгалтерам.</div></div><span class="pill warn">Скрыто</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Услуги</h2><span class="pill">{{ total_count }} всего</span></div>
+    <div class="panel-body">
+        <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по услуге или категории">
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div id="portal-table">{% include table_template %}</div>
+    </div>
+</section>
+{% endblock %}

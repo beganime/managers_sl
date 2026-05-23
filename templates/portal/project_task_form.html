@@ -1,0 +1,32 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">{% if task %}Редактировать задачу{% else %}Создать задачу в проекте{% endif %}</h2>
+        <a class="pill" href="{% url 'portal:project_detail' project.id %}">{{ project.title }}</a>
+    </div>
+    <div class="panel-body">
+        <form method="post" class="grid">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="grid cols-2">
+                <label><span class="muted small">Проект</span>{{ form.project }}</label>
+                <label><span class="muted small">Раздел</span>{{ form.section }}</label>
+                <label><span class="muted small">Название</span>{{ form.title }}</label>
+                <label><span class="muted small">Исполнитель</span>{{ form.assigned_to }}</label>
+                <label><span class="muted small">Приоритет</span>{{ form.priority }}</label>
+                <label><span class="muted small">Статус</span>{{ form.status }}</label>
+                <label><span class="muted small">Дедлайн</span>{{ form.deadline }}</label>
+            </div>
+            <label><span class="muted small">Описание</span>{{ form.description }}</label>
+            <div class="filters">
+                <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить задачу</button>
+                {% if task %}
+                    <button class="btn danger" type="submit" name="action" value="delete"><i data-lucide="trash-2"></i>Удалить</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

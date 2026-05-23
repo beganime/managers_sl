@@ -14,24 +14,30 @@ from .models import (
 class DocumentTemplateFieldInline(TabularInline):
     model = DocumentTemplateField
     extra = 0
-    fields = ('key', 'label', 'field_type', 'default_value', 'is_required', 'sort_order')
+    fields = ('label', 'key', 'jinja_key', 'data_source', 'field_type', 'default_value', 'is_required', 'sort_order')
 
 
 @admin.register(DocumentTemplate)
 class DocumentTemplateAdmin(ModelAdmin):
-    list_display = ('name', 'code', 'company', 'requires_approval', 'is_active', 'updated_at')
-    list_filter = ('is_active', 'requires_approval', 'company')
-    search_fields = ('name', 'code', 'description', 'company__name')
+    list_display = ('name', 'document_type', 'code', 'company', 'requires_approval', 'allow_without_stamp', 'allow_with_stamp', 'is_active', 'updated_at')
+    list_filter = ('is_active', 'requires_approval', 'allow_without_stamp', 'allow_with_stamp', 'company', 'document_type')
+    search_fields = ('name', 'code', 'document_type', 'description', 'company__name')
     autocomplete_fields = ('company', 'created_by')
     readonly_fields = ('created_at', 'updated_at')
     inlines = [DocumentTemplateFieldInline]
+    fieldsets = (
+        ('Main', {'fields': ('company', 'name', 'code', 'document_type', 'description', 'file', 'is_active')}),
+        ('Generation rules', {'fields': ('requires_approval', 'allow_without_stamp', 'allow_with_stamp', 'jinja_variables')}),
+        ('Stamp and watermark', {'fields': ('stamp_settings', 'watermark_settings')}),
+        ('Audit', {'fields': ('created_by', 'created_at', 'updated_at')}),
+    )
 
 
 @admin.register(DocumentTemplateField)
 class DocumentTemplateFieldAdmin(ModelAdmin):
-    list_display = ('label', 'key', 'template', 'field_type', 'is_required', 'sort_order')
-    list_filter = ('field_type', 'is_required', 'template')
-    search_fields = ('label', 'key', 'template__name')
+    list_display = ('label', 'key', 'jinja_key', 'data_source', 'template', 'field_type', 'is_required', 'sort_order')
+    list_filter = ('field_type', 'data_source', 'is_required', 'template')
+    search_fields = ('label', 'key', 'jinja_key', 'template__name')
     autocomplete_fields = ('template',)
     readonly_fields = ('created_at', 'updated_at')
 
@@ -74,11 +80,17 @@ class DocumentApprovalAdmin(ModelAdmin):
 
 @admin.register(StampRule)
 class StampRuleAdmin(ModelAdmin):
-    list_display = ('name', 'company', 'office', 'template', 'width_mm', 'sort_order', 'is_active')
-    list_filter = ('is_active', 'company', 'office', 'template')
+    list_display = ('name', 'company', 'office', 'template', 'position', 'width_mm', 'height_mm', 'sort_order', 'is_active')
+    list_filter = ('is_active', 'position', 'watermark_enabled', 'company', 'office', 'template')
     search_fields = ('name', 'company__name', 'office__name', 'template__name')
     autocomplete_fields = ('company', 'office', 'template')
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Scope', {'fields': ('company', 'office', 'template', 'name', 'is_active', 'sort_order')}),
+        ('Stamp', {'fields': ('stamp_image', 'position', 'width_mm', 'height_mm', 'x_mm', 'y_mm', 'opacity')}),
+        ('Watermark', {'fields': ('watermark_enabled', 'watermark_text', 'watermark_image', 'watermark_position', 'watermark_opacity')}),
+        ('Audit', {'fields': ('created_at', 'updated_at')}),
+    )
 
 
 @admin.register(DocumentDownloadLog)

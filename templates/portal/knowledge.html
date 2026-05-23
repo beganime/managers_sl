@@ -1,0 +1,74 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="toolbar">
+    <div>
+        {% if breadcrumbs %}
+            <div class="filters">
+                <a class="pill" href="{% url 'portal:knowledge' %}">База знаний</a>
+                {% for crumb in breadcrumbs %}
+                    <a class="pill" href="{% url 'portal:knowledge_folder' crumb.id %}">{{ crumb.name }}</a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <h2 style="margin:0;">База знаний</h2>
+        {% endif %}
+    </div>
+    <div class="filters">
+        <a class="btn primary" href="{% url 'portal:knowledge_create_folder' %}"><i data-lucide="folder-plus"></i>Папка</a>
+        <a class="btn secondary" href="{% url 'portal:knowledge_create_article' %}"><i data-lucide="file-plus-2"></i>Статья</a>
+    </div>
+</section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-body">
+        <form method="get" class="filters">
+            <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по базе знаний">
+            <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            {% if folder %}<a class="btn" href="{% url 'portal:knowledge_edit_folder' folder.id %}"><i data-lucide="square-pen"></i>Редактировать папку</a>{% endif %}
+        </form>
+    </div>
+</section>
+
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Папки</h2><span class="pill">{{ folders|length }}</span></div>
+        <div class="panel-body">
+            {% if folders %}
+                <div class="grid cols-2">
+                    {% for item in folders %}
+                        <a class="panel" style="box-shadow:none;" href="{% url 'portal:knowledge_folder' item.id %}">
+                            <div class="panel-body">
+                                <div class="strong">{{ item.name }}</div>
+                                <div class="muted small">{{ item.description|default:"Вложенная папка"|truncatechars:90 }}</div>
+                            </div>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">Папок здесь пока нет.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Статьи</h2><span class="pill">{{ articles|length }}</span></div>
+        <div class="panel-body">
+            {% if articles %}
+                <div class="list">
+                    {% for item in articles %}
+                        <a class="list-row" href="{% url 'portal:knowledge_article' item.id %}">
+                            <div>
+                                <div class="strong">{{ item.title }}</div>
+                                <div class="muted small">{{ item.summary|default:item.content|truncatechars:120 }}</div>
+                            </div>
+                            <span class="pill {% if item.status == 'published' %}ok{% else %}warn{% endif %}">{{ item.get_status_display }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">Статей здесь пока нет.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import models
 
 from apps.core.models import ActiveModel, OrderedModel, TimeStampedModel
@@ -63,6 +64,22 @@ class Service(TimeStampedModel, ActiveModel, OrderedModel):
         blank=True,
     )
     is_public = models.BooleanField('Public', default=True, db_index=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Created by',
+        on_delete=models.SET_NULL,
+        related_name='erp_services_created',
+        null=True,
+        blank=True,
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Updated by',
+        on_delete=models.SET_NULL,
+        related_name='erp_services_updated',
+        null=True,
+        blank=True,
+    )
     custom_data = models.JSONField('Custom data', default=dict, blank=True)
 
     class Meta:
@@ -111,4 +128,3 @@ class ServicePrice(TimeStampedModel):
 
     def __str__(self):
         return f'{self.service} - {self.price_client} {self.currency.code}'
-

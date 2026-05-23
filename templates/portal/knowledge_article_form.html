@@ -1,0 +1,43 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">{% if article %}Редактировать статью{% else %}Создать статью{% endif %}</h2>
+        <a class="pill" href="{% url 'portal:knowledge' %}">База знаний</a>
+    </div>
+    <div class="panel-body">
+        <form method="post" enctype="multipart/form-data" class="grid">
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+            <div class="grid cols-2">
+                <label><span class="muted small">Папка</span>{{ form.category }}</label>
+                <label><span class="muted small">Статус</span>{{ form.status }}</label>
+                <label><span class="muted small">Название</span>{{ form.title }}</label>
+                <label><span class="muted small">Slug</span>{{ form.slug }}</label>
+            </div>
+            <label><span class="muted small">Короткое описание</span>{{ form.summary }}</label>
+            <label><span class="muted small">Текст / инструкция / текст для копирования</span>{{ form.content }}</label>
+            <details>
+                <summary class="strong">Файл или ссылка</summary>
+                <div class="grid cols-3" style="margin-top:12px;">
+                    <label><span class="muted small">Название вложения</span>{{ form.attachment_title }}</label>
+                    <label><span class="muted small">Файл</span>{{ form.attachment_file }}</label>
+                    <label><span class="muted small">Ссылка</span>{{ form.attachment_url }}</label>
+                </div>
+            </details>
+            <div class="filters">
+                <label>{{ form.is_featured }} Закрепить</label>
+                <label>{{ form.is_public }} Видна сотрудникам</label>
+                <label>{{ form.is_active }} Активна</label>
+            </div>
+            <div class="filters">
+                <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить статью</button>
+                {% if can_delete_article %}
+                    <button class="btn danger" type="submit" name="action" value="delete"><i data-lucide="trash-2"></i>Удалить</button>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

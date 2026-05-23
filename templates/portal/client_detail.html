@@ -1,0 +1,52 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">{{ client.full_name }}</h2>
+        <div class="filters">
+            <a class="btn secondary" href="{% url 'portal:client_document_create' client.id %}"><i data-lucide="file-plus-2"></i>Создать документ</a>
+            <a class="btn" href="{% url 'portal:clients' %}?edit={{ client.id }}"><i data-lucide="square-pen"></i>Редактировать</a>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="grid cols-4">
+            <div><div class="muted small">Телефон</div><div class="strong">{{ client.phone|default:"-" }}</div></div>
+            <div><div class="muted small">Email</div><div class="strong">{{ client.email|default:"-" }}</div></div>
+            <div><div class="muted small">Статус</div><span class="pill">{{ client.get_status_display }}</span></div>
+            <div><div class="muted small">Менеджер</div><div class="strong">{{ client.manager.get_full_name|default:client.manager.email }}</div></div>
+            <div><div class="muted small">Гражданство</div><div>{{ client.citizenship|default:"-" }}</div></div>
+            <div><div class="muted small">Дата рождения</div><div>{{ client.dob|date:"Y-m-d"|default:"-" }}</div></div>
+            <div><div class="muted small">Паспорт</div><div>{{ client.passport_inter_num|default:client.passport_local_num|default:"-" }}</div></div>
+            <div><div class="muted small">Интерес</div><div>{{ client.interested_university|default:client.interested_program|default:client.get_direction_display|default:"-" }}</div></div>
+        </div>
+    </div>
+</section>
+
+<section class="grid cols-3">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Заявки</h2></div>
+        <div class="panel-body">
+            {% if applications %}
+                <div class="list">{% for item in applications %}<div class="list-row"><div><div class="strong">{{ item.university_name|default:"ВУЗ не выбран" }}</div><div class="muted small">{{ item.program_name|default:item.country }}</div></div><span class="pill">{{ item.get_status_display }}</span></div>{% endfor %}</div>
+            {% else %}<div class="empty">Заявок пока нет.</div>{% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Сделки</h2></div>
+        <div class="panel-body">
+            {% if deals %}
+                <div class="list">{% for item in deals %}<div class="list-row"><div><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.price_client }} {{ item.currency.code }}</div></div><span class="pill">{{ item.get_payment_status_display }}</span></div>{% endfor %}</div>
+            {% else %}<div class="empty">Сделок пока нет.</div>{% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Документы</h2></div>
+        <div class="panel-body">
+            {% if documents %}
+                <div class="list">{% for item in documents %}<div class="list-row"><div><div class="strong">{{ item.title|default:item.template.name }}</div><div class="muted small">{{ item.created_at|date:"Y-m-d H:i" }}</div></div><span class="pill">{{ item.get_status_display }}</span></div>{% endfor %}</div>
+            {% else %}<div class="empty">Документов пока нет.</div>{% endif %}
+        </div>
+    </div>
+</section>
+{% endblock %}

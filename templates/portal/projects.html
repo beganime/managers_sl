@@ -1,0 +1,29 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="toolbar">
+    <div class="filters">
+        <a class="btn primary" href="{% url 'portal:project_create' %}"><i data-lucide="folder-plus"></i>Создать проект</a>
+        <a class="btn" href="{% url 'portal:tasks' %}"><i data-lucide="check-square"></i>Все задачи</a>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Проекты</h2><span class="pill">{{ total_count }} всего</span></div>
+    <div class="panel-body">
+        <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по проекту">
+                <select class="select" name="status" style="width:220px;">
+                    <option value="">Все статусы</option>
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div id="portal-table">{% include table_template %}</div>
+    </div>
+</section>
+{% endblock %}

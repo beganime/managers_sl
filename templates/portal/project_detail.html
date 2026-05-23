@@ -1,0 +1,70 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">{{ project.title }}</h2>
+            <div class="muted small">{{ project.progress_percent }}% · {{ project.get_status_display }}</div>
+        </div>
+        <div class="filters">
+            <a class="btn primary" href="{% url 'portal:project_task_create' project.id %}"><i data-lucide="plus"></i>Создать задачу</a>
+            {% if can_edit_project %}<a class="btn" href="{% url 'portal:project_edit' project.id %}"><i data-lucide="square-pen"></i>Редактировать</a>{% endif %}
+            {% if can_delete_project %}
+                <form method="post">{% csrf_token %}<button class="btn danger" type="submit" name="action" value="delete_project"><i data-lucide="trash-2"></i>Удалить</button></form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel-body">
+        <p class="muted">{{ project.description|default:"Описание проекта не заполнено." }}</p>
+        <form method="post" class="filters">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="add_section">
+            {{ section_form.title }}
+            <button class="btn secondary" type="submit"><i data-lucide="list-plus"></i>Добавить раздел</button>
+        </form>
+    </div>
+</section>
+
+<section class="grid cols-2">
+    {% for section in sections %}
+        <div class="panel">
+            <div class="panel-header"><h2 class="panel-title">{{ section.title }}</h2><span class="pill">{{ section.tasks.count }} задач</span></div>
+            <div class="panel-body">
+                {% for task in tasks %}
+                    {% if task.section_id == section.id %}
+                        <div class="panel" style="box-shadow:none; margin-bottom:12px;">
+                            <div class="panel-body">
+                                <div class="list-row">
+                                    <div>
+                                        <a class="strong" href="{% url 'portal:project_task_edit' project.id task.id %}">{{ task.title }}</a>
+                                        <div class="muted small">{{ task.assigned_to.get_full_name|default:task.assigned_to.email|default:"Без исполнителя" }}{% if task.deadline %} · {{ task.deadline|date:"Y-m-d H:i" }}{% endif %}</div>
+                                    </div>
+                                    <span class="pill {% if task.status == 'done' %}ok{% elif task.priority == 'urgent' or task.priority == 'high' %}warn{% endif %}">{{ task.get_status_display }}</span>
+                                </div>
+                                <div class="filters" style="margin-top:8px;">
+                                    <form method="post" action="{% url 'portal:project_task_action' project.id task.id %}">{% csrf_token %}<button class="pill ok" name="action" value="complete" type="submit">Done</button></form>
+                                    <form method="post" action="{% url 'portal:project_task_action' project.id task.id %}">{% csrf_token %}<button class="pill" name="action" value="reopen" type="submit">Reopen</button></form>
+                                </div>
+                                <form method="post" action="{% url 'portal:project_task_action' project.id task.id %}" class="grid" style="margin-top:10px;">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="action" value="comment">
+                                    <textarea class="textarea" name="text" rows="2" placeholder="Комментарий"></textarea>
+                                    <button class="btn" type="submit"><i data-lucide="message-square-plus"></i>Добавить комментарий</button>
+                                </form>
+                                {% if task.comments.all %}
+                                    <div class="list" style="margin-top:10px;">{% for comment in task.comments.all|slice:":3" %}<div class="muted small">{{ comment.author.get_full_name|default:comment.author.email }}: {{ comment.text }}</div>{% endfor %}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    <div class="empty">Задач пока нет.</div>
+                {% endfor %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="panel"><div class="panel-body"><div class="empty">Разделов пока нет. Создайте первый раздел проекта.</div></div></div>
+    {% endfor %}
+</section>
+{% endblock %}

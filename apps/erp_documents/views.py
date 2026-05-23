@@ -256,7 +256,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
     def download_original(self, request, pk=None):
         document = self.get_object()
         if not document.can_download_original:
-            raise PermissionDenied('Original document is not approved for download.')
+            raise PermissionDenied('Original DOCX document is not available for download.')
         log_download(request, document, DocumentDownloadLog.FILE_TYPE_ORIGINAL)
         return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.generated_file.name.split('/')[-1])
 

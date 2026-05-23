@@ -1,0 +1,38 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Создать документ для {{ client.full_name }}</h2></div>
+        <div class="panel-body">
+            <form method="post" class="grid">
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <label><span class="muted small">Шаблон документа</span>{{ form.template }}{{ form.template.errors }}</label>
+                <label><span class="muted small">Заявка</span>{{ form.application }}</label>
+                <label><span class="muted small">Сделка</span>{{ form.deal }}</label>
+                <label><span class="muted small">Название документа</span>{{ form.title }}</label>
+                <label><span class="muted small">Дополнительные данные JSON</span>{{ form.context_data }}</label>
+                <button class="btn primary" type="submit"><i data-lucide="file-plus-2"></i>Сгенерировать DOCX</button>
+            </form>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Данные для Jinja-переменных</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><span class="muted">{{ "{{ client.full_name }}" }}</span><span class="strong">{{ client.full_name }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ client.phone }}" }}</span><span>{{ client.phone|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ client.email }}" }}</span><span>{{ client.email|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ client.dob }}" }}</span><span>{{ client.dob|date:"Y-m-d"|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ client.citizenship }}" }}</span><span>{{ client.citizenship|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ client.passport_inter_num }}" }}</span><span>{{ client.passport_inter_num|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ client.address_registration }}" }}</span><span>{{ client.address_registration|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ manager.first_name }}" }}</span><span>{{ request.user.first_name|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ company.name }}" }}</span><span>{{ client.company.name }}</span></div>
+                <div class="list-row"><span class="muted">{{ "{{ office.city }}" }}</span><span>{{ client.office.city|default:"-" }}</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
