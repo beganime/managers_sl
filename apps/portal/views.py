@@ -9,6 +9,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.core.files.base import ContentFile
+from django.core.paginator import Paginator
 from django.http import FileResponse, Http404
 from django.db.models import Count, Q, Sum
 from django.shortcuts import get_object_or_404, redirect
@@ -31,6 +32,7 @@ from apps.finance.models import Cashbox, Deal, EmployeeCommission, Expense, Expe
 from apps.knowledge.models import KnowledgeArticle, KnowledgeCategory, KnowledgeTestAttempt
 from apps.organizations.models import Company, Office
 from apps.portal.forms import (
+    PortalCalendarEventForm,
     PortalClientForm,
     PortalDealForm,
     PortalDocumentGenerateForm,
@@ -50,6 +52,7 @@ from apps.portal.forms import (
     PortalTaskForm,
     PortalUniversityForm,
 )
+from apps.portal.models import CalendarEvent
 from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAttachment, TaskChecklist, TaskChecklistItem, TaskComment
 
 
@@ -91,6 +94,7 @@ NAV_GROUPS = (
             {'name': 'rating', 'label': 'Рейтинг сотрудников', 'icon': 'trophy'},
             {'name': 'approvals', 'label': 'Подтверждения', 'icon': 'badge-check'},
             {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
+            {'name': 'employee_reports', 'label': 'Отчёты сотрудников', 'icon': 'clipboard-list', 'staff_only': True},
             {'name': 'finance_reports', 'label': 'Балансы', 'icon': 'circle-dollar-sign'},
         ),
     },
@@ -394,6 +398,22 @@ def notification_queryset(user):
     return qs.filter(recipient=user)
 
 
+def calendar_event_queryset(user):
+    qs = CalendarEvent.objects.select_related('company', 'office', 'owner', 'created_by').prefetch_related('participants').filter(is_active=True)
+    if is_erp_admin(user) or user.is_staff:
+        return qs
+
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.filter(Q(owner=user) | Q(participants=user), visibility=CalendarEvent.VISIBILITY_PRIVATE).distinct()
+
+    visibility_q = Q(owner=user) | Q(participants=user)
+    if employee.office_id:
+        visibility_q |= Q(company=employee.company, office=employee.office, visibility=CalendarEvent.VISIBILITY_OFFICE)
+    visibility_q |= Q(company=employee.company, visibility=CalendarEvent.VISIBILITY_COMPANY)
+    return qs.filter(visibility_q).distinct()
+
+
 def workday_queryset(user):
     qs = WorkDay.objects.select_related('company', 'office', 'employee', 'daily_report')
     if is_erp_admin(user):
@@ -565,6 +585,16 @@ def build_calendar_events(user, limit_count=30):
     today = timezone.localdate()
     events = []
 
+    for event in calendar_event_queryset(user).filter(event_date__gte=today).order_by('event_date', 'start_time')[:80]:
+        events.append({
+            'date': event.event_date,
+            'type': 'Событие',
+            'title': event.title,
+            'details': event.start_time.strftime('%H:%M') if event.start_time else event.get_visibility_display(),
+            'url': f'{reverse("portal:calendar")}?day={event.event_date.isoformat()}',
+            'tone': 'info',
+        })
+
     for task in task_queryset(user).filter(deadline__isnull=False, deadline__date__gte=today).order_by('deadline')[:20]:
         events.append({
             'date': task.deadline.date(),
@@ -614,6 +644,16 @@ MONTH_NAMES_RU = (
 
 def build_events_for_range(user, start_date, end_date):
     events = []
+
+    for event in calendar_event_queryset(user).filter(event_date__gte=start_date, event_date__lte=end_date).order_by('event_date', 'start_time')[:300]:
+        events.append({
+            'date': event.event_date,
+            'type': 'Событие',
+            'title': event.title,
+            'details': event.start_time.strftime('%H:%M') if event.start_time else event.get_visibility_display(),
+            'url': f'{reverse("portal:calendar")}?day={event.event_date.isoformat()}',
+            'tone': 'info',
+        })
 
     for task in task_queryset(user).filter(
         deadline__isnull=False,
@@ -706,6 +746,15 @@ def apply_search(qs, query, fields):
 
 def limit(qs, amount=PAGE_SIZE):
     return qs[:amount]
+
+
+def paginate_queryset(request, qs, per_page=PAGE_SIZE):
+    paginator = Paginator(qs, per_page)
+    page_number = request.GET.get('page') or 1
+    page_obj = paginator.get_page(page_number)
+    query_params = request.GET.copy()
+    query_params.pop('page', None)
+    return page_obj, query_params.urlencode()
 
 
 def get_today_workday(user):
@@ -966,6 +1015,7 @@ class ListPageMixin(PortalContextMixin, TemplateView):
     status_choices = ()
     status_field = 'status'
     default_ordering = '-created_at'
+    page_size = PAGE_SIZE
 
     def get_queryset(self):
         raise NotImplementedError
@@ -988,9 +1038,14 @@ class ListPageMixin(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         qs = self.filter_queryset(self.get_queryset())
         ordering = self.request.GET.get('ordering') or self.default_ordering
+        ordered_qs = qs.order_by(ordering)
+        page_obj, page_query = paginate_queryset(self.request, ordered_qs, self.page_size)
         context.update({
-            'items': limit(qs.order_by(ordering)),
+            'items': page_obj.object_list,
             'total_count': qs.count(),
+            'page_obj': page_obj,
+            'paginator': page_obj.paginator,
+            'page_query': page_query,
             'table_template': self.table_template,
             'table_title': self.get_table_title(),
             'status_choices': self.status_choices,
@@ -1834,10 +1889,13 @@ class FinanceIncomeView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         qs = income_queryset(self.request.user)
         qs = apply_search(qs, self.request.GET.get('q'), ('title', 'source', 'comment', 'cashbox__name'))
+        page_obj, page_query = paginate_queryset(self.request, qs.order_by('-date', '-created_at'), 30)
         context.update({
             'record_type': 'income',
             'form': context.get('form') or self.get_form(),
-            'records': limit(qs.order_by('-date', '-created_at'), 50),
+            'records': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': page_query,
             'total_usd': qs.filter(is_confirmed=True).aggregate(total=Sum('amount_usd'))['total'] or 0,
             'query': self.request.GET.get('q', ''),
             'pending_count': qs.filter(status=Income.STATUS_PENDING).count(),
@@ -1882,11 +1940,14 @@ class FinanceExpenseView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         qs = expense_queryset(self.request.user)
         qs = apply_search(qs, self.request.GET.get('q'), ('title', 'comment', 'category__name', 'employee__email'))
+        page_obj, page_query = paginate_queryset(self.request, qs.order_by('-date', '-created_at'), 30)
         context.update({
             'record_type': 'expense',
             'form': context.get('form') or self.get_form(),
             'can_confirm_finance': can_confirm_finance(self.request.user),
-            'records': limit(qs.order_by('-date', '-created_at'), 50),
+            'records': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': page_query,
             'total_usd': qs.filter(is_confirmed=True).aggregate(total=Sum('amount_usd'))['total'] or 0,
             'query': self.request.GET.get('q', ''),
         })
@@ -1939,9 +2000,12 @@ class FinanceDealsView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         qs = deal_queryset(self.request.user)
         qs = apply_search(qs, self.request.GET.get('q'), ('title', 'client__full_name', 'service__title', 'comment'))
+        page_obj, page_query = paginate_queryset(self.request, qs.order_by('-created_at'), 30)
         context.update({
             'form': context.get('form') or self.get_form(),
-            'deals': limit(qs.order_by('-created_at'), 50),
+            'deals': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': page_query,
             'query': self.request.GET.get('q', ''),
         })
         return context
@@ -1984,9 +2048,12 @@ class FinancePaymentsView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         qs = payment_queryset(self.request.user)
         qs = apply_search(qs, self.request.GET.get('q'), ('client__full_name', 'deal__title', 'comment'))
+        page_obj, page_query = paginate_queryset(self.request, qs.order_by('-payment_date', '-created_at'), 30)
         context.update({
             'form': context.get('form') or self.get_form(),
-            'payments': limit(qs.order_by('-payment_date', '-created_at'), 50),
+            'payments': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': page_query,
             'query': self.request.GET.get('q', ''),
             'can_confirm_finance': can_confirm_finance(self.request.user),
         })
@@ -2157,11 +2224,14 @@ class KnowledgeView(PortalContextMixin, TemplateView):
         if query:
             folder_articles = apply_search(articles, query, ('title', 'summary', 'content', 'category__name'))
             child_folders = apply_search(categories, query, ('name', 'description'))
+        page_obj, page_query = paginate_queryset(self.request, folder_articles.order_by('-is_featured', '-updated_at'), 30)
         context.update({
             'folder': folder,
             'breadcrumbs': breadcrumbs,
             'folders': child_folders.order_by('sort_order', 'name'),
-            'articles': folder_articles.order_by('-is_featured', '-updated_at')[:80],
+            'articles': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': page_query,
             'query': query,
             'can_delete_items': can_delete_admin(self.request.user),
         })
@@ -2373,15 +2443,69 @@ class CalendarView(PortalContextMixin, TemplateView):
     active_page = 'calendar'
     page_title = 'Календарь'
 
+    def get_selected_day(self):
+        return parse_date(self.request.GET.get('day') or '') or timezone.localdate()
+
+    def get_event_form(self, data=None, instance=None, initial=None):
+        return PortalCalendarEventForm(
+            data=data,
+            instance=instance,
+            initial=initial,
+            offices=office_queryset(self.request.user).order_by('name'),
+            users=portal_user_queryset(self.request.user),
+            is_admin=can_delete_admin(self.request.user),
+        )
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action', 'save_event')
+        if action == 'delete_event':
+            event = get_object_or_404(calendar_event_queryset(request.user), pk=request.POST.get('event_id'))
+            if event.owner_id != request.user.id and not can_delete_admin(request.user):
+                messages.error(request, 'Удалить это событие может только автор или администратор.')
+            else:
+                event.delete()
+                messages.success(request, 'Событие удалено.')
+            return redirect(f'{reverse("portal:calendar")}?day={request.POST.get("day") or timezone.localdate().isoformat()}')
+
+        form = self.get_event_form(data=request.POST)
+        selected_day = request.POST.get('event_date') or timezone.localdate().isoformat()
+        if form.is_valid():
+            employee = get_employee_profile(request.user)
+            event = form.save(commit=False)
+            if employee:
+                event.company = employee.company
+                if not event.office_id:
+                    event.office = employee.office
+            elif not event.company_id:
+                event.company = fallback_company()
+            if not can_delete_admin(request.user):
+                event.owner = request.user
+                if event.visibility == CalendarEvent.VISIBILITY_COMPANY:
+                    event.visibility = CalendarEvent.VISIBILITY_OFFICE
+            elif not event.owner_id:
+                event.owner = request.user
+            if not event.created_by_id:
+                event.created_by = request.user
+            event.save()
+            form.save_m2m()
+            event.participants.add(request.user)
+            messages.success(request, 'Событие добавлено в календарь.')
+            return redirect(f'{reverse("portal:calendar")}?day={event.event_date.isoformat()}&month={event.event_date.month}&year={event.event_date.year}')
+
+        context = self.get_context_data()
+        context['event_form'] = form
+        return self.render_to_response(context)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         today = timezone.localdate()
+        selected_day = self.get_selected_day()
         try:
-            month = int(self.request.GET.get('month') or today.month)
+            month = int(self.request.GET.get('month') or selected_day.month or today.month)
         except ValueError:
             month = today.month
         try:
-            year = int(self.request.GET.get('year') or today.year)
+            year = int(self.request.GET.get('year') or selected_day.year or today.year)
         except ValueError:
             year = today.year
         month = min(max(month, 1), 12)
@@ -2397,11 +2521,17 @@ class CalendarView(PortalContextMixin, TemplateView):
             next_month = 1
             next_year += 1
 
+        if can_delete_admin(self.request.user):
+            selected_workdays = workday_queryset(self.request.user).filter(date=selected_day).select_related('employee', 'office', 'daily_report').order_by('office__name', 'employee__first_name')
+        else:
+            selected_workdays = WorkDay.objects.filter(employee=self.request.user, date=selected_day).select_related('employee', 'office', 'daily_report')
+
         context.update({
             'calendar_weeks': build_month_calendar(self.request.user, year, month),
             'weekday_labels': ('Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'),
             'selected_month': month,
             'selected_year': year,
+            'selected_day': selected_day,
             'selected_month_name': MONTH_NAMES_RU[month],
             'month_options': [(number, MONTH_NAMES_RU[number]) for number in range(1, 13)],
             'year_options': range(today.year - 3, today.year + 4),
@@ -2410,8 +2540,82 @@ class CalendarView(PortalContextMixin, TemplateView):
             'next_month': next_month,
             'next_year': next_year,
             'events': build_calendar_events(self.request.user, limit_count=80),
+            'selected_day_events': build_events_for_range(self.request.user, selected_day, selected_day),
+            'manual_events': calendar_event_queryset(self.request.user).filter(event_date=selected_day).order_by('start_time', 'title'),
+            'event_form': context.get('event_form') or self.get_event_form(initial={'event_date': selected_day}),
+            'selected_workdays': selected_workdays,
             'upcoming_tasks': task_queryset(self.request.user).filter(deadline__isnull=False, deadline__date__gte=today).order_by('deadline')[:12],
             'birthdays': employee_queryset(self.request.user).filter(user__dob__isnull=False).order_by('user__dob__month', 'user__dob__day')[:50],
+            'can_manage_calendar': can_delete_admin(self.request.user),
+        })
+        return context
+
+
+class EmployeeReportsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/employee_reports.html'
+    active_page = 'employee_reports'
+    page_title = 'Отчёты сотрудников'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_delete_admin(request.user):
+            messages.error(request, 'Эта страница доступна только администратору.')
+            return redirect('portal:dashboard')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_date_range(self):
+        today = timezone.localdate()
+        exact_date = parse_date(self.request.GET.get('date') or '')
+        if exact_date:
+            return exact_date, exact_date
+        period = self.request.GET.get('period') or 'week'
+        if period == '3days':
+            return today - timedelta(days=2), today
+        if period == 'month':
+            return today.replace(day=1), today
+        return today - timedelta(days=6), today
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        start_date, end_date = self.get_date_range()
+        employee_id = self.request.GET.get('employee') or ''
+        office_id = self.request.GET.get('office') or ''
+
+        profiles = employee_queryset(self.request.user).filter(is_active=True).order_by('office__name', 'user__first_name', 'user__last_name')
+        if office_id:
+            profiles = profiles.filter(office_id=office_id)
+
+        workdays = workday_queryset(self.request.user).filter(date__gte=start_date, date__lte=end_date).select_related('employee', 'office', 'daily_report').order_by('-date', 'office__name', 'employee__first_name')
+        if employee_id:
+            workdays = workdays.filter(employee_id=employee_id)
+        if office_id:
+            workdays = workdays.filter(office_id=office_id)
+
+        page_obj, page_query = paginate_queryset(self.request, workdays, 30)
+        selected_date = parse_date(self.request.GET.get('date') or '') or timezone.localdate()
+        submitted_user_ids = set(
+            DailyReport.objects.filter(date=selected_date, employee_id__in=profiles.values('user_id')).values_list('employee_id', flat=True)
+        )
+        workday_user_ids = set(
+            WorkDay.objects.filter(date=selected_date, employee_id__in=profiles.values('user_id')).exclude(status=WorkDay.STATUS_NOT_STARTED).values_list('employee_id', flat=True)
+        )
+        missing_reports = profiles.exclude(user_id__in=submitted_user_ids)
+        not_started = profiles.exclude(user_id__in=workday_user_ids)
+
+        context.update({
+            'start_date': start_date,
+            'end_date': end_date,
+            'selected_date': selected_date,
+            'current_period': self.request.GET.get('period') or 'week',
+            'current_employee': employee_id,
+            'current_office': office_id,
+            'employee_options': profiles,
+            'office_options': office_queryset(self.request.user).order_by('name'),
+            'workdays': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': page_query,
+            'total_count': workdays.count(),
+            'missing_reports': missing_reports[:80],
+            'not_started': not_started[:80],
         })
         return context
 

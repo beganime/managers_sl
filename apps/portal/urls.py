@@ -11,6 +11,7 @@ from .views import (
     DocumentActionView,
     DashboardView,
     DocumentsView,
+    EmployeeReportsView,
     FinanceDealsView,
     FinanceExpenseView,
     FinanceIncomeView,
@@ -97,6 +98,7 @@ urlpatterns = [
     path('workday/report/', WorkdayReportView.as_view(), name='workday_report'),
     path('workday/close/', WorkdayCloseView.as_view(), name='workday_close'),
     path('rating/', RatingView.as_view(), name='rating'),
+    path('employee-reports/', EmployeeReportsView.as_view(), name='employee_reports'),
     path('notifications/', NotificationsView.as_view(), name='notifications'),
     path('reports/', ReportsView.as_view(), name='reports'),
 ]

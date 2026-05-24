@@ -65,6 +65,19 @@
                 </tbody>
             </table>
         </div>
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+            <div class="toolbar" style="margin-top:16px;">
+                <div class="muted small">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</div>
+                <div class="filters">
+                    {% if page_obj.has_previous %}
+                        <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.previous_page_number }}"><i data-lucide="chevron-left"></i>Назад</a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.next_page_number }}">Дальше<i data-lucide="chevron-right"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

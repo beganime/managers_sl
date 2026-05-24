@@ -6,6 +6,7 @@ from apps.erp_documents.models import DocumentTemplate, GeneratedDocument
 from apps.erp_services.models import Service, ServiceCategory
 from apps.finance.models import Cashbox, Deal, Expense, ExpenseCategory, Income, Payment
 from apps.knowledge.models import KnowledgeArticle, KnowledgeAttachment, KnowledgeCategory
+from apps.portal.models import CalendarEvent
 from apps.projects_v2.models import (
     Project,
     ProjectSection,
@@ -472,6 +473,43 @@ class PortalKnowledgeArticleForm(PortalFormMixin, forms.ModelForm):
             file=file,
             url=url,
         )
+
+
+class PortalCalendarEventForm(PortalFormMixin, forms.ModelForm):
+    class Meta:
+        model = CalendarEvent
+        fields = ['office', 'participants', 'title', 'description', 'event_date', 'start_time', 'end_time', 'visibility']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 3}),
+            'event_date': forms.DateInput(attrs={'type': 'date'}),
+            'start_time': forms.TimeInput(attrs={'type': 'time'}),
+            'end_time': forms.TimeInput(attrs={'type': 'time'}),
+            'participants': forms.SelectMultiple(attrs={'size': 5}),
+        }
+
+    def __init__(self, *args, offices=None, users=None, is_admin=False, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['office'].queryset = offices
+        self.fields['participants'].queryset = users
+        self.fields['office'].required = False
+        self.fields['participants'].required = False
+        self.fields['start_time'].required = False
+        self.fields['end_time'].required = False
+        self.fields['description'].required = False
+        if not is_admin:
+            self.fields['visibility'].choices = [
+                choice for choice in CalendarEvent.VISIBILITY_CHOICES
+                if choice[0] != CalendarEvent.VISIBILITY_COMPANY
+            ]
+        self.style_fields()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        start_time = cleaned_data.get('start_time')
+        end_time = cleaned_data.get('end_time')
+        if start_time and end_time and end_time < start_time:
+            self.add_error('end_time', 'End time must be later than start time.')
+        return cleaned_data
 
 
 class PortalIncomeForm(PortalFormMixin, forms.ModelForm):

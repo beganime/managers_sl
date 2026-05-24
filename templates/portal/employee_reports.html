@@ -1,0 +1,138 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Фильтры</h2>
+        <span class="pill">{{ total_count }} записей</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <select class="select" name="period" style="width:160px;">
+                    <option value="3days" {% if current_period == "3days" %}selected{% endif %}>3 дня</option>
+                    <option value="week" {% if current_period == "week" %}selected{% endif %}>Неделя</option>
+                    <option value="month" {% if current_period == "month" %}selected{% endif %}>Месяц</option>
+                </select>
+                <select class="select" name="office" style="width:220px;">
+                    <option value="">Все офисы</option>
+                    {% for office in office_options %}
+                        <option value="{{ office.id }}" {% if current_office == office.id|stringformat:"s" %}selected{% endif %}>{{ office.name }}</option>
+                    {% endfor %}
+                </select>
+                <select class="select" name="employee" style="width:260px;">
+                    <option value="">Все сотрудники</option>
+                    {% for profile in employee_options %}
+                        <option value="{{ profile.user_id }}" {% if current_employee == profile.user_id|stringformat:"s" %}selected{% endif %}>{{ profile.user.get_full_name|default:profile.user.email }}</option>
+                    {% endfor %}
+                </select>
+                <input class="input" type="date" name="date" value="{{ request.GET.date }}" style="width:170px;">
+                <button class="btn primary" type="submit"><i data-lucide="filter"></i>Показать</button>
+            </div>
+        </form>
+        <div class="muted small">Период: {{ start_date|date:"d.m.Y" }} - {{ end_date|date:"d.m.Y" }}</div>
+    </div>
+</section>
+
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Не отправили отчёт за {{ selected_date|date:"d.m.Y" }}</h2></div>
+        <div class="panel-body">
+            {% if missing_reports %}
+                <div class="list">
+                    {% for profile in missing_reports %}
+                        <div class="list-row">
+                            <div>
+                                <div class="strong">{{ profile.user.get_full_name|default:profile.user.email }}</div>
+                                <div class="muted small">{{ profile.office.name|default:"Офис не указан" }}</div>
+                            </div>
+                            <span class="pill warn">Нет отчёта</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">Все доступные сотрудники отправили отчёт за выбранный день.</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Не начали рабочий день</h2></div>
+        <div class="panel-body">
+            {% if not_started %}
+                <div class="list">
+                    {% for profile in not_started %}
+                        <div class="list-row">
+                            <div>
+                                <div class="strong">{{ profile.user.get_full_name|default:profile.user.email }}</div>
+                                <div class="muted small">{{ profile.office.name|default:"Офис не указан" }}</div>
+                            </div>
+                            <span class="pill danger">Не начал</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">Все доступные сотрудники начали рабочий день.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Отчёты по дням</h2>
+        <span class="pill">{{ total_count }} всего</span>
+    </div>
+    <div class="panel-body table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Дата</th>
+                    <th>Сотрудник</th>
+                    <th>Офис</th>
+                    <th>Статус дня</th>
+                    <th>Начал</th>
+                    <th>Закрыл</th>
+                    <th>Отчёт</th>
+                </tr>
+            </thead>
+            <tbody>
+            {% for workday in workdays %}
+                <tr>
+                    <td>{{ workday.date|date:"d.m.Y" }}</td>
+                    <td>{{ workday.employee.get_full_name|default:workday.employee.email }}</td>
+                    <td>{{ workday.office.name|default:"-" }}</td>
+                    <td><span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span></td>
+                    <td>{{ workday.started_at|date:"H:i"|default:"-" }}</td>
+                    <td>{{ workday.closed_at|date:"H:i"|default:"-" }}</td>
+                    <td>
+                        {% if workday.has_report %}
+                            <div class="strong">{{ workday.daily_report.content|truncatechars:180 }}</div>
+                            {% if workday.daily_report.results %}<div class="muted small">Итоги: {{ workday.daily_report.results|truncatechars:140 }}</div>{% endif %}
+                            {% if workday.daily_report.plans %}<div class="muted small">Планы: {{ workday.daily_report.plans|truncatechars:140 }}</div>{% endif %}
+                        {% else %}
+                            <span class="pill warn">Отчёт не отправлен</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7"><div class="empty">За выбранный период рабочих дней нет.</div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+
+        {% if page_obj and page_obj.paginator.num_pages > 1 %}
+            <div class="toolbar" style="margin-top:14px;">
+                <div class="muted small">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</div>
+                <div class="filters">
+                    {% if page_obj.has_previous %}
+                        <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.previous_page_number }}"><i data-lucide="chevron-left"></i>Назад</a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.next_page_number }}">Дальше<i data-lucide="chevron-right"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}
