@@ -1,0 +1,65 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Добавить платёж</h2><span class="pill">USD</span></div>
+        <div class="panel-body">
+            <form method="post" class="grid">
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="grid cols-2">
+                    <label><span class="muted small">Сделка</span>{{ form.deal }}{{ form.deal.errors }}</label>
+                    <label><span class="muted small">Касса</span>{{ form.cashbox }}</label>
+                    <label><span class="muted small">Сумма</span>{{ form.amount }}{{ form.amount.errors }}</label>
+                    <label><span class="muted small">Валюта</span>{{ form.currency }}</label>
+                    <label><span class="muted small">Курс к USD</span>{{ form.exchange_rate }}</label>
+                    <label><span class="muted small">Дата платежа</span>{{ form.payment_date }}</label>
+                    <label><span class="muted small">Метод</span>{{ form.method }}</label>
+                </div>
+                <label><span class="muted small">Комментарий</span>{{ form.comment }}</label>
+                {% if can_confirm_finance %}
+                    <label style="display:flex; align-items:center; gap:8px;"><input type="checkbox" name="confirm_now" value="1"> <span>Сразу подтвердить платёж</span></label>
+                {% endif %}
+                <button class="btn primary" type="submit"><i data-lucide="credit-card"></i>Добавить платёж</button>
+            </form>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Правило</h2></div>
+        <div class="panel-body">
+            <div class="empty">Платёж влияет на сделку и кассу только после подтверждения администратором или бухгалтером.</div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Платежи</h2></div>
+    <div class="panel-body">
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск">
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Дата</th><th>Клиент</th><th>Сделка</th><th>Сумма</th><th>Статус</th></tr></thead>
+                <tbody>
+                {% for item in payments %}
+                    <tr>
+                        <td>{{ item.payment_date }}</td>
+                        <td>{{ item.client.full_name }}</td>
+                        <td>{{ item.deal.title }}</td>
+                        <td>{{ item.amount|floatformat:2 }} {{ item.currency.code }}<div class="muted small">${{ item.amount_usd|floatformat:2 }}</div></td>
+                        <td><span class="pill {% if item.is_confirmed %}ok{% else %}warn{% endif %}">{% if item.is_confirmed %}Подтверждён{% else %}Ожидает{% endif %}</span></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5"><div class="empty">Платежей пока нет.</div></td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -4,10 +4,13 @@ from django.db.models import Q
 from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.generics import CreateAPIView
+from rest_framework.views import APIView
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
+
+from apps.crm.models import Lead as CrmLead, LeadSource as CrmLeadSource
+from apps.organizations.models import Company
 
 from .models import Lead
 from .serializers import LeadSerializer, MobileLeadSerializer
@@ -69,21 +72,121 @@ class LeadCreateThrottle(AnonRateThrottle):
         return get_client_ip(request) or super().get_ident(request)
 
 
-class LeadCreateAPIView(CreateAPIView):
-    queryset = Lead.objects.all()
-    serializer_class = LeadSerializer
-    permission_classes = [IsAuthorizedAPIClient]
+CRM_LEAD_FIELD_MAP = {
+    'ФИО студента': 'student_name',
+    'Наличие паспорта': 'has_passport',
+    'Месяц поездки': 'travel_month',
+    'Город вылета': 'departure_city',
+    'Дата поездки': 'travel_date',
+    'Город прибытия': 'arrival_city',
+    'Багаж': 'luggage',
+    'Текущее образование': 'current_education',
+    'Текущий университет': 'current_university',
+    'Текущая страна': 'current_country',
+}
+
+
+def default_crm_lead_company():
+    configured_id = getattr(settings, 'LEADS_DEFAULT_COMPANY_ID', None)
+    qs = Company.objects.all().order_by('id')
+    if configured_id:
+        company = qs.filter(pk=configured_id).first()
+        if company:
+            return company
+    return qs.first()
+
+
+def normalize_crm_lead_payload(data):
+    payload = data.copy() if hasattr(data, 'copy') else dict(data or {})
+    custom_data = {}
+    for source_key, target_key in CRM_LEAD_FIELD_MAP.items():
+        if source_key in payload:
+            custom_data[target_key] = payload.get(source_key)
+
+    full_name = (
+        payload.get('full_name')
+        or payload.get('name')
+        or payload.get('ФИО студента')
+        or payload.get('student_name')
+        or payload.get('ФИО')
+        or 'Новая заявка'
+    )
+    phone = payload.get('phone') or payload.get('Телефон') or payload.get('telephone') or ''
+    email = payload.get('email') or payload.get('Email') or ''
+    direction = payload.get('direction') or payload.get('Направление') or ''
+    allowed_directions = {choice[0] for choice in CrmLead.DIRECTION_CHOICES}
+    if direction not in allowed_directions:
+        custom_data['raw_direction'] = direction
+        direction = 'other' if direction else ''
+
+    known_keys = {
+        'full_name',
+        'name',
+        'phone',
+        'telephone',
+        'email',
+        'Email',
+        'country',
+        'city',
+        'direction',
+        'interested_country',
+        'interested_program',
+        'comment',
+        'message',
+        'Направление',
+        'Телефон',
+        'ФИО',
+    } | set(CRM_LEAD_FIELD_MAP.keys())
+
+    for key, value in payload.items():
+        if key not in known_keys:
+            custom_data[key] = value
+
+    return {
+        'full_name': clean_header(full_name, 255) or 'Новая заявка',
+        'phone': clean_header(phone, 50),
+        'email': clean_header(email, 255) or None,
+        'country': clean_header(payload.get('country') or payload.get('Страна'), 100),
+        'city': clean_header(payload.get('city') or payload.get('Город'), 100),
+        'direction': direction,
+        'interested_country': clean_header(payload.get('interested_country') or payload.get('Интересующая страна'), 100),
+        'interested_program': clean_header(payload.get('interested_program') or payload.get('Интересующая программа'), 255),
+        'comment': payload.get('comment') or payload.get('message') or '',
+        'custom_data': {'raw_payload': dict(payload), **custom_data},
+    }
+
+
+class LeadCreateAPIView(APIView):
+    permission_classes = []
     throttle_classes = [LeadCreateThrottle]
 
-    def perform_create(self, serializer):
-        request = self.request
+    def post(self, request, *args, **kwargs):
+        actual_key = getattr(settings, 'LEADS_API_KEY', '')
+        if not actual_key:
+            return Response({'detail': 'LEADS_API_KEY is not configured.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        if request.headers.get('X-API-KEY') != actual_key:
+            return Response({'detail': 'Invalid API key.'}, status=status.HTTP_403_FORBIDDEN)
 
-        lead = serializer.save(
+        company = default_crm_lead_company()
+        if not company:
+            return Response({'detail': 'No company exists for incoming leads.'}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        source, _ = CrmLeadSource.objects.get_or_create(
+            code='website',
+            defaults={'name': 'Website', 'description': 'Incoming leads from external website'},
+        )
+        data = normalize_crm_lead_payload(request.data)
+        if not data['phone'] and not data['email']:
+            return Response({'detail': 'Phone or email is required.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        lead = CrmLead.objects.create(
+            company=company,
+            source=source,
+            status='new',
             submitter_ip=get_client_ip(request),
             submitter_user_agent=clean_header(request.META.get('HTTP_USER_AGENT'), 2000),
             submitter_referer=clean_header(request.META.get('HTTP_REFERER'), 1000),
-            submitter_origin=clean_header(request.META.get('HTTP_ORIGIN'), 255),
-            submitter_host=clean_header(request.META.get('HTTP_HOST'), 255),
+            **data,
         )
 
         try:
@@ -91,6 +194,15 @@ class LeadCreateAPIView(CreateAPIView):
             notify_admins_about_new_lead(lead)
         except Exception:
             pass
+
+        return Response(
+            {
+                'id': lead.id,
+                'status': lead.status,
+                'detail': 'Lead created.',
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 class LeadViewSet(viewsets.ModelViewSet):
     serializer_class = MobileLeadSerializer

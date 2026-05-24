@@ -24,6 +24,11 @@
     <div class="filters">
         <a class="btn primary" href="{% url 'portal:finance_income' %}"><i data-lucide="plus"></i>Добавить доход</a>
         <a class="btn secondary" href="{% url 'portal:finance_expense' %}"><i data-lucide="minus"></i>Добавить расход</a>
+        <a class="btn" href="{% url 'portal:finance_deals' %}"><i data-lucide="briefcase-business"></i>Сделки</a>
+        <a class="btn" href="{% url 'portal:finance_payments' %}"><i data-lucide="credit-card"></i>Платежи</a>
+        {% if can_access_admin %}
+            <a class="btn" href="{% url 'portal:approvals' %}"><i data-lucide="badge-check"></i>Подтверждения</a>
+        {% endif %}
         <a class="btn" href="{% url 'portal:finance_reports' %}"><i data-lucide="bar-chart-3"></i>Отчёты</a>
     </div>
 </section>
@@ -77,9 +82,9 @@
                     <div class="list-row">
                         <div>
                             <div class="strong">{{ item.title }}</div>
-                            <div class="muted small">{{ item.date }} В· {{ item.source|default:item.cashbox.name }}</div>
+                            <div class="muted small">{{ item.date }} В· {% if item.source %}{{ item.source }}{% else %}{{ item.cashbox.name }}{% endif %}</div>
                         </div>
-                        <span class="pill ok">${{ item.amount_usd|floatformat:2 }}</span>
+                        <span class="pill {% if item.is_confirmed %}ok{% elif item.status == 'rejected' %}danger{% else %}warn{% endif %}">${{ item.amount_usd|floatformat:2 }}</span>
                     </div>
                 {% endfor %}
                 </div>

@@ -1,0 +1,72 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="metric-grid">
+    <div class="metric"><div class="metric-top"><span>Доходы на подтверждении</span><i data-lucide="circle-dollar-sign"></i></div><div class="metric-value">{{ pending_incomes_count }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Документы на проверке</span><i data-lucide="file-check-2"></i></div><div class="metric-value">{{ pending_documents_count }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Платежи ожидают</span><i data-lucide="credit-card"></i></div><div class="metric-value">{{ pending_payments_count }}</div></div>
+</section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><h2 class="panel-title">Доходы на подтверждение</h2><span class="pill">Комиссия 5%</span></div>
+    <div class="panel-body table-wrap">
+        <table>
+            <thead><tr><th>Дата</th><th>Доход</th><th>Менеджер</th><th>Клиент/сделка</th><th>Сумма</th><th>Доказательство</th><th>Действия</th></tr></thead>
+            <tbody>
+            {% for item in pending_incomes %}
+                <tr>
+                    <td>{{ item.date }}</td>
+                    <td><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.comment|default:item.source }}</div></td>
+                    <td>{{ item.employee.get_full_name|default:item.employee.email|default:"-" }}</td>
+                    <td>
+                        {{ item.client.full_name|default:"-" }}
+                        <div class="muted small">
+                            {% if item.deal %}{{ item.deal.title }}{% elif item.service %}{{ item.service.title }}{% else %}-{% endif %}
+                        </div>
+                    </td>
+                    <td>${{ item.amount_usd|floatformat:2 }}</td>
+                    <td>{% if item.proof_file %}<a class="pill" href="{{ item.proof_file.url }}" target="_blank">Открыть</a>{% else %}<span class="pill warn">Нет файла</span>{% endif %}</td>
+                    <td>
+                        <div class="filters">
+                            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="confirm_income"><input type="hidden" name="income_id" value="{{ item.id }}"><button class="btn primary" type="submit"><i data-lucide="check"></i>Подтвердить</button></form>
+                            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="reject_income"><input type="hidden" name="income_id" value="{{ item.id }}"><button class="btn danger" type="submit"><i data-lucide="x"></i>Отклонить</button></form>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="7"><div class="empty">Доходов на подтверждение нет.</div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Документы на подтверждение</h2><span class="pill">PDF с печатью после одобрения</span></div>
+    <div class="panel-body table-wrap">
+        <table>
+            <thead><tr><th>Документ</th><th>Клиент</th><th>Менеджер</th><th>Создан</th><th>Действия</th></tr></thead>
+            <tbody>
+            {% for item in pending_documents %}
+                <tr>
+                    <td><div class="strong">{{ item.title|default:item.template.name }}</div><div class="muted small">{{ item.template.name }}</div></td>
+                    <td>{{ item.client.full_name|default:"-" }}</td>
+                    <td>{{ item.manager.get_full_name|default:item.manager.email }}</td>
+                    <td>{{ item.created_at|date:"d.m.Y H:i" }}</td>
+                    <td>
+                        <div class="filters">
+                            {% if item.can_download_original %}<a class="btn" href="{% url 'portal:document_action' item.id 'download-original' %}"><i data-lucide="download"></i>DOCX</a>{% endif %}
+                            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="approve_document"><input type="hidden" name="document_id" value="{{ item.id }}"><button class="btn primary" type="submit"><i data-lucide="check"></i>Одобрить без печати</button></form>
+                            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="approve_document"><input type="hidden" name="document_id" value="{{ item.id }}"><input type="hidden" name="with_stamp" value="1"><button class="btn primary" type="submit"><i data-lucide="stamp"></i>Одобрить с печатью</button></form>
+                            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="reject_document"><input type="hidden" name="document_id" value="{{ item.id }}"><button class="btn danger" type="submit"><i data-lucide="x"></i>Отклонить</button></form>
+                        </div>
+                    </td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="5"><div class="empty">Документов на проверку нет.</div></td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

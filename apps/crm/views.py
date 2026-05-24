@@ -65,12 +65,17 @@ class LeadViewSet(viewsets.ModelViewSet):
             office=lead.office,
             manager=manager,
             source_lead=lead,
+            lead_source=lead.source,
+            direction=lead.direction,
             full_name=lead.full_name,
             phone=lead.phone,
             email=lead.email,
             citizenship=lead.country,
             city=lead.city,
+            interested_country=lead.interested_country,
+            interested_program=lead.interested_program,
             comments=lead.comment,
+            custom_data=lead.custom_data or {},
         )
         lead.status = 'converted'
         lead.converted_at = timezone.now()

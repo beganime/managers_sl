@@ -78,30 +78,42 @@ class ExpenseAdmin(ModelAdmin):
 
 @admin.register(Income)
 class IncomeAdmin(ModelAdmin):
-    list_display = ('title', 'amount', 'currency', 'amount_usd', 'date', 'company', 'office', 'cashbox', 'source')
-    list_filter = ('company', 'office', 'cashbox', 'currency', 'date')
-    search_fields = ('title', 'source', 'comment')
-    autocomplete_fields = ('company', 'office', 'cashbox', 'currency')
-    readonly_fields = ('amount_usd', 'created_at', 'updated_at')
+    list_display = ('title', 'employee', 'amount', 'currency', 'amount_usd', 'date', 'company', 'office', 'status', 'is_confirmed')
+    list_filter = ('status', 'is_confirmed', 'company', 'office', 'cashbox', 'currency', 'date')
+    search_fields = ('title', 'source', 'comment', 'employee__email', 'client__full_name', 'deal__title', 'service__title')
+    autocomplete_fields = ('company', 'office', 'cashbox', 'employee', 'client', 'deal', 'service', 'currency', 'confirmed_by', 'rejected_by')
+    readonly_fields = ('amount_usd', 'confirmed_at', 'rejected_at', 'created_at', 'updated_at')
     date_hierarchy = 'date'
+
+    @admin.action(description='Confirm selected incomes')
+    def confirm_incomes(self, request, queryset):
+        for income in queryset.select_related('cashbox', 'currency', 'employee'):
+            income.confirm(user=request.user)
+
+    @admin.action(description='Reject selected incomes')
+    def reject_incomes(self, request, queryset):
+        for income in queryset.select_related('cashbox', 'currency', 'employee'):
+            income.reject(user=request.user, reason='Rejected from admin action.')
+
+    actions = ('confirm_incomes', 'reject_incomes')
 
 
 @admin.register(Transaction)
 class TransactionAdmin(ModelAdmin):
     list_display = ('transaction_type', 'cashbox', 'amount', 'currency', 'amount_usd', 'company', 'office', 'created_at')
     list_filter = ('transaction_type', 'company', 'office', 'cashbox', 'currency', 'created_at')
-    search_fields = ('comment', 'related_payment__client__full_name', 'related_expense__title')
-    autocomplete_fields = ('company', 'office', 'cashbox', 'currency', 'related_payment', 'related_expense', 'created_by')
+    search_fields = ('comment', 'related_payment__client__full_name', 'related_expense__title', 'related_income__title')
+    autocomplete_fields = ('company', 'office', 'cashbox', 'currency', 'related_payment', 'related_expense', 'related_income', 'created_by')
     readonly_fields = ('created_at', 'updated_at')
     date_hierarchy = 'created_at'
 
 
 @admin.register(EmployeeCommission)
 class EmployeeCommissionAdmin(ModelAdmin):
-    list_display = ('employee', 'deal', 'payment', 'percent', 'amount_usd', 'status', 'company', 'office')
+    list_display = ('employee', 'deal', 'payment', 'income', 'percent', 'amount_usd', 'status', 'company', 'office')
     list_filter = ('status', 'company', 'office', 'employee', 'created_at')
-    search_fields = ('employee__email', 'deal__title', 'payment__client__full_name')
-    autocomplete_fields = ('company', 'office', 'employee', 'payment', 'deal', 'approved_by')
+    search_fields = ('employee__email', 'deal__title', 'payment__client__full_name', 'income__title')
+    autocomplete_fields = ('company', 'office', 'employee', 'payment', 'income', 'deal', 'approved_by')
     readonly_fields = ('created_at', 'updated_at')
 
 

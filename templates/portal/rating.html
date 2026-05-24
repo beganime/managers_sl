@@ -1,45 +1,100 @@
 {% extends "portal/base.html" %}
 
 {% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Рейтинг сотрудников</h2>
+        <span class="pill">Доходы и комиссии считаются в USD</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <select class="select" name="period" style="width:180px;">
+                    <option value="week" {% if current_period == "week" %}selected{% endif %}>7 дней</option>
+                    <option value="month" {% if current_period == "month" %}selected{% endif %}>Месяц</option>
+                    <option value="quarter" {% if current_period == "quarter" %}selected{% endif %}>90 дней</option>
+                </select>
+                <select class="select" name="office" style="width:220px;">
+                    <option value="">Все доступные офисы</option>
+                    {% for office in office_options %}
+                        <option value="{{ office.id }}" {% if current_office == office.id|stringformat:"s" %}selected{% endif %}>{{ office.name }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn primary" type="submit"><i data-lucide="filter"></i>Показать</button>
+            </div>
+        </form>
+    </div>
+</section>
+
+{% if podium_rows %}
+<section class="grid cols-3" style="margin-bottom:16px; align-items:end;">
+    {% for row in podium_rows %}
+        <div class="panel" style="{% if forloop.counter == 1 %}border-color:#d6a300;{% endif %}">
+            <div class="panel-body" style="text-align:center;">
+                <div style="width:64px;height:64px;border-radius:999px;margin:0 auto 10px;background:#ecf4f1;display:grid;place-items:center;overflow:hidden;">
+                    {% if row.avatar_url %}
+                        <img src="{{ row.avatar_url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
+                    {% else %}
+                        <i data-lucide="user-round"></i>
+                    {% endif %}
+                </div>
+                <div class="muted small">{% if forloop.counter == 1 %}<i data-lucide="crown"></i> 1 место{% elif forloop.counter == 2 %}2 место{% else %}3 место{% endif %}</div>
+                <div class="strong" style="font-size:18px;">{{ row.profile.user.get_full_name|default:row.profile.user.email }}</div>
+                <div class="muted small">{{ row.profile.office.name|default:"Офис не указан" }}</div>
+                <div class="metric-value">{{ row.score }}</div>
+                <div class="muted small">Доход: ${{ row.income_usd|floatformat:2 }} · Комиссия: ${{ row.commission_usd|floatformat:2 }}</div>
+            </div>
+        </div>
+    {% endfor %}
+</section>
+{% endif %}
+
 <section class="panel">
     <div class="panel-header">
-        <h2 class="panel-title">Employee rating</h2>
-        <span class="pill">{{ rating_rows|length }} employees</span>
+        <h2 class="panel-title">Таблица рейтинга</h2>
+        <span class="pill">{{ rating_rows|length }} сотрудников</span>
     </div>
     <div class="panel-body table-wrap">
         <table>
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Employee</th>
-                    <th>Office</th>
-                    <th>Score</th>
-                    <th>Leads</th>
-                    <th>Clients</th>
-                    <th>Applications</th>
-                    <th>Revenue</th>
-                    <th>Tasks</th>
-                    <th>Workdays</th>
-                    <th>Missed</th>
+                    <th>Сотрудник</th>
+                    <th>Офис</th>
+                    <th>Баллы</th>
+                    <th>Лиды</th>
+                    <th>Клиенты</th>
+                    <th>Заявки</th>
+                    <th>Подтв. доход</th>
+                    <th>Комиссия</th>
+                    <th>Баланс</th>
+                    <th>Задачи</th>
+                    <th>Рабочие дни</th>
+                    <th>Пропуски</th>
                 </tr>
             </thead>
             <tbody>
                 {% for row in rating_rows %}
                     <tr>
                         <td>{{ forloop.counter }}</td>
-                        <td><div class="strong">{{ row.profile.user.get_full_name|default:row.profile.user.email }}</div><div class="muted small">{{ row.profile.position.name|default:row.profile.role.name }}</div></td>
+                        <td>
+                            <div class="strong">{{ row.profile.user.get_full_name|default:row.profile.user.email }}</div>
+                            <div class="muted small">{{ row.profile.position.name|default:row.profile.role.name }}</div>
+                        </td>
                         <td>{{ row.profile.office.name|default:"-" }}</td>
                         <td><span class="pill ok">{{ row.score }}</span></td>
                         <td>{{ row.leads_count }}</td>
                         <td>{{ row.clients_count }}</td>
                         <td>{{ row.applications_count }}</td>
-                        <td>${{ row.payments_usd|floatformat:2 }}</td>
+                        <td>${{ row.income_usd|floatformat:2 }}</td>
+                        <td>${{ row.commission_usd|floatformat:2 }}</td>
+                        <td>${{ row.balance_usd|floatformat:2 }}</td>
                         <td>{{ row.tasks_done }}</td>
                         <td>{{ row.started_days }}/{{ row.closed_days }}</td>
-                        <td>{{ row.missed_days }}</td>
+                        <td>{% if row.missed_days %}<span class="pill danger">{{ row.missed_days }}</span>{% else %}<span class="pill ok">0</span>{% endif %}</td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="11"><div class="empty">No employees in rating scope.</div></td></tr>
+                    <tr><td colspan="13"><div class="empty">Нет сотрудников в доступной области.</div></td></tr>
                 {% endfor %}
             </tbody>
         </table>

@@ -235,13 +235,16 @@ class IncomeViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = Income.objects.select_related('company', 'office', 'cashbox', 'currency')
+        qs = Income.objects.select_related('company', 'office', 'cashbox', 'employee', 'client', 'deal', 'service', 'currency', 'confirmed_by', 'rejected_by')
         qs = scoped_queryset(qs, self.request.user)
         qs = apply_common_filters(
             qs,
             self.request,
             date_field='date',
-            search_fields=('title', 'source', 'comment'),
+            status_field='status',
+            manager_field='employee',
+            client_field='client',
+            search_fields=('title', 'source', 'comment', 'employee__email', 'client__full_name', 'deal__title', 'service__title'),
         )
         return qs.order_by('-date', '-created_at')
 
@@ -249,7 +252,21 @@ class IncomeViewSet(viewsets.ModelViewSet):
         data = {}
         if not is_erp_admin(self.request.user):
             data.update(default_company_office(self.request.user))
+        if not serializer.validated_data.get('employee'):
+            data['employee'] = self.request.user
         serializer.save(**data)
+
+    @action(detail=True, methods=['post'], url_path='confirm')
+    def confirm(self, request, pk=None):
+        income = self.get_object()
+        income.confirm(user=request.user)
+        return Response(IncomeSerializer(income, context={'request': request}).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='reject')
+    def reject(self, request, pk=None):
+        income = self.get_object()
+        income.reject(user=request.user, reason=request.data.get('reason', ''))
+        return Response(IncomeSerializer(income, context={'request': request}).data, status=status.HTTP_200_OK)
 
 
 class TransactionViewSet(viewsets.ReadOnlyModelViewSet):

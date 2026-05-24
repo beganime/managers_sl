@@ -54,6 +54,7 @@ class Lead(TimeStampedModel):
     interested_program = models.CharField('Интересующая программа', max_length=255, blank=True)
     status = models.CharField('Статус', max_length=32, choices=STATUS_CHOICES, default='new', db_index=True)
     comment = models.TextField('Комментарий', blank=True)
+    custom_data = models.JSONField('Дополнительные данные', default=dict, blank=True)
     submitter_ip = models.GenericIPAddressField('IP отправителя', null=True, blank=True, db_index=True)
     submitter_user_agent = models.TextField('User-Agent', blank=True, default='')
     submitter_referer = models.URLField('Referer', max_length=1000, blank=True, default='')

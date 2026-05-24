@@ -20,8 +20,12 @@
                     <label><span class="muted small">Направление</span>{{ form.direction }}</label>
                     <label><span class="muted small">Статус</span>{{ form.status }}</label>
                     <label><span class="muted small">Источник</span>{{ form.lead_source }}</label>
-                    <label><span class="muted small">Менеджер</span>{{ form.manager }}</label>
-                    <label><span class="muted small">Офис</span>{{ form.office }}</label>
+                    {% if can_assign_client %}
+                        <label><span class="muted small">Менеджер</span>{{ form.manager }}</label>
+                        <label><span class="muted small">Офис</span>{{ form.office }}</label>
+                    {% else %}
+                        <div class="empty" style="grid-column:1/-1;">Клиент автоматически закрепится за вами и вашим офисом.</div>
+                    {% endif %}
                 </div>
                 <label style="display:block; margin-top:12px;"><span class="muted small">Комментарий</span>{{ form.comments }}</label>
             </details>

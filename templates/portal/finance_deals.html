@@ -1,0 +1,70 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Создать сделку</h2><span class="pill">USD</span></div>
+        <div class="panel-body">
+            <form method="post" class="grid">
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="grid cols-2">
+                    <label><span class="muted small">Клиент</span>{{ form.client }}{{ form.client.errors }}</label>
+                    <label><span class="muted small">Заявка</span>{{ form.application }}</label>
+                    <label><span class="muted small">Тип сделки</span>{{ form.deal_type }}</label>
+                    <label><span class="muted small">Услуга из базы</span>{{ form.service }}</label>
+                    <label><span class="muted small">Название вручную</span>{{ form.title }}{{ form.title.errors }}</label>
+                    <label><span class="muted small">Валюта</span>{{ form.currency }}{{ form.currency.errors }}</label>
+                    <label><span class="muted small">Цена клиента</span>{{ form.price_client }}</label>
+                    <label><span class="muted small">ВУЗ</span>{{ form.university_name }}</label>
+                    <label><span class="muted small">Программа</span>{{ form.program_name }}</label>
+                </div>
+                <label><span class="muted small">Комментарий</span>{{ form.comment }}</label>
+                <button class="btn primary" type="submit"><i data-lucide="briefcase-business"></i>Создать сделку</button>
+            </form>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Как работает</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><div><div class="strong">Можно выбрать услугу</div><div class="muted small">Если услуга выбрана, система подтянет название, цену и валюту из карточки услуги.</div></div><span class="pill ok">Авто</span></div>
+                <div class="list-row"><div><div class="strong">Можно вписать вручную</div><div class="muted small">Если услуги ещё нет в базе, укажите название, цену и валюту прямо в сделке.</div></div><span class="pill">Гибко</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Сделки</h2>
+        <a class="pill" href="{% url 'portal:finance_payments' %}">Добавить платёж</a>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск">
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Сделка</th><th>Клиент</th><th>Услуга</th><th>Сумма</th><th>Оплата</th></tr></thead>
+                <tbody>
+                {% for item in deals %}
+                    <tr>
+                        <td><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.get_deal_type_display }}</div></td>
+                        <td>{{ item.client.full_name }}</td>
+                        <td>{{ item.service.title|default:"-" }}</td>
+                        <td>{{ item.price_client|floatformat:2 }} {{ item.currency.code }}<div class="muted small">${{ item.total_to_pay_usd|floatformat:2 }}</div></td>
+                        <td><span class="pill {% if item.payment_status == 'paid_full' %}ok{% elif item.payment_status == 'cancelled' or item.payment_status == 'refunded' %}danger{% else %}warn{% endif %}">{{ item.get_payment_status_display }}</span></td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5"><div class="empty">Сделок пока нет.</div></td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

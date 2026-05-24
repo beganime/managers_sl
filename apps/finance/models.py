@@ -1,5 +1,6 @@
 from decimal import Decimal, ROUND_HALF_UP
 
+from django.apps import apps
 from django.conf import settings
 from django.db import models, transaction
 from django.db.models import Sum
@@ -373,9 +374,50 @@ class Expense(TimeStampedModel):
 
 
 class Income(TimeStampedModel):
+    STATUS_PENDING = 'pending'
+    STATUS_CONFIRMED = 'confirmed'
+    STATUS_REJECTED = 'rejected'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Pending confirmation'),
+        (STATUS_CONFIRMED, 'Confirmed'),
+        (STATUS_REJECTED, 'Rejected'),
+    )
+
     company = models.ForeignKey(Company, verbose_name='Company', on_delete=models.PROTECT, related_name='finance_incomes')
     office = models.ForeignKey(Office, verbose_name='Office', on_delete=models.SET_NULL, related_name='finance_incomes', null=True, blank=True)
     cashbox = models.ForeignKey(Cashbox, verbose_name='Cashbox', on_delete=models.PROTECT, related_name='incomes')
+    employee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Employee',
+        on_delete=models.SET_NULL,
+        related_name='finance_incomes',
+        null=True,
+        blank=True,
+    )
+    client = models.ForeignKey(
+        Client,
+        verbose_name='Client',
+        on_delete=models.SET_NULL,
+        related_name='finance_incomes',
+        null=True,
+        blank=True,
+    )
+    deal = models.ForeignKey(
+        Deal,
+        verbose_name='Deal',
+        on_delete=models.SET_NULL,
+        related_name='finance_incomes',
+        null=True,
+        blank=True,
+    )
+    service = models.ForeignKey(
+        Service,
+        verbose_name='Service',
+        on_delete=models.SET_NULL,
+        related_name='finance_incomes',
+        null=True,
+        blank=True,
+    )
     title = models.CharField('Title', max_length=255, db_index=True)
     amount = models.DecimalField('Amount', max_digits=14, decimal_places=2, default=MONEY_ZERO)
     currency = models.ForeignKey(Currency, verbose_name='Currency', on_delete=models.PROTECT, related_name='finance_incomes')
@@ -383,6 +425,28 @@ class Income(TimeStampedModel):
     amount_usd = models.DecimalField('Amount USD', max_digits=14, decimal_places=2, default=MONEY_ZERO)
     date = models.DateField('Date', default=timezone.localdate, db_index=True)
     source = models.CharField('Source', max_length=150, blank=True)
+    proof_file = models.FileField('Proof file', upload_to='finance/income_proofs/', null=True, blank=True)
+    status = models.CharField('Status', max_length=32, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    is_confirmed = models.BooleanField('Confirmed', default=False, db_index=True)
+    confirmed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Confirmed by',
+        on_delete=models.SET_NULL,
+        related_name='confirmed_finance_incomes',
+        null=True,
+        blank=True,
+    )
+    confirmed_at = models.DateTimeField('Confirmed at', null=True, blank=True)
+    rejected_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Rejected by',
+        on_delete=models.SET_NULL,
+        related_name='rejected_finance_incomes',
+        null=True,
+        blank=True,
+    )
+    rejected_at = models.DateTimeField('Rejected at', null=True, blank=True)
+    rejection_reason = models.TextField('Rejection reason', blank=True)
     comment = models.TextField('Comment', blank=True)
 
     class Meta:
@@ -390,7 +454,8 @@ class Income(TimeStampedModel):
         verbose_name_plural = 'Incomes'
         ordering = ['-date', '-created_at']
         indexes = [
-            models.Index(fields=['company', 'office', 'date']),
+            models.Index(fields=['company', 'office', 'status']),
+            models.Index(fields=['employee', 'date']),
             models.Index(fields=['date']),
         ]
 
@@ -402,6 +467,77 @@ class Income(TimeStampedModel):
             self.exchange_rate = get_currency_rate(self.currency)
         self.amount_usd = convert_to_usd(self.amount, self.currency, self.exchange_rate)
         super().save(*args, **kwargs)
+
+    def confirm(self, user=None):
+        if self.is_confirmed:
+            return self
+
+        with transaction.atomic():
+            self.is_confirmed = True
+            self.status = self.STATUS_CONFIRMED
+            self.confirmed_by = user
+            self.confirmed_at = timezone.now()
+            self.rejection_reason = ''
+            self.save(update_fields=[
+                'is_confirmed',
+                'status',
+                'confirmed_by',
+                'confirmed_at',
+                'rejection_reason',
+                'exchange_rate',
+                'amount_usd',
+                'updated_at',
+            ])
+
+            Cashbox.objects.filter(pk=self.cashbox_id).update(balance=models.F('balance') + self.amount)
+            Transaction.objects.get_or_create(
+                related_income=self,
+                transaction_type=Transaction.TYPE_INCOME,
+                defaults={
+                    'company': self.company,
+                    'office': self.office,
+                    'cashbox': self.cashbox,
+                    'amount': self.amount,
+                    'currency': self.currency,
+                    'amount_usd': self.amount_usd,
+                    'created_by': user,
+                    'comment': self.comment or self.source,
+                },
+            )
+
+            if self.employee_id:
+                commission_amount = money(self.amount_usd * Decimal('0.05'))
+                EmployeeCommission.objects.get_or_create(
+                    income=self,
+                    employee=self.employee,
+                    defaults={
+                        'company': self.company,
+                        'office': self.office,
+                        'deal': self.deal,
+                        'percent': Decimal('5.00'),
+                        'amount_usd': commission_amount,
+                        'status': 'approved',
+                        'approved_by': user,
+                        'approved_at': timezone.now(),
+                    },
+                )
+                employee_model = self.employee.__class__
+                if any(field.name == 'current_balance' for field in employee_model._meta.fields):
+                    employee_model.objects.filter(pk=self.employee_id).update(current_balance=models.F('current_balance') + commission_amount)
+                manager_salary_model = apps.get_model('users', 'ManagerSalary')
+                salary, _ = manager_salary_model.objects.get_or_create(manager=self.employee)
+                manager_salary_model.objects.filter(pk=salary.pk).update(current_balance=models.F('current_balance') + commission_amount)
+        return self
+
+    def reject(self, user=None, reason=''):
+        if self.is_confirmed:
+            return self
+        self.status = self.STATUS_REJECTED
+        self.rejected_by = user
+        self.rejected_at = timezone.now()
+        self.rejection_reason = reason or ''
+        self.save(update_fields=['status', 'rejected_by', 'rejected_at', 'rejection_reason', 'updated_at'])
+        return self
 
 
 class Transaction(TimeStampedModel):
@@ -429,6 +565,7 @@ class Transaction(TimeStampedModel):
     amount_usd = models.DecimalField('Amount USD', max_digits=14, decimal_places=2, default=MONEY_ZERO)
     related_payment = models.ForeignKey(Payment, verbose_name='Related payment', on_delete=models.SET_NULL, related_name='transactions', null=True, blank=True)
     related_expense = models.ForeignKey(Expense, verbose_name='Related expense', on_delete=models.SET_NULL, related_name='transactions', null=True, blank=True)
+    related_income = models.ForeignKey(Income, verbose_name='Related income', on_delete=models.SET_NULL, related_name='transactions', null=True, blank=True)
     comment = models.TextField('Comment', blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -464,8 +601,9 @@ class EmployeeCommission(TimeStampedModel):
     company = models.ForeignKey(Company, verbose_name='Company', on_delete=models.PROTECT, related_name='finance_commissions')
     office = models.ForeignKey(Office, verbose_name='Office', on_delete=models.SET_NULL, related_name='finance_commissions', null=True, blank=True)
     employee = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Employee', on_delete=models.PROTECT, related_name='finance_commissions')
-    payment = models.ForeignKey(Payment, verbose_name='Payment', on_delete=models.CASCADE, related_name='commissions')
-    deal = models.ForeignKey(Deal, verbose_name='Deal', on_delete=models.CASCADE, related_name='commissions')
+    payment = models.ForeignKey(Payment, verbose_name='Payment', on_delete=models.CASCADE, related_name='commissions', null=True, blank=True)
+    income = models.ForeignKey(Income, verbose_name='Income', on_delete=models.CASCADE, related_name='commissions', null=True, blank=True)
+    deal = models.ForeignKey(Deal, verbose_name='Deal', on_delete=models.CASCADE, related_name='commissions', null=True, blank=True)
     percent = models.DecimalField('Percent', max_digits=5, decimal_places=2, default=MONEY_ZERO)
     amount_usd = models.DecimalField('Amount USD', max_digits=14, decimal_places=2, default=MONEY_ZERO)
     status = models.CharField('Status', max_length=32, choices=STATUS_CHOICES, default='pending', db_index=True)
@@ -495,6 +633,8 @@ class EmployeeCommission(TimeStampedModel):
     def save(self, *args, **kwargs):
         if not self.amount_usd and self.payment_id:
             self.amount_usd = money(self.payment.amount_usd * (self.percent or MONEY_ZERO) / Decimal('100'))
+        if not self.amount_usd and self.income_id:
+            self.amount_usd = money(self.income.amount_usd * (self.percent or MONEY_ZERO) / Decimal('100'))
         super().save(*args, **kwargs)
 
 
@@ -546,6 +686,7 @@ class FinancialPeriod(TimeStampedModel):
         }
         income_filters = {
             'company': self.company,
+            'is_confirmed': True,
             'date__gte': self.start_date,
             'date__lte': self.end_date,
         }

@@ -15,6 +15,7 @@ from django.shortcuts import get_object_or_404, redirect
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils.dateparse import parse_date
 from django.utils import timezone
+from django.utils.text import slugify
 from django.views import View
 from django.views.generic import TemplateView
 
@@ -26,9 +27,9 @@ from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, Gen
 from apps.erp_notifications.models import Notification
 from apps.employees.models import EmployeeProfile
 from apps.erp_services.models import Service, ServiceCategory
-from apps.finance.models import Cashbox, Deal, Expense, ExpenseCategory, FinancialPeriod, Income, Payment, Transaction
+from apps.finance.models import Cashbox, Deal, EmployeeCommission, Expense, ExpenseCategory, FinancialPeriod, Income, Payment, Transaction
 from apps.knowledge.models import KnowledgeArticle, KnowledgeCategory, KnowledgeTestAttempt
-from apps.organizations.models import Office
+from apps.organizations.models import Company, Office
 from apps.portal.forms import (
     PortalClientForm,
     PortalDealForm,
@@ -74,6 +75,7 @@ NAV_GROUPS = (
         'icon': 'users',
         'items': (
             {'name': 'leads', 'label': 'Лиды', 'icon': 'radar'},
+            {'name': 'incoming_leads', 'label': 'Потенциальные клиенты', 'icon': 'inbox'},
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'applications', 'label': 'Заявки', 'icon': 'file-check-2'},
             {'name': 'tasks', 'label': 'Задачи', 'icon': 'check-square'},
@@ -87,6 +89,7 @@ NAV_GROUPS = (
         'icon': 'trophy',
         'items': (
             {'name': 'rating', 'label': 'Рейтинг сотрудников', 'icon': 'trophy'},
+            {'name': 'approvals', 'label': 'Подтверждения', 'icon': 'badge-check'},
             {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
             {'name': 'finance_reports', 'label': 'Балансы', 'icon': 'circle-dollar-sign'},
         ),
@@ -143,6 +146,40 @@ ADMIN_QUICK_ACTIONS = (
 
 def full_name(user):
     return user.get_full_name() or getattr(user, 'email', '') or str(user)
+
+
+def fallback_company():
+    return Company.objects.order_by('id').first()
+
+
+def unique_code(model, base_text, *, company=None, field='code', max_length=100, exclude_pk=None):
+    base = slugify(base_text or '')[:max_length].strip('-') or 'item'
+    code = base
+    index = 2
+    while True:
+        filters = {field: code}
+        if company is not None and any(f.name == 'company' for f in model._meta.fields):
+            filters['company'] = company
+        qs = model.objects.filter(**filters)
+        if exclude_pk:
+            qs = qs.exclude(pk=exclude_pk)
+        if not qs.exists():
+            return code
+        suffix = f'-{index}'
+        code = f'{base[:max_length - len(suffix)]}{suffix}'
+        index += 1
+
+
+def get_or_create_default_project_section(project):
+    section = project.sections.filter(is_active=True).order_by('sort_order', 'id').first()
+    if section:
+        return section
+    return ProjectSection.objects.create(
+        project=project,
+        title='Основные задачи',
+        description='Автоматический раздел для первых задач проекта.',
+        sort_order=0,
+    )
 
 
 def bool_param(value):
@@ -244,6 +281,17 @@ def lead_queryset(user):
     return Lead.objects.select_related('company', 'office', 'source', 'manager').filter(
         employee_scope_q(user, manager_field='manager'),
     )
+
+
+def incoming_lead_queryset(user):
+    qs = Lead.objects.select_related('company', 'office', 'source', 'manager').filter(status__in=['new', 'contacted', 'qualified'])
+    if is_erp_admin(user):
+        return qs
+    employee = get_employee_profile(user)
+    personal = Q(manager=user) | Q(manager__isnull=True)
+    if employee and employee.company_id:
+        return qs.filter(personal | Q(company=employee.company)).distinct()
+    return qs.filter(personal).distinct()
 
 
 def client_queryset(user):
@@ -437,7 +485,10 @@ def cashbox_queryset(user):
 
 
 def income_queryset(user):
-    return Income.objects.select_related('company', 'office', 'cashbox', 'currency').filter(employee_scope_q(user))
+    qs = Income.objects.select_related('company', 'office', 'cashbox', 'employee', 'client', 'deal', 'service', 'currency', 'confirmed_by')
+    if is_erp_admin(user):
+        return qs
+    return qs.filter(employee_scope_q(user, manager_field='employee'))
 
 
 def expense_category_queryset(user):
@@ -769,6 +820,7 @@ class DashboardView(PortalContextMixin, TemplateView):
         applications = application_queryset(user)
         tasks = task_queryset(user)
         payments = payment_queryset(user)
+        incomes = income_queryset(user)
         expenses = expense_queryset(user)
         projects = project_queryset(user)
         documents = document_queryset(user)
@@ -777,12 +829,18 @@ class DashboardView(PortalContextMixin, TemplateView):
         employee_profiles = employee_queryset(user)
         confirmed_payments = payments.filter(is_confirmed=True)
         confirmed_expenses = expenses.filter(is_confirmed=True)
-        revenue_month = confirmed_payments.filter(payment_date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
+        confirmed_incomes = incomes.filter(is_confirmed=True)
+        revenue_month = (
+            confirmed_payments.filter(payment_date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
+        ) + (
+            confirmed_incomes.filter(date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
+        )
         expense_month = confirmed_expenses.filter(date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
 
         context.update({
             'metrics': [
                 {'label': 'Лиды', 'value': leads.exclude(status__in=['converted', 'lost', 'spam']).count(), 'icon': 'radar', 'url': reverse('portal:leads')},
+                {'label': 'Потенциальные', 'value': incoming_lead_queryset(user).filter(manager__isnull=True).count(), 'icon': 'inbox', 'url': reverse('portal:incoming_leads')},
                 {'label': 'Клиенты', 'value': clients.exclude(status__in=['archive', 'rejected']).count(), 'icon': 'users', 'url': reverse('portal:clients')},
                 {'label': 'Заявки', 'value': applications.exclude(status__in=['cancelled', 'rejected', 'enrolled']).count(), 'icon': 'file-check-2', 'url': reverse('portal:applications')},
                 {'label': 'Задачи', 'value': tasks.filter(Q(assigned_to=user) | Q(watchers__user=user)).exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).distinct().count(), 'icon': 'check-square', 'url': reverse('portal:tasks')},
@@ -1112,7 +1170,7 @@ class ServicesView(ListPageMixin):
                 company = employee.company if employee else None
                 category, _ = ServiceCategory.objects.get_or_create(
                     company=company,
-                    code=(category_name.lower().replace(' ', '-')[:80] or 'service-category'),
+                    code=unique_code(ServiceCategory, category_name, company=company, max_length=80),
                     defaults={'name': category_name, 'description': ''},
                 )
             item = form.save(commit=False)
@@ -1122,7 +1180,7 @@ class ServicesView(ListPageMixin):
                 item.company = employee.company
             item.category = category
             if not item.code:
-                item.code = (item.title.lower().replace(' ', '-')[:80] or f'service-{item.pk or "new"}')
+                item.code = unique_code(Service, item.title, company=item.company, max_length=80, exclude_pk=item.pk)
             if not item.pk:
                 item.created_by = request.user
             item.updated_by = request.user
@@ -1146,6 +1204,95 @@ class LeadsView(ListPageMixin):
         return lead_queryset(self.request.user).select_related('manager', 'source')
 
 
+class IncomingLeadsView(ListPageMixin):
+    active_page = 'incoming_leads'
+    page_title = 'Потенциальные клиенты'
+    table_template = 'portal/partials/incoming_leads_table.html'
+    search_fields = ('full_name', 'phone', 'email', 'interested_country', 'interested_program', 'comment')
+    status_choices = Lead.STATUS_CHOICES
+
+    def get_queryset(self):
+        status_value = self.request.GET.get('ownership')
+        qs = incoming_lead_queryset(self.request.user)
+        if status_value == 'free':
+            qs = qs.filter(manager__isnull=True)
+        elif status_value == 'mine':
+            qs = qs.filter(manager=self.request.user)
+        return qs
+
+    def get_extra_context(self, qs):
+        return {
+            'ownership': self.request.GET.get('ownership', ''),
+            'free_count': incoming_lead_queryset(self.request.user).filter(manager__isnull=True).count(),
+            'mine_count': incoming_lead_queryset(self.request.user).filter(manager=self.request.user).count(),
+            'is_admin_user': can_delete_admin(self.request.user),
+        }
+
+    def post(self, request, *args, **kwargs):
+        lead = get_object_or_404(incoming_lead_queryset(request.user), pk=request.POST.get('lead_id'))
+        action = request.POST.get('action')
+        employee = get_employee_profile(request.user)
+
+        if action == 'take':
+            if lead.manager_id and lead.manager_id != request.user.id:
+                messages.error(request, 'Заявка уже в работе у другого менеджера.')
+                return redirect('portal:incoming_leads')
+            lead.manager = request.user
+            if employee:
+                lead.company = employee.company
+                lead.office = employee.office
+            lead.status = 'contacted'
+            lead.save(update_fields=['manager', 'company', 'office', 'status', 'updated_at'])
+            messages.success(request, 'Вы взяли ответственность за заявку.')
+            return redirect('portal:incoming_leads')
+
+        if action == 'release' and can_delete_admin(request.user):
+            lead.manager = None
+            lead.status = 'new'
+            lead.save(update_fields=['manager', 'status', 'updated_at'])
+            messages.success(request, 'Заявка возвращена в свободные.')
+            return redirect('portal:incoming_leads')
+
+        if action == 'convert':
+            if lead.manager_id and lead.manager_id != request.user.id and not can_delete_admin(request.user):
+                messages.error(request, 'Создать клиента может ответственный менеджер или администратор.')
+                return redirect('portal:incoming_leads')
+            manager = lead.manager or request.user
+            company = lead.company or (employee.company if employee else fallback_company())
+            office = lead.office or (employee.office if employee else None)
+            if not company:
+                messages.error(request, 'Нельзя создать клиента: не найдена компания для привязки.')
+                return redirect('portal:incoming_leads')
+            client, created = Client.objects.get_or_create(
+                source_lead=lead,
+                defaults={
+                    'company': company,
+                    'office': office,
+                    'manager': manager,
+                    'lead_source': lead.source,
+                    'direction': lead.direction,
+                    'full_name': lead.full_name,
+                    'phone': lead.phone,
+                    'email': lead.email,
+                    'citizenship': lead.country,
+                    'city': lead.city,
+                    'interested_country': lead.interested_country,
+                    'interested_program': lead.interested_program,
+                    'comments': lead.comment,
+                    'custom_data': lead.custom_data or {},
+                },
+            )
+            lead.manager = manager
+            lead.company = company
+            lead.office = office
+            lead.mark_converted()
+            messages.success(request, 'Клиент создан по заявке.' if created else 'Клиент по этой заявке уже существует.')
+            return redirect('portal:client_detail', pk=client.pk)
+
+        messages.error(request, 'Неизвестное действие.')
+        return redirect('portal:incoming_leads')
+
+
 class ClientsView(ListPageMixin):
     template_name = 'portal/clients.html'
     active_page = 'clients'
@@ -1164,11 +1311,18 @@ class ClientsView(ListPageMixin):
         return client_queryset(self.request.user).filter(pk=edit_id).first()
 
     def get_form(self, data=None, instance=None):
+        employee = get_employee_profile(self.request.user)
+        initial = {}
+        if employee:
+            initial = {'manager': self.request.user.pk, 'office': employee.office_id}
+        managers = portal_user_queryset(self.request.user) if is_erp_admin(self.request.user) or self.request.user.is_staff else User.objects.filter(pk=self.request.user.pk)
+        offices = office_queryset(self.request.user) if is_erp_admin(self.request.user) or self.request.user.is_staff else Office.objects.filter(pk=employee.office_id) if employee and employee.office_id else Office.objects.none()
         return PortalClientForm(
             data=data,
             instance=instance,
-            managers=portal_user_queryset(self.request.user),
-            offices=office_queryset(self.request.user),
+            initial=initial if not data and not instance else None,
+            managers=managers,
+            offices=offices,
             sources=LeadSource.objects.filter(is_active=True).order_by('name'),
         )
 
@@ -1177,6 +1331,7 @@ class ClientsView(ListPageMixin):
         return {
             'form': self.get_form(instance=edit_object),
             'edit_object': edit_object,
+            'can_assign_client': is_erp_admin(self.request.user) or self.request.user.is_staff,
         }
 
     def post(self, request, *args, **kwargs):
@@ -1185,10 +1340,21 @@ class ClientsView(ListPageMixin):
         if form.is_valid():
             employee = get_employee_profile(request.user)
             item = form.save(commit=False)
-            if employee:
+            if not is_erp_admin(request.user) and not request.user.is_staff:
+                item.manager = request.user
+                if employee:
+                    item.company = employee.company
+                    item.office = employee.office
+                elif not item.company_id:
+                    item.company = fallback_company()
+            elif employee:
                 item.company = employee.company
                 if not item.office_id and employee.office_id:
                     item.office = employee.office
+            elif item.office_id and not item.company_id:
+                item.company = item.office.company
+            elif not item.company_id:
+                item.company = fallback_company()
             if not item.manager_id:
                 item.manager = request.user
             item.save()
@@ -1368,6 +1534,8 @@ class TasksView(ListPageMixin):
         form = self.get_form(data=request.POST, instance=edit_object)
         if form.is_valid():
             task = form.save(commit=False)
+            if task.project_id and not task.section_id:
+                task.section = get_or_create_default_project_section(task.project)
             if not task.created_by_id:
                 task.created_by = request.user
             if task.status == ProjectTask.STATUS_DONE and not task.completed_by_id:
@@ -1431,6 +1599,8 @@ class ProjectCreateView(PortalContextMixin, TemplateView):
             item = form.save(commit=False)
             if employee and not item.company_id:
                 item.company = employee.company
+            elif not item.company_id:
+                item.company = fallback_company()
             if employee and employee.office_id and not item.office_id:
                 item.office = employee.office
             if not item.created_by_id:
@@ -1438,10 +1608,11 @@ class ProjectCreateView(PortalContextMixin, TemplateView):
             if not item.owner_id:
                 item.owner = request.user
             if not item.code:
-                item.code = (item.title.lower().replace(' ', '-')[:100] or f'project-{item.pk or "new"}')
+                item.code = unique_code(Project, item.title, company=item.company, exclude_pk=item.pk)
             item.save()
             form.save_m2m()
             item.participants.add(request.user)
+            get_or_create_default_project_section(item)
             messages.success(request, 'Проект сохранён.')
             return redirect('portal:project_detail', pk=item.pk)
         context = self.get_context_data()
@@ -1506,6 +1677,7 @@ class ProjectTaskCreateView(PortalContextMixin, TemplateView):
 
     def get_form(self, data=None, instance=None):
         project = self.get_project()
+        get_or_create_default_project_section(project)
         return PortalTaskForm(
             data=data,
             instance=instance,
@@ -1525,6 +1697,8 @@ class ProjectTaskCreateView(PortalContextMixin, TemplateView):
         if form.is_valid():
             item = form.save(commit=False)
             item.project = project
+            if not item.section_id:
+                item.section = get_or_create_default_project_section(project)
             if not item.created_by_id:
                 item.created_by = request.user
             if item.status == ProjectTask.STATUS_DONE and not item.completed_by_id:
@@ -1611,7 +1785,7 @@ class FinanceView(PortalContextMixin, TemplateView):
         cashboxes = cashbox_queryset(user)
         context.update({
             'payment_total_usd': payments.filter(is_confirmed=True, payment_date__gte=current_month).aggregate(total=Sum('amount_usd'))['total'] or 0,
-            'income_total_usd': incomes.filter(date__gte=current_month).aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'income_total_usd': incomes.filter(is_confirmed=True, date__gte=current_month).aggregate(total=Sum('amount_usd'))['total'] or 0,
             'expense_total_usd': expenses.filter(is_confirmed=True, date__gte=current_month).aggregate(total=Sum('amount_usd'))['total'] or 0,
             'open_deals_count': deals.exclude(payment_status__in=[Deal.PAYMENT_STATUS_FULL, Deal.PAYMENT_STATUS_CANCELLED, Deal.PAYMENT_STATUS_REFUNDED]).count(),
             'cashboxes': limit(cashboxes.order_by('office__name', 'name'), 8),
@@ -1628,37 +1802,29 @@ class FinanceIncomeView(PortalContextMixin, TemplateView):
     active_page = 'finance'
     page_title = 'Доходы'
 
-    def get_form(self, data=None):
+    def get_form(self, data=None, files=None):
         return PortalIncomeForm(
             data=data,
+            files=files,
             cashboxes=cashbox_queryset(self.request.user).filter(is_active=True).order_by('office__name', 'name'),
+            clients=client_queryset(self.request.user).order_by('-updated_at'),
+            deals=deal_queryset(self.request.user).order_by('-created_at'),
+            services=service_queryset(self.request.user).filter(is_active=True).order_by('category__name', 'title'),
             currencies=Currency.objects.order_by('code'),
         )
 
     def post(self, request, *args, **kwargs):
-        form = self.get_form(data=request.POST)
+        form = self.get_form(data=request.POST, files=request.FILES)
         if form.is_valid():
             income = form.save(commit=False)
             cashbox = form.cleaned_data['cashbox']
             income.company = cashbox.company
             income.office = cashbox.office
+            income.employee = request.user
             if not income.currency_id:
                 income.currency = cashbox.currency
             income.save()
-            cashbox.balance = cashbox.balance + income.amount
-            cashbox.save(update_fields=['balance', 'updated_at'])
-            Transaction.objects.create(
-                company=income.company,
-                office=income.office,
-                cashbox=cashbox,
-                transaction_type=Transaction.TYPE_INCOME,
-                amount=income.amount,
-                currency=income.currency,
-                amount_usd=income.amount_usd,
-                created_by=request.user,
-                comment=income.comment or income.source,
-            )
-            messages.success(request, 'Доход добавлен.')
+            messages.success(request, 'Доход добавлен и ожидает подтверждения администратора. Валюта системы: USD.')
             return redirect('portal:finance_income')
         context = self.get_context_data()
         context['form'] = form
@@ -1672,8 +1838,9 @@ class FinanceIncomeView(PortalContextMixin, TemplateView):
             'record_type': 'income',
             'form': context.get('form') or self.get_form(),
             'records': limit(qs.order_by('-date', '-created_at'), 50),
-            'total_usd': qs.aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'total_usd': qs.filter(is_confirmed=True).aggregate(total=Sum('amount_usd'))['total'] or 0,
             'query': self.request.GET.get('q', ''),
+            'pending_count': qs.filter(status=Income.STATUS_PENDING).count(),
         })
         return context
 
@@ -1704,11 +1871,8 @@ class FinanceExpenseView(PortalContextMixin, TemplateView):
             if cashbox and not expense.currency_id:
                 expense.currency = cashbox.currency
             expense.save()
-            if form.cleaned_data.get('confirm_now') and can_confirm_finance(request.user):
-                expense.confirm(user=request.user)
-                messages.success(request, 'Расход добавлен и подтверждён.')
-            else:
-                messages.success(request, 'Расход добавлен и ожидает подтверждения.')
+            expense.confirm(user=request.user)
+            messages.success(request, 'Расход добавлен и сразу учтён в расходах.')
             return redirect('portal:finance_expense')
         context = self.get_context_data()
         context['form'] = form
@@ -1723,7 +1887,7 @@ class FinanceExpenseView(PortalContextMixin, TemplateView):
             'form': context.get('form') or self.get_form(),
             'can_confirm_finance': can_confirm_finance(self.request.user),
             'records': limit(qs.order_by('-date', '-created_at'), 50),
-            'total_usd': qs.aggregate(total=Sum('amount_usd'))['total'] or 0,
+            'total_usd': qs.filter(is_confirmed=True).aggregate(total=Sum('amount_usd'))['total'] or 0,
             'query': self.request.GET.get('q', ''),
         })
         return context
@@ -1829,6 +1993,56 @@ class FinancePaymentsView(PortalContextMixin, TemplateView):
         return context
 
 
+class ApprovalsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/approvals.html'
+    active_page = 'approvals'
+    page_title = 'Подтверждения'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_confirm_finance(request.user) and not can_delete_admin(request.user):
+            messages.error(request, 'Недостаточно прав для страницы подтверждений.')
+            return redirect('portal:dashboard')
+        return super().dispatch(request, *args, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        action = request.POST.get('action')
+        try:
+            if action == 'confirm_income':
+                income = get_object_or_404(income_queryset(request.user), pk=request.POST.get('income_id'))
+                income.confirm(user=request.user)
+                messages.success(request, 'Доход подтверждён. Комиссия 5% начислена менеджеру.')
+            elif action == 'reject_income':
+                income = get_object_or_404(income_queryset(request.user), pk=request.POST.get('income_id'))
+                income.reject(user=request.user, reason=request.POST.get('reason', ''))
+                messages.success(request, 'Доход отклонён.')
+            elif action == 'approve_document':
+                document = get_object_or_404(document_queryset(request.user), pk=request.POST.get('document_id'))
+                document.approve(user=request.user, with_stamp=request.POST.get('with_stamp') == '1', comment=request.POST.get('comment', ''))
+                messages.success(request, 'Документ подтверждён.')
+            elif action == 'reject_document':
+                document = get_object_or_404(document_queryset(request.user), pk=request.POST.get('document_id'))
+                document.reject(user=request.user, reason=request.POST.get('reason', ''))
+                messages.success(request, 'Документ отклонён.')
+        except Exception as exc:
+            messages.error(request, str(exc))
+        return redirect('portal:approvals')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        incomes = income_queryset(self.request.user).filter(status=Income.STATUS_PENDING).order_by('-date', '-created_at')
+        documents = document_queryset(self.request.user).filter(status=GeneratedDocument.STATUS_PENDING).order_by('-submitted_at', '-created_at')
+        payments = payment_queryset(self.request.user).filter(is_confirmed=False).order_by('-payment_date', '-created_at')
+        context.update({
+            'pending_incomes': limit(incomes, 50),
+            'pending_documents': limit(documents, 50),
+            'pending_payments': limit(payments, 50),
+            'pending_incomes_count': incomes.count(),
+            'pending_documents_count': documents.count(),
+            'pending_payments_count': payments.count(),
+        })
+        return context
+
+
 class FinanceReportsView(PortalContextMixin, TemplateView):
     template_name = 'portal/finance_reports.html'
     active_page = 'finance'
@@ -1839,7 +2053,7 @@ class FinanceReportsView(PortalContextMixin, TemplateView):
         month_start = timezone.localdate().replace(day=1)
         payments = payment_queryset(self.request.user).filter(is_confirmed=True)
         expenses = expense_queryset(self.request.user).filter(is_confirmed=True)
-        incomes = Income.objects.select_related('company', 'office', 'cashbox', 'currency').filter(employee_scope_q(self.request.user))
+        incomes = income_queryset(self.request.user).filter(is_confirmed=True)
         office_rows = payments.values('office__name').annotate(total=Sum('amount_usd'), count=Count('id')).order_by('-total')[:12]
         context.update({
             'month_revenue_usd': payments.filter(payment_date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0,
@@ -1993,7 +2207,7 @@ class KnowledgeFolderCreateView(PortalContextMixin, TemplateView):
             if employee and not item.company_id:
                 item.company = employee.company
             if not item.code:
-                item.code = (item.name.lower().replace(' ', '-')[:100] or f'folder-{item.pk or "new"}')
+                item.code = unique_code(KnowledgeCategory, item.name, company=item.company, exclude_pk=item.pk)
             if not item.created_by_id:
                 item.created_by = request.user
             item.save()
@@ -2102,6 +2316,9 @@ class WorkdayActionMixin(LoginRequiredMixin, View):
         return ensure_today_workday(self.request.user)
 
     def redirect_back(self):
+        next_url = self.request.POST.get('next') or self.request.GET.get('next')
+        if next_url and next_url.startswith('/portal/'):
+            return redirect(next_url)
         if self.request.headers.get('HX-Request') == 'true':
             return redirect(self.success_url)
         return redirect(self.success_url)
@@ -2207,16 +2424,32 @@ class RatingView(PortalContextMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         today = timezone.localdate()
-        month_start = today.replace(day=1)
+        period = self.request.GET.get('period') or 'month'
+        office_id = self.request.GET.get('office') or ''
+        if period == 'week':
+            period_start = today - timedelta(days=7)
+        elif period == 'quarter':
+            period_start = today - timedelta(days=90)
+        else:
+            period_start = today.replace(day=1)
         rows = []
-        for profile in employee_queryset(self.request.user).filter(is_active=True):
+        profiles = employee_queryset(self.request.user).filter(is_active=True)
+        if office_id:
+            profiles = profiles.filter(office_id=office_id)
+        for profile in profiles:
             user = profile.user
-            leads_count = Lead.objects.filter(manager=user, created_at__date__gte=month_start).count()
+            leads_count = Lead.objects.filter(manager=user, created_at__date__gte=period_start).count()
             clients_count = Client.objects.filter(manager=user).exclude(status__in=['archive', 'rejected']).count()
-            applications_count = Application.objects.filter(manager=user, created_at__date__gte=month_start).count()
-            payments_usd = Payment.objects.filter(manager=user, is_confirmed=True, payment_date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0
-            tasks_done = ProjectTask.objects.filter(assigned_to=user, status=ProjectTask.STATUS_DONE, completed_at__date__gte=month_start).count()
-            workdays = WorkDay.objects.filter(employee=user, date__gte=month_start)
+            applications_count = Application.objects.filter(manager=user, created_at__date__gte=period_start).count()
+            payments_usd = Payment.objects.filter(manager=user, is_confirmed=True, payment_date__gte=period_start).aggregate(total=Sum('amount_usd'))['total'] or 0
+            income_usd = Income.objects.filter(employee=user, is_confirmed=True, date__gte=period_start).aggregate(total=Sum('amount_usd'))['total'] or 0
+            commission_usd = EmployeeCommission.objects.filter(employee=user).exclude(status='cancelled').aggregate(total=Sum('amount_usd'))['total'] or 0
+            try:
+                balance_usd = user.managersalary.current_balance
+            except Exception:
+                balance_usd = commission_usd
+            tasks_done = ProjectTask.objects.filter(assigned_to=user, status=ProjectTask.STATUS_DONE, completed_at__date__gte=period_start).count()
+            workdays = WorkDay.objects.filter(employee=user, date__gte=period_start)
             started_days = workdays.exclude(status=WorkDay.STATUS_NOT_STARTED).count()
             closed_days = workdays.filter(status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()
             missed_days = workdays.filter(status=WorkDay.STATUS_MISSED).count()
@@ -2224,7 +2457,7 @@ class RatingView(PortalContextMixin, TemplateView):
                 leads_count * 2
                 + clients_count * 3
                 + applications_count * 4
-                + int(payments_usd or 0) // 100
+                + int((payments_usd or 0) + (income_usd or 0)) // 100
                 + tasks_done * 3
                 + started_days
                 + closed_days * 2
@@ -2237,12 +2470,23 @@ class RatingView(PortalContextMixin, TemplateView):
                 'clients_count': clients_count,
                 'applications_count': applications_count,
                 'payments_usd': payments_usd,
+                'income_usd': income_usd,
+                'commission_usd': commission_usd,
+                'balance_usd': balance_usd,
                 'tasks_done': tasks_done,
                 'started_days': started_days,
                 'closed_days': closed_days,
                 'missed_days': missed_days,
+                'avatar_url': user.avatar.url if getattr(user, 'avatar', None) else '',
             })
-        context['rating_rows'] = sorted(rows, key=lambda item: item['score'], reverse=True)
+        rating_rows = sorted(rows, key=lambda item: item['score'], reverse=True)
+        context.update({
+            'rating_rows': rating_rows,
+            'podium_rows': rating_rows[:3],
+            'office_options': office_queryset(self.request.user).order_by('name'),
+            'current_office': office_id,
+            'current_period': period,
+        })
         return context
 
 

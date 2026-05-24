@@ -484,24 +484,35 @@ class PortalIncomeForm(PortalFormMixin, forms.ModelForm):
         model = Income
         fields = [
             'cashbox',
+            'client',
+            'deal',
+            'service',
             'title',
             'amount',
             'currency',
             'exchange_rate',
             'date',
             'source',
+            'proof_file',
             'comment',
         ]
         widgets = {
             'comment': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, cashboxes=None, currencies=None, **kwargs):
+    def __init__(self, *args, cashboxes=None, clients=None, deals=None, services=None, currencies=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['cashbox'].queryset = cashboxes if cashboxes is not None else Cashbox.objects.all()
+        self.fields['client'].queryset = clients if clients is not None else Client.objects.all()
+        self.fields['deal'].queryset = deals if deals is not None else Deal.objects.all()
+        self.fields['service'].queryset = services if services is not None else Service.objects.all()
         self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
+        self.fields['client'].required = False
+        self.fields['deal'].required = False
+        self.fields['service'].required = False
         self.fields['currency'].required = False
         self.fields['source'].required = False
+        self.fields['proof_file'].required = False
         self.style_fields()
 
     def clean(self):

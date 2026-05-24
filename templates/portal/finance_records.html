@@ -8,12 +8,16 @@
             <a class="pill" href="{% url 'portal:finance' %}">Финансы</a>
         </div>
         <div class="panel-body">
-            <form method="post" class="grid">
+            <form method="post" class="grid" enctype="multipart/form-data">
                 {% csrf_token %}
                 {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
                 {% if record_type == "income" %}
+                    <div class="muted small">Валюта системы: USD. Доход после создания ожидает подтверждения администратора, комиссия менеджера 5% начисляется только после подтверждения.</div>
                     <label><span class="muted small">Касса</span>{{ form.cashbox }}{% if form.cashbox.errors %}<span class="form-errors">{{ form.cashbox.errors }}</span>{% endif %}</label>
                     <div class="grid cols-2">
+                        <label><span class="muted small">Клиент</span>{{ form.client }}</label>
+                        <label><span class="muted small">Сделка</span>{{ form.deal }}</label>
+                        <label><span class="muted small">Услуга</span>{{ form.service }}</label>
                         <label><span class="muted small">Название дохода</span>{{ form.title }}{% if form.title.errors %}<span class="form-errors">{{ form.title.errors }}</span>{% endif %}</label>
                         <label><span class="muted small">Источник</span>{{ form.source }}</label>
                         <label><span class="muted small">Сумма</span>{{ form.amount }}{% if form.amount.errors %}<span class="form-errors">{{ form.amount.errors }}</span>{% endif %}</label>
@@ -21,6 +25,7 @@
                         <label><span class="muted small">Курс к USD</span>{{ form.exchange_rate }}</label>
                         <label><span class="muted small">Дата</span>{{ form.date }}</label>
                     </div>
+                    <label><span class="muted small">Доказательство оплаты: фото, файл или скрин</span>{{ form.proof_file }}</label>
                     <label><span class="muted small">Комментарий</span>{{ form.comment }}</label>
                     <button class="btn primary" type="submit"><i data-lucide="plus"></i>Добавить доход</button>
                 {% else %}
@@ -34,9 +39,7 @@
                         <label><span class="muted small">Курс к USD</span>{{ form.exchange_rate }}</label>
                     </div>
                     <label><span class="muted small">Комментарий</span>{{ form.comment }}</label>
-                    {% if can_confirm_finance %}
-                        <label style="display:flex; align-items:center; gap:8px;">{{ form.confirm_now }} <span>Сразу подтвердить расход</span></label>
-                    {% endif %}
+                    <div class="muted small">Расход сразу учитывается в финансовой статистике. Валюта системы: USD.</div>
                     <button class="btn primary" type="submit"><i data-lucide="minus"></i>Добавить расход</button>
                 {% endif %}
             </form>
@@ -85,12 +88,23 @@
                 {% for item in records %}
                     <tr>
                         <td>{{ item.date }}</td>
-                        <td><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.comment|default:item.source|default:item.category.name }}</div></td>
+                        <td>
+                            <div class="strong">{{ item.title }}</div>
+                            <div class="muted small">
+                                {% if item.comment %}{{ item.comment }}{% elif record_type == "income" %}{{ item.source|default:"-" }}{% else %}{{ item.category.name|default:"-" }}{% endif %}
+                            </div>
+                        </td>
                         <td>{{ item.cashbox.name|default:"-" }}</td>
                         <td>{{ item.amount|floatformat:2 }} {{ item.currency.code }}<div class="muted small">${{ item.amount_usd|floatformat:2 }}</div></td>
                         <td>
                             {% if record_type == "income" %}
-                                <span class="pill ok">Учтён</span>
+                                {% if item.is_confirmed %}
+                                    <span class="pill ok">Подтверждён</span>
+                                {% elif item.status == "rejected" %}
+                                    <span class="pill danger">Отклонён</span>
+                                {% else %}
+                                    <span class="pill warn">Ожидает подтверждения</span>
+                                {% endif %}
                             {% elif item.is_confirmed %}
                                 <span class="pill ok">Подтверждён</span>
                             {% else %}

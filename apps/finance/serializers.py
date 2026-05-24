@@ -85,12 +85,17 @@ class IncomeSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)
     office_name = serializers.CharField(source='office.name', read_only=True)
     cashbox_name = serializers.CharField(source='cashbox.name', read_only=True)
+    employee_name = serializers.CharField(source='employee.get_full_name', read_only=True)
+    client_name = serializers.CharField(source='client.full_name', read_only=True)
+    deal_title = serializers.CharField(source='deal.title', read_only=True)
+    service_title = serializers.CharField(source='service.title', read_only=True)
     currency_code = serializers.CharField(source='currency.code', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
 
     class Meta:
         model = Income
         fields = '__all__'
-        read_only_fields = ('amount_usd', 'created_at', 'updated_at')
+        read_only_fields = ('amount_usd', 'is_confirmed', 'confirmed_by', 'confirmed_at', 'rejected_by', 'rejected_at', 'created_at', 'updated_at')
 
 
 class TransactionSerializer(serializers.ModelSerializer):

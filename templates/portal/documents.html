@@ -1,0 +1,38 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="toolbar">
+    <div class="filters">
+        <a class="btn" href="{% url 'portal:clients' %}"><i data-lucide="users"></i>Клиенты</a>
+        {% if can_review_documents %}
+            <a class="btn primary" href="{% url 'portal:approvals' %}"><i data-lucide="badge-check"></i>Документы на проверке: {{ pending_documents }}</a>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">{{ table_title }}</h2>
+        <span class="pill">{{ total_count }} всего</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск">
+                {% if status_choices %}
+                    <select class="select" name="status" style="width:220px;">
+                        <option value="">Все статусы</option>
+                        {% for value,label in status_choices %}
+                            <option value="{{ value }}" {% if current_status == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Применить</button>
+            </div>
+        </form>
+        <div id="portal-table">
+            {% include table_template %}
+        </div>
+    </div>
+</section>
+{% endblock %}
