@@ -7,7 +7,13 @@
                 <td><span class="strong">{{ item.full_name }}</span></td>
                 <td>{{ item.phone }}<div class="muted small">{{ item.email|default:"" }}</div></td>
                 <td>{{ item.interested_country|default:"" }}<div class="muted small">{{ item.interested_program|default:"" }}</div></td>
-                <td>{{ item.manager.get_full_name|default:item.manager.email|default:"-" }}</td>
+                <td>
+                    {% if item.manager %}
+                        {{ item.manager.get_full_name|default:item.manager.email }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td><span class="pill">{{ item.get_status_display }}</span></td>
                 <td>{{ item.created_at|date:"Y-m-d H:i" }}</td>
             </tr>
