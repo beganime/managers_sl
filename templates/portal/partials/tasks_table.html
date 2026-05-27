@@ -5,8 +5,19 @@
         {% for item in items %}
             <tr>
                 <td><span class="strong">{{ item.title }}</span><div class="muted small">{{ item.description|truncatechars:80 }}</div></td>
-                <td>{{ item.project.title }}<div class="muted small">{{ item.section.title|default:"" }}</div></td>
-                <td>{{ item.assigned_to.get_full_name|default:item.assigned_to.email|default:"-" }}</td>
+                <td>
+                    {{ item.project.title|default:"-" }}
+                    <div class="muted small">
+                        {% if item.section %}{{ item.section.title }}{% endif %}
+                    </div>
+                </td>
+                <td>
+                    {% if item.assigned_to %}
+                        {{ item.assigned_to.get_full_name|default:item.assigned_to.email }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
                 <td><span class="pill {% if item.priority == 'urgent' or item.priority == 'high' %}warn{% endif %}">{{ item.get_priority_display }}</span></td>
                 <td><span class="pill {% if item.status == 'done' %}ok{% elif item.status == 'cancelled' %}danger{% endif %}">{{ item.get_status_display }}</span></td>
                 <td>{% if item.deadline %}{{ item.deadline|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
