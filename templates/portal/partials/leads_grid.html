@@ -1,0 +1,41 @@
+<div class="card-grid">
+    {% for item in items %}
+        <div class="item-card">
+            <div class="item-card-top">
+                <div>
+                    <a class="item-card-title" href="{% url 'portal:lead_detail' item.id %}">{{ item.full_name }}</a>
+                    <div class="muted small">{{ item.created_at|date:"d.m.Y H:i" }}</div>
+                </div>
+                {% if item.is_archived %}<span class="pill danger">Архив</span>{% else %}<span class="pill">{{ item.get_status_display }}</span>{% endif %}
+            </div>
+            <div class="item-card-meta">
+                <span>{{ item.phone|default:"Телефон не указан" }}</span>
+                <span>{{ item.email|default:"Email не указан" }}</span>
+                <span>{{ item.interested_country|default:item.get_direction_display|default:"Интерес не указан" }}</span>
+                <span>Ответственный: {{ item.manager.get_full_name|default:item.manager.email|default:"Свободный" }}</span>
+            </div>
+            <div class="filters">
+                <a class="pill" href="{% url 'portal:lead_detail' item.id %}">Открыть</a>
+                {% if item.is_archived %}
+                    {% if can_restore_leads %}
+                        <form method="post" action="{% url 'portal:leads' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="lead_id" value="{{ item.id }}">
+                            <input type="hidden" name="action" value="restore">
+                            <button class="pill ok" type="submit">Восстановить</button>
+                        </form>
+                    {% endif %}
+                {% elif item.manager_id == request.user.id or can_archive_any_lead %}
+                    <form method="post" action="{% url 'portal:leads' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="lead_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="archive">
+                        <button class="pill warn" type="submit">В архив</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="empty">Лиды не найдены.</div>
+    {% endfor %}
+</div>

@@ -1,0 +1,5 @@
+<select class="select" name="ownership" style="width:220px;">
+    <option value="" {% if not ownership %}selected{% endif %}>Все потенциальные</option>
+    <option value="free" {% if ownership == "free" %}selected{% endif %}>Свободные</option>
+    <option value="mine" {% if ownership == "mine" %}selected{% endif %}>Мои</option>
+</select>

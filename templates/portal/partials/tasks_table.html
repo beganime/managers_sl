@@ -21,7 +21,7 @@
                 <td><span class="pill {% if item.priority == 'urgent' or item.priority == 'high' %}warn{% endif %}">{{ item.get_priority_display }}</span></td>
                 <td><span class="pill {% if item.status == 'done' %}ok{% elif item.status == 'cancelled' %}danger{% endif %}">{{ item.get_status_display }}</span></td>
                 <td>{% if item.deadline %}{{ item.deadline|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
-                <td><a class="pill" href="{% url 'portal:tasks' %}?edit={{ item.id }}">Edit</a></td>
+                <td><a class="pill" href="{% url 'portal:task_edit' item.id %}">Edit</a></td>
             </tr>
         {% empty %}
             <tr><td colspan="7"><div class="empty">No tasks found.</div></td></tr>

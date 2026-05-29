@@ -20,7 +20,7 @@
                     <td>{{ item.language|default:"-" }}</td>
                     <td>{{ item.duration|default:"-" }}</td>
                     <td><span class="pill {% if item.is_active and not item.is_archived %}ok{% else %}warn{% endif %}">{% if item.is_archived %}Archived{% else %}{{ item.is_active|yesno:"Active,Inactive" }}{% endif %}</span></td>
-                    <td><a class="pill" href="{% url 'portal:programs' %}?edit={{ item.id }}">Edit</a></td>
+                    <td><a class="pill" href="{% url 'portal:program_edit' item.id %}">Edit</a></td>
                 </tr>
             {% empty %}
                 <tr><td colspan="7"><div class="empty">No programs found.</div></td></tr>

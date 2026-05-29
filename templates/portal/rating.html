@@ -4,7 +4,7 @@
 <section class="panel" style="margin-bottom:16px;">
     <div class="panel-header">
         <h2 class="panel-title">Рейтинг сотрудников</h2>
-        <span class="pill">Доходы и комиссии считаются в USD</span>
+        <span class="pill">Доходы, балансы и комиссии считаются в USD</span>
     </div>
     <div class="panel-body">
         <form class="toolbar" method="get">
@@ -20,6 +20,13 @@
                         <option value="{{ office.id }}" {% if current_office == office.id|stringformat:"s" %}selected{% endif %}>{{ office.name }}</option>
                     {% endfor %}
                 </select>
+                {% if can_view_hidden_leaderboard %}
+                    <select class="select" name="leaderboard" style="width:220px;">
+                        <option value="visible" {% if current_leaderboard_filter == "visible" %}selected{% endif %}>Показываемые</option>
+                        <option value="hidden" {% if current_leaderboard_filter == "hidden" %}selected{% endif %}>Скрытые</option>
+                        <option value="all" {% if current_leaderboard_filter == "all" %}selected{% endif %}>Все</option>
+                    </select>
+                {% endif %}
                 <button class="btn primary" type="submit"><i data-lucide="filter"></i>Показать</button>
             </div>
         </form>
@@ -78,8 +85,48 @@
                     <tr>
                         <td>{{ forloop.counter }}</td>
                         <td>
-                            <div class="strong">{{ row.profile.user.get_full_name|default:row.profile.user.email }}</div>
-                            <div class="muted small">{{ row.profile.position.name|default:row.profile.role.name }}</div>
+                            <details>
+                                <summary>
+                                    <span class="strong">{{ row.profile.user.get_full_name|default:row.profile.user.email }}</span>
+                                    {% if row.is_hidden_from_leaderboard %}<span class="pill warn">Скрыт из рейтинга</span>{% endif %}
+                                    <div class="muted small">{{ row.profile.position.name|default:row.profile.role.name }}</div>
+                                </summary>
+                                <div class="rating-details">
+                                    <div class="grid cols-3">
+                                        <div>
+                                            <div class="muted small">Отдел</div>
+                                            <div class="strong">{{ row.profile.department.name|default:"-" }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="muted small">Рабочий статус</div>
+                                            <div class="strong">{{ row.profile.get_work_status_display }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="muted small">Последний рабочий день</div>
+                                            <div class="strong">{% if row.last_workday %}{{ row.last_workday.date|date:"d.m.Y" }} · {{ row.last_workday.get_status_display }}{% else %}-{% endif %}</div>
+                                        </div>
+                                        <div>
+                                            <div class="muted small">Задачи</div>
+                                            <div class="strong">{{ row.tasks_done }} выполнено из {{ row.tasks_total }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="muted small">Рабочие дни</div>
+                                            <div class="strong">Начал {{ row.started_days }} · Закрыл {{ row.closed_days }}</div>
+                                        </div>
+                                        <div>
+                                            <div class="muted small">Дата рождения</div>
+                                            <div class="strong">{{ row.profile.user.dob|date:"d.m.Y"|default:"-" }}</div>
+                                        </div>
+                                    </div>
+                                    <div class="contact-actions">
+                                        {% if row.profile.user.phone %}<a class="pill ok" href="tel:{{ row.profile.user.phone }}">Позвонить</a>{% endif %}
+                                        {% if row.profile.user.email %}<a class="pill" href="mailto:{{ row.profile.user.email }}">Написать</a>{% endif %}
+                                        {% if row.profile.user.telegram %}<a class="pill" href="https://t.me/{{ row.profile.user.telegram|cut:'@' }}">Telegram</a>{% endif %}
+                                        {% if row.profile.user.whatsapp %}<a class="pill" href="https://wa.me/{{ row.profile.user.whatsapp }}">WhatsApp</a>{% endif %}
+                                        {% if row.profile.user.social_contacts %}<span class="pill">{{ row.profile.user.social_contacts }}</span>{% endif %}
+                                    </div>
+                                </div>
+                            </details>
                         </td>
                         <td>{{ row.profile.office.name|default:"-" }}</td>
                         <td><span class="pill ok">{{ row.score }}</span></td>
@@ -89,7 +136,7 @@
                         <td>${{ row.income_usd|floatformat:2 }}</td>
                         <td>${{ row.commission_usd|floatformat:2 }}</td>
                         <td>${{ row.balance_usd|floatformat:2 }}</td>
-                        <td>{{ row.tasks_done }}</td>
+                        <td>{{ row.tasks_done }}/{{ row.tasks_total }}</td>
                         <td>{{ row.started_days }}/{{ row.closed_days }}</td>
                         <td>{% if row.missed_days %}<span class="pill danger">{{ row.missed_days }}</span>{% else %}<span class="pill ok">0</span>{% endif %}</td>
                     </tr>

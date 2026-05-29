@@ -1,0 +1,8 @@
+<select class="select" name="assignee" style="width:240px;">
+    <option value="">Все сотрудники</option>
+    {% for assignee in assignees %}
+        <option value="{{ assignee.id }}" {% if current_assignee == assignee.id|stringformat:"s" %}selected{% endif %}>{{ assignee.get_full_name|default:assignee.email }}</option>
+    {% endfor %}
+</select>
+<input class="input" type="date" name="deadline_from" value="{{ deadline_from }}" style="width:170px;">
+<input class="input" type="date" name="deadline_to" value="{{ deadline_to }}" style="width:170px;">

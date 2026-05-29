@@ -62,6 +62,7 @@ urlpatterns = [
     path('api/v1/knowledge/', include('apps.knowledge.urls')),
     path('api/v1/customfields/', include('apps.customfields.urls')),
     path('api/v1/notifications/', include('apps.erp_notifications.urls')),
+    path('api/client/v1/', include('apps.client_api.urls')),
 ]
 
 if settings.DEBUG:

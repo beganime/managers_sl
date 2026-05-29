@@ -1,0 +1,39 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">{{ form_title }}</h2>
+        <a class="btn" href="{{ cancel_url }}"><i data-lucide="arrow-left"></i>Назад к списку</a>
+    </div>
+    <div class="panel-body">
+        <form method="post" enctype="multipart/form-data" class="grid">
+            {% csrf_token %}
+            {% if edit_object %}<input type="hidden" name="object_id" value="{{ edit_object.id }}">{% endif %}
+            {% for field in form.hidden_fields %}{{ field }}{% endfor %}
+            {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+
+            {% for group in form_groups %}
+                <details {% if group.open %}open{% endif %}>
+                    <summary class="strong">{{ group.title }}</summary>
+                    <div class="grid cols-3" style="margin-top:12px;">
+                        {% for field in group.fields %}
+                            <label>
+                                <span class="muted small">{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+                                {{ field }}
+                                {% if field.help_text %}<span class="muted small">{{ field.help_text }}</span>{% endif %}
+                                {% if field.errors %}<span class="form-errors">{{ field.errors }}</span>{% endif %}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </details>
+            {% endfor %}
+
+            <div class="filters">
+                <button class="btn primary" type="submit"><i data-lucide="save"></i>{{ submit_label }}</button>
+                <a class="btn" href="{{ cancel_url }}">Отмена</a>
+            </div>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -18,7 +18,7 @@
                     <td>{{ item.price_client|floatformat:2 }} {{ item.currency.code|default:"" }}</td>
                     <td><span class="pill">{{ item.is_public|yesno:"Public,Internal" }}</span></td>
                     <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Active,Inactive" }}</span></td>
-                    <td><a class="pill" href="{% url 'portal:services' %}?edit={{ item.id }}">Edit</a></td>
+                    <td><a class="pill" href="{% url 'portal:service_edit' item.id %}">Edit</a></td>
                 </tr>
             {% empty %}
                 <tr><td colspan="6"><div class="empty">No services found.</div></td></tr>

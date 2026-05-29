@@ -1,0 +1,6 @@
+<select class="select" name="university" style="width:260px;">
+    <option value="">Все ВУЗы</option>
+    {% for university in universities %}
+        <option value="{{ university.id }}" {% if selected_university == university.id|stringformat:"s" %}selected{% endif %}>{{ university.name }}</option>
+    {% endfor %}
+</select>

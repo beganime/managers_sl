@@ -9,7 +9,12 @@
                 <td>{{ item.completed_tasks_count }} / {{ item.tasks_count }}<div class="muted small">{{ item.progress_percent }}%</div></td>
                 <td>{% if item.deadline %}{{ item.deadline|date:"Y-m-d H:i" }}{% else %}-{% endif %}</td>
                 <td><span class="pill {% if item.status == 'done' %}ok{% elif item.status == 'paused' %}warn{% endif %}">{{ item.get_status_display }}</span></td>
-                <td><a class="pill" href="{% url 'portal:project_detail' item.id %}">Open</a></td>
+                <td>
+                    <div class="filters">
+                        <a class="pill" href="{% url 'portal:project_detail' item.id %}">Open</a>
+                        <a class="pill" href="{% url 'portal:project_edit' item.id %}">Edit</a>
+                    </div>
+                </td>
             </tr>
         {% empty %}
             <tr><td colspan="6"><div class="empty">No projects found.</div></td></tr>

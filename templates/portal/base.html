@@ -288,6 +288,16 @@
         .pill.warn { background: #fff6e7; color: var(--warn); border-color: #f3d6a5; }
         .pill.danger { background: #fff0ed; color: var(--danger); border-color: #f4c4ba; }
         .empty { padding: 24px; text-align: center; color: var(--muted); }
+        .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+        .item-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+        .item-card-top { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; min-width: 0; }
+        .item-card-title { font-weight: 760; color: var(--text); overflow-wrap: anywhere; }
+        .item-card-meta { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
+        .item-thumb { width: 44px; height: 44px; border-radius: 8px; border: 1px solid var(--line); background: var(--panel-soft); display: grid; place-items: center; overflow: hidden; flex: 0 0 auto; }
+        .item-thumb img { width: 100%; height: 100%; object-fit: cover; }
+        .view-switch .pill { text-decoration: none; }
+        .rating-details { background: var(--panel-soft); border-radius: 8px; padding: 12px; margin-top: 10px; display: grid; gap: 10px; }
+        .contact-actions { display: flex; flex-wrap: wrap; gap: 8px; }
         .list { display: grid; gap: 10px; }
         .list-row {
             display: grid;

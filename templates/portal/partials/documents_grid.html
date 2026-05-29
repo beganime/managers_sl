@@ -1,0 +1,31 @@
+<div class="card-grid">
+    {% for item in items %}
+        <div class="item-card">
+            <div class="item-card-top">
+                <div>
+                    <div class="item-card-title">{{ item.title|default:item.template.name }}</div>
+                    <div class="muted small">{{ item.template.name }}</div>
+                </div>
+                <span class="pill {% if item.status == 'approved' %}ok{% elif item.status == 'rejected' or item.status == 'error' %}danger{% else %}warn{% endif %}">{{ item.get_status_display }}</span>
+            </div>
+            <div class="item-card-meta">
+                <span>Клиент: {% if item.client %}{{ item.client.full_name }}{% else %}-{% endif %}</span>
+                <span>Менеджер: {{ item.manager.get_full_name|default:item.manager.email }}</span>
+                {% if item.generation_error %}<span style="color:#b91c1c;">{{ item.generation_error|truncatechars:120 }}</span>{% endif %}
+                {% if item.rejection_reason %}<span style="color:#b91c1c;">Причина: {{ item.rejection_reason|truncatechars:120 }}</span>{% endif %}
+            </div>
+            <div class="filters">
+                {% if item.can_download_original %}
+                    <a class="pill" href="{% url 'portal:document_action' item.id 'download-original' %}">DOCX</a>
+                {% endif %}
+                {% if item.can_download_approved %}
+                    <a class="pill ok" href="{% url 'portal:document_action' item.id 'download-approved' %}">PDF с печатью</a>
+                {% elif item.status == 'pending' %}
+                    <span class="pill warn">Ожидает админа</span>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="empty">Документы не найдены.</div>
+    {% endfor %}
+</div>

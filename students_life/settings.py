@@ -120,7 +120,7 @@ INSTALLED_APPS = [
     'mailing',
     'notifications',
     'support',
-    'apps.core',
+    'apps.core.apps.CoreConfig',
     'apps.organizations',
     'apps.employees',
     'apps.crm',
@@ -134,6 +134,7 @@ INSTALLED_APPS = [
     'apps.customfields.apps.CustomFieldsConfig',
     'apps.erp_notifications.apps.ErpNotificationsConfig',
     'apps.portal.apps.PortalConfig',
+    'apps.client_api.apps.ClientApiConfig',
 ]
 
 MIDDLEWARE = [

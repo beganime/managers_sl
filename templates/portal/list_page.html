@@ -4,11 +4,17 @@
 <section class="panel">
     <div class="panel-header">
         <h2 class="panel-title">{{ table_title }}</h2>
-        <span class="pill">{{ total_count }} всего</span>
+        <div class="filters">
+            <span class="pill">{{ total_count }} всего</span>
+            {% if create_url %}
+                <a class="btn primary" href="{{ create_url }}"><i data-lucide="plus"></i>{{ create_label }}</a>
+            {% endif %}
+        </div>
     </div>
     <div class="panel-body">
         <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
             <div class="filters">
+                <input type="hidden" name="view" value="{{ view_mode }}">
                 <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск">
                 {% if status_choices %}
                     <select class="select" name="status" style="width:220px;">
@@ -25,11 +31,20 @@
                         {% endfor %}
                     </select>
                 {% endif %}
+                {% if filter_template %}
+                    {% include filter_template %}
+                {% endif %}
                 <button class="btn primary" type="submit"><i data-lucide="search"></i>Применить</button>
             </div>
+            {% if grid_template %}
+                <div class="filters view-switch">
+                    <a class="pill {% if view_mode == 'table' %}ok{% endif %}" href="?{{ table_view_query }}"><i data-lucide="table-2"></i>Таблица</a>
+                    <a class="pill {% if view_mode == 'grid' %}ok{% endif %}" href="?{{ grid_view_query }}"><i data-lucide="layout-grid"></i>Плитка</a>
+                </div>
+            {% endif %}
         </form>
         <div id="portal-table">
-            {% include table_template %}
+            {% include content_template %}
             {% if page_obj and page_obj.paginator.num_pages > 1 %}
                 <div class="toolbar" style="margin-top:14px;">
                     <div class="muted small">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</div>

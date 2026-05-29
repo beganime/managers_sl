@@ -425,7 +425,7 @@ def workday_queryset(user):
 
 
 def employee_queryset(user):
-    qs = EmployeeProfile.objects.select_related('user', 'company', 'office', 'department', 'position', 'role')
+    qs = EmployeeProfile.objects.select_related('user', 'company', 'office', 'department', 'position', 'role', 'access')
     if is_erp_admin(user):
         return qs
 
@@ -1014,6 +1014,10 @@ class AdminDataHelpView(PortalContextMixin, TemplateView):
 class ListPageMixin(PortalContextMixin, TemplateView):
     template_name = 'portal/list_page.html'
     table_template = ''
+    grid_template = ''
+    filter_template = ''
+    create_url_name = ''
+    create_label = 'Добавить'
     search_fields = ()
     status_choices = ()
     status_field = 'status'
@@ -1029,6 +1033,21 @@ class ListPageMixin(PortalContextMixin, TemplateView):
     def get_extra_context(self, qs):
         return {}
 
+    def get_view_mode(self):
+        mode = self.request.GET.get('view')
+        if mode == 'grid' and self.grid_template:
+            return 'grid'
+        return 'table'
+
+    def get_content_template(self):
+        return self.grid_template if self.get_view_mode() == 'grid' else self.table_template
+
+    def get_switched_query(self, view_mode):
+        query_params = self.request.GET.copy()
+        query_params['view'] = view_mode
+        query_params.pop('page', None)
+        return query_params.urlencode()
+
     def filter_queryset(self, qs):
         request = self.request
         qs = apply_search(qs, request.GET.get('q'), self.search_fields)
@@ -1043,6 +1062,8 @@ class ListPageMixin(PortalContextMixin, TemplateView):
         ordering = self.request.GET.get('ordering') or self.default_ordering
         ordered_qs = qs.order_by(ordering)
         page_obj, page_query = paginate_queryset(self.request, ordered_qs, self.page_size)
+        view_mode = self.get_view_mode()
+        content_template = self.get_content_template()
         context.update({
             'items': page_obj.object_list,
             'total_count': qs.count(),
@@ -1050,23 +1071,74 @@ class ListPageMixin(PortalContextMixin, TemplateView):
             'paginator': page_obj.paginator,
             'page_query': page_query,
             'table_template': self.table_template,
+            'grid_template': self.grid_template,
+            'filter_template': self.filter_template,
+            'content_template': content_template,
+            'view_mode': view_mode,
+            'table_view_query': self.get_switched_query('table'),
+            'grid_view_query': self.get_switched_query('grid'),
             'table_title': self.get_table_title(),
             'status_choices': self.status_choices,
             'current_status': self.request.GET.get('status', ''),
             'query': self.request.GET.get('q', ''),
             'ordering': ordering,
+            'create_url': safe_reverse(self.create_url_name, '') if self.create_url_name else '',
+            'create_label': self.create_label,
         })
         context.update(self.get_extra_context(qs))
         if context['is_htmx']:
-            self.template_name = self.table_template
+            self.template_name = content_template
         return context
 
 
+class PortalFormPageMixin:
+    template_name = 'portal/form_page.html'
+    cancel_url_name = ''
+    form_page_title_create = 'Создать'
+    form_page_title_edit = 'Редактировать'
+    submit_label = 'Сохранить'
+
+    def get_form_page_title(self, obj):
+        return self.form_page_title_edit if obj else self.form_page_title_create
+
+    def get_cancel_url(self):
+        return safe_reverse(self.cancel_url_name, '#') if self.cancel_url_name else '#'
+
+    def get_form_groups(self, form):
+        return [{'title': 'Основное', 'fields': list(form.visible_fields()), 'open': True}]
+
+    def get_context_data(self, **kwargs):
+        context = PortalContextMixin.get_context_data(self, **kwargs)
+        edit_object = self.get_edit_object()
+        form = context.get('form') or self.get_form(instance=edit_object)
+        context.update({
+            'form': form,
+            'form_groups': self.get_form_groups(form),
+            'edit_object': edit_object,
+            'page_title': self.get_form_page_title(edit_object),
+            'form_title': self.get_form_page_title(edit_object),
+            'submit_label': self.submit_label,
+            'cancel_url': self.get_cancel_url(),
+        })
+        return context
+
+    def render_to_response(self, context, **response_kwargs):
+        form = context.get('form')
+        if form:
+            context['form_groups'] = self.get_form_groups(form)
+            context.setdefault('form_title', self.get_form_page_title(context.get('edit_object')))
+            context.setdefault('submit_label', self.submit_label)
+            context.setdefault('cancel_url', self.get_cancel_url())
+        return super().render_to_response(context, **response_kwargs)
+
+
 class UniversitiesView(ListPageMixin):
-    template_name = 'portal/universities.html'
     active_page = 'universities'
     page_title = 'Вузы'
     table_template = 'portal/partials/universities_table.html'
+    grid_template = 'portal/partials/universities_grid.html'
+    create_url_name = 'portal:university_create'
+    create_label = 'Добавить ВУЗ'
     search_fields = ('name', 'legal_name', 'country__name', 'city__name', 'description')
     status_field = ''
     default_ordering = 'country__name'
@@ -1079,7 +1151,7 @@ class UniversitiesView(ListPageMixin):
         return qs
 
     def get_edit_object(self):
-        edit_id = self.request.GET.get('edit') or self.request.POST.get('object_id')
+        edit_id = self.kwargs.get('pk') or self.request.GET.get('edit') or self.request.POST.get('object_id')
         if not edit_id:
             return None
         return self.get_queryset().filter(pk=edit_id).first()
@@ -1122,10 +1194,13 @@ class UniversitiesView(ListPageMixin):
 
 
 class ProgramsView(ListPageMixin):
-    template_name = 'portal/programs.html'
     active_page = 'programs'
     page_title = 'Программы'
     table_template = 'portal/partials/programs_table.html'
+    grid_template = 'portal/partials/programs_grid.html'
+    filter_template = 'portal/partials/programs_filters.html'
+    create_url_name = 'portal:program_create'
+    create_label = 'Добавить программу'
     search_fields = ('name', 'faculty', 'language', 'university__name', 'university__country__name')
     status_choices = Program.DEGREE_CHOICES
     status_field = 'degree'
@@ -1139,15 +1214,20 @@ class ProgramsView(ListPageMixin):
         return qs
 
     def get_edit_object(self):
-        edit_id = self.request.GET.get('edit') or self.request.POST.get('object_id')
+        edit_id = self.kwargs.get('pk') or self.request.GET.get('edit') or self.request.POST.get('object_id')
         if not edit_id:
             return None
         return self.get_queryset().filter(pk=edit_id).first()
 
     def get_form(self, data=None, instance=None):
+        initial = {}
+        university_id = self.request.GET.get('university')
+        if university_id and not data and not instance:
+            initial['university'] = university_id
         return PortalProgramForm(
             data=data,
             instance=instance,
+            initial=initial or None,
             universities=university_queryset(self.request.user).filter(is_active=True).order_by('country__name', 'name'),
         )
 
@@ -1174,10 +1254,12 @@ class ProgramsView(ListPageMixin):
 
 
 class ServicesView(ListPageMixin):
-    template_name = 'portal/services.html'
     active_page = 'services'
     page_title = 'Услуги'
     table_template = 'portal/partials/services_table.html'
+    grid_template = 'portal/partials/services_grid.html'
+    create_url_name = 'portal:service_create'
+    create_label = 'Добавить услугу'
     search_fields = ('title', 'code', 'description', 'category__name')
     status_field = ''
     default_ordering = 'sort_order'
@@ -1190,7 +1272,7 @@ class ServicesView(ListPageMixin):
         return qs
 
     def get_edit_object(self):
-        edit_id = self.request.GET.get('edit') or self.request.POST.get('object_id')
+        edit_id = self.kwargs.get('pk') or self.request.GET.get('edit') or self.request.POST.get('object_id')
         if not edit_id:
             return None
         return service_queryset(self.request.user).filter(pk=edit_id).first()
@@ -1255,6 +1337,7 @@ class LeadsView(ListPageMixin):
     active_page = 'leads'
     page_title = 'Лиды'
     table_template = 'portal/partials/leads_table.html'
+    grid_template = 'portal/partials/leads_grid.html'
     search_fields = ('full_name', 'phone', 'email', 'interested_country', 'interested_program', 'comment')
     status_choices = Lead.STATUS_CHOICES
     archive_choices = (
@@ -1327,6 +1410,8 @@ class IncomingLeadsView(ListPageMixin):
     active_page = 'incoming_leads'
     page_title = 'Потенциальные клиенты'
     table_template = 'portal/partials/incoming_leads_table.html'
+    grid_template = 'portal/partials/incoming_leads_grid.html'
+    filter_template = 'portal/partials/incoming_leads_filters.html'
     search_fields = ('full_name', 'phone', 'email', 'interested_country', 'interested_program', 'comment')
     status_choices = Lead.STATUS_CHOICES
 
@@ -1416,10 +1501,12 @@ class IncomingLeadsView(ListPageMixin):
 
 
 class ClientsView(ListPageMixin):
-    template_name = 'portal/clients.html'
     active_page = 'clients'
     page_title = 'Клиенты'
     table_template = 'portal/partials/clients_table.html'
+    grid_template = 'portal/partials/clients_grid.html'
+    create_url_name = 'portal:client_create'
+    create_label = 'Добавить клиента'
     search_fields = ('full_name', 'phone', 'email', 'city', 'citizenship', 'comments')
     status_choices = Client.STATUS_CHOICES
 
@@ -1427,7 +1514,7 @@ class ClientsView(ListPageMixin):
         return client_queryset(self.request.user).select_related('manager')
 
     def get_edit_object(self):
-        edit_id = self.request.GET.get('edit') or self.request.POST.get('object_id')
+        edit_id = self.kwargs.get('pk') or self.request.GET.get('edit') or self.request.POST.get('object_id')
         if not edit_id:
             return None
         return client_queryset(self.request.user).filter(pk=edit_id).first()
@@ -1603,10 +1690,13 @@ class ApplicationsView(ListPageMixin):
 
 
 class TasksView(ListPageMixin):
-    template_name = 'portal/tasks.html'
     active_page = 'tasks'
     page_title = 'Задачи'
     table_template = 'portal/partials/tasks_table.html'
+    grid_template = 'portal/partials/tasks_grid.html'
+    filter_template = 'portal/partials/tasks_filters.html'
+    create_url_name = 'portal:task_create'
+    create_label = 'Создать задачу'
     search_fields = ('title', 'description', 'project__title', 'assigned_to__email')
     status_choices = ProjectTask.STATUS_CHOICES
     default_ordering = 'deadline'
@@ -1625,7 +1715,7 @@ class TasksView(ListPageMixin):
         return qs
 
     def get_edit_object(self):
-        edit_id = self.request.GET.get('edit') or self.request.POST.get('object_id')
+        edit_id = self.kwargs.get('pk') or self.request.GET.get('edit') or self.request.POST.get('object_id')
         if not edit_id:
             return None
         return task_queryset(self.request.user).filter(pk=edit_id).first()
@@ -1672,10 +1762,12 @@ class TasksView(ListPageMixin):
 
 
 class ProjectsView(ListPageMixin):
-    template_name = 'portal/projects.html'
     active_page = 'projects'
     page_title = 'Проекты'
     table_template = 'portal/partials/projects_table.html'
+    grid_template = 'portal/partials/projects_grid.html'
+    create_url_name = 'portal:project_create'
+    create_label = 'Создать проект'
     search_fields = ('title', 'code', 'description', 'owner__email')
     status_choices = Project.STATUS_CHOICES
     default_ordering = '-updated_at'
@@ -2200,10 +2292,10 @@ class FinanceReportsView(PortalContextMixin, TemplateView):
 
 
 class DocumentsView(ListPageMixin):
-    template_name = 'portal/documents.html'
     active_page = 'documents'
     page_title = 'Документы'
     table_template = 'portal/partials/documents_table.html'
+    grid_template = 'portal/partials/documents_grid.html'
     search_fields = ('title', 'template__name', 'client__full_name', 'deal__title')
     status_choices = GeneratedDocument.STATUS_CHOICES
 
@@ -2215,6 +2307,81 @@ class DocumentsView(ListPageMixin):
             'pending_documents': qs.filter(status=GeneratedDocument.STATUS_PENDING).count(),
             'can_review_documents': can_delete_admin(self.request.user),
         }
+
+
+def form_fields(form, names):
+    return [form[name] for name in names if name in form.fields]
+
+
+class UniversityFormView(PortalFormPageMixin, UniversitiesView):
+    cancel_url_name = 'portal:universities'
+    form_page_title_create = 'Добавить ВУЗ'
+    form_page_title_edit = 'Редактировать ВУЗ'
+    submit_label = 'Сохранить ВУЗ'
+
+    def get_form_groups(self, form):
+        return [
+            {'title': 'Основное', 'open': True, 'fields': form_fields(form, ('country', 'city', 'local_currency', 'name', 'legal_name', 'website', 'email', 'phone', 'address', 'is_active'))},
+            {'title': 'Описание и поступление', 'open': True, 'fields': form_fields(form, ('description', 'admission_requirements'))},
+        ]
+
+
+class ProgramFormView(PortalFormPageMixin, ProgramsView):
+    cancel_url_name = 'portal:programs'
+    form_page_title_create = 'Добавить программу'
+    form_page_title_edit = 'Редактировать программу'
+    submit_label = 'Сохранить программу'
+
+    def get_form_groups(self, form):
+        return [
+            {'title': 'Основное', 'open': True, 'fields': form_fields(form, ('university', 'name', 'degree', 'faculty', 'language', 'duration'))},
+            {'title': 'Описание', 'open': True, 'fields': form_fields(form, ('description', 'admission_requirements', 'is_active', 'is_archived'))},
+        ]
+
+
+class ServiceFormView(PortalFormPageMixin, ServicesView):
+    cancel_url_name = 'portal:services'
+    form_page_title_create = 'Добавить услугу'
+    form_page_title_edit = 'Редактировать услугу'
+    submit_label = 'Сохранить услугу'
+
+    def get_form_groups(self, form):
+        return [
+            {'title': 'Основное', 'open': True, 'fields': form_fields(form, ('category', 'category_name', 'title', 'code', 'description'))},
+            {'title': 'Цена и видимость', 'open': True, 'fields': form_fields(form, ('price_client', 'real_cost', 'currency', 'is_active', 'is_public'))},
+        ]
+
+
+class ClientFormView(PortalFormPageMixin, ClientsView):
+    cancel_url_name = 'portal:clients'
+    form_page_title_create = 'Добавить клиента'
+    form_page_title_edit = 'Редактировать клиента'
+    submit_label = 'Сохранить клиента'
+
+    def get_form_groups(self, form):
+        base_fields = ['full_name', 'phone', 'email', 'direction', 'status', 'lead_source', 'comments']
+        if is_erp_admin(self.request.user) or self.request.user.is_staff:
+            base_fields.extend(['manager', 'office'])
+        return [
+            {'title': 'Основное', 'open': True, 'fields': form_fields(form, base_fields)},
+            {'title': 'Личные данные', 'open': False, 'fields': form_fields(form, ('dob', 'citizenship', 'city', 'address', 'address_registration'))},
+            {'title': 'Паспорт', 'open': False, 'fields': form_fields(form, ('passport_local_num', 'passport_inter_num', 'passport_issued_by', 'passport_issued_date', 'passport_valid_until', 'passport_birth_place'))},
+            {'title': 'Родственник и образование', 'open': False, 'fields': form_fields(form, ('relative_full_name', 'relative_relation', 'relative_phone', 'relative_workplace', 'current_education', 'current_school', 'current_study_country', 'interested_country', 'interested_university', 'interested_program'))},
+            {'title': 'Документы', 'open': False, 'fields': form_fields(form, ('has_passport', 'has_education_doc', 'has_translation', 'has_photo'))},
+        ]
+
+
+class TaskFormView(PortalFormPageMixin, TasksView):
+    cancel_url_name = 'portal:tasks'
+    form_page_title_create = 'Создать задачу'
+    form_page_title_edit = 'Редактировать задачу'
+    submit_label = 'Сохранить задачу'
+
+    def get_form_groups(self, form):
+        return [
+            {'title': 'Основное', 'open': True, 'fields': form_fields(form, ('project', 'section', 'title', 'assigned_to', 'priority', 'status', 'deadline'))},
+            {'title': 'Описание', 'open': True, 'fields': form_fields(form, ('description',))},
+        ]
 
 
 class DocumentActionView(LoginRequiredMixin, View):
@@ -2740,6 +2907,8 @@ class RatingView(PortalContextMixin, TemplateView):
         today = timezone.localdate()
         period = self.request.GET.get('period') or 'month'
         office_id = self.request.GET.get('office') or ''
+        leaderboard_filter = self.request.GET.get('leaderboard') or 'visible'
+        can_view_hidden = is_erp_admin(self.request.user) or self.request.user.is_staff
         if period == 'week':
             period_start = today - timedelta(days=7)
         elif period == 'quarter':
@@ -2750,8 +2919,17 @@ class RatingView(PortalContextMixin, TemplateView):
         profiles = employee_queryset(self.request.user).filter(is_active=True)
         if office_id:
             profiles = profiles.filter(office_id=office_id)
+        visible_q = Q(access__can_be_in_leaderboard=True) | Q(access__isnull=True)
+        if can_view_hidden:
+            if leaderboard_filter == 'visible':
+                profiles = profiles.filter(visible_q)
+            elif leaderboard_filter == 'hidden':
+                profiles = profiles.filter(access__can_be_in_leaderboard=False)
+        else:
+            profiles = profiles.filter(visible_q)
         for profile in profiles:
             user = profile.user
+            access = getattr(profile, 'access', None)
             leads_count = Lead.objects.filter(manager=user, created_at__date__gte=period_start).count()
             clients_count = Client.objects.filter(manager=user).exclude(status__in=['archive', 'rejected']).count()
             applications_count = Application.objects.filter(manager=user, created_at__date__gte=period_start).count()
@@ -2763,10 +2941,12 @@ class RatingView(PortalContextMixin, TemplateView):
             except Exception:
                 balance_usd = commission_usd
             tasks_done = ProjectTask.objects.filter(assigned_to=user, status=ProjectTask.STATUS_DONE, completed_at__date__gte=period_start).count()
+            tasks_total = ProjectTask.objects.filter(assigned_to=user, created_at__date__gte=period_start).count()
             workdays = WorkDay.objects.filter(employee=user, date__gte=period_start)
             started_days = workdays.exclude(status=WorkDay.STATUS_NOT_STARTED).count()
             closed_days = workdays.filter(status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()
             missed_days = workdays.filter(status=WorkDay.STATUS_MISSED).count()
+            last_workday = workdays.order_by('-date').first()
             score = (
                 leads_count * 2
                 + clients_count * 3
@@ -2787,19 +2967,25 @@ class RatingView(PortalContextMixin, TemplateView):
                 'income_usd': income_usd,
                 'commission_usd': commission_usd,
                 'balance_usd': balance_usd,
+                'tasks_total': tasks_total,
                 'tasks_done': tasks_done,
                 'started_days': started_days,
                 'closed_days': closed_days,
                 'missed_days': missed_days,
+                'last_workday': last_workday,
+                'is_hidden_from_leaderboard': bool(access and not access.can_be_in_leaderboard),
                 'avatar_url': user.avatar.url if getattr(user, 'avatar', None) else '',
             })
         rating_rows = sorted(rows, key=lambda item: item['score'], reverse=True)
+        podium_rows = [row for row in rating_rows if not row['is_hidden_from_leaderboard']][:3]
         context.update({
             'rating_rows': rating_rows,
-            'podium_rows': rating_rows[:3],
+            'podium_rows': podium_rows,
             'office_options': office_queryset(self.request.user).order_by('name'),
             'current_office': office_id,
             'current_period': period,
+            'current_leaderboard_filter': leaderboard_filter,
+            'can_view_hidden_leaderboard': can_view_hidden,
         })
         return context
 

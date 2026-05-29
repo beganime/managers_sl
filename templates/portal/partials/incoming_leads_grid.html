@@ -1,0 +1,49 @@
+<div class="card-grid">
+    {% for item in items %}
+        <div class="item-card">
+            <div class="item-card-top">
+                <div>
+                    <a class="item-card-title" href="{% url 'portal:lead_detail' item.id %}">{{ item.full_name }}</a>
+                    <div class="muted small">{{ item.created_at|date:"d.m.Y H:i" }}</div>
+                </div>
+                <span class="pill {% if item.manager_id %}warn{% else %}ok{% endif %}">{{ item.manager|yesno:"В работе,Свободная" }}</span>
+            </div>
+            <div class="item-card-meta">
+                <span>{{ item.phone|default:"Телефон не указан" }}</span>
+                <span>{{ item.email|default:"Email не указан" }}</span>
+                <span>{{ item.get_direction_display|default:item.direction|default:"Интерес не указан" }}</span>
+                <span>{{ item.interested_country|default:"" }} {{ item.interested_program|default:"" }}</span>
+                <span>Ответственный: {{ item.manager.get_full_name|default:item.manager.email|default:"-" }}</span>
+            </div>
+            <div class="filters">
+                {% if not item.manager_id %}
+                    <form method="post" action="{% url 'portal:incoming_leads' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="lead_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="take">
+                        <button class="btn primary" type="submit"><i data-lucide="hand"></i>Взять</button>
+                    </form>
+                {% elif item.manager_id == request.user.id or is_admin_user %}
+                    <form method="post" action="{% url 'portal:incoming_leads' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="lead_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="convert">
+                        <button class="btn primary" type="submit"><i data-lucide="user-plus"></i>Создать клиента</button>
+                    </form>
+                {% else %}
+                    <span class="pill warn">Заявка уже в работе</span>
+                {% endif %}
+                {% if item.manager_id == request.user.id or is_admin_user %}
+                    <form method="post" action="{% url 'portal:incoming_leads' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="lead_id" value="{{ item.id }}">
+                        <input type="hidden" name="action" value="release">
+                        <button class="btn" type="submit"><i data-lucide="rotate-ccw"></i>Вернуть</button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    {% empty %}
+        <div class="empty">Потенциальных клиентов пока нет.</div>
+    {% endfor %}
+</div>
