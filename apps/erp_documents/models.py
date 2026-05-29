@@ -1,5 +1,4 @@
 import io
-import io
 from pathlib import Path
 from uuid import uuid4
 
@@ -249,7 +248,7 @@ class GeneratedDocument(TimeStampedModel):
 
     @property
     def can_download_original(self):
-        return bool(self.generated_file and self.status in {
+        return bool(self.template.allow_without_stamp and self.generated_file and self.status in {
             self.STATUS_GENERATED,
             self.STATUS_PENDING,
             self.STATUS_APPROVED,
@@ -263,6 +262,13 @@ class GeneratedDocument(TimeStampedModel):
     @property
     def can_download(self):
         return self.can_download_original or self.can_download_approved
+
+    @property
+    def rejection_reason(self):
+        try:
+            return self.approval.rejection_reason
+        except Exception:
+            return ''
 
     def build_context(self):
         context = {}
@@ -478,6 +484,10 @@ class GeneratedDocument(TimeStampedModel):
     def approve(self, user, with_stamp=False, comment=''):
         if not self.generated_file:
             raise ValueError('Generated file is required before approval.')
+        if with_stamp and not self.template.allow_with_stamp:
+            raise ValueError('Этот шаблон не разрешает PDF с электронной печатью.')
+        if not with_stamp and not self.template.allow_without_stamp:
+            raise ValueError('Этот шаблон не разрешает подтверждение без печати.')
 
         approval_type = DocumentApproval.TYPE_WITH_STAMP if with_stamp else DocumentApproval.TYPE_WITHOUT_STAMP
         approved_file = build_approved_document_file(self, with_stamp=with_stamp)
@@ -614,6 +624,8 @@ class StampRule(TimeStampedModel, ActiveModel, OrderedModel):
     watermark_text = models.CharField('Watermark text', max_length=255, blank=True)
     watermark_image = models.ImageField('Watermark image', upload_to=stamp_upload_path, null=True, blank=True)
     watermark_position = models.CharField('Watermark position', max_length=32, choices=POSITION_CHOICES, default=POSITION_CENTER)
+    watermark_width_mm = models.PositiveIntegerField('Watermark width, mm', default=160)
+    watermark_height_mm = models.PositiveIntegerField('Watermark height, mm', default=60)
     watermark_opacity = models.DecimalField('Watermark opacity', max_digits=4, decimal_places=2, default=0.15)
 
     class Meta:
@@ -698,7 +710,7 @@ def build_approved_document_file(document, with_stamp=False):
 
     rule = find_stamp_rule(document)
     if not rule or not rule.stamp_image:
-        raise ValueError('Active stamp rule with stamp image is required for approval with stamp.')
+        raise ValueError('Для этого шаблона не настроена электронная печать.')
 
     context = document.build_context()
     pdf = fitz.open()
@@ -737,13 +749,14 @@ def build_approved_document_file(document, with_stamp=False):
     )
 
     if rule.watermark_enabled:
+        watermark_rect = watermark_rect_for_rule(rule, page.rect)
         if rule.watermark_image:
-            page.insert_image(fitz.Rect(150, 260, 445, 555), filename=rule.watermark_image.path, overlay=False)
+            page.insert_image(watermark_rect, filename=rule.watermark_image.path, keep_proportion=True, overlay=False)
         elif rule.watermark_text:
             page.insert_textbox(
-                fitz.Rect(80, 320, 515, 420),
+                watermark_rect,
                 rule.watermark_text,
-                fontsize=34,
+                fontsize=max(12, min(42, watermark_rect.width / 9)),
                 fontname='helv',
                 color=(0.78, 0.82, 0.80),
                 align=1,
@@ -792,3 +805,24 @@ def stamp_rect_for_rule(rule, page_rect):
         y = (page_rect.height - height) / 2
         return fitz.Rect(x, y, x + width, y + height)
     return fitz.Rect(margin, page_rect.height - margin - height, margin + width, page_rect.height - margin)
+
+
+def watermark_rect_for_rule(rule, page_rect):
+    width = mm_to_pt(rule.watermark_width_mm)
+    height = mm_to_pt(rule.watermark_height_mm)
+    margin = mm_to_pt(18)
+    if rule.watermark_position == StampRule.POSITION_CUSTOM and rule.x_mm is not None and rule.y_mm is not None:
+        x = mm_to_pt(rule.x_mm)
+        y = mm_to_pt(rule.y_mm)
+        return fitz.Rect(x, y, x + width, y + height)
+    if rule.watermark_position == StampRule.POSITION_BOTTOM_LEFT:
+        return fitz.Rect(margin, page_rect.height - margin - height, margin + width, page_rect.height - margin)
+    if rule.watermark_position == StampRule.POSITION_BOTTOM_RIGHT:
+        return fitz.Rect(page_rect.width - margin - width, page_rect.height - margin - height, page_rect.width - margin, page_rect.height - margin)
+    if rule.watermark_position == StampRule.POSITION_TOP_LEFT:
+        return fitz.Rect(margin, margin, margin + width, margin + height)
+    if rule.watermark_position == StampRule.POSITION_TOP_RIGHT:
+        return fitz.Rect(page_rect.width - margin - width, margin, page_rect.width - margin, margin + height)
+    x = (page_rect.width - width) / 2
+    y = (page_rect.height - height) / 2
+    return fitz.Rect(x, y, x + width, y + height)

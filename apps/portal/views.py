@@ -281,14 +281,17 @@ def employee_scope_q(user, *, company_field='company', office_field='office', ma
     return Q(**{company_field: employee.company})
 
 
-def lead_queryset(user):
-    return Lead.objects.select_related('company', 'office', 'source', 'manager').filter(
+def lead_queryset(user, include_archived=False):
+    qs = Lead.objects.select_related('company', 'office', 'source', 'manager').filter(
         employee_scope_q(user, manager_field='manager'),
     )
+    if not include_archived:
+        qs = qs.filter(is_archived=False)
+    return qs
 
 
 def incoming_lead_queryset(user):
-    qs = Lead.objects.select_related('company', 'office', 'source', 'manager').filter(status__in=['new', 'contacted', 'qualified'])
+    qs = Lead.objects.select_related('company', 'office', 'source', 'manager').filter(status__in=['new', 'contacted', 'qualified'], is_archived=False)
     if is_erp_admin(user):
         return qs
     employee = get_employee_profile(user)
@@ -1254,9 +1257,70 @@ class LeadsView(ListPageMixin):
     table_template = 'portal/partials/leads_table.html'
     search_fields = ('full_name', 'phone', 'email', 'interested_country', 'interested_program', 'comment')
     status_choices = Lead.STATUS_CHOICES
+    archive_choices = (
+        ('active', 'Активные'),
+        ('archived', 'Архив'),
+        ('all', 'Все'),
+    )
 
     def get_queryset(self):
-        return lead_queryset(self.request.user).select_related('manager', 'source')
+        archive_filter = self.request.GET.get('archive') or 'active'
+        qs = lead_queryset(self.request.user, include_archived=True).select_related('manager', 'source', 'archived_by')
+        if archive_filter == 'archived':
+            return qs.filter(is_archived=True)
+        if archive_filter == 'all' and can_delete_admin(self.request.user):
+            return qs
+        return qs.filter(is_archived=False)
+
+    def get_extra_context(self, qs):
+        return {
+            'archive_choices': self.archive_choices,
+            'current_archive': self.request.GET.get('archive') or 'active',
+            'can_restore_leads': can_delete_admin(self.request.user),
+            'can_archive_any_lead': can_delete_admin(self.request.user),
+        }
+
+    def post(self, request, *args, **kwargs):
+        lead = get_object_or_404(lead_queryset(request.user, include_archived=True), pk=request.POST.get('lead_id'))
+        action = request.POST.get('action')
+        if action == 'archive':
+            if not can_delete_admin(request.user) and lead.manager_id != request.user.id:
+                messages.error(request, 'Скрыть можно только свой лид.')
+            else:
+                lead.archive(user=request.user, reason=request.POST.get('archive_reason', ''))
+                messages.success(request, 'Лид перемещён в архив.')
+        elif action == 'restore':
+            if not can_delete_admin(request.user):
+                messages.error(request, 'Восстановить лид может только администратор.')
+            else:
+                lead.restore_from_archive(user=request.user, note='Восстановлено из портала')
+                messages.success(request, 'Лид восстановлен.')
+        else:
+            messages.error(request, 'Неизвестное действие.')
+        return redirect('portal:leads')
+
+
+class LeadDetailView(PortalContextMixin, TemplateView):
+    template_name = 'portal/lead_detail.html'
+    active_page = 'leads'
+    page_title = 'Информация лида'
+
+    def get_lead(self):
+        return get_object_or_404(lead_queryset(self.request.user, include_archived=True), pk=self.kwargs['pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        lead = self.get_lead()
+        context.update({
+            'lead': lead,
+            'custom_items': (lead.custom_data or {}).items(),
+            'raw_payload': (lead.custom_data or {}).get('raw_payload') or {},
+            'action_history': lead.action_history,
+            'can_view_technical': can_delete_admin(self.request.user),
+            'can_archive_lead': can_delete_admin(self.request.user) or lead.manager_id == self.request.user.id,
+            'can_restore_lead': can_delete_admin(self.request.user),
+        })
+        return context
 
 
 class IncomingLeadsView(ListPageMixin):
@@ -1292,19 +1356,22 @@ class IncomingLeadsView(ListPageMixin):
             if lead.manager_id and lead.manager_id != request.user.id:
                 messages.error(request, 'Заявка уже в работе у другого менеджера.')
                 return redirect('portal:incoming_leads')
-            lead.manager = request.user
-            if employee:
-                lead.company = employee.company
-                lead.office = employee.office
-            lead.status = 'contacted'
-            lead.save(update_fields=['manager', 'company', 'office', 'status', 'updated_at'])
+            lead.take_responsibility(
+                request.user,
+                company=employee.company if employee else lead.company,
+                office=employee.office if employee else lead.office,
+            )
             messages.success(request, 'Вы взяли ответственность за заявку.')
             return redirect('portal:incoming_leads')
 
-        if action == 'release' and can_delete_admin(request.user):
-            lead.manager = None
-            lead.status = 'new'
-            lead.save(update_fields=['manager', 'status', 'updated_at'])
+        if action == 'release':
+            if hasattr(lead, 'client') and lead.client:
+                messages.error(request, 'По этой заявке уже создан клиент, вернуть её в свободные нельзя.')
+                return redirect('portal:incoming_leads')
+            if lead.manager_id != request.user.id and not can_delete_admin(request.user):
+                messages.error(request, 'Вернуть можно только свою заявку.')
+                return redirect('portal:incoming_leads')
+            lead.release_responsibility(request.user, note='Вернули из портала')
             messages.success(request, 'Заявка возвращена в свободные.')
             return redirect('portal:incoming_leads')
 
@@ -1340,7 +1407,7 @@ class IncomingLeadsView(ListPageMixin):
             lead.manager = manager
             lead.company = company
             lead.office = office
-            lead.mark_converted()
+            lead.mark_converted(user=request.user)
             messages.success(request, 'Клиент создан по заявке.' if created else 'Клиент по этой заявке уже существует.')
             return redirect('portal:client_detail', pk=client.pk)
 
@@ -2162,6 +2229,11 @@ class DocumentActionView(LoginRequiredMixin, View):
             if action == 'submit':
                 document.submit_for_approval(user=request.user, comment=request.POST.get('comment', ''))
                 messages.success(request, 'Документ отправлен на подтверждение.')
+            elif action == 'regenerate':
+                if document.status == GeneratedDocument.STATUS_APPROVED:
+                    raise PermissionError('Подтверждённый документ нельзя перегенерировать.')
+                document.generate_file()
+                messages.success(request, 'Документ повторно сгенерирован.')
             elif action == 'approve':
                 if not can_delete_admin(request.user):
                     raise PermissionError('Недостаточно прав.')
@@ -2180,12 +2252,14 @@ class DocumentActionView(LoginRequiredMixin, View):
         document = self.get_document(request, pk)
         if action == 'download-original':
             if not document.can_download_original:
-                raise Http404
+                messages.error(request, 'DOCX без печати недоступен для этого документа.')
+                return redirect('portal:documents')
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_ORIGINAL)
             return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.generated_file.name.split('/')[-1])
         if action == 'download-approved':
             if not document.can_download_approved:
-                raise Http404
+                messages.error(request, 'PDF с печатью доступен только после подтверждения администратора.')
+                return redirect('portal:documents')
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
             return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.approved_file.name.split('/')[-1])
         raise Http404
@@ -2370,10 +2444,52 @@ class WorkdayView(PortalContextMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        user = self.request.user
+        today = timezone.localdate()
+        history = workday_queryset(user).order_by('-date')
+        if not can_delete_admin(user):
+            history = history.filter(employee=user)
+        else:
+            employee_id = self.request.GET.get('employee') or ''
+            office_id = self.request.GET.get('office') or ''
+            date_from = parse_date(self.request.GET.get('date_from') or '')
+            date_to = parse_date(self.request.GET.get('date_to') or '')
+            if employee_id:
+                history = history.filter(employee_id=employee_id)
+            if office_id:
+                history = history.filter(office_id=office_id)
+            if date_from:
+                history = history.filter(date__gte=date_from)
+            if date_to:
+                history = history.filter(date__lte=date_to)
+
+        profiles = employee_queryset(user).filter(is_active=True)
+        today_workdays = WorkDay.objects.select_related('employee', 'office').filter(
+            date=today,
+            employee_id__in=profiles.values('user_id'),
+        )
+        started_user_ids = set(today_workdays.exclude(status=WorkDay.STATUS_NOT_STARTED).values_list('employee_id', flat=True))
+        report_user_ids = set(DailyReport.objects.filter(date=today, employee_id__in=profiles.values('user_id')).values_list('employee_id', flat=True))
+        closed_user_ids = set(today_workdays.filter(status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).values_list('employee_id', flat=True))
+
         context.update({
-            'workday': get_today_workday(self.request.user),
-            'reports': DailyReport.objects.filter(employee=self.request.user).select_related('workday').order_by('-date')[:10],
-            'history': workday_queryset(self.request.user).order_by('-date')[:10],
+            'workday': get_today_workday(user),
+            'reports': DailyReport.objects.filter(employee=user).select_related('workday').order_by('-date')[:10],
+            'history': history[:20],
+            'employee_options': employee_queryset(user).filter(is_active=True).order_by('user__first_name', 'user__last_name'),
+            'office_options': office_queryset(user).order_by('name'),
+            'selected_employee': self.request.GET.get('employee', ''),
+            'selected_office': self.request.GET.get('office', ''),
+            'date_from': self.request.GET.get('date_from', ''),
+            'date_to': self.request.GET.get('date_to', ''),
+            'today_profiles': profiles.order_by('office__name', 'user__first_name', 'user__last_name')[:120],
+            'today_workdays': today_workdays,
+            'started_user_ids': started_user_ids,
+            'report_user_ids': report_user_ids,
+            'closed_user_ids': closed_user_ids,
+            'today_started_count': len(started_user_ids),
+            'today_not_started_count': profiles.exclude(user_id__in=started_user_ids).count(),
+            'can_filter_workday_history': can_delete_admin(user),
         })
         return context
 
@@ -2521,11 +2637,6 @@ class CalendarView(PortalContextMixin, TemplateView):
             next_month = 1
             next_year += 1
 
-        if can_delete_admin(self.request.user):
-            selected_workdays = workday_queryset(self.request.user).filter(date=selected_day).select_related('employee', 'office', 'daily_report').order_by('office__name', 'employee__first_name')
-        else:
-            selected_workdays = WorkDay.objects.filter(employee=self.request.user, date=selected_day).select_related('employee', 'office', 'daily_report')
-
         context.update({
             'calendar_weeks': build_month_calendar(self.request.user, year, month),
             'weekday_labels': ('Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'),
@@ -2543,7 +2654,6 @@ class CalendarView(PortalContextMixin, TemplateView):
             'selected_day_events': build_events_for_range(self.request.user, selected_day, selected_day),
             'manual_events': calendar_event_queryset(self.request.user).filter(event_date=selected_day).order_by('start_time', 'title'),
             'event_form': context.get('event_form') or self.get_event_form(initial={'event_date': selected_day}),
-            'selected_workdays': selected_workdays,
             'upcoming_tasks': task_queryset(self.request.user).filter(deadline__isnull=False, deadline__date__gte=today).order_by('deadline')[:12],
             'birthdays': employee_queryset(self.request.user).filter(user__dob__isnull=False).order_by('user__dob__month', 'user__dob__day')[:50],
             'can_manage_calendar': can_delete_admin(self.request.user),

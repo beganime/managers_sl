@@ -140,23 +140,6 @@
             {% else %}
                 <div class="empty">На выбранный день событий нет.</div>
             {% endif %}
-
-            {% if selected_workdays %}
-                <div class="list" style="margin-top:12px;">
-                    {% for workday in selected_workdays %}
-                        <div class="list-row">
-                            <div>
-                                <div class="strong">{{ workday.employee.get_full_name|default:workday.employee.email }}</div>
-                                <div class="muted small">
-                                    {{ workday.get_status_display }}
-                                    {% if workday.has_report %} · {{ workday.daily_report.content|truncatechars:120 }}{% else %} · отчёт не отправлен{% endif %}
-                                </div>
-                            </div>
-                            <span class="pill {% if workday.has_report %}ok{% else %}warn{% endif %}">Отчёт</span>
-                        </div>
-                    {% endfor %}
-                </div>
-            {% endif %}
         </div>
     </div>
 

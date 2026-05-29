@@ -14,7 +14,7 @@
         {% for item in items %}
             <tr>
                 <td>
-                    <div class="strong">{{ item.full_name }}</div>
+                    <a class="strong" href="{% url 'portal:lead_detail' item.id %}">{{ item.full_name }}</a>
                     <div class="muted small">{{ item.created_at|date:"d.m.Y H:i" }}</div>
                 </td>
                 <td>
@@ -46,7 +46,7 @@
                         {% else %}
                             <span class="pill warn">Заявка уже в работе</span>
                         {% endif %}
-                        {% if is_admin_user and item.manager_id %}
+                        {% if item.manager_id == request.user.id or is_admin_user %}
                             <form method="post" action="{% url 'portal:incoming_leads' %}">
                                 {% csrf_token %}
                                 <input type="hidden" name="lead_id" value="{{ item.id }}">

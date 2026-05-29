@@ -22,27 +22,42 @@ class LeadSourceAdmin(ModelAdmin):
 
 @admin.register(Lead)
 class LeadAdmin(ModelAdmin):
-    list_display = ('full_name', 'phone', 'company', 'office', 'manager', 'source', 'status', 'direction', 'created_at')
-    list_filter = ('status', 'direction', 'company', 'office', 'source', 'created_at')
+    list_display = ('full_name', 'phone', 'company', 'office', 'manager', 'source', 'status', 'direction', 'is_archived', 'created_at')
+    list_filter = ('status', 'direction', 'is_archived', 'company', 'office', 'source', 'created_at')
     search_fields = ('full_name', 'phone', 'email', 'country', 'city', 'interested_country', 'interested_program')
-    autocomplete_fields = ('company', 'office', 'source', 'manager')
-    readonly_fields = ('created_at', 'updated_at', 'converted_at')
+    autocomplete_fields = ('company', 'office', 'source', 'manager', 'archived_by')
+    readonly_fields = ('created_at', 'updated_at', 'taken_at', 'converted_at', 'archived_at')
     date_hierarchy = 'created_at'
     fieldsets = (
         ('Контакт', {
             'fields': ('full_name', ('phone', 'email'), ('country', 'city'))
         }),
         ('CRM', {
-            'fields': ('company', 'office', 'source', 'manager', ('status', 'direction'), 'interested_country', 'interested_program')
+            'fields': ('company', 'office', 'source', 'manager', ('status', 'direction'), 'taken_at', 'interested_country', 'interested_program')
+        }),
+        ('Архив', {
+            'fields': ('is_archived', 'archived_at', 'archived_by', 'archive_reason')
         }),
         ('Комментарий', {
-            'fields': ('comment',)
+            'fields': ('comment', 'custom_data')
         }),
         ('Техническая информация', {
-            'fields': ('submitter_ip', 'submitter_user_agent', 'submitter_referer', 'converted_at', 'created_at', 'updated_at'),
+            'fields': ('submitter_ip', 'submitter_user_agent', 'submitter_referer', 'submitter_origin', 'api_source', 'converted_at', 'created_at', 'updated_at'),
             'classes': ('collapse',),
         }),
     )
+
+    @admin.action(description='Архивировать выбранные лиды')
+    def archive_leads(self, request, queryset):
+        for lead in queryset:
+            lead.archive(user=request.user, reason='Архивировано через админку')
+
+    @admin.action(description='Восстановить выбранные лиды')
+    def restore_leads(self, request, queryset):
+        for lead in queryset:
+            lead.restore_from_archive(user=request.user, note='Восстановлено через админку')
+
+    actions = ('archive_leads', 'restore_leads')
 
 
 class ApplicationInline(TabularInline):

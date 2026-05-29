@@ -18,6 +18,13 @@
                         {% endfor %}
                     </select>
                 {% endif %}
+                {% if archive_choices %}
+                    <select class="select" name="archive" style="width:180px;">
+                        {% for value,label in archive_choices %}
+                            <option value="{{ value }}" {% if current_archive == value %}selected{% endif %}>{{ label }}</option>
+                        {% endfor %}
+                    </select>
+                {% endif %}
                 <button class="btn primary" type="submit"><i data-lucide="search"></i>Применить</button>
             </div>
         </form>

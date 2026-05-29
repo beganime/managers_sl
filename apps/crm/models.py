@@ -58,7 +58,21 @@ class Lead(TimeStampedModel):
     submitter_ip = models.GenericIPAddressField('IP отправителя', null=True, blank=True, db_index=True)
     submitter_user_agent = models.TextField('User-Agent', blank=True, default='')
     submitter_referer = models.URLField('Referer', max_length=1000, blank=True, default='')
+    submitter_origin = models.URLField('Origin', max_length=1000, blank=True, default='')
+    api_source = models.CharField('API source', max_length=100, blank=True, default='')
+    taken_at = models.DateTimeField('Дата взятия ответственности', null=True, blank=True)
     converted_at = models.DateTimeField('Дата конвертации', null=True, blank=True)
+    is_archived = models.BooleanField('В архиве', default=False, db_index=True)
+    archived_at = models.DateTimeField('Дата архивации', null=True, blank=True)
+    archived_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Кто архивировал',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='archived_crm_leads',
+    )
+    archive_reason = models.TextField('Причина архивации', blank=True)
 
     class Meta:
         verbose_name = 'Лид'
@@ -67,16 +81,73 @@ class Lead(TimeStampedModel):
         indexes = [
             models.Index(fields=['company', 'office', 'status']),
             models.Index(fields=['manager', 'status']),
+            models.Index(fields=['is_archived', 'status']),
             models.Index(fields=['phone']),
         ]
 
     def __str__(self):
         return f'{self.full_name} ({self.phone})'
 
-    def mark_converted(self):
+    @property
+    def action_history(self):
+        history = (self.custom_data or {}).get('action_history', [])
+        return history if isinstance(history, list) else []
+
+    def log_action(self, action, user=None, note='', save=False):
+        data = dict(self.custom_data or {})
+        history = list(data.get('action_history') or [])
+        history.append({
+            'action': action,
+            'at': timezone.now().isoformat(),
+            'user_id': getattr(user, 'id', None),
+            'user': user.get_full_name() or getattr(user, 'email', '') if user else '',
+            'note': note or '',
+        })
+        data['action_history'] = history[-100:]
+        self.custom_data = data
+        if save:
+            self.save(update_fields=['custom_data', 'updated_at'])
+
+    def take_responsibility(self, user, company=None, office=None):
+        self.manager = user
+        if company is not None:
+            self.company = company
+        if office is not None:
+            self.office = office
+        self.status = 'contacted'
+        if not self.taken_at:
+            self.taken_at = timezone.now()
+        self.log_action('take_responsibility', user)
+        self.save(update_fields=['manager', 'company', 'office', 'status', 'taken_at', 'custom_data', 'updated_at'])
+
+    def release_responsibility(self, user, note=''):
+        self.manager = None
+        self.status = 'new'
+        self.taken_at = None
+        self.log_action('release_responsibility', user, note=note)
+        self.save(update_fields=['manager', 'status', 'taken_at', 'custom_data', 'updated_at'])
+
+    def archive(self, user=None, reason=''):
+        self.is_archived = True
+        self.archived_at = timezone.now()
+        self.archived_by = user
+        self.archive_reason = reason or ''
+        self.log_action('archive', user, note=reason)
+        self.save(update_fields=['is_archived', 'archived_at', 'archived_by', 'archive_reason', 'custom_data', 'updated_at'])
+
+    def restore_from_archive(self, user=None, note=''):
+        self.is_archived = False
+        self.archived_at = None
+        self.archived_by = None
+        self.archive_reason = ''
+        self.log_action('restore', user, note=note)
+        self.save(update_fields=['is_archived', 'archived_at', 'archived_by', 'archive_reason', 'custom_data', 'updated_at'])
+
+    def mark_converted(self, user=None):
         self.status = 'converted'
         self.converted_at = timezone.now()
-        self.save(update_fields=['status', 'converted_at', 'updated_at'])
+        self.log_action('convert_to_client', user)
+        self.save(update_fields=['manager', 'company', 'office', 'status', 'converted_at', 'custom_data', 'updated_at'])
 
 
 class Client(TimeStampedModel):

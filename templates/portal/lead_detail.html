@@ -1,0 +1,112 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">{{ lead.full_name }}</h2>
+        <div class="filters">
+            <a class="btn" href="{% url 'portal:leads' %}"><i data-lucide="arrow-left"></i>Лиды</a>
+            {% if lead.is_archived %}
+                {% if can_restore_lead %}
+                    <form method="post" action="{% url 'portal:leads' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                        <input type="hidden" name="action" value="restore">
+                        <button class="btn primary" type="submit"><i data-lucide="rotate-ccw"></i>Восстановить</button>
+                    </form>
+                {% endif %}
+            {% elif can_archive_lead %}
+                <form method="post" action="{% url 'portal:leads' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="lead_id" value="{{ lead.id }}">
+                    <input type="hidden" name="action" value="archive">
+                    <button class="btn warn" type="submit"><i data-lucide="archive"></i>В архив</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="grid cols-4">
+            <div><div class="muted small">Телефон</div><div class="strong">{{ lead.phone|default:"-" }}</div></div>
+            <div><div class="muted small">Email</div><div class="strong">{{ lead.email|default:"-" }}</div></div>
+            <div><div class="muted small">Направление</div><div>{{ lead.get_direction_display|default:lead.direction|default:"-" }}</div></div>
+            <div><div class="muted small">Статус</div><span class="pill {% if lead.is_archived %}danger{% else %}ok{% endif %}">{{ lead.get_status_display }}</span></div>
+            <div><div class="muted small">Источник</div><div>{{ lead.source.name|default:"-" }}</div></div>
+            <div>
+                <div class="muted small">Ответственный</div>
+                <div>{% if lead.manager %}{{ lead.manager.get_full_name|default:lead.manager.email }}{% else %}Свободная заявка{% endif %}</div>
+            </div>
+            <div><div class="muted small">Офис</div><div>{{ lead.office.name|default:"-" }}</div></div>
+            <div><div class="muted small">Создан</div><div>{{ lead.created_at|date:"d.m.Y H:i" }}</div></div>
+            <div><div class="muted small">Взята ответственность</div><div>{{ lead.taken_at|date:"d.m.Y H:i"|default:"-" }}</div></div>
+            <div><div class="muted small">Конвертация</div><div>{{ lead.converted_at|date:"d.m.Y H:i"|default:"-" }}</div></div>
+            <div><div class="muted small">Страна</div><div>{{ lead.country|default:"-" }}</div></div>
+            <div><div class="muted small">Город</div><div>{{ lead.city|default:"-" }}</div></div>
+        </div>
+        {% if lead.comment %}
+            <div style="margin-top:16px;"><div class="muted small">Комментарий</div><div class="empty" style="text-align:left;">{{ lead.comment }}</div></div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Данные с сайта</h2></div>
+        <div class="panel-body">
+            {% if raw_payload %}
+                <div class="list">
+                    {% for key,value in raw_payload.items %}
+                        <div class="list-row"><span class="muted">{{ key }}</span><span class="strong">{{ value|default:"-" }}</span></div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="list">
+                    {% for key,value in custom_items %}
+                        {% if key != "action_history" %}
+                            <div class="list-row"><span class="muted">{{ key }}</span><span class="strong">{{ value|default:"-" }}</span></div>
+                        {% endif %}
+                    {% empty %}
+                        <div class="empty">Дополнительных полей нет.</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">История действий</h2></div>
+        <div class="panel-body">
+            {% if action_history %}
+                <div class="list">
+                    {% for item in action_history %}
+                        <div class="list-row">
+                            <div>
+                                <div class="strong">{{ item.action }}</div>
+                                <div class="muted small">{{ item.user|default:"Система" }}{% if item.note %} · {{ item.note }}{% endif %}</div>
+                            </div>
+                            <span class="pill">{{ item.at|slice:":16" }}</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="empty">История пока пустая.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+{% if can_view_technical %}
+<section class="panel" style="margin-top:16px;">
+    <div class="panel-header"><h2 class="panel-title">Техническая информация</h2></div>
+    <div class="panel-body">
+        <div class="grid cols-2">
+            <div><div class="muted small">IP</div><div class="strong">{{ lead.submitter_ip|default:"-" }}</div></div>
+            <div><div class="muted small">API source</div><div class="strong">{{ lead.api_source|default:"-" }}</div></div>
+            <div><div class="muted small">Referer</div><div class="strong">{{ lead.submitter_referer|default:"-" }}</div></div>
+            <div><div class="muted small">Origin</div><div class="strong">{{ lead.submitter_origin|default:"-" }}</div></div>
+        </div>
+        <div style="margin-top:14px;"><div class="muted small">User-Agent</div><div class="empty" style="text-align:left; word-break:break-word;">{{ lead.submitter_user_agent|default:"-" }}</div></div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

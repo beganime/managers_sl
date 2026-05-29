@@ -242,7 +242,10 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         with_stamp = parse_bool(request.data.get('with_stamp'))
         if with_stamp is None:
             with_stamp = mode in ('with_stamp', 'approve_with_stamp')
-        document.approve(user=request.user, with_stamp=with_stamp, comment=request.data.get('comment', ''))
+        try:
+            document.approve(user=request.user, with_stamp=with_stamp, comment=request.data.get('comment', ''))
+        except ValueError as exc:
+            raise ValidationError(str(exc))
         return Response(self.get_serializer(document).data, status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='reject')
@@ -292,7 +295,10 @@ class DocumentApprovalViewSet(viewsets.ModelViewSet):
         with_stamp = parse_bool(request.data.get('with_stamp'))
         if with_stamp is None:
             with_stamp = mode in ('with_stamp', 'approve_with_stamp')
-        approval.document.approve(user=request.user, with_stamp=with_stamp, comment=request.data.get('comment', ''))
+        try:
+            approval.document.approve(user=request.user, with_stamp=with_stamp, comment=request.data.get('comment', ''))
+        except ValueError as exc:
+            raise ValidationError(str(exc))
         approval.refresh_from_db()
         return Response(self.get_serializer(approval).data, status=status.HTTP_200_OK)
 

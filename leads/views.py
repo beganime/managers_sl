@@ -186,8 +186,11 @@ class LeadCreateAPIView(APIView):
             submitter_ip=get_client_ip(request),
             submitter_user_agent=clean_header(request.META.get('HTTP_USER_AGENT'), 2000),
             submitter_referer=clean_header(request.META.get('HTTP_REFERER'), 1000),
+            submitter_origin=clean_header(request.META.get('HTTP_ORIGIN'), 1000),
+            api_source='website',
             **data,
         )
+        lead.log_action('created_from_website', note='Создано через /api/leads/create/', save=True)
 
         try:
             from notifications.firebase import notify_admins_about_new_lead

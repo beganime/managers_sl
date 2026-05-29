@@ -7,6 +7,7 @@ from .views import (
     ClientFileViewSet,
     ClientNoteViewSet,
     ClientViewSet,
+    IncomingLeadViewSet,
     LeadSourceViewSet,
     LeadViewSet,
 )
@@ -14,6 +15,7 @@ from .views import (
 router = DefaultRouter()
 router.register('lead-sources', LeadSourceViewSet, basename='crm-lead-source')
 router.register('leads', LeadViewSet, basename='crm-lead')
+router.register('incoming-leads', IncomingLeadViewSet, basename='crm-incoming-lead')
 router.register('clients', ClientViewSet, basename='crm-client')
 router.register('applications', ApplicationViewSet, basename='crm-application')
 router.register('activities', ClientActivityViewSet, basename='crm-activity')
