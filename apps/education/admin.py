@@ -12,6 +12,11 @@ class CountryAdmin(ModelAdmin):
     list_filter = ('is_active',)
     search_fields = ('name', 'code')
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Основное', {'fields': ('name', 'code', 'flag', 'description')}),
+        ('Публикация', {'fields': ('sort_order', 'is_active')}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 @admin.register(City)
@@ -21,6 +26,11 @@ class CityAdmin(ModelAdmin):
     search_fields = ('name', 'country__name')
     autocomplete_fields = ('country',)
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Основное', {'fields': ('country', 'name', 'description')}),
+        ('Публикация', {'fields': ('sort_order', 'is_active')}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 @admin.register(Currency)
@@ -28,16 +38,29 @@ class CurrencyAdmin(ModelAdmin):
     list_display = ('code', 'name', 'symbol', 'rate_to_usd', 'updated_at')
     search_fields = ('code', 'name')
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Основное', {'fields': ('code', 'name', 'symbol', 'rate_to_usd')}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 class ProgramInline(TabularInline):
     model = Program
     extra = 1
-    fields = ('name', 'degree', 'faculty', 'language', 'duration', 'description', 'is_active', 'is_archived')
+    fields = (
+        'name',
+        'degree',
+        'faculty',
+        'language',
+        'duration',
+        'description',
+        'is_active',
+        'is_archived',
+    )
     show_change_link = True
 
 
-class RequiredDocumentInline(TabularInline):
+class UniversityRequiredDocumentInline(TabularInline):
     model = RequiredDocument
     extra = 1
     fields = ('program', 'title', 'description', 'is_mandatory', 'sort_order', 'is_active')
@@ -52,6 +75,39 @@ class UniversityContactInline(TabularInline):
     show_change_link = True
 
 
+class ProgramFeeInline(TabularInline):
+    model = ProgramFee
+    extra = 1
+    fields = (
+        'currency',
+        'tuition_fee',
+        'service_fee_usd',
+        'application_fee',
+        'dormitory_fee',
+        'insurance_fee',
+        'valid_from',
+        'valid_to',
+        'notes',
+    )
+    autocomplete_fields = ('currency',)
+    show_change_link = True
+
+
+class IntakeInline(TabularInline):
+    model = Intake
+    extra = 1
+    fields = ('title', 'start_date', 'application_deadline', 'notes', 'is_active')
+    show_change_link = True
+
+
+class ProgramRequiredDocumentInline(TabularInline):
+    model = RequiredDocument
+    fk_name = 'program'
+    extra = 1
+    fields = ('title', 'description', 'is_mandatory', 'sort_order', 'is_active')
+    show_change_link = True
+
+
 @admin.register(University)
 class UniversityAdmin(ModelAdmin):
     list_display = ('name', 'country', 'city', 'website', 'is_active', 'updated_at')
@@ -59,14 +115,23 @@ class UniversityAdmin(ModelAdmin):
     search_fields = ('name', 'legal_name', 'country__name', 'city__name', 'website', 'email')
     autocomplete_fields = ('company', 'country', 'city', 'local_currency', 'added_by')
     readonly_fields = ('logo_preview', 'cover_preview', 'program_fee_hint', 'created_at', 'updated_at')
-    inlines = [ProgramInline, RequiredDocumentInline, UniversityContactInline]
+    inlines = [ProgramInline, UniversityRequiredDocumentInline, UniversityContactInline]
     fieldsets = (
         ('Основное', {
             'fields': ('company', 'name', 'legal_name', 'country', 'city', 'local_currency', 'is_active'),
-            'description': 'Если страны, города или валюты ещё нет, добавьте их через плюс рядом с полем или через раздел "ВУЗы и программы".',
+            'description': 'Если страны, города или валюты ещё нет, добавьте её через плюс рядом с полем или через раздел «ВУЗы и программы».',
         }),
         ('Контакты', {'fields': ('website', 'email', 'phone', 'address')}),
-        ('Описание для клиентов', {'fields': ('description', 'admission_requirements', 'invitation_info', 'dormitory_info', 'expenses_info', 'age_limit')}),
+        ('Описание для клиентов', {
+            'fields': (
+                'description',
+                'admission_requirements',
+                'invitation_info',
+                'dormitory_info',
+                'expenses_info',
+                'age_limit',
+            )
+        }),
         ('Изображения', {'fields': ('logo', 'logo_preview', 'cover_image', 'cover_preview')}),
         ('Следующий шаг', {'fields': ('program_fee_hint',)}),
         ('Внутреннее', {'fields': ('commission_info', 'custom_data', 'added_by'), 'classes': ('collapse',)}),
@@ -76,25 +141,35 @@ class UniversityAdmin(ModelAdmin):
     @admin.display(description='Логотип')
     def logo_preview(self, obj):
         if obj and obj.logo:
-            return format_html('<img src="{}" style="max-width:140px; max-height:100px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />', obj.logo.url)
+            return format_html(
+                '<img src="{}" style="max-width:140px; max-height:100px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />',
+                obj.logo.url,
+            )
         return 'Логотип не загружен'
 
     @admin.display(description='Обложка')
     def cover_preview(self, obj):
         if obj and obj.cover_image:
-            return format_html('<img src="{}" style="max-width:220px; max-height:120px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />', obj.cover_image.url)
+            return format_html(
+                '<img src="{}" style="max-width:220px; max-height:120px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />',
+                obj.cover_image.url,
+            )
         return 'Обложка не загружена'
 
     @admin.display(description='Стоимость программ')
     def program_fee_hint(self, obj):
         if not obj or not obj.pk:
-            return 'Сначала сохраните ВУЗ. После сохранения ниже можно добавить программы, затем открыть программу и добавить стоимость.'
-        url = reverse('admin:education_programfee_add')
+            return 'Сначала сохраните ВУЗ. После сохранения ниже можно добавить программы, затем открыть программу и сразу заполнить стоимость, наборы и документы.'
+        url = reverse('admin:education_program_changelist')
         return format_html(
-            '<div style="line-height:1.5">Программы добавляйте в inline-блоке ниже. Стоимость добавляется в разделе '
-            '<a href="{}">Стоимость программ</a>: выберите программу, валюту и суммы. '
-            'Если добавили ВУЗ, обязательно добавьте хотя бы одну программу.</div>',
+            '<div style="line-height:1.5">'
+            'Программы добавляются в inline-блоке ниже. Чтобы добавить стоимость, наборы/intakes и документы на одной странице, '
+            'откройте нужную программу по ссылке «Изменить» в inline-блоке или через раздел '
+            '<a href="{}?university__id__exact={}">Программы</a>. '
+            'Если добавили ВУЗ, обязательно добавьте хотя бы одну программу.'
+            '</div>',
             url,
+            obj.pk,
         )
 
 
@@ -105,6 +180,14 @@ class ProgramAdmin(ModelAdmin):
     search_fields = ('name', 'faculty', 'university__name', 'university__country__name')
     autocomplete_fields = ('university',)
     readonly_fields = ('created_at', 'updated_at')
+    inlines = [ProgramFeeInline, IntakeInline, ProgramRequiredDocumentInline]
+    fieldsets = (
+        ('Основное', {'fields': ('university', 'name', 'degree', 'faculty', 'language', 'duration')}),
+        ('Описание и требования', {'fields': ('description', 'admission_requirements')}),
+        ('Публикация', {'fields': ('is_active', 'is_archived')}),
+        ('Расширенные данные', {'fields': ('custom_data',), 'classes': ('collapse',)}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 @admin.register(ProgramFee)
@@ -114,6 +197,12 @@ class ProgramFeeAdmin(ModelAdmin):
     search_fields = ('program__name', 'program__university__name')
     autocomplete_fields = ('program', 'currency')
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Программа', {'fields': ('program', 'currency')}),
+        ('Стоимость', {'fields': ('tuition_fee', 'service_fee_usd', 'application_fee', 'dormitory_fee', 'insurance_fee')}),
+        ('Период действия', {'fields': ('valid_from', 'valid_to', 'notes')}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 @admin.register(Intake)
@@ -123,6 +212,11 @@ class IntakeAdmin(ModelAdmin):
     search_fields = ('title', 'program__name', 'program__university__name')
     autocomplete_fields = ('program',)
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Основное', {'fields': ('program', 'title', 'start_date', 'application_deadline', 'notes')}),
+        ('Публикация', {'fields': ('is_active',)}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 @admin.register(RequiredDocument)
@@ -132,6 +226,12 @@ class RequiredDocumentAdmin(ModelAdmin):
     search_fields = ('title', 'university__name', 'program__name')
     autocomplete_fields = ('university', 'program')
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Привязка', {'fields': ('university', 'program')}),
+        ('Документ', {'fields': ('title', 'description', 'is_mandatory')}),
+        ('Публикация', {'fields': ('sort_order', 'is_active')}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 @admin.register(UniversityContact)
@@ -141,3 +241,9 @@ class UniversityContactAdmin(ModelAdmin):
     search_fields = ('university__name', 'full_name', 'position', 'email', 'phone')
     autocomplete_fields = ('university',)
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('ВУЗ', {'fields': ('university',)}),
+        ('Контакт', {'fields': ('full_name', 'position', 'email', 'phone', 'messenger', 'notes')}),
+        ('Публикация', {'fields': ('is_active',)}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )

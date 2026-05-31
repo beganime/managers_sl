@@ -278,3 +278,112 @@ CACHES = {
         'LOCATION': 'managers-sl-cache',
     }
 }
+
+UNFOLD = {
+    'SITE_TITLE': 'ManagerSL',
+    'SITE_HEADER': 'ManagerSL — Администрирование',
+    'SITE_SUBHEADER': 'ERP / CRM / HRM',
+    'SITE_URL': '/portal/dashboard/',
+    'SHOW_HISTORY': True,
+    'SHOW_VIEW_ON_SITE': True,
+    'SIDEBAR': {
+        'show_search': True,
+        'command_search': True,
+        'show_all_applications': False,
+        'navigation': [
+            {
+                'title': 'Организация',
+                'separator': True,
+                'items': [
+                    {'title': 'Компании', 'icon': 'business', 'link': '/admin/organizations/company/'},
+                    {'title': 'Офисы', 'icon': 'location_city', 'link': '/admin/organizations/office/'},
+                    {'title': 'Отделы', 'icon': 'account_tree', 'link': '/admin/organizations/department/'},
+                    {'title': 'Должности', 'icon': 'badge', 'link': '/admin/organizations/position/'},
+                ],
+            },
+            {
+                'title': 'Сотрудники',
+                'separator': True,
+                'items': [
+                    {'title': 'Пользователи', 'icon': 'person', 'link': '/admin/users/user/'},
+                    {'title': 'Профили сотрудников', 'icon': 'groups', 'link': '/admin/employees/employeeprofile/'},
+                    {'title': 'Роли сотрудников', 'icon': 'admin_panel_settings', 'link': '/admin/employees/employeerole/'},
+                    {'title': 'Доступы сотрудников', 'icon': 'lock_open', 'link': '/admin/employees/employeeaccess/'},
+                    {'title': 'Рейтинг сотрудников', 'icon': 'leaderboard', 'link': '/admin/employees/employeerating/'},
+                ],
+            },
+            {
+                'title': 'CRM',
+                'separator': True,
+                'items': [
+                    {'title': 'Потенциальные клиенты и лиды', 'icon': 'person_add', 'link': '/admin/crm/lead/'},
+                    {'title': 'Источники лидов', 'icon': 'campaign', 'link': '/admin/crm/leadsource/'},
+                    {'title': 'Клиенты', 'icon': 'contacts', 'link': '/admin/crm/client/'},
+                    {'title': 'Заявки', 'icon': 'assignment', 'link': '/admin/crm/application/'},
+                    {'title': 'Активности', 'icon': 'timeline', 'link': '/admin/crm/clientactivity/'},
+                    {'title': 'Заметки', 'icon': 'sticky_note_2', 'link': '/admin/crm/clientnote/'},
+                    {'title': 'Файлы клиентов', 'icon': 'folder', 'link': '/admin/crm/clientfile/'},
+                ],
+            },
+            {
+                'title': 'ВУЗы и услуги',
+                'separator': True,
+                'items': [
+                    {'title': 'Страны', 'icon': 'public', 'link': '/admin/education/country/'},
+                    {'title': 'Города', 'icon': 'location_on', 'link': '/admin/education/city/'},
+                    {'title': 'Валюты', 'icon': 'attach_money', 'link': '/admin/education/currency/'},
+                    {'title': 'ВУЗы', 'icon': 'school', 'link': '/admin/education/university/'},
+                    {'title': 'Программы', 'icon': 'menu_book', 'link': '/admin/education/program/'},
+                    {'title': 'Стоимость программ', 'icon': 'payments', 'link': '/admin/education/programfee/'},
+                    {'title': 'Наборы / intakes', 'icon': 'event_available', 'link': '/admin/education/intake/'},
+                    {'title': 'Требуемые документы', 'icon': 'description', 'link': '/admin/education/requireddocument/'},
+                    {'title': 'Категории услуг', 'icon': 'category', 'link': '/admin/erp_services/servicecategory/'},
+                    {'title': 'Услуги', 'icon': 'handshake', 'link': '/admin/erp_services/service/'},
+                    {'title': 'Цены услуг', 'icon': 'price_change', 'link': '/admin/erp_services/serviceprice/'},
+                ],
+            },
+            {
+                'title': 'Финансы и документы',
+                'separator': True,
+                'items': [
+                    {'title': 'Кассы', 'icon': 'account_balance_wallet', 'link': '/admin/finance/cashbox/'},
+                    {'title': 'Сделки', 'icon': 'request_quote', 'link': '/admin/finance/deal/'},
+                    {'title': 'Доходы', 'icon': 'trending_up', 'link': '/admin/finance/income/'},
+                    {'title': 'Расходы', 'icon': 'trending_down', 'link': '/admin/finance/expense/'},
+                    {'title': 'Платежи', 'icon': 'credit_card', 'link': '/admin/finance/payment/'},
+                    {'title': 'Транзакции', 'icon': 'receipt_long', 'link': '/admin/finance/transaction/'},
+                    {'title': 'Комиссии сотрудников', 'icon': 'percent', 'link': '/admin/finance/employeecommission/'},
+                    {'title': 'Шаблоны документов', 'icon': 'article', 'link': '/admin/erp_documents/documenttemplate/'},
+                    {'title': 'Сгенерированные документы', 'icon': 'task', 'link': '/admin/erp_documents/generateddocument/'},
+                    {'title': 'Подтверждения документов', 'icon': 'verified', 'link': '/admin/erp_documents/documentapproval/'},
+                    {'title': 'Правила печати', 'icon': 'approval', 'link': '/admin/erp_documents/stamprule/'},
+                ],
+            },
+            {
+                'title': 'Операционная работа',
+                'separator': True,
+                'items': [
+                    {'title': 'Рабочие дни', 'icon': 'schedule', 'link': '/admin/attendance/workday/'},
+                    {'title': 'Ежедневные отчёты', 'icon': 'fact_check', 'link': '/admin/attendance/dailyreport/'},
+                    {'title': 'Проекты', 'icon': 'view_kanban', 'link': '/admin/projects_v2/project/'},
+                    {'title': 'Задачи', 'icon': 'checklist', 'link': '/admin/projects_v2/projecttask/'},
+                    {'title': 'Календарь', 'icon': 'calendar_month', 'link': '/admin/portal/calendarevent/'},
+                    {'title': 'База знаний', 'icon': 'library_books', 'link': '/admin/knowledge/knowledgearticle/'},
+                    {'title': 'Папки базы знаний', 'icon': 'folder_open', 'link': '/admin/knowledge/knowledgecategory/'},
+                    {'title': 'Уведомления', 'icon': 'notifications', 'link': '/admin/erp_notifications/notification/'},
+                    {'title': 'Шаблоны уведомлений', 'icon': 'notification_important', 'link': '/admin/erp_notifications/notificationtemplate/'},
+                ],
+            },
+            {
+                'title': 'Настройки',
+                'separator': True,
+                'items': [
+                    {'title': 'Пользовательские поля', 'icon': 'dynamic_form', 'link': '/admin/customfields/customfield/'},
+                    {'title': 'Варианты полей', 'icon': 'list_alt', 'link': '/admin/customfields/customfieldoption/'},
+                    {'title': 'Значения полей', 'icon': 'table_chart', 'link': '/admin/customfields/customfieldvalue/'},
+                    {'title': 'Группы прав', 'icon': 'group_work', 'link': '/admin/auth/group/'},
+                ],
+            },
+        ],
+    },
+}
