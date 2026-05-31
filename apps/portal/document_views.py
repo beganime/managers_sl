@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
@@ -51,6 +53,12 @@ def set_nested_value(data, dotted_key, value):
 def normalize_dynamic_value(template_field, raw_value):
     if template_field.field_type == template_field.FIELD_TYPE_BOOLEAN:
         return bool(raw_value)
+    if raw_value is None:
+        return ''
+    if isinstance(raw_value, Decimal):
+        return str(raw_value)
+    if hasattr(raw_value, 'isoformat'):
+        return raw_value.isoformat()
     return raw_value
 
 
@@ -86,9 +94,24 @@ class PortalDocumentGenerateForm(forms.Form):
     deal = forms.ModelChoiceField(label='Сделка', queryset=Deal.objects.none(), required=False)
     title = forms.CharField(label='Название документа', max_length=255, required=False)
 
-    def __init__(self, *args, templates=None, clients=None, applications=None, deals=None, fixed_client=None, selected_template=None, base_context=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        templates=None,
+        clients=None,
+        applications=None,
+        deals=None,
+        fixed_client=None,
+        selected_client=None,
+        selected_template=None,
+        base_context=None,
+        existing_document=None,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
         self.fixed_client = fixed_client
+        self.selected_client = selected_client or fixed_client
+        self.existing_document = existing_document
         self.base_context = base_context or {}
         self.template_field_names = []
         self.template_fields_map = {}
@@ -103,8 +126,16 @@ class PortalDocumentGenerateForm(forms.Form):
             self.fields['client'].initial = fixed_client.pk
             self.fields['client'].required = False
             self.fields['client'].widget = forms.HiddenInput()
+        elif selected_client:
+            self.fields['client'].initial = selected_client.pk
+            self.fields['client'].required = True
         else:
             self.fields['client'].required = True
+
+        if existing_document:
+            self.fields['application'].initial = existing_document.application_id
+            self.fields['deal'].initial = existing_document.deal_id
+            self.fields['title'].initial = existing_document.title
 
         template = self.resolve_selected_template(selected_template)
         if template:
@@ -135,7 +166,13 @@ class PortalDocumentGenerateForm(forms.Form):
             return None
 
     def initial_for_template_field(self, template_field):
-        value = self.base_context.get(template_field.key)
+        value = None
+        if self.existing_document and isinstance(self.existing_document.context_data, dict):
+            value = self.existing_document.context_data.get(template_field.key)
+            if value in (None, '') and template_field.jinja_key:
+                value = get_nested_value(self.existing_document.context_data, template_field.jinja_key)
+        if value in (None, ''):
+            value = self.base_context.get(template_field.key)
         if value in (None, '') and template_field.jinja_key:
             value = get_nested_value(self.base_context, template_field.jinja_key)
         if value in (None, '') and template_field.default_value:
@@ -175,13 +212,9 @@ class PortalDocumentGenerateForm(forms.Form):
         return cleaned_data
 
     def build_context_data(self):
-        context_data = {}
+        context_data = dict(self.existing_document.context_data or {}) if self.existing_document else {}
         for field_name, template_field in self.template_fields_map.items():
             value = normalize_dynamic_value(template_field, self.cleaned_data.get(field_name))
-            if value in (None, '') and not template_field.is_required:
-                continue
-            if hasattr(value, 'isoformat'):
-                value = value.isoformat()
             context_data[template_field.key] = value
             if template_field.jinja_key:
                 if '.' in template_field.jinja_key:
@@ -220,12 +253,19 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
     template_name = 'portal/document_generate_form.html'
     active_page = 'documents'
     page_title = 'Создать документ'
+    submit_label = 'Сгенерировать DOCX'
     success_url = reverse_lazy('portal:documents')
 
     def get_fixed_client(self):
         return None
 
+    def get_document(self):
+        return None
+
     def get_selected_template(self):
+        document = self.get_document()
+        if document:
+            return document.template
         raw_template = self.request.POST.get('template') or self.request.GET.get('template')
         if not raw_template:
             return document_template_queryset(self.request.user).order_by('name').first()
@@ -235,12 +275,18 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
         fixed_client = self.get_fixed_client()
         if fixed_client:
             return fixed_client
+        document = self.get_document()
+        if document and document.client_id:
+            return document.client
         raw_client = self.request.POST.get('client') or self.request.GET.get('client')
         if not raw_client:
             return None
         return client_queryset(self.request.user).filter(pk=raw_client).first()
 
     def get_base_context_for_form(self, template=None, client=None):
+        document = self.get_document()
+        if document:
+            return document.build_context()
         template = template or self.get_selected_template()
         client = client or self.get_selected_client()
         if not template:
@@ -258,6 +304,7 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
     def get_form(self, data=None):
         template = self.get_selected_template()
         client = self.get_selected_client()
+        document = self.get_document()
         applications = application_queryset(self.request.user)
         deals = deal_queryset(self.request.user)
         if client:
@@ -270,8 +317,10 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             applications=applications.order_by('-created_at'),
             deals=deals.order_by('-created_at'),
             fixed_client=self.get_fixed_client(),
+            selected_client=client,
             selected_template=template,
             base_context=self.get_base_context_for_form(template=template, client=client),
+            existing_document=document,
         )
 
     def get_context_data(self, **kwargs):
@@ -279,9 +328,12 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
         form = context.get('form') or self.get_form()
         client = self.get_selected_client()
         template = self.get_selected_template()
+        document = self.get_document()
         context.update({
             'form': form,
             'client': client,
+            'document': document,
+            'is_regenerate': bool(document),
             'selected_client_id': client.pk if client else None,
             'selected_template': template,
             'selected_template_id': template.pk if template else None,
@@ -289,10 +341,12 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             'templates_count': document_template_queryset(self.request.user).count(),
             'clients_count': client_queryset(self.request.user).count(),
             'cancel_url': reverse_lazy('portal:documents'),
+            'submit_label': self.submit_label,
         })
         return context
 
     def build_document(self, form):
+        existing_document = self.get_document()
         template = form.cleaned_data['template']
         client = self.get_fixed_client() or form.cleaned_data.get('client')
         application = form.cleaned_data.get('application')
@@ -323,6 +377,28 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             raise ValueError('Не найдена компания для генерации документа.')
 
         title = form.cleaned_data.get('title') or f'{template.name} - {client.full_name if client else self.request.user}'
+        if existing_document:
+            if existing_document.status == GeneratedDocument.STATUS_APPROVED:
+                raise ValueError('Подтверждённый документ нельзя перегенерировать. Создайте новый документ.')
+            existing_document.application = application
+            existing_document.deal = deal
+            existing_document.client = client
+            existing_document.company = company
+            existing_document.office = office
+            existing_document.manager = manager
+            existing_document.title = title
+            existing_document.context_data = form.build_context_data()
+            existing_document.status = GeneratedDocument.STATUS_DRAFT
+            existing_document.generation_error = ''
+            if existing_document.approved_file:
+                existing_document.approved_file.delete(save=False)
+                existing_document.approved_file = None
+            existing_document.save(update_fields=[
+                'application', 'deal', 'client', 'company', 'office', 'manager', 'title',
+                'context_data', 'status', 'generation_error', 'approved_file', 'updated_at',
+            ])
+            return existing_document
+
         return GeneratedDocument.objects.create(
             company=company,
             office=office,
@@ -341,7 +417,7 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             try:
                 document = self.build_document(form)
                 document.generate_file()
-                messages.success(request, 'Документ создан. Ссылка на скачивание DOCX доступна в таблице документов.')
+                messages.success(request, 'Документ сгенерирован. DOCX доступен для скачивания в таблице документов.')
                 return redirect('portal:documents')
             except Exception as exc:
                 messages.error(request, f'Ошибка генерации документа: {exc}')
@@ -365,4 +441,25 @@ class ClientDocumentCreateView(DocumentCreateView):
         context['client'] = client
         context['selected_client_id'] = client.pk
         context['cancel_url'] = reverse('portal:client_detail', kwargs={'pk': client.pk})
+        return context
+
+
+class DocumentRegenerateView(DocumentCreateView):
+    template_name = 'portal/document_generate_form.html'
+    active_page = 'documents'
+    page_title = 'Изменить и перегенерировать документ'
+    submit_label = 'Перегенерировать DOCX'
+
+    def get_document(self):
+        return get_object_or_404(document_queryset(self.request.user), pk=self.kwargs['pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        document = self.get_document()
+        context['document'] = document
+        context['client'] = document.client
+        context['selected_client_id'] = document.client_id
+        context['selected_template'] = document.template
+        context['selected_template_id'] = document.template_id
+        context['cancel_url'] = reverse('portal:documents')
         return context
