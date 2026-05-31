@@ -10,7 +10,7 @@
                     {% if client %}
                         Клиент: <span class="strong">{{ client.full_name }}</span>
                     {% else %}
-                        Выберите клиента и шаблон, затем заполните поля документа.
+                        Выберите шаблон, заполните поля и сгенерируйте документ. Клиент, заявка и сделка необязательны.
                     {% endif %}
                 </div>
             </div>
@@ -23,17 +23,13 @@
                 <div class="empty" style="text-align:left;">
                     В системе нет активных шаблонов документов. Сначала добавьте шаблон в админке: ERP documents → Document templates.
                 </div>
-            {% elif not clients_count and not client %}
-                <div class="empty" style="text-align:left;">
-                    В системе нет доступных клиентов. Сначала создайте клиента.
-                </div>
             {% endif %}
 
             <form method="get" class="toolbar" style="margin-bottom:16px;">
                 <div class="filters">
                     {% if not client %}
                         <select class="select" name="client" style="min-width:260px;">
-                            <option value="">Выберите клиента</option>
+                            <option value="">Без клиента</option>
                             {% for option in form.fields.client.queryset %}
                                 <option value="{{ option.id }}"{% if selected_client_id == option.id %} selected{% endif %}>{{ option.full_name }}{% if option.phone %} — {{ option.phone }}{% endif %}</option>
                             {% endfor %}
@@ -56,12 +52,12 @@
                 {{ form.client.as_hidden }}
 
                 <label>
-                    <span class="muted small">Заявка</span>
+                    <span class="muted small">Заявка (необязательно)</span>
                     {{ form.application }}
                     {{ form.application.errors }}
                 </label>
                 <label>
-                    <span class="muted small">Сделка</span>
+                    <span class="muted small">Сделка (необязательно)</span>
                     {{ form.deal }}
                     {{ form.deal.errors }}
                 </label>
@@ -95,7 +91,7 @@
                 </div>
 
                 <button class="btn primary" type="submit"{% if not selected_template %} disabled{% endif %}>
-                    <i data-lucide="file-plus-2"></i>Сгенерировать DOCX
+                    <i data-lucide="file-plus-2"></i>{{ submit_label|default:"Сгенерировать DOCX" }}
                 </button>
             </form>
         </div>
@@ -106,12 +102,12 @@
         <div class="panel-body">
             <div class="list">
                 <div class="list-row"><span class="strong">1</span><span>Выбираете шаблон документа.</span></div>
-                <div class="list-row"><span class="strong">2</span><span>Система показывает поля, найденные в DOCX: <code>{% templatetag openvariable %} client.full_name {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} application.university_name {% templatetag closevariable %}</code> и другие.</span></div>
-                <div class="list-row"><span class="strong">3</span><span>Заполняете недостающие значения и нажимаете генерацию.</span></div>
+                <div class="list-row"><span class="strong">2</span><span>Клиент, заявка и сделка необязательны. Для общего документа можно оставить их пустыми.</span></div>
+                <div class="list-row"><span class="strong">3</span><span>Заполняете поля шаблона и нажимаете генерацию.</span></div>
                 <div class="list-row"><span class="strong">4</span><span>После генерации ссылка на скачивание появляется на странице документов.</span></div>
             </div>
             <div class="empty" style="margin-top:12px; text-align:left;">
-                DOCX без печати доступен сразу. PDF с электронной печатью появляется после подтверждения администратора.
+                DOCX без печати доступен сразу. PDF с электронной печатью появляется только после подтверждения администратора.
             </div>
         </div>
     </div>
