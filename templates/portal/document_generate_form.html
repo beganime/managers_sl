@@ -35,14 +35,14 @@
                         <select class="select" name="client" style="min-width:260px;">
                             <option value="">Выберите клиента</option>
                             {% for option in form.fields.client.queryset %}
-                                <option value="{{ option.id }}" {% if request.GET.client|stringformat:"s" == option.id|stringformat:"s" %}selected{% endif %}>{{ option.full_name }}{% if option.phone %} — {{ option.phone }}{% endif %}</option>
+                                <option value="{{ option.id }}"{% if selected_client_id == option.id %} selected{% endif %}>{{ option.full_name }}{% if option.phone %} — {{ option.phone }}{% endif %}</option>
                             {% endfor %}
                         </select>
                     {% endif %}
                     <select class="select" name="template" style="min-width:260px;">
                         <option value="">Выберите шаблон</option>
                         {% for option in form.fields.template.queryset %}
-                            <option value="{{ option.id }}" {% if selected_template and selected_template.id == option.id %}selected{% endif %}>{{ option.name }}</option>
+                            <option value="{{ option.id }}"{% if selected_template_id == option.id %} selected{% endif %}>{{ option.name }}</option>
                         {% endfor %}
                     </select>
                     <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Показать поля</button>
@@ -94,7 +94,7 @@
                     </div>
                 </div>
 
-                <button class="btn primary" type="submit" {% if not selected_template %}disabled{% endif %}>
+                <button class="btn primary" type="submit"{% if not selected_template %} disabled{% endif %}>
                     <i data-lucide="file-plus-2"></i>Сгенерировать DOCX
                 </button>
             </form>
@@ -106,7 +106,7 @@
         <div class="panel-body">
             <div class="list">
                 <div class="list-row"><span class="strong">1</span><span>Выбираете шаблон документа.</span></div>
-                <div class="list-row"><span class="strong">2</span><span>Система показывает поля, найденные в DOCX: <code>{{ "{{ client.full_name }}" }}</code>, <code>{{ "{{ application.university_name }}" }}</code> и другие.</span></div>
+                <div class="list-row"><span class="strong">2</span><span>Система показывает поля, найденные в DOCX: <code>{% templatetag openvariable %} client.full_name {% templatetag closevariable %}</code>, <code>{% templatetag openvariable %} application.university_name {% templatetag closevariable %}</code> и другие.</span></div>
                 <div class="list-row"><span class="strong">3</span><span>Заполняете недостающие значения и нажимаете генерацию.</span></div>
                 <div class="list-row"><span class="strong">4</span><span>После генерации ссылка на скачивание появляется на странице документов.</span></div>
             </div>
