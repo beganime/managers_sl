@@ -121,16 +121,17 @@ class PortalDocumentGenerateForm(forms.Form):
         self.fields['application'].queryset = applications if applications is not None else Application.objects.none()
         self.fields['deal'].queryset = deals if deals is not None else Deal.objects.none()
 
+        # Клиент/заявка/сделка НЕ обязательны: можно создать общий документ только по шаблону.
+        self.fields['client'].required = False
+        self.fields['application'].required = False
+        self.fields['deal'].required = False
+
         if fixed_client:
             self.fields['client'].queryset = Client.objects.filter(pk=fixed_client.pk)
             self.fields['client'].initial = fixed_client.pk
-            self.fields['client'].required = False
             self.fields['client'].widget = forms.HiddenInput()
         elif selected_client:
             self.fields['client'].initial = selected_client.pk
-            self.fields['client'].required = True
-        else:
-            self.fields['client'].required = True
 
         if existing_document:
             self.fields['application'].initial = existing_document.application_id
@@ -203,13 +204,8 @@ class PortalDocumentGenerateForm(forms.Form):
             self.template_fields_map[name] = template_field
 
     def clean(self):
-        cleaned_data = super().clean()
-        client = self.fixed_client or cleaned_data.get('client')
-        application = cleaned_data.get('application')
-        deal = cleaned_data.get('deal')
-        if not client and not application and not deal:
-            raise forms.ValidationError('Выберите клиента, заявку или сделку для генерации документа.')
-        return cleaned_data
+        # Нужен только шаблон. Клиент, заявка и сделка — опциональные привязки.
+        return super().clean()
 
     def build_context_data(self):
         context_data = dict(self.existing_document.context_data or {}) if self.existing_document else {}
@@ -293,7 +289,7 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             return {}
         employee = get_employee_profile(self.request.user)
         preview_document = GeneratedDocument(
-            company=(client.company if client else (employee.company if employee else None)),
+            company=(client.company if client else (employee.company if employee else template.company)),
             office=(client.office if client and client.office_id else (employee.office if employee else None)),
             template=template,
             client=client,
@@ -369,14 +365,14 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             office = client.office or (employee.office if employee else None)
             manager = client.manager or self.request.user
         else:
-            company = employee.company if employee else template.company
+            company = (employee.company if employee else None) or template.company
             office = employee.office if employee else None
             manager = self.request.user
 
         if not company:
-            raise ValueError('Не найдена компания для генерации документа.')
+            raise ValueError('Не найдена компания для генерации документа. Укажите компанию в шаблоне или привяжите сотрудника к компании.')
 
-        title = form.cleaned_data.get('title') or f'{template.name} - {client.full_name if client else self.request.user}'
+        title = form.cleaned_data.get('title') or f'{template.name} - {client.full_name if client else "без клиента"}'
         if existing_document:
             if existing_document.status == GeneratedDocument.STATUS_APPROVED:
                 raise ValueError('Подтверждённый документ нельзя перегенерировать. Создайте новый документ.')
