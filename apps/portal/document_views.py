@@ -1,9 +1,7 @@
-import json
-
 from django import forms
 from django.contrib import messages
 from django.shortcuts import get_object_or_404, redirect
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.views.generic import TemplateView
 
 from apps.core.permissions import get_employee_profile
@@ -57,9 +55,7 @@ def normalize_dynamic_value(template_field, raw_value):
 
 
 def widget_for_template_field(template_field):
-    attrs = {
-        'placeholder': template_field.help_text or template_field.label,
-    }
+    attrs = {'placeholder': template_field.help_text or template_field.label}
     if template_field.field_type == template_field.FIELD_TYPE_TEXTAREA:
         return forms.Textarea(attrs={**attrs, 'rows': 3})
     if template_field.field_type == template_field.FIELD_TYPE_DATE:
@@ -84,44 +80,13 @@ def widget_for_template_field(template_field):
 
 
 class PortalDocumentGenerateForm(forms.Form):
-    template = forms.ModelChoiceField(
-        label='Шаблон документа',
-        queryset=DocumentTemplate.objects.none(),
-        required=True,
-    )
-    client = forms.ModelChoiceField(
-        label='Клиент',
-        queryset=Client.objects.none(),
-        required=False,
-    )
-    application = forms.ModelChoiceField(
-        label='Заявка',
-        queryset=Application.objects.none(),
-        required=False,
-    )
-    deal = forms.ModelChoiceField(
-        label='Сделка',
-        queryset=Deal.objects.none(),
-        required=False,
-    )
-    title = forms.CharField(
-        label='Название документа',
-        max_length=255,
-        required=False,
-    )
+    template = forms.ModelChoiceField(label='Шаблон документа', queryset=DocumentTemplate.objects.none(), required=True)
+    client = forms.ModelChoiceField(label='Клиент', queryset=Client.objects.none(), required=False)
+    application = forms.ModelChoiceField(label='Заявка', queryset=Application.objects.none(), required=False)
+    deal = forms.ModelChoiceField(label='Сделка', queryset=Deal.objects.none(), required=False)
+    title = forms.CharField(label='Название документа', max_length=255, required=False)
 
-    def __init__(
-        self,
-        *args,
-        templates=None,
-        clients=None,
-        applications=None,
-        deals=None,
-        fixed_client=None,
-        selected_template=None,
-        base_context=None,
-        **kwargs,
-    ):
+    def __init__(self, *args, templates=None, clients=None, applications=None, deals=None, fixed_client=None, selected_template=None, base_context=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fixed_client = fixed_client
         self.base_context = base_context or {}
@@ -153,7 +118,7 @@ class PortalDocumentGenerateForm(forms.Form):
             css_class = 'select' if isinstance(field.widget, forms.Select) else 'input'
             if isinstance(field.widget, forms.Textarea):
                 css_class = 'textarea'
-            if isinstance(field.widget, forms.CheckboxInput) or isinstance(field.widget, forms.HiddenInput):
+            if isinstance(field.widget, (forms.CheckboxInput, forms.HiddenInput)):
                 css_class = ''
             existing = field.widget.attrs.get('class', '')
             field.widget.attrs['class'] = f'{existing} {css_class}'.strip()
@@ -161,11 +126,7 @@ class PortalDocumentGenerateForm(forms.Form):
     def resolve_selected_template(self, selected_template=None):
         if selected_template:
             return selected_template
-        raw_value = None
-        if self.data:
-            raw_value = self.data.get('template')
-        elif self.initial:
-            raw_value = self.initial.get('template')
+        raw_value = self.data.get('template') if self.data else self.initial.get('template') if self.initial else None
         if not raw_value:
             return None
         try:
@@ -184,42 +145,20 @@ class PortalDocumentGenerateForm(forms.Form):
     def add_template_fields(self, template):
         for template_field in template.fields.all().order_by('sort_order', 'label', 'key'):
             name = f'{FIELD_PREFIX}{template_field.pk}'
-            form_field = forms.Field(
-                label=template_field.label or template_field.jinja_key or template_field.key,
-                required=template_field.is_required,
-                help_text=template_field.help_text or template_field.jinja_key or template_field.key,
-                widget=widget_for_template_field(template_field),
-            )
+            label = template_field.label or template_field.jinja_key or template_field.key
+            help_text = template_field.help_text or template_field.jinja_key or template_field.key
+            widget = widget_for_template_field(template_field)
+
             if template_field.field_type == template_field.FIELD_TYPE_BOOLEAN:
-                form_field = forms.BooleanField(
-                    label=template_field.label or template_field.jinja_key or template_field.key,
-                    required=False,
-                    help_text=template_field.help_text or template_field.jinja_key or template_field.key,
-                    widget=widget_for_template_field(template_field),
-                )
+                form_field = forms.BooleanField(label=label, required=False, help_text=help_text, widget=widget)
             elif template_field.field_type == template_field.FIELD_TYPE_DATE:
-                form_field = forms.DateField(
-                    label=template_field.label or template_field.jinja_key or template_field.key,
-                    required=template_field.is_required,
-                    help_text=template_field.help_text or template_field.jinja_key or template_field.key,
-                    widget=widget_for_template_field(template_field),
-                    input_formats=['%Y-%m-%d'],
-                )
+                form_field = forms.DateField(label=label, required=template_field.is_required, help_text=help_text, widget=widget, input_formats=['%Y-%m-%d'])
             elif template_field.field_type == template_field.FIELD_TYPE_NUMBER:
-                form_field = forms.DecimalField(
-                    label=template_field.label or template_field.jinja_key or template_field.key,
-                    required=template_field.is_required,
-                    help_text=template_field.help_text or template_field.jinja_key or template_field.key,
-                    widget=widget_for_template_field(template_field),
-                )
+                form_field = forms.DecimalField(label=label, required=template_field.is_required, help_text=help_text, widget=widget)
             elif template_field.field_type == template_field.FIELD_TYPE_SELECT:
-                form_field = forms.ChoiceField(
-                    label=template_field.label or template_field.jinja_key or template_field.key,
-                    required=template_field.is_required,
-                    help_text=template_field.help_text or template_field.jinja_key or template_field.key,
-                    widget=widget_for_template_field(template_field),
-                    choices=widget_for_template_field(template_field).choices,
-                )
+                form_field = forms.ChoiceField(label=label, required=template_field.is_required, help_text=help_text, widget=widget, choices=widget.choices)
+            else:
+                form_field = forms.CharField(label=label, required=template_field.is_required, help_text=help_text, widget=widget)
 
             form_field.initial = self.initial_for_template_field(template_field)
             self.fields[name] = form_field
@@ -238,8 +177,7 @@ class PortalDocumentGenerateForm(forms.Form):
     def build_context_data(self):
         context_data = {}
         for field_name, template_field in self.template_fields_map.items():
-            value = self.cleaned_data.get(field_name)
-            value = normalize_dynamic_value(template_field, value)
+            value = normalize_dynamic_value(template_field, self.cleaned_data.get(field_name))
             if value in (None, '') and not template_field.is_required:
                 continue
             if hasattr(value, 'isoformat'):
@@ -344,7 +282,9 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
         context.update({
             'form': form,
             'client': client,
+            'selected_client_id': client.pk if client else None,
             'selected_template': template,
+            'selected_template_id': template.pk if template else None,
             'template_fields': form.template_fields_bound,
             'templates_count': document_template_queryset(self.request.user).count(),
             'clients_count': client_queryset(self.request.user).count(),
@@ -401,10 +341,7 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             try:
                 document = self.build_document(form)
                 document.generate_file()
-                messages.success(
-                    request,
-                    'Документ создан. Ссылка на скачивание DOCX доступна в таблице документов.',
-                )
+                messages.success(request, 'Документ создан. Ссылка на скачивание DOCX доступна в таблице документов.')
                 return redirect('portal:documents')
             except Exception as exc:
                 messages.error(request, f'Ошибка генерации документа: {exc}')
@@ -426,5 +363,6 @@ class ClientDocumentCreateView(DocumentCreateView):
         context = super().get_context_data(**kwargs)
         client = self.get_fixed_client()
         context['client'] = client
-        context['cancel_url'] = reverse_lazy('portal:client_detail', kwargs={'pk': client.pk})
+        context['selected_client_id'] = client.pk
+        context['cancel_url'] = reverse('portal:client_detail', kwargs={'pk': client.pk})
         return context
