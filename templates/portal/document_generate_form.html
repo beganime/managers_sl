@@ -1,0 +1,119 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2">
+    <div class="panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">{{ page_title }}</h2>
+                <div class="muted small">
+                    {% if client %}
+                        Клиент: <span class="strong">{{ client.full_name }}</span>
+                    {% else %}
+                        Выберите клиента и шаблон, затем заполните поля документа.
+                    {% endif %}
+                </div>
+            </div>
+            <div class="filters">
+                <a class="btn" href="{{ cancel_url }}"><i data-lucide="arrow-left"></i>Назад</a>
+            </div>
+        </div>
+        <div class="panel-body">
+            {% if not templates_count %}
+                <div class="empty" style="text-align:left;">
+                    В системе нет активных шаблонов документов. Сначала добавьте шаблон в админке: ERP documents → Document templates.
+                </div>
+            {% elif not clients_count and not client %}
+                <div class="empty" style="text-align:left;">
+                    В системе нет доступных клиентов. Сначала создайте клиента.
+                </div>
+            {% endif %}
+
+            <form method="get" class="toolbar" style="margin-bottom:16px;">
+                <div class="filters">
+                    {% if not client %}
+                        <select class="select" name="client" style="min-width:260px;">
+                            <option value="">Выберите клиента</option>
+                            {% for option in form.fields.client.queryset %}
+                                <option value="{{ option.id }}" {% if request.GET.client|stringformat:"s" == option.id|stringformat:"s" %}selected{% endif %}>{{ option.full_name }}{% if option.phone %} — {{ option.phone }}{% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    {% endif %}
+                    <select class="select" name="template" style="min-width:260px;">
+                        <option value="">Выберите шаблон</option>
+                        {% for option in form.fields.template.queryset %}
+                            <option value="{{ option.id }}" {% if selected_template and selected_template.id == option.id %}selected{% endif %}>{{ option.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Показать поля</button>
+                </div>
+            </form>
+
+            <form method="post" class="grid">
+                {% csrf_token %}
+                {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                {{ form.template.as_hidden }}
+                {{ form.client.as_hidden }}
+
+                <label>
+                    <span class="muted small">Заявка</span>
+                    {{ form.application }}
+                    {{ form.application.errors }}
+                </label>
+                <label>
+                    <span class="muted small">Сделка</span>
+                    {{ form.deal }}
+                    {{ form.deal.errors }}
+                </label>
+                <label>
+                    <span class="muted small">Название документа</span>
+                    {{ form.title }}
+                    {{ form.title.errors }}
+                </label>
+
+                <div class="panel" style="box-shadow:none; border:1px solid var(--line);">
+                    <div class="panel-header">
+                        <h3 class="panel-title">Поля шаблона</h3>
+                        {% if selected_template %}<span class="pill">{{ selected_template.name }}</span>{% endif %}
+                    </div>
+                    <div class="panel-body grid">
+                        {% if template_fields %}
+                            {% for field in template_fields %}
+                                <label>
+                                    <span class="muted small">{{ field.label }}{% if field.field.required %} *{% endif %}</span>
+                                    {{ field }}
+                                    {% if field.help_text %}<span class="muted small">{{ field.help_text }}</span>{% endif %}
+                                    {{ field.errors }}
+                                </label>
+                            {% endfor %}
+                        {% else %}
+                            <div class="empty" style="text-align:left;">
+                                У выбранного шаблона пока нет полей. Откройте шаблон в админке и сохраните его ещё раз, чтобы автосканирование создало поля из Jinja-переменных.
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <button class="btn primary" type="submit" {% if not selected_template %}disabled{% endif %}>
+                    <i data-lucide="file-plus-2"></i>Сгенерировать DOCX
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Как это работает</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><span class="strong">1</span><span>Выбираете шаблон документа.</span></div>
+                <div class="list-row"><span class="strong">2</span><span>Система показывает поля, найденные в DOCX: <code>{{ "{{ client.full_name }}" }}</code>, <code>{{ "{{ application.university_name }}" }}</code> и другие.</span></div>
+                <div class="list-row"><span class="strong">3</span><span>Заполняете недостающие значения и нажимаете генерацию.</span></div>
+                <div class="list-row"><span class="strong">4</span><span>После генерации ссылка на скачивание появляется на странице документов.</span></div>
+            </div>
+            <div class="empty" style="margin-top:12px; text-align:left;">
+                DOCX без печати доступен сразу. PDF с электронной печатью появляется после подтверждения администратора.
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
