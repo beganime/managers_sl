@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 
-from .models import DeviceToken, Notification, NotificationLog, NotificationTemplate
+from .models import DeviceToken, Notification, NotificationBatch, NotificationLog, NotificationTemplate
 from .services import send_notification
 
 
@@ -24,6 +24,15 @@ class NotificationLogInline(TabularInline):
     fields = readonly_fields
 
 
+class NotificationInline(TabularInline):
+    model = Notification
+    extra = 0
+    can_delete = False
+    fields = ('recipient', 'status', 'sent_at', 'read_at', 'created_at')
+    readonly_fields = fields
+    show_change_link = True
+
+
 @admin.register(DeviceToken)
 class DeviceTokenAdmin(ModelAdmin):
     list_display = ('user', 'platform', 'device_name', 'company', 'office', 'is_active', 'last_seen_at')
@@ -42,12 +51,41 @@ class NotificationTemplateAdmin(ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
 
 
+@admin.register(NotificationBatch)
+class NotificationBatchAdmin(ModelAdmin):
+    list_display = (
+        'title',
+        'sender',
+        'target_type',
+        'target_user',
+        'target_office',
+        'recipient_count',
+        'read_count',
+        'unread_count',
+        'read_percent',
+        'status',
+        'created_at',
+    )
+    list_filter = ('notification_type', 'target_type', 'status', 'company', 'office', 'created_at')
+    search_fields = ('title', 'message', 'sender__email', 'target_user__email', 'target_office__name')
+    autocomplete_fields = ('company', 'office', 'sender', 'target_user', 'target_office')
+    readonly_fields = ('recipient_count', 'read_count', 'unread_count', 'read_percent', 'sent_at', 'created_at', 'updated_at')
+    inlines = [NotificationInline]
+    date_hierarchy = 'created_at'
+    fieldsets = (
+        ('Сообщение', {'fields': ('title', 'message', 'notification_type', 'status')}),
+        ('Отправитель и получатели', {'fields': ('sender', 'target_type', 'target_user', 'target_office', 'company', 'office')}),
+        ('Статистика', {'fields': ('recipient_count', 'read_count', 'unread_count', 'read_percent')}),
+        ('Аудит', {'fields': ('sent_at', 'created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
+
+
 @admin.register(Notification)
 class NotificationAdmin(ModelAdmin):
-    list_display = ('title', 'recipient', 'notification_type', 'channel', 'priority', 'status', 'created_at')
-    list_filter = ('notification_type', 'channel', 'priority', 'status', 'company', 'office', 'created_at')
+    list_display = ('title', 'recipient', 'batch', 'notification_type', 'channel', 'priority', 'status', 'created_at')
+    list_filter = ('notification_type', 'channel', 'priority', 'status', 'company', 'office', 'batch', 'created_at')
     search_fields = ('title', 'body', 'recipient__email', 'recipient__first_name', 'recipient__last_name')
-    autocomplete_fields = ('company', 'office', 'recipient', 'sender', 'template')
+    autocomplete_fields = ('company', 'office', 'recipient', 'sender', 'template', 'batch')
     raw_id_fields = ('content_type',)
     readonly_fields = ('queued_at', 'sent_at', 'read_at', 'failed_at', 'error_message', 'created_at', 'updated_at')
     inlines = [NotificationLogInline]

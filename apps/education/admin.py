@@ -1,9 +1,19 @@
+from django import forms
 from django.contrib import admin
+from django.forms.models import BaseInlineFormSet
 from django.urls import reverse
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 
 from .models import City, Country, Currency, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
+
+
+def get_usd_currency():
+    currency, _ = Currency.objects.get_or_create(
+        code='USD',
+        defaults={'name': 'US Dollar', 'symbol': '$', 'rate_to_usd': '1.000000'},
+    )
+    return currency
 
 
 @admin.register(Country)
@@ -44,8 +54,83 @@ class CurrencyAdmin(ModelAdmin):
     )
 
 
+class UniversityProgramInlineForm(forms.ModelForm):
+    tuition_fee_usd = forms.DecimalField(
+        label='Стоимость программы USD',
+        required=False,
+        max_digits=14,
+        decimal_places=2,
+        min_value=0,
+        initial=0,
+    )
+    service_fee_usd = forms.DecimalField(
+        label='Стоимость услуг USD',
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        min_value=0,
+        initial=0,
+    )
+
+    class Meta:
+        model = Program
+        fields = (
+            'name',
+            'degree',
+            'faculty',
+            'language',
+            'duration',
+            'description',
+            'is_active',
+            'is_archived',
+            'tuition_fee_usd',
+            'service_fee_usd',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if self.instance and self.instance.pk:
+            fee = self.instance.fees.filter(currency__code='USD').order_by('-created_at', '-id').first()
+            if not fee:
+                fee = self.instance.fees.order_by('-created_at', '-id').first()
+            if fee:
+                self.fields['tuition_fee_usd'].initial = fee.tuition_fee
+                self.fields['service_fee_usd'].initial = fee.service_fee_usd
+
+
+class UniversityProgramInlineFormSet(BaseInlineFormSet):
+    def save_new(self, form, commit=True):
+        instance = super().save_new(form, commit=commit)
+        if commit:
+            self.save_program_fee(form, instance)
+        return instance
+
+    def save_existing(self, form, instance, commit=True):
+        instance = super().save_existing(form, instance, commit=commit)
+        if commit:
+            self.save_program_fee(form, instance)
+        return instance
+
+    def save_program_fee(self, form, program):
+        if not program.pk or not form.cleaned_data or form.cleaned_data.get('DELETE'):
+            return
+        tuition_fee = form.cleaned_data.get('tuition_fee_usd')
+        service_fee = form.cleaned_data.get('service_fee_usd')
+        if tuition_fee in (None, '') and service_fee in (None, ''):
+            return
+        currency = get_usd_currency()
+        fee = program.fees.filter(currency=currency).order_by('-created_at', '-id').first()
+        if not fee:
+            fee = ProgramFee(program=program, currency=currency)
+        fee.tuition_fee = tuition_fee or 0
+        fee.service_fee_usd = service_fee or 0
+        fee.save()
+
+
 class ProgramInline(TabularInline):
     model = Program
+    form = UniversityProgramInlineForm
+    formset = UniversityProgramInlineFormSet
     extra = 1
     fields = (
         'name',
@@ -53,6 +138,8 @@ class ProgramInline(TabularInline):
         'faculty',
         'language',
         'duration',
+        'tuition_fee_usd',
+        'service_fee_usd',
         'description',
         'is_active',
         'is_archived',
@@ -75,8 +162,27 @@ class UniversityContactInline(TabularInline):
     show_change_link = True
 
 
+class ProgramFeeInlineForm(forms.ModelForm):
+    class Meta:
+        model = ProgramFee
+        fields = (
+            'currency',
+            'tuition_fee',
+            'service_fee_usd',
+            'application_fee',
+            'dormitory_fee',
+            'insurance_fee',
+            'notes',
+        )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['currency'].initial = get_usd_currency()
+
+
 class ProgramFeeInline(TabularInline):
     model = ProgramFee
+    form = ProgramFeeInlineForm
     extra = 1
     fields = (
         'currency',
@@ -85,8 +191,6 @@ class ProgramFeeInline(TabularInline):
         'application_fee',
         'dormitory_fee',
         'insurance_fee',
-        'valid_from',
-        'valid_to',
         'notes',
     )
     autocomplete_fields = ('currency',)
@@ -186,21 +290,6 @@ class ProgramAdmin(ModelAdmin):
         ('Описание и требования', {'fields': ('description', 'admission_requirements')}),
         ('Публикация', {'fields': ('is_active', 'is_archived')}),
         ('Расширенные данные', {'fields': ('custom_data',), 'classes': ('collapse',)}),
-        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
-    )
-
-
-@admin.register(ProgramFee)
-class ProgramFeeAdmin(ModelAdmin):
-    list_display = ('program', 'currency', 'tuition_fee', 'service_fee_usd', 'valid_from', 'valid_to')
-    list_filter = ('currency', 'valid_from', 'valid_to')
-    search_fields = ('program__name', 'program__university__name')
-    autocomplete_fields = ('program', 'currency')
-    readonly_fields = ('created_at', 'updated_at')
-    fieldsets = (
-        ('Программа', {'fields': ('program', 'currency')}),
-        ('Стоимость', {'fields': ('tuition_fee', 'service_fee_usd', 'application_fee', 'dormitory_fee', 'insurance_fee')}),
-        ('Период действия', {'fields': ('valid_from', 'valid_to', 'notes')}),
         ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
 

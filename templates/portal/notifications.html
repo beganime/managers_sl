@@ -1,0 +1,143 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="metric-grid">
+    <div class="metric">
+        <div class="metric-top"><span>Непрочитанные</span><i data-lucide="bell"></i></div>
+        <div class="metric-value">{{ unread_count }}</div>
+    </div>
+    <div class="metric">
+        <div class="metric-top"><span>Прочитанные</span><i data-lucide="check-circle-2"></i></div>
+        <div class="metric-value">{{ read_count }}</div>
+    </div>
+    {% if can_create_notifications %}
+        <div class="metric">
+            <div class="metric-top"><span>Отправленные</span><i data-lucide="send"></i></div>
+            <div class="metric-value">{{ batches_page_obj.paginator.count }}</div>
+        </div>
+        <div class="metric">
+            <div class="metric-top"><span>Действия</span><i data-lucide="plus"></i></div>
+            <div style="margin-top:12px;"><a class="btn primary" href="{% url 'portal:notification_create' %}"><i data-lucide="bell-plus"></i>Создать</a></div>
+        </div>
+    {% endif %}
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Уведомления</h2>
+        <div class="filters">
+            <a class="pill {% if current_tab == 'mine' %}ok{% endif %}" href="?tab=mine">Мои уведомления</a>
+            {% if can_create_notifications %}
+                <a class="pill {% if current_tab == 'sent' %}ok{% endif %}" href="?tab=sent">Отправленные</a>
+                <a class="pill" href="{% url 'portal:notification_create' %}">Создать уведомление</a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel-body">
+        {% if current_tab == "sent" and can_create_notifications %}
+            <form class="toolbar" method="get">
+                <div class="filters">
+                    <input type="hidden" name="tab" value="sent">
+                    <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по отправленным">
+                    <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+                </div>
+            </form>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Уведомление</th>
+                            <th>Кто отправил</th>
+                            <th>Кому</th>
+                            <th>Дата</th>
+                            <th>Получили</th>
+                            <th>Прочитали</th>
+                            <th>Не прочитали</th>
+                            <th>%</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for batch in sent_batches %}
+                        {% with total=batch.recipient_total read=batch.read_total %}
+                            <tr>
+                                <td><div class="strong">{{ batch.title }}</div><div class="muted small">{{ batch.message|truncatechars:120 }}</div></td>
+                                <td>{{ batch.sender.get_full_name|default:batch.sender.email|default:"Система" }}</td>
+                                <td>
+                                    <span class="pill">{{ batch.get_target_type_display }}</span>
+                                    <div class="muted small">
+                                        {% if batch.target_user %}{{ batch.target_user.get_full_name|default:batch.target_user.email }}{% elif batch.target_office %}{{ batch.target_office.name }}{% else %}Все активные сотрудники{% endif %}
+                                    </div>
+                                </td>
+                                <td>{{ batch.sent_at|default:batch.created_at|date:"d.m.Y H:i" }}</td>
+                                <td>{{ total }}</td>
+                                <td>{{ read }}</td>
+                                <td>{{ batch.unread_count }}</td>
+                                <td>{{ batch.read_percent }}%</td>
+                                <td><a class="btn" href="{% url 'portal:notification_batch_detail' batch.pk %}"><i data-lucide="eye"></i>Подробнее</a></td>
+                            </tr>
+                        {% endwith %}
+                    {% empty %}
+                        <tr><td colspan="9"><div class="empty">Отправленных уведомлений пока нет.</div></td></tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if batches_page_obj.paginator.num_pages > 1 %}
+                <div class="toolbar" style="margin-top:14px;">
+                    <div class="muted small">Страница {{ batches_page_obj.number }} из {{ batches_page_obj.paginator.num_pages }}</div>
+                    <div class="filters">
+                        {% if batches_page_obj.has_previous %}<a class="btn" href="?{% if batches_page_query %}{{ batches_page_query }}&{% endif %}page={{ batches_page_obj.previous_page_number }}">Назад</a>{% endif %}
+                        {% if batches_page_obj.has_next %}<a class="btn" href="?{% if batches_page_query %}{{ batches_page_query }}&{% endif %}page={{ batches_page_obj.next_page_number }}">Дальше</a>{% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <form class="toolbar" method="get">
+                <div class="filters">
+                    <input type="hidden" name="tab" value="mine">
+                    <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по уведомлениям">
+                    <select class="select" name="status" style="width:190px;">
+                        <option value="all" {% if status_filter == "all" %}selected{% endif %}>Все</option>
+                        <option value="unread" {% if status_filter == "unread" %}selected{% endif %}>Непрочитанные</option>
+                        <option value="read" {% if status_filter == "read" %}selected{% endif %}>Прочитанные</option>
+                    </select>
+                    <button class="btn primary" type="submit"><i data-lucide="search"></i>Применить</button>
+                </div>
+            </form>
+            <div class="list">
+                {% for item in my_notifications %}
+                    <div class="item-card" style="{% if not item.is_read %}border-color:#f3d6a5; background:#fffaf1;{% endif %}">
+                        <div class="item-card-top">
+                            <div>
+                                <div class="item-card-title">{{ item.title }}</div>
+                                <div class="muted small">{{ item.created_at|date:"d.m.Y H:i" }} · {{ item.sender.get_full_name|default:item.sender.email|default:"Система" }}</div>
+                            </div>
+                            <span class="pill {% if item.is_read %}ok{% else %}warn{% endif %}">{% if item.is_read %}Прочитано{% else %}Новое{% endif %}</span>
+                        </div>
+                        <div>{{ item.body|linebreaksbr }}</div>
+                        {% if not item.is_read %}
+                            <form method="post" action="{% url 'portal:notification_read' item.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="{{ request.get_full_path }}">
+                                <button class="btn secondary" type="submit"><i data-lucide="check"></i>Отметить прочитанным</button>
+                            </form>
+                        {% endif %}
+                    </div>
+                {% empty %}
+                    <div class="empty">Уведомлений пока нет.</div>
+                {% endfor %}
+            </div>
+            {% if notifications_page_obj.paginator.num_pages > 1 %}
+                <div class="toolbar" style="margin-top:14px;">
+                    <div class="muted small">Страница {{ notifications_page_obj.number }} из {{ notifications_page_obj.paginator.num_pages }}</div>
+                    <div class="filters">
+                        {% if notifications_page_obj.has_previous %}<a class="btn" href="?{% if notifications_page_query %}{{ notifications_page_query }}&{% endif %}page={{ notifications_page_obj.previous_page_number }}">Назад</a>{% endif %}
+                        {% if notifications_page_obj.has_next %}<a class="btn" href="?{% if notifications_page_query %}{{ notifications_page_query }}&{% endif %}page={{ notifications_page_obj.next_page_number }}">Дальше</a>{% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

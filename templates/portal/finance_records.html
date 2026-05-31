@@ -14,6 +14,7 @@
                 {% if record_type == "income" %}
                     <div class="muted small">Валюта системы: USD. Доход после создания ожидает подтверждения администратора, комиссия менеджера 5% начисляется только после подтверждения.</div>
                     <div class="grid cols-2">
+                        <label><span class="muted small">Касса</span>{{ form.cashbox }}{% if form.cashbox.errors %}<span class="form-errors">{{ form.cashbox.errors }}</span>{% endif %}</label>
                         <label><span class="muted small">Клиент</span>{{ form.client }}</label>
                         <label><span class="muted small">Сделка</span>{{ form.deal }}</label>
                         <label><span class="muted small">Услуга</span>{{ form.service }}</label>

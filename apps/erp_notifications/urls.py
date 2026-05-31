@@ -1,10 +1,11 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import DeviceTokenViewSet, NotificationLogViewSet, NotificationTemplateViewSet, NotificationViewSet
+from .views import DeviceTokenViewSet, NotificationBatchViewSet, NotificationLogViewSet, NotificationTemplateViewSet, NotificationViewSet
 
 router = DefaultRouter()
 router.register('device-tokens', DeviceTokenViewSet, basename='erp-notification-device-token')
+router.register('batches', NotificationBatchViewSet, basename='erp-notification-batch')
 router.register('templates', NotificationTemplateViewSet, basename='erp-notification-template')
 router.register('logs', NotificationLogViewSet, basename='erp-notification-log')
 

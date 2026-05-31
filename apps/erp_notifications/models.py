@@ -153,6 +153,116 @@ class NotificationTemplate(TimeStampedModel, ActiveModel):
         }
 
 
+class NotificationBatch(TimeStampedModel):
+    TARGET_USER = 'user'
+    TARGET_OFFICE = 'office'
+    TARGET_ALL = 'all'
+    TARGET_CHOICES = (
+        (TARGET_USER, 'Один сотрудник'),
+        (TARGET_OFFICE, 'Офис'),
+        (TARGET_ALL, 'Все сотрудники'),
+    )
+
+    TYPE_INFO = 'info'
+    TYPE_SUCCESS = 'success'
+    TYPE_WARNING = 'warning'
+    TYPE_ERROR = 'error'
+    TYPE_CHOICES = (
+        (TYPE_INFO, 'Информация'),
+        (TYPE_SUCCESS, 'Успешно'),
+        (TYPE_WARNING, 'Предупреждение'),
+        (TYPE_ERROR, 'Ошибка'),
+    )
+
+    STATUS_DRAFT = 'draft'
+    STATUS_SENT = 'sent'
+    STATUS_CANCELLED = 'cancelled'
+    STATUS_CHOICES = (
+        (STATUS_DRAFT, 'Черновик'),
+        (STATUS_SENT, 'Отправлено'),
+        (STATUS_CANCELLED, 'Отменено'),
+    )
+
+    company = models.ForeignKey(
+        Company,
+        verbose_name='Компания',
+        on_delete=models.CASCADE,
+        related_name='notification_batches',
+        null=True,
+        blank=True,
+    )
+    office = models.ForeignKey(
+        Office,
+        verbose_name='Офис отправителя',
+        on_delete=models.SET_NULL,
+        related_name='notification_batches',
+        null=True,
+        blank=True,
+    )
+    title = models.CharField('Заголовок', max_length=255)
+    message = models.TextField('Текст')
+    notification_type = models.CharField('Тип уведомления', max_length=32, choices=TYPE_CHOICES, default=TYPE_INFO, db_index=True)
+    sender = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Кто отправил',
+        on_delete=models.SET_NULL,
+        related_name='notification_batches_sent',
+        null=True,
+        blank=True,
+    )
+    target_type = models.CharField('Кому отправлено', max_length=32, choices=TARGET_CHOICES, default=TARGET_USER, db_index=True)
+    target_user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Получатель',
+        on_delete=models.SET_NULL,
+        related_name='notification_batches_received_directly',
+        null=True,
+        blank=True,
+    )
+    target_office = models.ForeignKey(
+        Office,
+        verbose_name='Офис получателей',
+        on_delete=models.SET_NULL,
+        related_name='notification_batches_received',
+        null=True,
+        blank=True,
+    )
+    status = models.CharField('Статус', max_length=32, choices=STATUS_CHOICES, default=STATUS_SENT, db_index=True)
+    sent_at = models.DateTimeField('Дата отправки', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Рассылка уведомлений'
+        verbose_name_plural = 'Рассылки уведомлений'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['company', 'office', 'status']),
+            models.Index(fields=['sender', 'created_at']),
+            models.Index(fields=['target_type', 'created_at']),
+        ]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def recipient_count(self):
+        return self.notifications.count()
+
+    @property
+    def read_count(self):
+        return self.notifications.filter(models.Q(read_at__isnull=False) | models.Q(status=Notification.STATUS_READ)).count()
+
+    @property
+    def unread_count(self):
+        return max(self.recipient_count - self.read_count, 0)
+
+    @property
+    def read_percent(self):
+        total = self.recipient_count
+        if not total:
+            return 0
+        return round((self.read_count / total) * 100)
+
+
 class Notification(TimeStampedModel):
     PRIORITY_LOW = 'low'
     PRIORITY_NORMAL = 'normal'
@@ -213,6 +323,14 @@ class Notification(TimeStampedModel):
         null=True,
         blank=True,
     )
+    batch = models.ForeignKey(
+        NotificationBatch,
+        verbose_name='Рассылка',
+        on_delete=models.SET_NULL,
+        related_name='notifications',
+        null=True,
+        blank=True,
+    )
     notification_type = models.CharField('Notification type', max_length=32, choices=NotificationTemplate.TYPE_CHOICES, default=NotificationTemplate.TYPE_SYSTEM, db_index=True)
     channel = models.CharField('Channel', max_length=32, choices=NotificationTemplate.CHANNEL_CHOICES, default=NotificationTemplate.CHANNEL_IN_APP, db_index=True)
     priority = models.CharField('Priority', max_length=32, choices=PRIORITY_CHOICES, default=PRIORITY_NORMAL, db_index=True)
@@ -237,6 +355,7 @@ class Notification(TimeStampedModel):
         indexes = [
             models.Index(fields=['company', 'office', 'status']),
             models.Index(fields=['recipient', 'status']),
+            models.Index(fields=['batch', 'status']),
             models.Index(fields=['notification_type', 'status']),
             models.Index(fields=['content_type', 'object_id']),
             models.Index(fields=['created_at']),

@@ -12,7 +12,7 @@ from django.contrib.auth.views import LoginView
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.http import FileResponse, Http404
-from django.db.models import Count, Q, Sum
+from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils.dateparse import parse_date
@@ -26,7 +26,7 @@ from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, Lead, LeadSource
 from apps.education.models import City, Country, Currency, Program, University
 from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
-from apps.erp_notifications.models import Notification, NotificationTemplate
+from apps.erp_notifications.models import Notification, NotificationBatch, NotificationTemplate
 from apps.employees.models import EmployeeProfile
 from apps.erp_services.models import Service, ServiceCategory
 from apps.finance.models import Cashbox, Deal, EmployeeCommission, Expense, ExpenseCategory, FinancialPeriod, Income, Payment, Transaction
@@ -459,6 +459,28 @@ def notification_queryset(user):
     return qs.filter(recipient=user)
 
 
+def own_notification_queryset(user):
+    return Notification.objects.select_related('company', 'office', 'recipient', 'sender', 'batch').filter(recipient=user)
+
+
+def notification_batch_queryset(user):
+    qs = NotificationBatch.objects.select_related('company', 'office', 'sender', 'target_user', 'target_office')
+    if is_erp_admin(user) or user.is_staff:
+        return qs
+    return qs.filter(sender=user)
+
+
+def annotate_notification_batches(qs):
+    return qs.annotate(
+        recipient_total=Count('notifications', distinct=True),
+        read_total=Count(
+            'notifications',
+            filter=Q(notifications__read_at__isnull=False) | Q(notifications__status=Notification.STATUS_READ),
+            distinct=True,
+        ),
+    )
+
+
 def calendar_event_queryset(user):
     qs = CalendarEvent.objects.select_related('company', 'office', 'owner', 'created_by').prefetch_related('participants').filter(is_active=True)
     if is_erp_admin(user) or user.is_staff:
@@ -862,7 +884,14 @@ class PortalContextMixin(LoginRequiredMixin):
             'mobile_nav_items': build_mobile_nav(self.active_page),
             'employee_profile': employee,
             'display_name': full_name(self.request.user),
-            'unread_notifications_count': notification_queryset(self.request.user).filter(read_at__isnull=True).exclude(status=Notification.STATUS_READ).count(),
+            'unread_notifications_count': own_notification_queryset(self.request.user).filter(read_at__isnull=True).exclude(status=Notification.STATUS_READ).count(),
+            'recent_header_notifications': own_notification_queryset(self.request.user)
+                .annotate(unread_rank=Case(
+                    When(Q(read_at__isnull=True) & ~Q(status=Notification.STATUS_READ), then=Value(0)),
+                    default=Value(1),
+                    output_field=IntegerField(),
+                ))
+                .order_by('unread_rank', '-created_at')[:5],
             'can_access_admin': can_access_admin,
             'admin_quick_actions': build_admin_quick_actions() if can_access_admin else [],
             'is_htmx': self.request.headers.get('HX-Request') == 'true',
@@ -2068,6 +2097,7 @@ class FinanceIncomeView(PortalContextMixin, TemplateView):
         return PortalIncomeForm(
             data=data,
             files=files,
+            cashboxes=cashbox_queryset(self.request.user).filter(is_active=True, currency__code='USD').order_by('office__name', 'name'),
             clients=client_queryset(self.request.user).order_by('-updated_at'),
             deals=deal_queryset(self.request.user).order_by('-created_at'),
             services=service_queryset(self.request.user).filter(is_active=True).order_by('category__name', 'title'),
@@ -2078,8 +2108,8 @@ class FinanceIncomeView(PortalContextMixin, TemplateView):
         if form.is_valid():
             try:
                 employee, company, office = get_user_company_office(request.user)
-                cashbox = get_or_create_usd_cashbox(request.user, company=company, office=office)
                 income = form.save(commit=False)
+                cashbox = form.cleaned_data.get('cashbox') or get_or_create_usd_cashbox(request.user, company=company, office=office)
                 income.company = cashbox.company
                 income.office = cashbox.office
                 income.cashbox = cashbox
@@ -3055,29 +3085,102 @@ class RatingView(PortalContextMixin, TemplateView):
         return context
 
 
-class NotificationsView(ListPageMixin):
+class NotificationsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/notifications.html'
     active_page = 'notifications'
     page_title = 'Уведомления'
-    table_template = 'portal/partials/notifications_table.html'
-    create_url_name = 'portal:notification_create'
-    create_label = 'Добавить уведомление'
-    search_fields = ('title', 'body', 'recipient__email', 'sender__email')
-    status_choices = Notification.STATUS_CHOICES
-    default_ordering = '-created_at'
 
-    def get_queryset(self):
-        qs = notification_queryset(self.request.user)
-        unread = bool_param(self.request.GET.get('unread'))
-        if unread is True:
+    def get_status_filter(self):
+        value = self.request.GET.get('status') or 'all'
+        return value if value in {'all', 'unread', 'read'} else 'all'
+
+    def get_my_notifications(self):
+        qs = own_notification_queryset(self.request.user)
+        status_filter = self.get_status_filter()
+        if status_filter == 'unread':
             qs = qs.filter(read_at__isnull=True).exclude(status=Notification.STATUS_READ)
-        elif unread is False:
+        elif status_filter == 'read':
             qs = qs.filter(Q(read_at__isnull=False) | Q(status=Notification.STATUS_READ))
-        return qs
+        query = self.request.GET.get('q') or ''
+        qs = apply_search(qs, query, ('title', 'body', 'sender__email'))
+        return qs.annotate(
+            unread_rank=Case(
+                When(Q(read_at__isnull=True) & ~Q(status=Notification.STATUS_READ), then=Value(0)),
+                default=Value(1),
+                output_field=IntegerField(),
+            )
+        ).order_by('unread_rank', '-created_at')
+
+    def get_sent_batches(self):
+        qs = annotate_notification_batches(notification_batch_queryset(self.request.user))
+        query = self.request.GET.get('q') or ''
+        return apply_search(qs, query, ('title', 'message', 'sender__email', 'target_user__email', 'target_office__name')).order_by('-created_at')
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        if not can_delete_admin(self.request.user):
-            context['create_url'] = ''
+        current_tab = self.request.GET.get('tab') or 'mine'
+        can_create = can_delete_admin(self.request.user)
+        if current_tab in {'sent', 'create'} and not can_create:
+            current_tab = 'mine'
+
+        notifications_page, notifications_query = paginate_queryset(self.request, self.get_my_notifications(), 25)
+        batches_page, batches_query = paginate_queryset(self.request, self.get_sent_batches(), 20)
+        unread_count = own_notification_queryset(self.request.user).filter(read_at__isnull=True).exclude(status=Notification.STATUS_READ).count()
+        read_count = own_notification_queryset(self.request.user).filter(Q(read_at__isnull=False) | Q(status=Notification.STATUS_READ)).count()
+
+        context.update({
+            'current_tab': current_tab,
+            'status_filter': self.get_status_filter(),
+            'query': self.request.GET.get('q', ''),
+            'my_notifications': notifications_page.object_list,
+            'notifications_page_obj': notifications_page,
+            'notifications_page_query': notifications_query,
+            'sent_batches': batches_page.object_list,
+            'batches_page_obj': batches_page,
+            'batches_page_query': batches_query,
+            'unread_count': unread_count,
+            'read_count': read_count,
+            'can_create_notifications': can_create,
+        })
+        return context
+
+
+class NotificationReadView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request, pk):
+        notification = get_object_or_404(own_notification_queryset(request.user), pk=pk)
+        notification.mark_read()
+        messages.success(request, 'Уведомление отмечено как прочитанное.')
+        return redirect(request.POST.get('next') or 'portal:notifications')
+
+
+class NotificationBatchDetailView(PortalContextMixin, TemplateView):
+    template_name = 'portal/notification_batch_detail.html'
+    active_page = 'notifications'
+    page_title = 'Статистика уведомления'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_delete_admin(request.user):
+            messages.error(request, 'Статистика отправленных уведомлений доступна только администратору.')
+            return redirect('portal:notifications')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_batch(self):
+        return get_object_or_404(annotate_notification_batches(notification_batch_queryset(self.request.user)), pk=self.kwargs['pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        batch = self.get_batch()
+        recipients = batch.notifications.select_related('recipient', 'office').order_by('recipient__first_name', 'recipient__last_name', 'recipient__email')
+        context.update({
+            'batch': batch,
+            'recipients': recipients,
+            'recipient_total': getattr(batch, 'recipient_total', batch.recipient_count),
+            'read_total': getattr(batch, 'read_total', batch.read_count),
+            'unread_total': max(getattr(batch, 'recipient_total', batch.recipient_count) - getattr(batch, 'read_total', batch.read_count), 0),
+            'read_percent_value': round((getattr(batch, 'read_total', 0) / getattr(batch, 'recipient_total', 1)) * 100) if getattr(batch, 'recipient_total', 0) else 0,
+        })
         return context
 
 
@@ -3143,6 +3246,21 @@ class NotificationCreateView(PortalFormPageMixin, PortalContextMixin, TemplateVi
                 messages.error(request, 'Под выбранные условия не найдено ни одного сотрудника.')
             else:
                 kind = form.cleaned_data['notification_kind']
+                employee, company, office = get_user_company_office(request.user)
+                send_now = form.cleaned_data.get('send_now')
+                batch = NotificationBatch.objects.create(
+                    company=company,
+                    office=office,
+                    title=form.cleaned_data['title'],
+                    message=form.cleaned_data['body'],
+                    notification_type=kind,
+                    sender=request.user,
+                    target_type=form.cleaned_data['recipient_scope'],
+                    target_user=form.cleaned_data.get('recipient_user') if form.cleaned_data['recipient_scope'] == PortalNotificationForm.SCOPE_USER else None,
+                    target_office=form.cleaned_data.get('recipient_office') if form.cleaned_data['recipient_scope'] == PortalNotificationForm.SCOPE_OFFICE else None,
+                    status=NotificationBatch.STATUS_SENT if send_now else NotificationBatch.STATUS_DRAFT,
+                    sent_at=timezone.now() if send_now else None,
+                )
                 for recipient in recipients:
                     profile = get_employee_profile(recipient)
                     notification = Notification.objects.create(
@@ -3154,15 +3272,16 @@ class NotificationCreateView(PortalFormPageMixin, PortalContextMixin, TemplateVi
                         channel=NotificationTemplate.CHANNEL_IN_APP,
                         priority=form.get_priority(),
                         status=Notification.STATUS_NEW,
+                        batch=batch,
                         title=form.cleaned_data['title'],
                         body=form.cleaned_data['body'],
-                        data={'kind': kind, 'created_from': 'portal'},
+                        data={'kind': kind, 'created_from': 'portal', 'batch_id': batch.pk},
                         target_url='/portal/notifications/',
                     )
-                    if form.cleaned_data.get('send_now'):
+                    if send_now:
                         notification.mark_sent()
                 messages.success(request, f'Уведомление создано для {len(recipients)} сотрудник(ов).')
-                return redirect('portal:notifications')
+                return redirect('portal:notification_batch_detail', pk=batch.pk)
         context = self.get_context_data()
         context['form'] = form
         context['form_groups'] = self.get_form_groups(form)

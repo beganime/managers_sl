@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import DeviceToken, Notification, NotificationLog, NotificationTemplate
+from .models import DeviceToken, Notification, NotificationBatch, NotificationLog, NotificationTemplate
 
 
 class DeviceTokenSerializer(serializers.ModelSerializer):
@@ -42,12 +42,33 @@ class NotificationLogSerializer(serializers.ModelSerializer):
         read_only_fields = ('created_at',)
 
 
+class NotificationBatchSerializer(serializers.ModelSerializer):
+    sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
+    company_name = serializers.CharField(source='company.name', read_only=True)
+    office_name = serializers.CharField(source='office.name', read_only=True)
+    target_user_name = serializers.CharField(source='target_user.get_full_name', read_only=True)
+    target_office_name = serializers.CharField(source='target_office.name', read_only=True)
+    recipient_count = serializers.IntegerField(read_only=True)
+    read_count = serializers.IntegerField(read_only=True)
+    unread_count = serializers.IntegerField(read_only=True)
+    read_percent = serializers.IntegerField(read_only=True)
+    target_type_display = serializers.CharField(source='get_target_type_display', read_only=True)
+    type_display = serializers.CharField(source='get_notification_type_display', read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+
+    class Meta:
+        model = NotificationBatch
+        fields = '__all__'
+        read_only_fields = ('sender', 'sent_at', 'created_at', 'updated_at')
+
+
 class NotificationSerializer(serializers.ModelSerializer):
     company_name = serializers.CharField(source='company.name', read_only=True)
     office_name = serializers.CharField(source='office.name', read_only=True)
     recipient_name = serializers.CharField(source='recipient.get_full_name', read_only=True)
     sender_name = serializers.CharField(source='sender.get_full_name', read_only=True)
     template_name = serializers.CharField(source='template.name', read_only=True)
+    batch_title = serializers.CharField(source='batch.title', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     type_display = serializers.CharField(source='get_notification_type_display', read_only=True)
     channel_display = serializers.CharField(source='get_channel_display', read_only=True)

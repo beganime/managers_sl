@@ -7,9 +7,10 @@ from rest_framework.response import Response
 
 from apps.core.permissions import filter_by_office_scope, get_employee_profile, is_erp_admin
 
-from .models import DeviceToken, Notification, NotificationLog, NotificationTemplate
+from .models import DeviceToken, Notification, NotificationBatch, NotificationLog, NotificationTemplate
 from .serializers import (
     DeviceTokenSerializer,
+    NotificationBatchSerializer,
     NotificationLogSerializer,
     NotificationSerializer,
     NotificationTemplateSerializer,
@@ -156,12 +157,29 @@ class NotificationTemplateViewSet(viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user)
 
 
+class NotificationBatchViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = NotificationBatchSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        qs = NotificationBatch.objects.select_related('company', 'office', 'sender', 'target_user', 'target_office')
+        if not is_erp_admin(self.request.user):
+            qs = qs.filter(sender=self.request.user)
+        else:
+            qs = filter_by_office_scope(qs, self.request.user)
+        return apply_common_filters(
+            qs,
+            self.request,
+            search_fields=('title', 'message', 'sender__email', 'target_user__email', 'target_office__name'),
+        ).order_by('-created_at')
+
+
 class NotificationViewSet(viewsets.ModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        qs = Notification.objects.select_related('company', 'office', 'recipient', 'sender', 'template', 'content_type').prefetch_related('logs')
+        qs = Notification.objects.select_related('company', 'office', 'recipient', 'sender', 'template', 'batch', 'content_type').prefetch_related('logs')
         if not is_erp_admin(self.request.user):
             qs = qs.filter(recipient=self.request.user)
         else:

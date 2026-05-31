@@ -85,6 +85,7 @@ def create_notification(
     template=None,
     context=None,
     related_object=None,
+    batch=None,
     queue=True,
 ):
     if not recipient:
@@ -112,6 +113,7 @@ def create_notification(
         recipient=recipient,
         sender=sender,
         template=template,
+        batch=batch,
         notification_type=notification_type,
         channel=channel,
         priority=priority,

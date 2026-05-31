@@ -1,10 +1,11 @@
 from django import forms
 from django.contrib.auth import get_user_model
+from django.utils import timezone
 
 from apps.crm.models import Application, Client, Lead, LeadSource
 from apps.education.models import City, Country, Currency, Program, University
 from apps.erp_documents.models import DocumentTemplate, GeneratedDocument
-from apps.erp_notifications.models import Notification
+from apps.erp_notifications.models import Notification, NotificationBatch
 from apps.erp_services.models import Service, ServiceCategory
 from apps.finance.models import Cashbox, Deal, Expense, ExpenseCategory, Income, Payment
 from apps.knowledge.models import KnowledgeArticle, KnowledgeAttachment, KnowledgeCategory
@@ -525,6 +526,7 @@ class PortalIncomeForm(PortalFormMixin, forms.ModelForm):
     class Meta:
         model = Income
         fields = [
+            'cashbox',
             'client',
             'deal',
             'service',
@@ -538,15 +540,21 @@ class PortalIncomeForm(PortalFormMixin, forms.ModelForm):
             'comment': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, clients=None, deals=None, services=None, **kwargs):
+    def __init__(self, *args, cashboxes=None, clients=None, deals=None, services=None, **kwargs):
         super().__init__(*args, **kwargs)
+        cashbox_qs = cashboxes if cashboxes is not None else Cashbox.objects.none()
+        self.fields['cashbox'].queryset = cashbox_qs
         self.fields['client'].queryset = clients if clients is not None else Client.objects.all()
         self.fields['deal'].queryset = deals if deals is not None else Deal.objects.all()
         self.fields['service'].queryset = services if services is not None else Service.objects.all()
+        self.fields['cashbox'].required = cashbox_qs.exists()
         self.fields['client'].required = False
         self.fields['deal'].required = False
         self.fields['service'].required = False
         self.fields['proof_file'].required = False
+        self.fields['date'].initial = timezone.localdate
+        if cashbox_qs.count() == 1:
+            self.fields['cashbox'].initial = cashbox_qs.first()
         self.style_fields()
 
 
@@ -578,19 +586,19 @@ class PortalExpenseForm(PortalFormMixin, forms.ModelForm):
 
 
 class PortalNotificationForm(PortalFormMixin, forms.Form):
-    SCOPE_USER = 'user'
-    SCOPE_OFFICE = 'office'
-    SCOPE_ALL = 'all'
+    SCOPE_USER = NotificationBatch.TARGET_USER
+    SCOPE_OFFICE = NotificationBatch.TARGET_OFFICE
+    SCOPE_ALL = NotificationBatch.TARGET_ALL
     SCOPE_CHOICES = (
         (SCOPE_USER, 'Один сотрудник'),
         (SCOPE_OFFICE, 'Офис'),
         (SCOPE_ALL, 'Все сотрудники'),
     )
 
-    TYPE_INFO = 'info'
-    TYPE_WARNING = 'warning'
-    TYPE_SUCCESS = 'success'
-    TYPE_ERROR = 'error'
+    TYPE_INFO = NotificationBatch.TYPE_INFO
+    TYPE_WARNING = NotificationBatch.TYPE_WARNING
+    TYPE_SUCCESS = NotificationBatch.TYPE_SUCCESS
+    TYPE_ERROR = NotificationBatch.TYPE_ERROR
     TYPE_CHOICES = (
         (TYPE_INFO, 'Информация'),
         (TYPE_WARNING, 'Предупреждение'),

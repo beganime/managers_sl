@@ -1,0 +1,80 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">{{ batch.title }}</h2>
+        <div class="filters">
+            <a class="btn" href="{% url 'portal:notifications' %}?tab=sent"><i data-lucide="arrow-left"></i>Отправленные</a>
+            <span class="pill">{{ batch.get_status_display }}</span>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="grid cols-4">
+            <div class="metric">
+                <div class="metric-top"><span>Получили</span><i data-lucide="users"></i></div>
+                <div class="metric-value">{{ recipient_total }}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-top"><span>Прочитали</span><i data-lucide="check-circle-2"></i></div>
+                <div class="metric-value">{{ read_total }}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-top"><span>Не прочитали</span><i data-lucide="bell"></i></div>
+                <div class="metric-value">{{ unread_total }}</div>
+            </div>
+            <div class="metric">
+                <div class="metric-top"><span>Процент прочтения</span><i data-lucide="percent"></i></div>
+                <div class="metric-value">{{ read_percent_value }}%</div>
+            </div>
+        </div>
+        <div class="grid cols-2" style="margin-top:16px;">
+            <div>
+                <div class="muted small">Текст уведомления</div>
+                <div style="margin-top:6px;">{{ batch.message|linebreaksbr }}</div>
+            </div>
+            <div class="list">
+                <div class="list-row"><div class="muted">Кто отправил</div><div class="strong">{{ batch.sender.get_full_name|default:batch.sender.email|default:"Система" }}</div></div>
+                <div class="list-row"><div class="muted">Кому отправлено</div><div class="strong">{{ batch.get_target_type_display }}</div></div>
+                <div class="list-row"><div class="muted">Цель</div><div class="strong">{% if batch.target_user %}{{ batch.target_user.get_full_name|default:batch.target_user.email }}{% elif batch.target_office %}{{ batch.target_office.name }}{% else %}Все сотрудники{% endif %}</div></div>
+                <div class="list-row"><div class="muted">Дата отправки</div><div class="strong">{{ batch.sent_at|default:batch.created_at|date:"d.m.Y H:i" }}</div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Получатели</h2></div>
+    <div class="panel-body">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Сотрудник</th>
+                        <th>Офис</th>
+                        <th>Статус</th>
+                        <th>Отправлено</th>
+                        <th>Прочитано</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in recipients %}
+                    <tr>
+                        <td>
+                            <div class="strong">{{ item.recipient.get_full_name|default:item.recipient.email }}</div>
+                            <div class="muted small">{{ item.recipient.email }}</div>
+                        </td>
+                        <td>{{ item.office.name|default:"-" }}</td>
+                        <td><span class="pill {% if item.is_read %}ok{% else %}warn{% endif %}">{% if item.is_read %}Прочитано{% else %}Не прочитано{% endif %}</span></td>
+                        <td>{{ item.sent_at|default:item.created_at|date:"d.m.Y H:i" }}</td>
+                        <td>{{ item.read_at|date:"d.m.Y H:i"|default:"-" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="5"><div class="empty">Получателей нет.</div></td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}
