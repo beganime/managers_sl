@@ -1,3 +1,8 @@
+import html
+import io
+import re
+import zipfile
+
 from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
@@ -14,6 +19,66 @@ from .models import (
 )
 
 
+JINJA_OUTPUT_RE = re.compile(r'{{\s*(.*?)\s*}}', re.DOTALL)
+JINJA_VAR_RE = re.compile(r'\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*\b')
+XML_TAG_RE = re.compile(r'<[^>]+>')
+
+IGNORED_JINJA_TOKENS = {
+    'and',
+    'as',
+    'block',
+    'by',
+    'cycle',
+    'default',
+    'dict',
+    'else',
+    'elif',
+    'endblock',
+    'endif',
+    'endfor',
+    'endset',
+    'false',
+    'filter',
+    'float',
+    'for',
+    'if',
+    'in',
+    'int',
+    'is',
+    'join',
+    'length',
+    'list',
+    'loop',
+    'lower',
+    'none',
+    'not',
+    'or',
+    'range',
+    'safe',
+    'set',
+    'str',
+    'string',
+    'title',
+    'true',
+    'upper',
+    'with',
+}
+
+DATA_SOURCE_BY_ROOT = {
+    'client': DocumentTemplateField.SOURCE_CLIENT,
+    'application': DocumentTemplateField.SOURCE_APPLICATION,
+    'deal': DocumentTemplateField.SOURCE_DEAL,
+    'manager': DocumentTemplateField.SOURCE_MANAGER,
+    'company': DocumentTemplateField.SOURCE_COMPANY,
+    'office': DocumentTemplateField.SOURCE_OFFICE,
+}
+
+
+DATE_HINTS = ('date', 'birthday', 'birth_date', 'deadline', 'issued', 'expiry', 'created_at', 'updated_at')
+NUMBER_HINTS = ('amount', 'price', 'fee', 'total', 'count', 'sum', 'cost', 'payment', 'paid')
+BOOLEAN_HINTS = ('is_', 'has_', 'can_', 'allow_', 'requires_')
+
+
 def is_admin_user(user):
     return bool(
         user
@@ -24,6 +89,160 @@ def is_admin_user(user):
             or getattr(user, 'role', None) == 'admin'
         )
     )
+
+
+def normalize_jinja_variable(token):
+    token = str(token or '').strip()
+    token = token.strip('()[]{}:,;+-*/%<>!=')
+    token = token.split('|', 1)[0].strip()
+    token = token.split('(', 1)[0].strip()
+    return token[:150]
+
+
+def is_valid_jinja_variable(token):
+    if not token:
+        return False
+    root = token.split('.', 1)[0].lower()
+    if root in IGNORED_JINJA_TOKENS:
+        return False
+    if token.lower() in IGNORED_JINJA_TOKENS:
+        return False
+    if token.startswith('_'):
+        return False
+    return True
+
+
+def read_docx_template_text(template):
+    if not template or not template.file:
+        return ''
+
+    try:
+        template.file.open('rb')
+        raw_bytes = template.file.read()
+    finally:
+        try:
+            template.file.close()
+        except Exception:
+            pass
+
+    chunks = []
+    with zipfile.ZipFile(io.BytesIO(raw_bytes)) as archive:
+        for name in archive.namelist():
+            if not name.startswith('word/') or not name.endswith('.xml'):
+                continue
+            try:
+                raw_xml = archive.read(name).decode('utf-8', errors='ignore')
+            except Exception:
+                continue
+            # Word часто разбивает {{ variable }} по разным XML-тегам.
+            # Удаляем теги, чтобы обратно собрать текст шаблона.
+            text = XML_TAG_RE.sub('', raw_xml)
+            chunks.append(html.unescape(text))
+
+    return '\n'.join(chunks)
+
+
+def extract_jinja_variables_from_docx(template):
+    text = read_docx_template_text(template)
+    variables = set()
+
+    for expression in JINJA_OUTPUT_RE.findall(text):
+        for raw_token in JINJA_VAR_RE.findall(expression):
+            token = normalize_jinja_variable(raw_token)
+            if is_valid_jinja_variable(token):
+                variables.add(token)
+
+    return sorted(variables)
+
+
+def make_template_field_key(jinja_key):
+    value = str(jinja_key or '').strip().lower().replace('.', '_')
+    value = re.sub(r'[^a-z0-9_]+', '_', value)
+    value = re.sub(r'_+', '_', value).strip('_')
+    return (value or 'field')[:90]
+
+
+def make_template_field_label(jinja_key):
+    value = str(jinja_key or '').strip()
+    if not value:
+        return 'Field'
+    last_part = value.split('.')[-1]
+    label = last_part.replace('_', ' ').replace('-', ' ').strip().title()
+    return label or value
+
+
+def guess_template_field_type(jinja_key):
+    value = str(jinja_key or '').lower()
+    if any(hint in value for hint in DATE_HINTS):
+        return DocumentTemplateField.FIELD_TYPE_DATE
+    if any(hint in value for hint in NUMBER_HINTS):
+        return DocumentTemplateField.FIELD_TYPE_NUMBER
+    if any(value.startswith(hint) or f'.{hint}' in value for hint in BOOLEAN_HINTS):
+        return DocumentTemplateField.FIELD_TYPE_BOOLEAN
+    return DocumentTemplateField.FIELD_TYPE_TEXT
+
+
+def guess_data_source(jinja_key):
+    root = str(jinja_key or '').split('.', 1)[0].lower()
+    return DATA_SOURCE_BY_ROOT.get(root, DocumentTemplateField.SOURCE_CUSTOM)
+
+
+def build_unique_field_key(template, base_key):
+    key = base_key[:100]
+    if not DocumentTemplateField.objects.filter(template=template, key=key).exists():
+        return key
+
+    for index in range(2, 1000):
+        suffix = f'_{index}'
+        candidate = f'{base_key[:100 - len(suffix)]}{suffix}'
+        if not DocumentTemplateField.objects.filter(template=template, key=candidate).exists():
+            return candidate
+
+    return f'{base_key[:80]}_{template.fields.count() + 1}'[:100]
+
+
+def sync_template_fields_from_docx(template):
+    variables = extract_jinja_variables_from_docx(template)
+    created = 0
+    skipped = 0
+
+    if not template.pk:
+        return {'variables': variables, 'created': created, 'skipped': skipped}
+
+    existing_jinja_keys = set(
+        template.fields.exclude(jinja_key='').values_list('jinja_key', flat=True)
+    )
+    existing_keys = set(template.fields.values_list('key', flat=True))
+    current_count = template.fields.count()
+
+    for index, jinja_key in enumerate(variables, start=1):
+        if jinja_key in existing_jinja_keys:
+            skipped += 1
+            continue
+
+        base_key = make_template_field_key(jinja_key)
+        key = base_key
+        if key in existing_keys:
+            key = build_unique_field_key(template, base_key)
+
+        DocumentTemplateField.objects.create(
+            template=template,
+            key=key,
+            jinja_key=jinja_key,
+            data_source=guess_data_source(jinja_key),
+            label=make_template_field_label(jinja_key),
+            field_type=guess_template_field_type(jinja_key),
+            is_required=True,
+            help_text='',
+            sort_order=(current_count + index) * 10,
+        )
+        existing_keys.add(key)
+        existing_jinja_keys.add(jinja_key)
+        created += 1
+
+    DocumentTemplate.objects.filter(pk=template.pk).update(jinja_variables=variables)
+
+    return {'variables': variables, 'created': created, 'skipped': skipped}
 
 
 class DocumentTemplateAdminForm(forms.ModelForm):
@@ -82,42 +301,6 @@ class DocumentTemplateFieldInline(TabularInline):
     )
 
 
-class StampRuleInline(TabularInline):
-    model = StampRule
-    extra = 0
-    show_change_link = True
-    readonly_fields = ('stamp_preview',)
-    fields = (
-        'name',
-        'stamp_image',
-        'stamp_preview',
-        'width_mm',
-        'height_mm',
-        'position',
-        'x_mm',
-        'y_mm',
-        'opacity',
-        'watermark_enabled',
-        'watermark_text',
-        'watermark_image',
-        'watermark_position',
-        'watermark_width_mm',
-        'watermark_height_mm',
-        'watermark_opacity',
-        'is_active',
-        'sort_order',
-    )
-
-    @admin.display(description='Предпросмотр')
-    def stamp_preview(self, obj):
-        if obj and obj.stamp_image:
-            return format_html(
-                '<img src="{}" style="max-width:120px; max-height:90px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />',
-                obj.stamp_image.url,
-            )
-        return 'Печать не загружена'
-
-
 @admin.register(DocumentTemplate)
 class DocumentTemplateAdmin(ModelAdmin):
     form = DocumentTemplateAdminForm
@@ -127,6 +310,7 @@ class DocumentTemplateAdmin(ModelAdmin):
         'document_type',
         'code',
         'company',
+        'fields_count',
         'requires_approval',
         'allow_without_stamp',
         'allow_with_stamp',
@@ -153,17 +337,18 @@ class DocumentTemplateAdmin(ModelAdmin):
     )
 
     def get_inlines(self, request, obj=None):
-        # На странице добавления inline-формы часто ломают Unfold/Django admin,
-        # потому что parent object ещё не сохранён. Поэтому сначала создаём шаблон,
-        # а поля шаблона и печать добавляем уже на странице редактирования.
+        # На добавлении parent object ещё не сохранён — inline не показываем.
+        # На редактировании оставляем только поля шаблона.
+        # StampRule редактируется отдельным разделом, чтобы форма шаблона не падала из-за image/file inline.
         if obj is None:
             return []
-        return [DocumentTemplateFieldInline, StampRuleInline]
+        return [DocumentTemplateFieldInline]
 
     def get_readonly_fields(self, request, obj=None):
         if obj is None:
             return ()
         return (
+            'scan_status',
             'jinja_examples',
             'download_formats',
             'stamp_help',
@@ -186,7 +371,7 @@ class DocumentTemplateAdmin(ModelAdmin):
                             'description',
                             'is_active',
                         ),
-                        'description': 'Сначала сохраните сам шаблон. Поля шаблона и печать добавляются после первого сохранения.',
+                        'description': 'Сначала сохраните сам шаблон. После сохранения система автоматически просканирует DOCX и создаст поля по Jinja-переменным.',
                     },
                 ),
                 (
@@ -230,18 +415,17 @@ class DocumentTemplateAdmin(ModelAdmin):
                     'fields': (
                         'file',
                     ),
-                    'description': 'Загрузите DOCX-файл. Внутри шаблона используйте Jinja-переменные вида {{ client.full_name }}.',
+                    'description': 'Если заменить DOCX и сохранить, система снова просканирует Jinja-переменные и добавит новые поля, которых ещё нет.',
                 },
             ),
             (
-                'Подсказки',
+                'Автосканирование полей',
                 {
                     'fields': (
+                        'scan_status',
                         'jinja_examples',
-                        'stamp_help',
-                        'download_formats',
                     ),
-                    'description': 'Поля шаблона и правила печати находятся ниже на этой странице.',
+                    'description': 'Найденные поля показываются внизу страницы в блоке Document template fields. Название, help text, тип и обязательность можно править вручную.',
                 },
             ),
             (
@@ -251,8 +435,18 @@ class DocumentTemplateAdmin(ModelAdmin):
                         'allow_without_stamp',
                         'allow_with_stamp',
                         'requires_approval',
+                        'download_formats',
                     ),
                     'description': 'Без печати скачивается DOCX. С электронной печатью скачивается PDF после подтверждения администратора.',
+                },
+            ),
+            (
+                'Электронная печать и водяной знак',
+                {
+                    'fields': (
+                        'stamp_help',
+                    ),
+                    'description': 'Печать теперь добавляется через отдельный раздел Stamp rules, чтобы форма шаблона не падала из-за inline-файлов.',
                 },
             ),
             (
@@ -289,6 +483,60 @@ class DocumentTemplateAdmin(ModelAdmin):
             obj.created_by = request.user
         super().save_model(request, obj, form, change)
 
+        try:
+            result = sync_template_fields_from_docx(obj)
+        except Exception as exc:
+            self.message_user(
+                request,
+                f'Шаблон сохранён, но автосканирование DOCX не удалось: {exc}',
+                messages.WARNING,
+            )
+            return
+
+        found_count = len(result.get('variables') or [])
+        created_count = result.get('created', 0)
+        if found_count:
+            self.message_user(
+                request,
+                f'DOCX просканирован: найдено Jinja-переменных {found_count}, новых полей создано {created_count}.',
+                messages.SUCCESS if created_count else messages.INFO,
+            )
+        else:
+            self.message_user(
+                request,
+                'Шаблон сохранён. Jinja-переменные вида {{ client.full_name }} в DOCX не найдены.',
+                messages.WARNING,
+            )
+
+    @admin.display(description='Полей')
+    def fields_count(self, obj):
+        return obj.fields.count()
+
+    @admin.display(description='Статус автосканирования')
+    def scan_status(self, obj):
+        variables = obj.jinja_variables or []
+        if not variables:
+            return format_html(
+                '<div style="line-height:1.5">'
+                '<b>Jinja-переменные пока не найдены.</b><br>'
+                'Проверьте, что в DOCX есть переменные вида <code>{{{{ client.full_name }}}}</code>, затем сохраните шаблон ещё раз.'
+                '</div>'
+            )
+
+        items = format_html_join(
+            '',
+            '<li><code>{}</code></li>',
+            ((item,) for item in variables),
+        )
+        return format_html(
+            '<div style="line-height:1.5">'
+            '<b>Найдено Jinja-переменных: {}</b>'
+            '<ul style="margin:8px 0 0 18px;">{}</ul>'
+            '</div>',
+            len(variables),
+            items,
+        )
+
     @admin.display(description='Примеры переменных')
     def jinja_examples(self, obj):
         examples = [
@@ -314,7 +562,7 @@ class DocumentTemplateAdmin(ModelAdmin):
     def stamp_help(self, obj):
         return format_html(
             '<div style="line-height:1.5">'
-            '<b>Печать:</b> добавляйте после первого сохранения шаблона через блок Stamp rules ниже или через отдельный раздел Stamp rules.<br>'
+            '<b>Печать:</b> добавляйте через отдельный раздел <b>Stamp rules</b>.<br>'
             '<b>Важно:</b> если печать не нужна, не создавайте Stamp rule.<br>'
             '<b>Водяной знак:</b> настраивается в том же Stamp rule.'
             '</div>'
