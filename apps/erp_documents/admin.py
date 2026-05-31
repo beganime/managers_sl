@@ -7,6 +7,7 @@ from django import forms
 from django.contrib import admin, messages
 from django.core.exceptions import ValidationError
 from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
@@ -24,44 +25,11 @@ JINJA_VAR_RE = re.compile(r'\b[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)
 XML_TAG_RE = re.compile(r'<[^>]+>')
 
 IGNORED_JINJA_TOKENS = {
-    'and',
-    'as',
-    'block',
-    'by',
-    'cycle',
-    'default',
-    'dict',
-    'else',
-    'elif',
-    'endblock',
-    'endif',
-    'endfor',
-    'endset',
-    'false',
-    'filter',
-    'float',
-    'for',
-    'if',
-    'in',
-    'int',
-    'is',
-    'join',
-    'length',
-    'list',
-    'loop',
-    'lower',
-    'none',
-    'not',
-    'or',
-    'range',
-    'safe',
-    'set',
-    'str',
-    'string',
-    'title',
-    'true',
-    'upper',
-    'with',
+    'and', 'as', 'block', 'by', 'cycle', 'default', 'dict', 'else', 'elif',
+    'endblock', 'endif', 'endfor', 'endset', 'false', 'filter', 'float',
+    'for', 'if', 'in', 'int', 'is', 'join', 'length', 'list', 'loop',
+    'lower', 'none', 'not', 'or', 'range', 'safe', 'set', 'str', 'string',
+    'title', 'true', 'upper', 'with',
 }
 
 DATA_SOURCE_BY_ROOT = {
@@ -72,7 +40,6 @@ DATA_SOURCE_BY_ROOT = {
     'company': DocumentTemplateField.SOURCE_COMPANY,
     'office': DocumentTemplateField.SOURCE_OFFICE,
 }
-
 
 DATE_HINTS = ('date', 'birthday', 'birth_date', 'deadline', 'issued', 'expiry', 'created_at', 'updated_at')
 NUMBER_HINTS = ('amount', 'price', 'fee', 'total', 'count', 'sum', 'cost', 'payment', 'paid')
@@ -93,7 +60,7 @@ def is_admin_user(user):
 
 def normalize_jinja_variable(token):
     token = str(token or '').strip()
-    token = token.strip('()[]{}:,;+-*/%<>!=')
+    token = token.strip('()[]{}:,;+-*/%<>=!')
     token = token.split('|', 1)[0].strip()
     token = token.split('(', 1)[0].strip()
     return token[:150]
@@ -134,8 +101,8 @@ def read_docx_template_text(template):
                 raw_xml = archive.read(name).decode('utf-8', errors='ignore')
             except Exception:
                 continue
-            # Word часто разбивает {{ variable }} по разным XML-тегам.
-            # Удаляем теги, чтобы обратно собрать текст шаблона.
+            # Word иногда разбивает {{ variable }} XML-тегами.
+            # Удаляем XML-теги, чтобы восстановить читаемый текст шаблона.
             text = XML_TAG_RE.sub('', raw_xml)
             chunks.append(html.unescape(text))
 
@@ -337,9 +304,6 @@ class DocumentTemplateAdmin(ModelAdmin):
     )
 
     def get_inlines(self, request, obj=None):
-        # На добавлении parent object ещё не сохранён — inline не показываем.
-        # На редактировании оставляем только поля шаблона.
-        # StampRule редактируется отдельным разделом, чтобы форма шаблона не падала из-за image/file inline.
         if obj is None:
             return []
         return [DocumentTemplateFieldInline]
@@ -516,10 +480,10 @@ class DocumentTemplateAdmin(ModelAdmin):
     def scan_status(self, obj):
         variables = obj.jinja_variables or []
         if not variables:
-            return format_html(
+            return mark_safe(
                 '<div style="line-height:1.5">'
                 '<b>Jinja-переменные пока не найдены.</b><br>'
-                'Проверьте, что в DOCX есть переменные вида <code>{{{{ client.full_name }}}}</code>, затем сохраните шаблон ещё раз.'
+                'Проверьте, что в DOCX есть переменные вида <code>{{ client.full_name }}</code>, затем сохраните шаблон ещё раз.'
                 '</div>'
             )
 
@@ -560,7 +524,7 @@ class DocumentTemplateAdmin(ModelAdmin):
 
     @admin.display(description='Подсказка по печати')
     def stamp_help(self, obj):
-        return format_html(
+        return mark_safe(
             '<div style="line-height:1.5">'
             '<b>Печать:</b> добавляйте через отдельный раздел <b>Stamp rules</b>.<br>'
             '<b>Важно:</b> если печать не нужна, не создавайте Stamp rule.<br>'
