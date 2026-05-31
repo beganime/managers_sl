@@ -18,22 +18,64 @@ class DocumentTemplateFieldInline(TabularInline):
     fields = ('label', 'key', 'jinja_key', 'data_source', 'help_text', 'is_required', 'sort_order')
 
 
+class StampRuleInline(TabularInline):
+    model = StampRule
+    extra = 1
+    fields = (
+        'name',
+        'stamp_image',
+        'stamp_preview',
+        'width_mm',
+        'height_mm',
+        'position',
+        'x_mm',
+        'y_mm',
+        'watermark_enabled',
+        'watermark_text',
+        'watermark_image',
+        'watermark_position',
+        'watermark_opacity',
+        'is_active',
+    )
+    readonly_fields = ('stamp_preview',)
+    show_change_link = True
+
+    @admin.display(description='Предпросмотр')
+    def stamp_preview(self, obj):
+        if obj and obj.stamp_image:
+            return format_html(
+                '<img src="{}" style="max-width:120px; max-height:90px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />',
+                obj.stamp_image.url,
+            )
+        return 'Печать не загружена'
+
+
 @admin.register(DocumentTemplate)
 class DocumentTemplateAdmin(ModelAdmin):
     list_display = ('name', 'document_type', 'code', 'company', 'requires_approval', 'allow_without_stamp', 'allow_with_stamp', 'is_active', 'updated_at')
     list_filter = ('is_active', 'requires_approval', 'allow_without_stamp', 'allow_with_stamp', 'company', 'document_type')
     search_fields = ('name', 'code', 'document_type', 'description', 'company__name')
     autocomplete_fields = ('company', 'created_by')
-    readonly_fields = ('jinja_examples', 'download_formats', 'created_at', 'updated_at')
-    inlines = [DocumentTemplateFieldInline]
+    readonly_fields = ('jinja_examples', 'download_formats', 'stamp_help', 'created_at', 'updated_at')
+    inlines = [DocumentTemplateFieldInline, StampRuleInline]
     fieldsets = (
-        ('Основные данные', {'fields': ('company', 'name', 'code', 'document_type', 'description', 'is_active')}),
-        ('Файл шаблона', {'fields': ('file',)}),
+        ('Основное', {'fields': ('company', 'name', 'code', 'document_type', 'description', 'is_active')}),
+        ('Файл шаблона', {
+            'fields': ('file',),
+            'description': 'Загрузите DOCX-файл. Внутри шаблона используйте Jinja-переменные вида {{ client.full_name }}.',
+        }),
         ('Jinja-переменные', {
             'fields': ('jinja_examples',),
             'description': 'Поля шаблона добавляйте ниже через inline-блоки. JSON вручную заполнять не нужно.',
         }),
-        ('Скачивание и подтверждение', {'fields': ('allow_without_stamp', 'allow_with_stamp', 'requires_approval', 'download_formats')}),
+        ('Скачивание и подтверждение', {
+            'fields': ('allow_without_stamp', 'allow_with_stamp', 'requires_approval', 'download_formats'),
+            'description': 'Без печати скачивается DOCX. С электронной печатью скачивается PDF после подтверждения администратора.',
+        }),
+        ('Электронная печать и водяной знак', {
+            'fields': ('stamp_help',),
+            'description': 'Настройте печать и водяной знак в inline-блоке "Stamp rules" ниже. Если печать не настроена, генерация PDF покажет понятную ошибку.',
+        }),
         ('Расширенные настройки', {
             'fields': ('jinja_variables', 'stamp_settings', 'watermark_settings'),
             'classes': ('collapse',),
@@ -66,6 +108,16 @@ class DocumentTemplateAdmin(ModelAdmin):
         return format_html(
             '<div style="display:grid; gap:4px;">{}</div>',
             format_html_join('', '<code>{}</code>', ((item,) for item in examples)),
+        )
+
+    @admin.display(description='Подсказка по печати')
+    def stamp_help(self, obj):
+        return format_html(
+            '<div style="line-height:1.5">'
+            '<b>Печать:</b> загрузите изображение, укажите ширину/высоту в мм и позицию bottom_left, bottom_right, top_left, top_right, center или custom.<br>'
+            '<b>Custom:</b> заполните x_mm и y_mm.<br>'
+            '<b>Водяной знак:</b> включите watermark_enabled, укажите текст или изображение, позицию и прозрачность.'
+            '</div>'
         )
 
     @admin.display(description='Форматы скачивания')

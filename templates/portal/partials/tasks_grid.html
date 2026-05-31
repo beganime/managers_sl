@@ -9,7 +9,7 @@
                 <span class="pill {% if item.status == 'done' %}ok{% elif item.status == 'cancelled' %}danger{% endif %}">{{ item.get_status_display }}</span>
             </div>
             <div class="item-card-meta">
-                <span>Исполнитель: {{ item.assigned_to.get_full_name|default:item.assigned_to.email|default:"-" }}</span>
+                <span>Исполнитель: {% if item.assigned_to %}{{ item.assigned_to.get_full_name|default:item.assigned_to.email }}{% else %}Не указан{% endif %}</span>
                 <span>Приоритет: {{ item.get_priority_display }}</span>
                 <span>Дедлайн: {% if item.deadline %}{{ item.deadline|date:"d.m.Y H:i" }}{% else %}-{% endif %}</span>
                 <span>{{ item.description|truncatechars:120 }}</span>

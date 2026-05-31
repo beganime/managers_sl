@@ -1,11 +1,14 @@
 from django import forms
+from django.contrib.auth import get_user_model
 
 from apps.crm.models import Application, Client, Lead, LeadSource
 from apps.education.models import City, Country, Currency, Program, University
 from apps.erp_documents.models import DocumentTemplate, GeneratedDocument
+from apps.erp_notifications.models import Notification
 from apps.erp_services.models import Service, ServiceCategory
 from apps.finance.models import Cashbox, Deal, Expense, ExpenseCategory, Income, Payment
 from apps.knowledge.models import KnowledgeArticle, KnowledgeAttachment, KnowledgeCategory
+from apps.organizations.models import Office
 from apps.portal.models import CalendarEvent
 from apps.projects_v2.models import (
     Project,
@@ -16,6 +19,9 @@ from apps.projects_v2.models import (
     TaskChecklistItem,
     TaskComment,
 )
+
+
+User = get_user_model()
 
 
 class PortalFormMixin:
@@ -395,15 +401,13 @@ class PortalPaymentForm(PortalFormMixin, forms.ModelForm):
 
     class Meta:
         model = Payment
-        fields = ['deal', 'cashbox', 'amount', 'currency', 'exchange_rate', 'method', 'payment_date', 'comment']
+        fields = ['deal', 'amount', 'method', 'payment_date', 'proof_file', 'comment']
         widgets = {'comment': forms.Textarea(attrs={'rows': 3})}
 
-    def __init__(self, *args, deals=None, cashboxes=None, currencies=None, **kwargs):
+    def __init__(self, *args, deals=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['deal'].queryset = deals if deals is not None else Deal.objects.all()
-        self.fields['cashbox'].queryset = cashboxes if cashboxes is not None else Cashbox.objects.all()
-        self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
-        self.fields['cashbox'].required = False
+        self.fields['proof_file'].required = False
         self.style_fields()
 
 
@@ -521,16 +525,12 @@ class PortalIncomeForm(PortalFormMixin, forms.ModelForm):
     class Meta:
         model = Income
         fields = [
-            'cashbox',
             'client',
             'deal',
             'service',
             'title',
             'amount',
-            'currency',
-            'exchange_rate',
             'date',
-            'source',
             'proof_file',
             'comment',
         ]
@@ -538,26 +538,16 @@ class PortalIncomeForm(PortalFormMixin, forms.ModelForm):
             'comment': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, cashboxes=None, clients=None, deals=None, services=None, currencies=None, **kwargs):
+    def __init__(self, *args, clients=None, deals=None, services=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['cashbox'].queryset = cashboxes if cashboxes is not None else Cashbox.objects.all()
         self.fields['client'].queryset = clients if clients is not None else Client.objects.all()
         self.fields['deal'].queryset = deals if deals is not None else Deal.objects.all()
         self.fields['service'].queryset = services if services is not None else Service.objects.all()
-        self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
         self.fields['client'].required = False
         self.fields['deal'].required = False
         self.fields['service'].required = False
-        self.fields['currency'].required = False
-        self.fields['source'].required = False
         self.fields['proof_file'].required = False
         self.style_fields()
-
-    def clean(self):
-        cleaned_data = super().clean()
-        if not cleaned_data.get('currency') and not cleaned_data.get('cashbox'):
-            self.add_error('currency', 'Choose a currency or cashbox.')
-        return cleaned_data
 
 
 class PortalExpenseForm(PortalFormMixin, forms.ModelForm):
@@ -565,35 +555,76 @@ class PortalExpenseForm(PortalFormMixin, forms.ModelForm):
         widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         input_formats=['%Y-%m-%d'],
     )
-    confirm_now = forms.BooleanField(required=False)
 
     class Meta:
         model = Expense
         fields = [
             'category',
-            'cashbox',
             'title',
             'amount',
-            'currency',
-            'exchange_rate',
             'date',
+            'proof_file',
             'comment',
         ]
         widgets = {
             'comment': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, categories=None, cashboxes=None, currencies=None, **kwargs):
+    def __init__(self, *args, categories=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['category'].queryset = categories if categories is not None else ExpenseCategory.objects.all()
-        self.fields['cashbox'].queryset = cashboxes if cashboxes is not None else Cashbox.objects.all()
-        self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
-        self.fields['cashbox'].required = False
-        self.fields['currency'].required = False
+        self.fields['proof_file'].required = False
+        self.style_fields()
+
+
+class PortalNotificationForm(PortalFormMixin, forms.Form):
+    SCOPE_USER = 'user'
+    SCOPE_OFFICE = 'office'
+    SCOPE_ALL = 'all'
+    SCOPE_CHOICES = (
+        (SCOPE_USER, 'Один сотрудник'),
+        (SCOPE_OFFICE, 'Офис'),
+        (SCOPE_ALL, 'Все сотрудники'),
+    )
+
+    TYPE_INFO = 'info'
+    TYPE_WARNING = 'warning'
+    TYPE_SUCCESS = 'success'
+    TYPE_ERROR = 'error'
+    TYPE_CHOICES = (
+        (TYPE_INFO, 'Информация'),
+        (TYPE_WARNING, 'Предупреждение'),
+        (TYPE_SUCCESS, 'Успешно'),
+        (TYPE_ERROR, 'Ошибка'),
+    )
+
+    title = forms.CharField(label='Заголовок', max_length=255)
+    body = forms.CharField(label='Текст', widget=forms.Textarea(attrs={'rows': 5}))
+    recipient_scope = forms.ChoiceField(label='Получатель', choices=SCOPE_CHOICES, initial=SCOPE_USER)
+    recipient_user = forms.ModelChoiceField(label='Сотрудник', queryset=User.objects.none(), required=False)
+    recipient_office = forms.ModelChoiceField(label='Офис', queryset=Office.objects.none(), required=False)
+    notification_kind = forms.ChoiceField(label='Тип уведомления', choices=TYPE_CHOICES, initial=TYPE_INFO)
+    send_now = forms.BooleanField(label='Отправить сразу', required=False, initial=True)
+
+    def __init__(self, *args, users=None, offices=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['recipient_user'].queryset = users if users is not None else User.objects.none()
+        self.fields['recipient_office'].queryset = offices if offices is not None else Office.objects.none()
         self.style_fields()
 
     def clean(self):
         cleaned_data = super().clean()
-        if not cleaned_data.get('currency') and not cleaned_data.get('cashbox'):
-            self.add_error('currency', 'Choose a currency or cashbox.')
+        scope = cleaned_data.get('recipient_scope')
+        if scope == self.SCOPE_USER and not cleaned_data.get('recipient_user'):
+            self.add_error('recipient_user', 'Выберите сотрудника.')
+        if scope == self.SCOPE_OFFICE and not cleaned_data.get('recipient_office'):
+            self.add_error('recipient_office', 'Выберите офис.')
         return cleaned_data
+
+    def get_priority(self):
+        kind = self.cleaned_data.get('notification_kind')
+        if kind == self.TYPE_ERROR:
+            return Notification.PRIORITY_HIGH
+        if kind == self.TYPE_WARNING:
+            return Notification.PRIORITY_NORMAL
+        return Notification.PRIORITY_NORMAL

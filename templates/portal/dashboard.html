@@ -19,12 +19,11 @@
                     <div class="filters">
                         {% if workday.status == 'not_started' %}
                             <form method="post" action="{% url 'portal:workday_start' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button></form>
-                        {% elif not workday.has_report %}
-                            <a class="btn primary" href="{% url 'portal:workday' %}"><i data-lucide="file-pen-line"></i>Отправить отчёт</a>
-                        {% elif workday.status != 'closed' and workday.status != 'auto_closed' %}
-                            <form method="post" action="{% url 'portal:workday_close' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn primary" type="submit"><i data-lucide="square-check-big"></i>Закрыть день</button></form>
-                        {% else %}
+                        {% elif workday.status == 'closed' or workday.status == 'auto_closed' %}
                             <a class="btn secondary" href="{% url 'portal:workday' %}"><i data-lucide="timer"></i>История дня</a>
+                        {% else %}
+                            <a class="btn primary" href="{% url 'portal:workday' %}"><i data-lucide="file-pen-line"></i>{% if workday.has_report %}Отчёт отправлен{% else %}Отправить отчёт{% endif %}</a>
+                            <form method="post" action="{% url 'portal:workday_close' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn primary" type="submit"><i data-lucide="square-check-big"></i>Закрыть день</button></form>
                         {% endif %}
                         <a class="btn" href="{% url 'portal:calendar' %}"><i data-lucide="calendar-days"></i>Календарь</a>
                     </div>

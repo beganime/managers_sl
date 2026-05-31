@@ -211,6 +211,7 @@ class Payment(TimeStampedModel):
     amount_usd = models.DecimalField('Amount USD', max_digits=14, decimal_places=2, default=MONEY_ZERO)
     method = models.CharField('Method', max_length=32, choices=METHOD_CHOICES, default='cash', db_index=True)
     payment_date = models.DateField('Payment date', default=timezone.localdate, db_index=True)
+    proof_file = models.FileField('Proof file', upload_to='finance/payment_proofs/', null=True, blank=True)
     is_confirmed = models.BooleanField('Confirmed', default=False, db_index=True)
     confirmed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -312,6 +313,7 @@ class Expense(TimeStampedModel):
     exchange_rate = models.DecimalField('Exchange rate to USD', max_digits=14, decimal_places=6, default=RATE_ONE)
     amount_usd = models.DecimalField('Amount USD', max_digits=14, decimal_places=2, default=MONEY_ZERO)
     date = models.DateField('Date', default=timezone.localdate, db_index=True)
+    proof_file = models.FileField('Proof file', upload_to='finance/expense_proofs/', null=True, blank=True)
     is_confirmed = models.BooleanField('Confirmed', default=False, db_index=True)
     confirmed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

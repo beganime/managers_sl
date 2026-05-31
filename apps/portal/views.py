@@ -2,6 +2,7 @@ import calendar
 import json
 from collections import defaultdict
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model, logout, update_session_auth_hash
@@ -25,7 +26,7 @@ from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, Lead, LeadSource
 from apps.education.models import City, Country, Currency, Program, University
 from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
-from apps.erp_notifications.models import Notification
+from apps.erp_notifications.models import Notification, NotificationTemplate
 from apps.employees.models import EmployeeProfile
 from apps.erp_services.models import Service, ServiceCategory
 from apps.finance.models import Cashbox, Deal, EmployeeCommission, Expense, ExpenseCategory, FinancialPeriod, Income, Payment, Transaction
@@ -40,6 +41,7 @@ from apps.portal.forms import (
     PortalIncomeForm,
     PortalKnowledgeArticleForm,
     PortalKnowledgeCategoryForm,
+    PortalNotificationForm,
     PortalPaymentForm,
     PortalProgramForm,
     PortalProjectForm,
@@ -140,6 +142,7 @@ ADMIN_QUICK_ACTIONS = (
     {'label': 'Добавить услугу', 'url_name': 'admin:erp_services_service_add', 'icon': 'briefcase-business'},
     {'label': 'Добавить доход', 'url_name': 'portal:finance_income', 'icon': 'plus'},
     {'label': 'Добавить расход', 'url_name': 'portal:finance_expense', 'icon': 'minus'},
+    {'label': 'Добавить уведомление', 'url_name': 'portal:notification_create', 'icon': 'bell-plus'},
     {'label': 'Создать задачу', 'url_name': 'portal:tasks', 'icon': 'check-square'},
     {'label': 'Создать проект', 'url_name': 'admin:projects_v2_project_add', 'icon': 'folder-plus'},
     {'label': 'Перейти в админку', 'url': '/admin/', 'icon': 'shield-check'},
@@ -154,6 +157,61 @@ def full_name(user):
 
 def fallback_company():
     return Company.objects.order_by('id').first()
+
+
+def get_system_currency():
+    currency, _ = Currency.objects.get_or_create(
+        code='USD',
+        defaults={
+            'name': 'US Dollar',
+            'symbol': '$',
+            'rate_to_usd': Decimal('1.000000'),
+        },
+    )
+    update_fields = []
+    if currency.rate_to_usd != Decimal('1.000000'):
+        currency.rate_to_usd = Decimal('1.000000')
+        update_fields.append('rate_to_usd')
+    if not currency.symbol:
+        currency.symbol = '$'
+        update_fields.append('symbol')
+    if update_fields:
+        update_fields.append('updated_at')
+        currency.save(update_fields=update_fields)
+    return currency
+
+
+def get_user_company_office(user):
+    employee = get_employee_profile(user)
+    company = employee.company if employee and employee.company_id else fallback_company()
+    office = employee.office if employee and employee.office_id else None
+    return employee, company, office
+
+
+def get_or_create_usd_cashbox(user, *, company=None, office=None):
+    _, profile_company, profile_office = get_user_company_office(user)
+    company = company or profile_company
+    office = office if office is not None else profile_office
+    if not company:
+        raise ValueError('Сначала создайте компанию и профиль сотрудника.')
+    usd = get_system_currency()
+    cashbox, created = Cashbox.objects.get_or_create(
+        company=company,
+        office=office,
+        name='USD',
+        defaults={'currency': usd, 'balance': Decimal('0.00'), 'is_active': True},
+    )
+    updates = []
+    if cashbox.currency_id != usd.id:
+        cashbox.currency = usd
+        updates.append('currency')
+    if not cashbox.is_active:
+        cashbox.is_active = True
+        updates.append('is_active')
+    if updates:
+        updates.append('updated_at')
+        cashbox.save(update_fields=updates)
+    return cashbox
 
 
 def unique_code(model, base_text, *, company=None, field='code', max_length=100, exclude_pk=None):
@@ -697,16 +755,6 @@ def build_events_for_range(user, start_date, end_date):
                 'url': reverse('portal:calendar'),
                 'tone': 'ok',
             })
-
-    for workday in workday_queryset(user).filter(date__gte=start_date, date__lte=end_date).order_by('date')[:300]:
-        events.append({
-            'date': workday.date,
-            'type': 'Рабочий день',
-            'title': full_name(workday.employee),
-            'details': workday.get_status_display(),
-            'url': reverse('portal:workday'),
-            'tone': 'ok' if workday.status in (WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED) else 'warn',
-        })
 
     return events
 
@@ -2020,26 +2068,31 @@ class FinanceIncomeView(PortalContextMixin, TemplateView):
         return PortalIncomeForm(
             data=data,
             files=files,
-            cashboxes=cashbox_queryset(self.request.user).filter(is_active=True).order_by('office__name', 'name'),
             clients=client_queryset(self.request.user).order_by('-updated_at'),
             deals=deal_queryset(self.request.user).order_by('-created_at'),
             services=service_queryset(self.request.user).filter(is_active=True).order_by('category__name', 'title'),
-            currencies=Currency.objects.order_by('code'),
         )
 
     def post(self, request, *args, **kwargs):
         form = self.get_form(data=request.POST, files=request.FILES)
         if form.is_valid():
-            income = form.save(commit=False)
-            cashbox = form.cleaned_data['cashbox']
-            income.company = cashbox.company
-            income.office = cashbox.office
-            income.employee = request.user
-            if not income.currency_id:
-                income.currency = cashbox.currency
-            income.save()
-            messages.success(request, 'Доход добавлен и ожидает подтверждения администратора. Валюта системы: USD.')
-            return redirect('portal:finance_income')
+            try:
+                employee, company, office = get_user_company_office(request.user)
+                cashbox = get_or_create_usd_cashbox(request.user, company=company, office=office)
+                income = form.save(commit=False)
+                income.company = cashbox.company
+                income.office = cashbox.office
+                income.cashbox = cashbox
+                income.employee = request.user
+                income.currency = get_system_currency()
+                income.exchange_rate = Decimal('1.000000')
+                income.status = Income.STATUS_PENDING
+                income.is_confirmed = False
+                income.save()
+                messages.success(request, 'Доход добавлен и ожидает подтверждения администратора. Валюта системы: USD.')
+                return redirect('portal:finance_income')
+            except ValueError as exc:
+                messages.error(request, str(exc))
         context = self.get_context_data()
         context['form'] = form
         return self.render_to_response(context)
@@ -2067,30 +2120,34 @@ class FinanceExpenseView(PortalContextMixin, TemplateView):
     active_page = 'finance'
     page_title = 'Расходы'
 
-    def get_form(self, data=None):
+    def get_form(self, data=None, files=None):
         return PortalExpenseForm(
             data=data,
+            files=files,
             categories=expense_category_queryset(self.request.user).order_by('company__name', 'name'),
-            cashboxes=cashbox_queryset(self.request.user).filter(is_active=True).order_by('office__name', 'name'),
-            currencies=Currency.objects.order_by('code'),
         )
 
     def post(self, request, *args, **kwargs):
-        form = self.get_form(data=request.POST)
+        form = self.get_form(data=request.POST, files=request.FILES)
         if form.is_valid():
-            expense = form.save(commit=False)
-            category = form.cleaned_data['category']
-            cashbox = form.cleaned_data.get('cashbox')
-            employee = get_employee_profile(request.user)
-            expense.company = category.company
-            expense.office = cashbox.office if cashbox else (employee.office if employee else None)
-            expense.employee = request.user
-            if cashbox and not expense.currency_id:
-                expense.currency = cashbox.currency
-            expense.save()
-            expense.confirm(user=request.user)
-            messages.success(request, 'Расход добавлен и сразу учтён в расходах.')
-            return redirect('portal:finance_expense')
+            try:
+                category = form.cleaned_data['category']
+                employee, profile_company, office = get_user_company_office(request.user)
+                company = category.company or profile_company
+                cashbox = get_or_create_usd_cashbox(request.user, company=company, office=office)
+                expense = form.save(commit=False)
+                expense.company = company
+                expense.office = office
+                expense.cashbox = cashbox
+                expense.employee = request.user
+                expense.currency = get_system_currency()
+                expense.exchange_rate = Decimal('1.000000')
+                expense.save()
+                expense.confirm(user=request.user)
+                messages.success(request, 'Расход добавлен и сразу учтён в расходах. Валюта системы: USD.')
+                return redirect('portal:finance_expense')
+            except ValueError as exc:
+                messages.error(request, str(exc))
         context = self.get_context_data()
         context['form'] = form
         return self.render_to_response(context)
@@ -2148,6 +2205,8 @@ class FinanceDealsView(PortalContextMixin, TemplateView):
                     deal.price_client = service.price_client
                 if not deal.currency_id and service.currency_id:
                     deal.currency = service.currency
+            if not deal.currency_id:
+                deal.currency = get_system_currency()
             deal.save()
             messages.success(request, 'Сделка сохранена.')
             return redirect('portal:finance_deals')
@@ -2175,30 +2234,36 @@ class FinancePaymentsView(PortalContextMixin, TemplateView):
     active_page = 'finance'
     page_title = 'Платежи'
 
-    def get_form(self, data=None):
+    def get_form(self, data=None, files=None):
         return PortalPaymentForm(
             data=data,
+            files=files,
             deals=deal_queryset(self.request.user).order_by('-created_at'),
-            cashboxes=cashbox_queryset(self.request.user).filter(is_active=True).order_by('office__name', 'name'),
-            currencies=Currency.objects.order_by('code'),
         )
 
     def post(self, request, *args, **kwargs):
-        form = self.get_form(data=request.POST)
+        form = self.get_form(data=request.POST, files=request.FILES)
         if form.is_valid():
-            deal = form.cleaned_data['deal']
-            payment = form.save(commit=False)
-            payment.company = deal.company
-            payment.office = deal.office
-            payment.client = deal.client
-            payment.manager = request.user
-            payment.save()
-            if request.POST.get('confirm_now') and can_confirm_finance(request.user):
-                payment.confirm(user=request.user)
-                messages.success(request, 'Платёж добавлен и подтверждён.')
-            else:
-                messages.success(request, 'Платёж добавлен и ожидает подтверждения.')
-            return redirect('portal:finance_payments')
+            try:
+                deal = form.cleaned_data['deal']
+                payment = form.save(commit=False)
+                cashbox = get_or_create_usd_cashbox(request.user, company=deal.company, office=deal.office)
+                payment.company = deal.company
+                payment.office = deal.office
+                payment.client = deal.client
+                payment.manager = request.user
+                payment.cashbox = cashbox
+                payment.currency = get_system_currency()
+                payment.exchange_rate = Decimal('1.000000')
+                payment.save()
+                if request.POST.get('confirm_now') and can_confirm_finance(request.user):
+                    payment.confirm(user=request.user)
+                    messages.success(request, 'Платёж добавлен и подтверждён. Валюта системы: USD.')
+                else:
+                    messages.success(request, 'Платёж добавлен и ожидает подтверждения. Валюта системы: USD.')
+                return redirect('portal:finance_payments')
+            except ValueError as exc:
+                messages.error(request, str(exc))
         context = self.get_context_data()
         context['form'] = form
         return self.render_to_response(context)
@@ -2994,6 +3059,8 @@ class NotificationsView(ListPageMixin):
     active_page = 'notifications'
     page_title = 'Уведомления'
     table_template = 'portal/partials/notifications_table.html'
+    create_url_name = 'portal:notification_create'
+    create_label = 'Добавить уведомление'
     search_fields = ('title', 'body', 'recipient__email', 'sender__email')
     status_choices = Notification.STATUS_CHOICES
     default_ordering = '-created_at'
@@ -3006,6 +3073,100 @@ class NotificationsView(ListPageMixin):
         elif unread is False:
             qs = qs.filter(Q(read_at__isnull=False) | Q(status=Notification.STATUS_READ))
         return qs
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        if not can_delete_admin(self.request.user):
+            context['create_url'] = ''
+        return context
+
+
+class NotificationCreateView(PortalFormPageMixin, PortalContextMixin, TemplateView):
+    active_page = 'notifications'
+    page_title = 'Новое уведомление'
+    cancel_url_name = 'portal:notifications'
+    form_page_title_create = 'Добавить уведомление'
+    submit_label = 'Создать уведомление'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_delete_admin(request.user):
+            messages.error(request, 'Создавать уведомления может только администратор.')
+            return redirect('portal:notifications')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_edit_object(self):
+        return None
+
+    def get_form(self, data=None, instance=None):
+        return PortalNotificationForm(
+            data=data,
+            users=portal_user_queryset(self.request.user),
+            offices=office_queryset(self.request.user).order_by('name'),
+        )
+
+    def get_form_groups(self, form):
+        return [
+            {'title': 'Сообщение', 'open': True, 'fields': form_fields(form, ('title', 'body', 'notification_kind'))},
+            {'title': 'Получатели', 'open': True, 'fields': form_fields(form, ('recipient_scope', 'recipient_user', 'recipient_office', 'send_now'))},
+        ]
+
+    def get_context_data(self, **kwargs):
+        context = PortalContextMixin.get_context_data(self, **kwargs)
+        form = context.get('form') or self.get_form()
+        context.update({
+            'form': form,
+            'form_title': self.form_page_title_create,
+            'form_groups': self.get_form_groups(form),
+            'submit_label': self.submit_label,
+            'cancel_url': self.get_cancel_url(),
+            'edit_object': None,
+        })
+        return context
+
+    def get_recipients(self, form):
+        scope = form.cleaned_data['recipient_scope']
+        if scope == PortalNotificationForm.SCOPE_USER:
+            return User.objects.filter(pk=form.cleaned_data['recipient_user'].pk, is_active=True)
+        if scope == PortalNotificationForm.SCOPE_OFFICE:
+            return User.objects.filter(
+                employee_profile__office=form.cleaned_data['recipient_office'],
+                employee_profile__is_active=True,
+                is_active=True,
+            ).distinct()
+        return User.objects.filter(employee_profile__is_active=True, is_active=True).distinct()
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form(data=request.POST)
+        if form.is_valid():
+            recipients = list(self.get_recipients(form).select_related('employee_profile__company', 'employee_profile__office'))
+            if not recipients:
+                messages.error(request, 'Под выбранные условия не найдено ни одного сотрудника.')
+            else:
+                kind = form.cleaned_data['notification_kind']
+                for recipient in recipients:
+                    profile = get_employee_profile(recipient)
+                    notification = Notification.objects.create(
+                        company=profile.company if profile and profile.company_id else fallback_company(),
+                        office=profile.office if profile and profile.office_id else None,
+                        recipient=recipient,
+                        sender=request.user,
+                        notification_type=NotificationTemplate.TYPE_SYSTEM,
+                        channel=NotificationTemplate.CHANNEL_IN_APP,
+                        priority=form.get_priority(),
+                        status=Notification.STATUS_NEW,
+                        title=form.cleaned_data['title'],
+                        body=form.cleaned_data['body'],
+                        data={'kind': kind, 'created_from': 'portal'},
+                        target_url='/portal/notifications/',
+                    )
+                    if form.cleaned_data.get('send_now'):
+                        notification.mark_sent()
+                messages.success(request, f'Уведомление создано для {len(recipients)} сотрудник(ов).')
+                return redirect('portal:notifications')
+        context = self.get_context_data()
+        context['form'] = form
+        context['form_groups'] = self.get_form_groups(form)
+        return self.render_to_response(context)
 
 
 class ReportsView(PortalContextMixin, TemplateView):

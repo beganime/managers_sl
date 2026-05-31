@@ -4,5 +4,4 @@ from django.apps import AppConfig
 class ErpServicesConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.erp_services'
-    verbose_name = 'ERP: Services'
-
+    verbose_name = 'Услуги'

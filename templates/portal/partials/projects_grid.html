@@ -9,7 +9,7 @@
                 <span class="pill {% if item.status == 'done' %}ok{% elif item.status == 'paused' %}warn{% endif %}">{{ item.get_status_display }}</span>
             </div>
             <div class="item-card-meta">
-                <span>Владелец: {{ item.owner.get_full_name|default:item.owner.email|default:"-" }}</span>
+                <span>Владелец: {% if item.owner %}{{ item.owner.get_full_name|default:item.owner.email }}{% else %}Не указан{% endif %}</span>
                 <span>Прогресс: {{ item.completed_tasks_count }} / {{ item.tasks_count }} · {{ item.progress_percent }}%</span>
                 <span>Дедлайн: {% if item.deadline %}{{ item.deadline|date:"d.m.Y H:i" }}{% else %}-{% endif %}</span>
             </div>

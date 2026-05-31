@@ -17,14 +17,24 @@
                     <div><div class="muted small">Часы</div><div class="strong">{{ workday.total_work_hours }}</div></div>
                 </div>
                 <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;">
-                    <form method="post" action="{% url 'portal:workday_start' %}">
-                        {% csrf_token %}
-                        <button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button>
-                    </form>
-                    <form method="post" action="{% url 'portal:workday_close' %}">
-                        {% csrf_token %}
-                        <button class="btn danger" type="submit"><i data-lucide="square"></i>Закрыть день</button>
-                    </form>
+                    {% if workday.status == 'not_started' %}
+                        <form method="post" action="{% url 'portal:workday_start' %}">
+                            {% csrf_token %}
+                            <button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button>
+                        </form>
+                    {% elif workday.status == 'closed' or workday.status == 'auto_closed' %}
+                        <span class="pill ok">Рабочий день закрыт</span>
+                    {% else %}
+                        {% if workday.has_report %}
+                            <span class="pill ok">Отчёт отправлен</span>
+                        {% else %}
+                            <a class="btn primary" href="#daily-report"><i data-lucide="file-pen-line"></i>Отправить отчёт</a>
+                        {% endif %}
+                        <form method="post" action="{% url 'portal:workday_close' %}">
+                            {% csrf_token %}
+                            <button class="btn danger" type="submit"><i data-lucide="square"></i>Закрыть день</button>
+                        </form>
+                    {% endif %}
                 </div>
             {% else %}
                 <div class="empty">Для работы нужен профиль сотрудника EmployeeProfile.</div>
@@ -32,17 +42,25 @@
         </div>
     </div>
 
-    <div class="panel">
+    <div class="panel" id="daily-report">
         <div class="panel-header"><h2 class="panel-title">Ежедневный отчёт</h2></div>
         <div class="panel-body">
-            <form method="post" action="{% url 'portal:workday_report' %}" class="grid">
-                {% csrf_token %}
-                <textarea class="textarea" name="content" rows="5" placeholder="Что сделано сегодня"></textarea>
-                <input class="input" name="results" placeholder="Итоги">
-                <input class="input" name="plans" placeholder="Планы на следующий день">
-                <input class="input" name="problems" placeholder="Проблемы / блокеры">
-                <button class="btn primary" type="submit"><i data-lucide="send"></i>Отправить отчёт</button>
-            </form>
+            {% if workday and workday.status != 'not_started' and workday.status != 'closed' and workday.status != 'auto_closed' %}
+                <form method="post" action="{% url 'portal:workday_report' %}" class="grid">
+                    {% csrf_token %}
+                    <textarea class="textarea" name="content" rows="5" placeholder="Что сделано сегодня"></textarea>
+                    <input class="input" name="results" placeholder="Итоги">
+                    <input class="input" name="plans" placeholder="Планы на следующий день">
+                    <input class="input" name="problems" placeholder="Проблемы / блокеры">
+                    <button class="btn primary" type="submit"><i data-lucide="send"></i>{% if workday.has_report %}Обновить отчёт{% else %}Отправить отчёт{% endif %}</button>
+                </form>
+            {% elif workday and workday.has_report %}
+                <div class="empty">Отчёт за сегодня уже отправлен. Рабочий день закрыт.</div>
+            {% elif workday and workday.status == 'not_started' %}
+                <div class="empty">Сначала начните рабочий день, потом появится форма ежедневного отчёта.</div>
+            {% else %}
+                <div class="empty">Форма отчёта появится после начала рабочего дня.</div>
+            {% endif %}
         </div>
     </div>
 </section>

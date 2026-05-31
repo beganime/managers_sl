@@ -35,14 +35,18 @@ class DealAdmin(ModelAdmin):
 
 @admin.register(Payment)
 class PaymentAdmin(ModelAdmin):
-    list_display = ('client', 'deal', 'amount', 'currency', 'amount_usd', 'method', 'payment_date', 'is_confirmed')
+    list_display = ('client', 'deal', 'amount', 'currency', 'amount_usd', 'method', 'payment_date', 'has_proof', 'is_confirmed')
     list_filter = ('is_confirmed', 'method', 'company', 'office', 'cashbox', 'payment_date')
     search_fields = ('client__full_name', 'client__phone', 'deal__title', 'comment')
     autocomplete_fields = ('company', 'office', 'deal', 'client', 'manager', 'cashbox', 'currency', 'confirmed_by')
     readonly_fields = ('amount_usd', 'confirmed_at', 'created_at', 'updated_at')
     date_hierarchy = 'payment_date'
 
-    @admin.action(description='Confirm selected payments')
+    @admin.display(boolean=True, description='Proof')
+    def has_proof(self, obj):
+        return bool(obj.proof_file)
+
+    @admin.action(description='Подтвердить выбранные платежи')
     def confirm_payments(self, request, queryset):
         for payment in queryset.select_related('deal', 'cashbox', 'currency'):
             payment.confirm(user=request.user)
@@ -61,14 +65,18 @@ class ExpenseCategoryAdmin(ModelAdmin):
 
 @admin.register(Expense)
 class ExpenseAdmin(ModelAdmin):
-    list_display = ('title', 'category', 'amount', 'currency', 'amount_usd', 'date', 'company', 'office', 'is_confirmed')
+    list_display = ('title', 'category', 'amount', 'currency', 'amount_usd', 'date', 'company', 'office', 'has_proof', 'is_confirmed')
     list_filter = ('is_confirmed', 'category', 'company', 'office', 'date')
     search_fields = ('title', 'comment', 'employee__email', 'category__name')
     autocomplete_fields = ('company', 'office', 'category', 'employee', 'cashbox', 'currency', 'confirmed_by')
     readonly_fields = ('amount_usd', 'confirmed_at', 'created_at', 'updated_at')
     date_hierarchy = 'date'
 
-    @admin.action(description='Confirm selected expenses')
+    @admin.display(boolean=True, description='Proof')
+    def has_proof(self, obj):
+        return bool(obj.proof_file)
+
+    @admin.action(description='Подтвердить выбранные расходы')
     def confirm_expenses(self, request, queryset):
         for expense in queryset.select_related('cashbox', 'currency'):
             expense.confirm(user=request.user)
@@ -85,12 +93,12 @@ class IncomeAdmin(ModelAdmin):
     readonly_fields = ('amount_usd', 'confirmed_at', 'rejected_at', 'created_at', 'updated_at')
     date_hierarchy = 'date'
 
-    @admin.action(description='Confirm selected incomes')
+    @admin.action(description='Подтвердить выбранные доходы')
     def confirm_incomes(self, request, queryset):
         for income in queryset.select_related('cashbox', 'currency', 'employee'):
             income.confirm(user=request.user)
 
-    @admin.action(description='Reject selected incomes')
+    @admin.action(description='Отклонить выбранные доходы')
     def reject_incomes(self, request, queryset):
         for income in queryset.select_related('cashbox', 'currency', 'employee'):
             income.reject(user=request.user, reason='Rejected from admin action.')

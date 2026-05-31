@@ -1,5 +1,7 @@
 from django.contrib import admin
-from unfold.admin import ModelAdmin
+from django.urls import reverse
+from django.utils.html import format_html
+from unfold.admin import ModelAdmin, TabularInline
 
 from .models import City, Country, Currency, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
 
@@ -28,13 +30,72 @@ class CurrencyAdmin(ModelAdmin):
     readonly_fields = ('created_at', 'updated_at')
 
 
+class ProgramInline(TabularInline):
+    model = Program
+    extra = 1
+    fields = ('name', 'degree', 'faculty', 'language', 'duration', 'description', 'is_active', 'is_archived')
+    show_change_link = True
+
+
+class RequiredDocumentInline(TabularInline):
+    model = RequiredDocument
+    extra = 1
+    fields = ('program', 'title', 'description', 'is_mandatory', 'sort_order', 'is_active')
+    autocomplete_fields = ('program',)
+    show_change_link = True
+
+
+class UniversityContactInline(TabularInline):
+    model = UniversityContact
+    extra = 1
+    fields = ('full_name', 'position', 'email', 'phone', 'messenger', 'notes', 'is_active')
+    show_change_link = True
+
+
 @admin.register(University)
 class UniversityAdmin(ModelAdmin):
     list_display = ('name', 'country', 'city', 'website', 'is_active', 'updated_at')
     list_filter = ('is_active', 'country', 'city')
     search_fields = ('name', 'legal_name', 'country__name', 'city__name', 'website', 'email')
     autocomplete_fields = ('company', 'country', 'city', 'local_currency', 'added_by')
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('logo_preview', 'cover_preview', 'program_fee_hint', 'created_at', 'updated_at')
+    inlines = [ProgramInline, RequiredDocumentInline, UniversityContactInline]
+    fieldsets = (
+        ('Основное', {
+            'fields': ('company', 'name', 'legal_name', 'country', 'city', 'local_currency', 'is_active'),
+            'description': 'Если страны, города или валюты ещё нет, добавьте их через плюс рядом с полем или через раздел "ВУЗы и программы".',
+        }),
+        ('Контакты', {'fields': ('website', 'email', 'phone', 'address')}),
+        ('Описание для клиентов', {'fields': ('description', 'admission_requirements', 'invitation_info', 'dormitory_info', 'expenses_info', 'age_limit')}),
+        ('Изображения', {'fields': ('logo', 'logo_preview', 'cover_image', 'cover_preview')}),
+        ('Следующий шаг', {'fields': ('program_fee_hint',)}),
+        ('Внутреннее', {'fields': ('commission_info', 'custom_data', 'added_by'), 'classes': ('collapse',)}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
+
+    @admin.display(description='Логотип')
+    def logo_preview(self, obj):
+        if obj and obj.logo:
+            return format_html('<img src="{}" style="max-width:140px; max-height:100px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />', obj.logo.url)
+        return 'Логотип не загружен'
+
+    @admin.display(description='Обложка')
+    def cover_preview(self, obj):
+        if obj and obj.cover_image:
+            return format_html('<img src="{}" style="max-width:220px; max-height:120px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />', obj.cover_image.url)
+        return 'Обложка не загружена'
+
+    @admin.display(description='Стоимость программ')
+    def program_fee_hint(self, obj):
+        if not obj or not obj.pk:
+            return 'Сначала сохраните ВУЗ. После сохранения ниже можно добавить программы, затем открыть программу и добавить стоимость.'
+        url = reverse('admin:education_programfee_add')
+        return format_html(
+            '<div style="line-height:1.5">Программы добавляйте в inline-блоке ниже. Стоимость добавляется в разделе '
+            '<a href="{}">Стоимость программ</a>: выберите программу, валюту и суммы. '
+            'Если добавили ВУЗ, обязательно добавьте хотя бы одну программу.</div>',
+            url,
+        )
 
 
 @admin.register(Program)

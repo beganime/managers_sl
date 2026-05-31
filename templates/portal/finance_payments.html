@@ -5,17 +5,16 @@
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Добавить платёж</h2><span class="pill">USD</span></div>
         <div class="panel-body">
-            <form method="post" class="grid">
+            <form method="post" class="grid" enctype="multipart/form-data">
                 {% csrf_token %}
                 {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <div class="muted small">Валюта системы: USD. Касса и курс подставляются автоматически.</div>
                 <div class="grid cols-2">
                     <label><span class="muted small">Сделка</span>{{ form.deal }}{{ form.deal.errors }}</label>
-                    <label><span class="muted small">Касса</span>{{ form.cashbox }}</label>
-                    <label><span class="muted small">Сумма</span>{{ form.amount }}{{ form.amount.errors }}</label>
-                    <label><span class="muted small">Валюта</span>{{ form.currency }}</label>
-                    <label><span class="muted small">Курс к USD</span>{{ form.exchange_rate }}</label>
+                    <label><span class="muted small">Сумма, USD</span>{{ form.amount }}{{ form.amount.errors }}</label>
                     <label><span class="muted small">Дата платежа</span>{{ form.payment_date }}</label>
                     <label><span class="muted small">Метод</span>{{ form.method }}</label>
+                    <label><span class="muted small">Доказательство / файл</span>{{ form.proof_file }}</label>
                 </div>
                 <label><span class="muted small">Комментарий</span>{{ form.comment }}</label>
                 {% if can_confirm_finance %}

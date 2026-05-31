@@ -13,7 +13,7 @@
                 <span>{{ item.email|default:"Email не указан" }}</span>
                 <span>{{ item.get_direction_display|default:item.direction|default:"Интерес не указан" }}</span>
                 <span>{{ item.interested_country|default:"" }} {{ item.interested_program|default:"" }}</span>
-                <span>Ответственный: {{ item.manager.get_full_name|default:item.manager.email|default:"-" }}</span>
+                <span>Ответственный: {% if item.manager %}{{ item.manager.get_full_name|default:item.manager.email }}{% else %}Не указан{% endif %}</span>
             </div>
             <div class="filters">
                 {% if not item.manager_id %}

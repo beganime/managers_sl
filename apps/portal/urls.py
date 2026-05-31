@@ -28,6 +28,7 @@ from .views import (
     LeadDetailView,
     LeadsView,
     NotificationsView,
+    NotificationCreateView,
     PortalIndexView,
     PortalLoginView,
     PortalLogoutView,
@@ -117,5 +118,6 @@ urlpatterns = [
     path('rating/', RatingView.as_view(), name='rating'),
     path('employee-reports/', EmployeeReportsView.as_view(), name='employee_reports'),
     path('notifications/', NotificationsView.as_view(), name='notifications'),
+    path('notifications/create/', NotificationCreateView.as_view(), name='notification_create'),
     path('reports/', ReportsView.as_view(), name='reports'),
 ]

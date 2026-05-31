@@ -12,7 +12,7 @@
                 <span>{{ item.phone|default:"Телефон не указан" }}</span>
                 <span>{{ item.email|default:"Email не указан" }}</span>
                 <span>{{ item.interested_country|default:item.get_direction_display|default:"Интерес не указан" }}</span>
-                <span>Ответственный: {{ item.manager.get_full_name|default:item.manager.email|default:"Свободный" }}</span>
+                <span>Ответственный: {% if item.manager %}{{ item.manager.get_full_name|default:item.manager.email }}{% else %}Свободный{% endif %}</span>
             </div>
             <div class="filters">
                 <a class="pill" href="{% url 'portal:lead_detail' item.id %}">Открыть</a>

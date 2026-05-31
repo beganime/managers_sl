@@ -10,7 +10,7 @@
             </div>
             <div class="item-card-meta">
                 <span>Клиент: {% if item.client %}{{ item.client.full_name }}{% else %}-{% endif %}</span>
-                <span>Менеджер: {{ item.manager.get_full_name|default:item.manager.email }}</span>
+                <span>Менеджер: {% if item.manager %}{{ item.manager.get_full_name|default:item.manager.email }}{% else %}Не указан{% endif %}</span>
                 {% if item.generation_error %}<span style="color:#b91c1c;">{{ item.generation_error|truncatechars:120 }}</span>{% endif %}
                 {% if item.rejection_reason %}<span style="color:#b91c1c;">Причина: {{ item.rejection_reason|truncatechars:120 }}</span>{% endif %}
             </div>
