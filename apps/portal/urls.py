@@ -1,5 +1,10 @@
 from django.urls import path
 
+from .document_views import (
+    ClientDocumentCreateView,
+    DocumentCreateView,
+    DocumentsView,
+)
 from .views import (
     AdminDataHelpView,
     ApplicationsView,
@@ -8,10 +13,8 @@ from .views import (
     ClientsView,
     ClientFormView,
     ClientDetailView,
-    ClientDocumentCreateView,
     DocumentActionView,
     DashboardView,
-    DocumentsView,
     EmployeeReportsView,
     FinanceDealsView,
     FinanceExpenseView,
@@ -106,6 +109,7 @@ urlpatterns = [
     path('finance/reports/', FinanceReportsView.as_view(), name='finance_reports'),
     path('approvals/', ApprovalsView.as_view(), name='approvals'),
     path('documents/', DocumentsView.as_view(), name='documents'),
+    path('documents/create/', DocumentCreateView.as_view(), name='document_create'),
     path('documents/<int:pk>/<slug:action>/', DocumentActionView.as_view(), name='document_action'),
     path('knowledge/', KnowledgeView.as_view(), name='knowledge'),
     path('knowledge/folder/<int:pk>/', KnowledgeView.as_view(), name='knowledge_folder'),
