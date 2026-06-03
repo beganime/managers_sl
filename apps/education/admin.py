@@ -1,5 +1,6 @@
 from django import forms
 from django.contrib import admin
+from django.db.models import Count
 from django.forms.models import BaseInlineFormSet
 from django.urls import reverse
 from django.utils.html import format_html
@@ -319,19 +320,112 @@ class UniversityAdmin(ModelAdmin):
 
 @admin.register(Program)
 class ProgramAdmin(ModelAdmin):
-    list_display = ('name', 'university', 'degree', 'language', 'duration', 'is_active', 'is_archived')
-    list_filter = ('degree', 'language', 'is_active', 'is_archived', 'university__country')
-    search_fields = ('name', 'faculty', 'university__name', 'university__country__name')
+    list_display = (
+        'name',
+        'university',
+        'country',
+        'city',
+        'degree',
+        'language',
+        'duration',
+        'tuition_usd',
+        'service_usd',
+        'intakes_count',
+        'documents_count',
+        'is_active',
+        'is_archived',
+    )
+    list_filter = ('degree', 'language', 'is_active', 'is_archived', 'university__country', 'university__city')
+    search_fields = ('name', 'faculty', 'university__name', 'university__country__name', 'university__city__name')
     autocomplete_fields = ('university',)
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('university_overview', 'created_at', 'updated_at')
+    list_select_related = ('university', 'university__country', 'university__city')
+    list_per_page = 50
+    actions = ('mark_active', 'mark_archived', 'mark_unarchived')
     inlines = [ProgramFeeInline, IntakeInline, ProgramRequiredDocumentInline]
     fieldsets = (
-        ('Основное', {'fields': ('university', 'name', 'degree', 'faculty', 'language', 'duration')}),
+        ('Основное', {'fields': ('university', 'university_overview', 'name', 'degree', 'faculty', 'language', 'duration')}),
         ('Описание и требования', {'fields': ('description', 'admission_requirements')}),
         ('Публикация', {'fields': ('is_active', 'is_archived')}),
         ('Расширенные данные', {'fields': ('custom_data',), 'classes': ('collapse',)}),
         ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
+
+    def get_queryset(self, request):
+        return super().get_queryset(request).annotate(
+            admin_intakes_count=Count('intakes', distinct=True),
+            admin_documents_count=Count('required_documents', distinct=True),
+        )
+
+    def latest_fee(self, obj):
+        fee = obj.fees.select_related('currency').filter(currency__code='USD').order_by('-created_at', '-id').first()
+        if fee:
+            return fee
+        return obj.fees.select_related('currency').order_by('-created_at', '-id').first()
+
+    def format_money(self, value):
+        if value in (None, ''):
+            return '-'
+        return f'${value:,.2f}'
+
+    @admin.display(description='Страна', ordering='university__country__name')
+    def country(self, obj):
+        return obj.university.country.name if obj.university_id and obj.university.country_id else '-'
+
+    @admin.display(description='Город', ordering='university__city__name')
+    def city(self, obj):
+        return obj.university.city.name if obj.university_id and obj.university.city_id else '-'
+
+    @admin.display(description='Обучение USD')
+    def tuition_usd(self, obj):
+        fee = self.latest_fee(obj)
+        return self.format_money(fee.tuition_fee if fee else None)
+
+    @admin.display(description='Услуги USD')
+    def service_usd(self, obj):
+        fee = self.latest_fee(obj)
+        return self.format_money(fee.service_fee_usd if fee else None)
+
+    @admin.display(description='Наборы', ordering='admin_intakes_count')
+    def intakes_count(self, obj):
+        return getattr(obj, 'admin_intakes_count', 0)
+
+    @admin.display(description='Документы', ordering='admin_documents_count')
+    def documents_count(self, obj):
+        return getattr(obj, 'admin_documents_count', 0)
+
+    @admin.display(description='ВУЗ / локация')
+    def university_overview(self, obj):
+        if not obj or not obj.university_id:
+            return 'Выберите ВУЗ, затем сохраните программу.'
+        university = obj.university
+        location = ', '.join(part for part in (
+            university.country.name if university.country_id else '',
+            university.city.name if university.city_id else '',
+        ) if part)
+        website = university.website or '-'
+        return format_html(
+            '<div style="line-height:1.5">'
+            '<strong>{}</strong><br>'
+            'Локация: {}<br>'
+            'Сайт: {}'
+            '</div>',
+            university.name,
+            location or '-',
+            website,
+        )
+
+    @admin.action(description='Опубликовать выбранные программы')
+    def mark_active(self, request, queryset):
+        queryset.update(is_active=True, is_archived=False)
+
+    @admin.action(description='Архивировать выбранные программы')
+    def mark_archived(self, request, queryset):
+        queryset.update(is_archived=True)
+
+    @admin.action(description='Вернуть выбранные программы из архива')
+    def mark_unarchived(self, request, queryset):
+        queryset.update(is_archived=False)
 
 
 @admin.register(Intake)

@@ -11,6 +11,15 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from apps.portal.views import PortalHomeView
 from users.auth_views import LoginView, LogoutView
 from students_life.api_views import HealthCheckView, AppConfigView, DashboardSummaryView
+from students_life.mobile_api import (
+    CalendarEventDetailView,
+    CalendarEventListCreateView,
+    DashboardView as MobileDashboardView,
+    MeView,
+    MobileBootstrapView,
+    MobileSearchView,
+    RatingView as MobileRatingView,
+)
 
 
 @login_required
@@ -33,6 +42,14 @@ urlpatterns = [
     path('api/health/', HealthCheckView.as_view(), name='api_health'),
     path('api/app/config/', AppConfigView.as_view(), name='api_app_config'),
     path('api/app/dashboard/', DashboardSummaryView.as_view(), name='api_app_dashboard'),
+
+    path('api/v1/me/', MeView.as_view(), name='api_v1_me'),
+    path('api/v1/dashboard/', MobileDashboardView.as_view(), name='api_v1_dashboard'),
+    path('api/v1/calendar/events/', CalendarEventListCreateView.as_view(), name='api_v1_calendar_events'),
+    path('api/v1/calendar/events/<int:pk>/', CalendarEventDetailView.as_view(), name='api_v1_calendar_event_detail'),
+    path('api/v1/mobile/bootstrap/', MobileBootstrapView.as_view(), name='api_v1_mobile_bootstrap'),
+    path('api/v1/mobile/search/', MobileSearchView.as_view(), name='api_v1_mobile_search'),
+    path('api/v1/rating/', MobileRatingView.as_view(), name='api_v1_rating'),
 
     path('api/auth/login/', LoginView.as_view(), name='api_login'),
     path('api/auth/logout/', LogoutView.as_view(), name='api_logout'),
