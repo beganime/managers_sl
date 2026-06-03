@@ -49,9 +49,6 @@ class ClientProgramFeeSerializer(serializers.ModelSerializer):
             'application_fee',
             'dormitory_fee',
             'insurance_fee',
-            'valid_from',
-            'valid_to',
-            'notes',
         )
 
 

@@ -71,6 +71,30 @@ class UniversityProgramInlineForm(forms.ModelForm):
         min_value=0,
         initial=0,
     )
+    application_fee_usd = forms.DecimalField(
+        label='Application fee USD',
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        min_value=0,
+        initial=0,
+    )
+    dormitory_fee_usd = forms.DecimalField(
+        label='Общежитие USD',
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        min_value=0,
+        initial=0,
+    )
+    insurance_fee_usd = forms.DecimalField(
+        label='Страховка USD',
+        required=False,
+        max_digits=12,
+        decimal_places=2,
+        min_value=0,
+        initial=0,
+    )
 
     class Meta:
         model = Program
@@ -85,6 +109,9 @@ class UniversityProgramInlineForm(forms.ModelForm):
             'is_archived',
             'tuition_fee_usd',
             'service_fee_usd',
+            'application_fee_usd',
+            'dormitory_fee_usd',
+            'insurance_fee_usd',
         )
 
     def __init__(self, *args, **kwargs):
@@ -96,6 +123,9 @@ class UniversityProgramInlineForm(forms.ModelForm):
             if fee:
                 self.fields['tuition_fee_usd'].initial = fee.tuition_fee
                 self.fields['service_fee_usd'].initial = fee.service_fee_usd
+                self.fields['application_fee_usd'].initial = fee.application_fee
+                self.fields['dormitory_fee_usd'].initial = fee.dormitory_fee
+                self.fields['insurance_fee_usd'].initial = fee.insurance_fee
 
 
 class UniversityProgramInlineFormSet(BaseInlineFormSet):
@@ -116,7 +146,11 @@ class UniversityProgramInlineFormSet(BaseInlineFormSet):
             return
         tuition_fee = form.cleaned_data.get('tuition_fee_usd')
         service_fee = form.cleaned_data.get('service_fee_usd')
-        if tuition_fee in (None, '') and service_fee in (None, ''):
+        application_fee = form.cleaned_data.get('application_fee_usd')
+        dormitory_fee = form.cleaned_data.get('dormitory_fee_usd')
+        insurance_fee = form.cleaned_data.get('insurance_fee_usd')
+        fee_values = (tuition_fee, service_fee, application_fee, dormitory_fee, insurance_fee)
+        if all(value in (None, '') for value in fee_values):
             return
         currency = get_usd_currency()
         fee = program.fees.filter(currency=currency).order_by('-created_at', '-id').first()
@@ -124,6 +158,9 @@ class UniversityProgramInlineFormSet(BaseInlineFormSet):
             fee = ProgramFee(program=program, currency=currency)
         fee.tuition_fee = tuition_fee or 0
         fee.service_fee_usd = service_fee or 0
+        fee.application_fee = application_fee or 0
+        fee.dormitory_fee = dormitory_fee or 0
+        fee.insurance_fee = insurance_fee or 0
         fee.save()
 
 
@@ -140,6 +177,9 @@ class ProgramInline(TabularInline):
         'duration',
         'tuition_fee_usd',
         'service_fee_usd',
+        'application_fee_usd',
+        'dormitory_fee_usd',
+        'insurance_fee_usd',
         'description',
         'is_active',
         'is_archived',
@@ -263,12 +303,12 @@ class UniversityAdmin(ModelAdmin):
     @admin.display(description='Стоимость программ')
     def program_fee_hint(self, obj):
         if not obj or not obj.pk:
-            return 'Сначала сохраните ВУЗ. После сохранения ниже можно добавить программы, затем открыть программу и сразу заполнить стоимость, наборы и документы.'
+            return 'Сначала сохраните ВУЗ. После сохранения ниже можно добавить программы и сразу заполнить основные стоимости в USD.'
         url = reverse('admin:education_program_changelist')
         return format_html(
             '<div style="line-height:1.5">'
-            'Программы добавляются в inline-блоке ниже. Чтобы добавить стоимость, наборы/intakes и документы на одной странице, '
-            'откройте нужную программу по ссылке «Изменить» в inline-блоке или через раздел '
+            'Программы и основные стоимости в USD добавляются в inline-блоке ниже: стоимость обучения, стоимость услуг, application fee, общежитие и страховка. '
+            'Для intakes и документов конкретной программы откройте нужную программу по ссылке «Изменить» в inline-блоке или через раздел '
             '<a href="{}?university__id__exact={}">Программы</a>. '
             'Если добавили ВУЗ, обязательно добавьте хотя бы одну программу.'
             '</div>',

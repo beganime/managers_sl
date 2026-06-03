@@ -132,7 +132,7 @@ class ProgramFeeViewSet(viewsets.ModelViewSet):
         program = self.request.query_params.get('program')
         if program:
             qs = qs.filter(program_id=program)
-        return qs.order_by('program__university__name', 'program__name', '-valid_from')
+        return qs.order_by('program__university__name', 'program__name', '-created_at', '-id')
 
 
 class IntakeViewSet(viewsets.ModelViewSet):

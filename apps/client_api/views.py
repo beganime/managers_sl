@@ -61,7 +61,7 @@ class ClientUniversityViewSet(ClientReadOnlyViewSet):
 
     def get_queryset(self):
         active_programs = Program.objects.filter(is_active=True, is_archived=False).prefetch_related(
-            Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-valid_from')),
+            Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')),
             Prefetch('intakes', queryset=Intake.objects.filter(is_active=True).order_by('start_date')),
             Prefetch('required_documents', queryset=RequiredDocument.objects.filter(is_active=True).order_by('sort_order', 'title')),
         )
@@ -90,7 +90,7 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
 
     def get_queryset(self):
         qs = Program.objects.select_related('university', 'university__country', 'university__city').prefetch_related(
-            Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-valid_from')),
+            Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')),
             Prefetch('intakes', queryset=Intake.objects.filter(is_active=True).order_by('start_date')),
             Prefetch('required_documents', queryset=RequiredDocument.objects.filter(is_active=True).order_by('sort_order', 'title')),
         ).filter(is_active=True, is_archived=False, university__is_active=True, university__country__is_active=True)

@@ -133,13 +133,11 @@ class ProgramFee(TimeStampedModel):
     dormitory_fee = models.DecimalField('Общежитие', max_digits=12, decimal_places=2, default=Decimal('0.00'))
     insurance_fee = models.DecimalField('Страховка', max_digits=12, decimal_places=2, default=Decimal('0.00'))
     notes = models.TextField('Примечание', blank=True)
-    valid_from = models.DateField('Действует с', null=True, blank=True)
-    valid_to = models.DateField('Действует до', null=True, blank=True)
 
     class Meta:
         verbose_name = 'Стоимость программы'
         verbose_name_plural = 'Стоимость программ'
-        ordering = ['program__university__name', 'program__name', '-valid_from']
+        ordering = ['program__university__name', 'program__name', '-created_at']
 
     def __str__(self):
         return f'{self.program} — {self.tuition_fee} {self.currency.code}'
