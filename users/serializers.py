@@ -72,6 +72,8 @@ class UserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     is_admin_role = serializers.SerializerMethodField()
     avatar_url = serializers.SerializerMethodField()
+    role_display = serializers.SerializerMethodField()
+    position = serializers.SerializerMethodField()
     password = serializers.CharField(write_only=True, required=False, allow_blank=False)
     remove_avatar = serializers.BooleanField(write_only=True, required=False, default=False)
     office_id = serializers.PrimaryKeyRelatedField(queryset=Office.objects.all(), source='office', write_only=True, required=False, allow_null=True)
@@ -96,6 +98,8 @@ class UserSerializer(serializers.ModelSerializer):
             'work_status',
             'is_effective',
             'role',
+            'role_display',
+            'position',
             'is_admin_role',
             'managersalary',
             'office',
@@ -121,6 +125,18 @@ class UserSerializer(serializers.ModelSerializer):
 
     def get_is_admin_role(self, obj):
         return bool(obj.is_superuser or getattr(obj, 'role', None) == 'admin')
+
+    def get_role_display(self, obj):
+        try:
+            return obj.get_role_display()
+        except Exception:
+            return getattr(obj, 'role', '') or ''
+
+    def get_position(self, obj):
+        job_description = str(getattr(obj, 'job_description', '') or '').strip()
+        if job_description:
+            return job_description.splitlines()[0].strip()
+        return self.get_role_display(obj)
 
     def get_avatar_url(self, obj):
         try:

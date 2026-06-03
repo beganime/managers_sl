@@ -354,29 +354,65 @@ class RatingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        qs = EmployeeProfile.objects.select_related('user', 'company', 'office').filter(is_active=True)
+        qs = User.objects.select_related('office', 'managersalary').filter(is_active=True)
         search = request.query_params.get('search')
         if search:
-            qs = qs.filter(Q(user__first_name__icontains=search) | Q(user__last_name__icontains=search) | Q(user__email__icontains=search) | Q(office__city__icontains=search))
+            qs = qs.filter(
+                Q(first_name__icontains=search) |
+                Q(last_name__icontains=search) |
+                Q(email__icontains=search) |
+                Q(job_description__icontains=search) |
+                Q(office__city__icontains=search)
+            )
 
-        qs = qs.order_by('-rating', 'user__first_name', 'user__last_name')
-        count = qs.count()
+        role = request.query_params.get('role')
+        if role and role != 'all':
+            qs = qs.filter(role=role)
+
+        position = request.query_params.get('position')
+        if position and position != 'all':
+            qs = qs.filter(Q(job_description__icontains=position) | Q(role__icontains=position))
+
+        users = list(qs.order_by('first_name', 'last_name', 'email'))
+        profiles = EmployeeProfile.objects.select_related('company', 'office').filter(user_id__in=[user.id for user in users])
+        profile_by_user = {profile.user_id: profile for profile in profiles}
+
+        rows = []
+        for user in users:
+            profile = profile_by_user.get(user.id)
+            salary = getattr(user, 'managersalary', None)
+            role_display = user.get_role_display() if hasattr(user, 'get_role_display') else user.role
+            job_description = (getattr(user, 'job_description', '') or '').strip()
+            position_label = job_description.splitlines()[0].strip() if job_description else role_display
+            score = float(getattr(profile, 'rating', 0) or 0) if profile else 0
+            rows.append({
+                'id': profile.id if profile else user.id,
+                'user_id': user.id,
+                'name': user.get_full_name() or user.email,
+                'full_name': user.get_full_name() or user.email,
+                'email': user.email,
+                'role': user.role,
+                'role_display': role_display,
+                'position': position_label,
+                'job_description': job_description,
+                'office_name': (
+                    profile.office.city if profile and profile.office_id
+                    else user.office.city if getattr(user, 'office_id', None)
+                    else ''
+                ),
+                'company_name': profile.company.name if profile else '',
+                'score': score,
+                'revenue_usd': float(getattr(salary, 'current_month_revenue', 0) or 0),
+            })
+
+        rows.sort(key=lambda item: (-item['score'], item['name']))
+        count = len(rows)
         limit = min(int(request.query_params.get('limit', 50) or 50), 200)
         offset = int(request.query_params.get('offset', 0) or 0)
 
         results = []
-        for index, employee in enumerate(qs[offset:offset + limit], start=offset + 1):
-            salary = getattr(employee.user, 'managersalary', None)
-            results.append({
-                'id': employee.id,
-                'rank': index,
-                'name': employee.user.get_full_name() or employee.user.email,
-                'full_name': employee.user.get_full_name() or employee.user.email,
-                'email': employee.user.email,
-                'office_name': employee.office.city if employee.office_id else '',
-                'company_name': employee.company.name,
-                'score': float(employee.rating or 0),
-                'revenue_usd': float(getattr(salary, 'current_month_revenue', 0) or 0),
-            })
+        for index, item in enumerate(rows[offset:offset + limit], start=offset + 1):
+            item['rank'] = index
+            results.append(item)
 
         return Response({'count': count, 'next': None, 'previous': None, 'results': results})
