@@ -1,4 +1,4 @@
-from django.db.models import Q
+from django.db.models import Prefetch, Q
 from rest_framework import permissions, viewsets
 
 from .models import City, Country, Currency, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
@@ -62,8 +62,19 @@ class UniversityViewSet(viewsets.ModelViewSet):
         return UniversitySerializer
 
     def get_queryset(self):
+        program_qs = Program.objects.select_related(
+            'university',
+            'university__country',
+            'university__city',
+        ).prefetch_related(
+            Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')),
+            'intakes',
+            'required_documents',
+        )
         qs = University.objects.select_related('company', 'country', 'city', 'local_currency', 'added_by').prefetch_related(
-            'programs', 'contact_people', 'required_documents'
+            Prefetch('programs', queryset=program_qs),
+            'contact_people',
+            'required_documents',
         )
         country = self.request.query_params.get('country')
         if country:
@@ -95,7 +106,9 @@ class ProgramViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Program.objects.select_related('university', 'university__country', 'university__city').prefetch_related(
-            'fees', 'intakes', 'required_documents'
+            Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')),
+            'intakes',
+            'required_documents',
         )
         university = self.request.query_params.get('university')
         if university:

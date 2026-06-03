@@ -1,3 +1,5 @@
+from decimal import Decimal, ROUND_HALF_UP
+
 from rest_framework import serializers
 
 from .models import (
@@ -38,12 +40,38 @@ class CurrencySerializer(serializers.ModelSerializer):
 
 class ProgramFeeSerializer(serializers.ModelSerializer):
     currency_code = serializers.CharField(source='currency.code', read_only=True)
+    currency_name = serializers.CharField(source='currency.name', read_only=True)
     currency_symbol = serializers.CharField(source='currency.symbol', read_only=True)
+    currency_rate_to_usd = serializers.DecimalField(source='currency.rate_to_usd', max_digits=14, decimal_places=6, read_only=True)
+    tuition_fee_usd = serializers.SerializerMethodField()
+    application_fee_usd = serializers.SerializerMethodField()
+    dormitory_fee_usd = serializers.SerializerMethodField()
+    insurance_fee_usd = serializers.SerializerMethodField()
 
     class Meta:
         model = ProgramFee
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
+
+    def convert_to_usd(self, obj, value):
+        if value in (None, ''):
+            return None
+
+        rate = getattr(obj.currency, 'rate_to_usd', None) or Decimal('1')
+        amount = (Decimal(value) * Decimal(rate)).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        return str(amount)
+
+    def get_tuition_fee_usd(self, obj):
+        return self.convert_to_usd(obj, obj.tuition_fee)
+
+    def get_application_fee_usd(self, obj):
+        return self.convert_to_usd(obj, obj.application_fee)
+
+    def get_dormitory_fee_usd(self, obj):
+        return self.convert_to_usd(obj, obj.dormitory_fee)
+
+    def get_insurance_fee_usd(self, obj):
+        return self.convert_to_usd(obj, obj.insurance_fee)
 
 
 class IntakeSerializer(serializers.ModelSerializer):

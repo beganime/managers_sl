@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django import forms
 from django.contrib import admin
 from django.db.models import Count
@@ -368,6 +370,12 @@ class ProgramAdmin(ModelAdmin):
             return '-'
         return f'${value:,.2f}'
 
+    def convert_fee_to_usd(self, fee, value):
+        if not fee or value in (None, ''):
+            return None
+        rate = getattr(fee.currency, 'rate_to_usd', None) or Decimal('1')
+        return Decimal(value) * Decimal(rate)
+
     @admin.display(description='Страна', ordering='university__country__name')
     def country(self, obj):
         return obj.university.country.name if obj.university_id and obj.university.country_id else '-'
@@ -379,7 +387,7 @@ class ProgramAdmin(ModelAdmin):
     @admin.display(description='Обучение USD')
     def tuition_usd(self, obj):
         fee = self.latest_fee(obj)
-        return self.format_money(fee.tuition_fee if fee else None)
+        return self.format_money(self.convert_fee_to_usd(fee, fee.tuition_fee if fee else None))
 
     @admin.display(description='Услуги USD')
     def service_usd(self, obj):
