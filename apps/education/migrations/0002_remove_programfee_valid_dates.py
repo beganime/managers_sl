@@ -8,13 +8,26 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='programfee',
-            name='valid_from',
-        ),
-        migrations.RemoveField(
-            model_name='programfee',
-            name='valid_to',
+        migrations.SeparateDatabaseAndState(
+            database_operations=[
+                migrations.RunSQL(
+                    sql=(
+                        'ALTER TABLE education_programfee DROP COLUMN IF EXISTS valid_from CASCADE;'
+                        'ALTER TABLE education_programfee DROP COLUMN IF EXISTS valid_to CASCADE;'
+                    ),
+                    reverse_sql=migrations.RunSQL.noop,
+                ),
+            ],
+            state_operations=[
+                migrations.RemoveField(
+                    model_name='programfee',
+                    name='valid_from',
+                ),
+                migrations.RemoveField(
+                    model_name='programfee',
+                    name='valid_to',
+                ),
+            ],
         ),
         migrations.AlterModelOptions(
             name='programfee',
