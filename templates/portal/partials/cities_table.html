@@ -1,0 +1,21 @@
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>Город</th><th>Страна</th><th>ВУЗы</th><th>Описание</th><th>Статус</th><th>Действия</th></tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                <tr>
+                    <td><div class="strong">{{ item.name }}</div></td>
+                    <td>{{ item.country.name }}</td>
+                    <td>{{ item.universities_count }}</td>
+                    <td>{{ item.description|truncatechars:100|default:"-" }}</td>
+                    <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Активен,Неактивен" }}</span></td>
+                    <td><a class="pill" href="{% url 'portal:universities' %}?city={{ item.id }}&view=grid">Открыть</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6"><div class="empty">Города не найдены.</div></td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

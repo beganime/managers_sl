@@ -59,6 +59,7 @@ API для будущего клиентского приложения дост
   "cover": "https://manager-sl.ru/media/erp/education/university_covers/cover.jpg",
   "logo_url": "https://manager-sl.ru/media/erp/education/university_logos/logo.png",
   "cover_image_url": "https://manager-sl.ru/media/erp/education/university_covers/cover.jpg",
+  "programs_count": 14,
   "website": "https://example.edu",
   "address": "Москва",
   "admission_requirements": "Условия поступления",
@@ -108,6 +109,23 @@ API для будущего клиентского приложения дост
 }
 ```
 
+## Изображения стран и городов
+
+`GET /api/client/v1/countries/` дополнительно возвращает:
+
+- `image_url` — абсолютный URL изображения страны, сейчас совпадает с флагом, если флаг загружен;
+- `cover_image_url` — абсолютный URL обложки страны, сейчас совпадает с флагом, если флаг загружен;
+- `cities_count` — количество активных городов;
+- `universities_count` — количество активных ВУЗов.
+
+`GET /api/client/v1/cities/` дополнительно возвращает:
+
+- `image_url`;
+- `cover_image_url`;
+- `universities_count`.
+
+Если изображения нет, API возвращает `null`. Старые поля не удаляются.
+
 ## Что скрыто
 
 API не возвращает:
@@ -125,6 +143,7 @@ API не возвращает:
 
 - `logo_url` — абсолютный URL логотипа ВУЗа;
 - `cover_image_url` — абсолютный URL обложки ВУЗа;
+- `programs_count` — количество активных программ ВУЗа;
 - `university_logo` — логотип ВУЗа внутри ответа программы;
 - `university_cover` — обложка ВУЗа внутри ответа программы.
 

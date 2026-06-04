@@ -1,4 +1,7 @@
 import io
+import shutil
+import subprocess
+import tempfile
 from pathlib import Path
 from uuid import uuid4
 
@@ -39,6 +42,30 @@ def safe_text(value):
     if value is None:
         return ''
     return str(value)
+
+
+def get_cyrillic_font_path():
+    candidates = [
+        getattr(settings, 'PDF_CYRILLIC_FONT_PATH', ''),
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+        '/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf',
+        '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',
+        'C:/Windows/Fonts/arial.ttf',
+    ]
+    for candidate in candidates:
+        if candidate and Path(candidate).exists():
+            return str(candidate)
+    return None
+
+
+def fitz_text_kwargs(font_size=None):
+    font_path = get_cyrillic_font_path()
+    kwargs = {'fontname': 'helv'}
+    if font_path:
+        kwargs = {'fontname': 'DejaVuSans', 'fontfile': font_path}
+    if font_size is not None:
+        kwargs['fontsize'] = font_size
+    return kwargs
 
 
 def user_display_name(user):
@@ -713,6 +740,56 @@ def copy_generated_file(document):
     return f'{base}-approved-{uuid4().hex[:10]}.docx', ContentFile(content)
 
 
+def get_soffice_binary():
+    configured = getattr(settings, 'LIBREOFFICE_BINARY', '')
+    candidates = [configured] if configured else []
+    candidates.extend(['soffice', 'libreoffice'])
+    for candidate in candidates:
+        if candidate and shutil.which(candidate):
+            return candidate
+    return None
+
+
+def write_generated_docx_to_path(document, path):
+    document.generated_file.open('rb')
+    try:
+        path.write_bytes(document.generated_file.read())
+    finally:
+        document.generated_file.close()
+
+
+def convert_docx_to_pdf_path(document, workdir):
+    soffice = get_soffice_binary()
+    if not soffice:
+        raise ValueError(
+            'На сервере не найден LibreOffice для конвертации DOCX в PDF. '
+            'Установите libreoffice и шрифты fonts-dejavu/fonts-liberation.'
+        )
+
+    source_path = workdir / 'source.docx'
+    write_generated_docx_to_path(document, source_path)
+    command = [
+        soffice,
+        '--headless',
+        '--nologo',
+        '--nofirststartwizard',
+        '--convert-to',
+        'pdf:writer_pdf_Export',
+        '--outdir',
+        str(workdir),
+        str(source_path),
+    ]
+    completed = subprocess.run(command, capture_output=True, text=True, timeout=90)
+    if completed.returncode != 0:
+        error = completed.stderr.strip() or completed.stdout.strip() or 'LibreOffice не смог создать PDF.'
+        raise ValueError(f'Ошибка конвертации DOCX в PDF: {error}')
+
+    pdf_path = workdir / 'source.pdf'
+    if not pdf_path.exists() or pdf_path.stat().st_size == 0:
+        raise ValueError('LibreOffice завершился без ошибки, но PDF-файл не был создан.')
+    return pdf_path
+
+
 def extract_docx_lines(file_field):
     if not file_field:
         return []
@@ -762,8 +839,7 @@ def insert_wrapped_lines(pdf, title, lines, *, footer=''):
     page.insert_textbox(
         fitz.Rect(margin, y, 553, y + 42),
         title,
-        fontsize=15,
-        fontname='helv',
+        **fitz_text_kwargs(15),
         color=(0.07, 0.13, 0.11),
         align=1,
     )
@@ -781,8 +857,7 @@ def insert_wrapped_lines(pdf, title, lines, *, footer=''):
                 page.insert_textbox(
                     fitz.Rect(margin, 780, 553, 812),
                     footer,
-                    fontsize=8,
-                    fontname='helv',
+                    **fitz_text_kwargs(8),
                     color=(0.42, 0.47, 0.44),
                     align=1,
                 )
@@ -798,8 +873,7 @@ def insert_wrapped_lines(pdf, title, lines, *, footer=''):
         page.insert_textbox(
             fitz.Rect(margin, y, 553, y + estimated_height),
             text,
-            fontsize=10.5,
-            fontname='helv',
+            **fitz_text_kwargs(10.5),
             color=(0.12, 0.16, 0.14),
         )
         y += estimated_height + 8
@@ -807,8 +881,7 @@ def insert_wrapped_lines(pdf, title, lines, *, footer=''):
         page.insert_textbox(
             fitz.Rect(margin, 780, 553, 812),
             footer,
-            fontsize=8,
-            fontname='helv',
+            **fitz_text_kwargs(8),
             color=(0.42, 0.47, 0.44),
             align=1,
         )
@@ -827,8 +900,7 @@ def apply_stamp_and_watermark(pdf, rule, stamp_options=None, targets=None):
                 page.insert_textbox(
                     watermark_rect,
                     rule.watermark_text,
-                    fontsize=max(12, min(42, watermark_rect.width / 9)),
-                    fontname='helv',
+                    **fitz_text_kwargs(max(12, min(42, watermark_rect.width / 9))),
                     color=(0.78, 0.82, 0.80),
                     align=1,
                     overlay=False,
@@ -848,15 +920,26 @@ def build_approved_document_file(document, with_stamp=False, stamp_options=None)
     if not rule or not rule.stamp_image:
         raise ValueError('Для этого шаблона не настроена электронная печать.')
 
-    pdf = fitz.open()
-    title = document.title or document.template.name
-    lines = extract_docx_lines(document.generated_file)
-    footer = f'Одобрено: {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")} | Электронная печать ManagerSL'
-    targets = insert_wrapped_lines(pdf, title, lines, footer=footer)
-    apply_stamp_and_watermark(pdf, rule, stamp_options=stamp_options, targets=targets)
-    buffer = io.BytesIO()
-    pdf.save(buffer)
-    pdf.close()
+    try:
+        with tempfile.TemporaryDirectory(prefix='erp_document_pdf_') as tmp_dir:
+            workdir = Path(tmp_dir)
+            source_pdf = convert_docx_to_pdf_path(document, workdir)
+            try:
+                pdf = fitz.open(str(source_pdf))
+            except Exception as exc:
+                raise ValueError(f'PDF создан, но его не удалось открыть: {exc}') from exc
+            try:
+                if pdf.page_count == 0:
+                    raise ValueError('PDF создан без страниц. Проверьте DOCX-шаблон.')
+                targets = find_pdf_text_targets(pdf)
+                apply_stamp_and_watermark(pdf, rule, stamp_options=stamp_options, targets=targets)
+                output_pdf = workdir / 'approved.pdf'
+                pdf.save(str(output_pdf), deflate=True, garbage=3)
+                buffer = io.BytesIO(output_pdf.read_bytes())
+            finally:
+                pdf.close()
+    except subprocess.TimeoutExpired as exc:
+        raise ValueError('Конвертация DOCX в PDF заняла слишком много времени и была остановлена.') from exc
     buffer.seek(0)
 
     base = slugify(document.title or document.template.name) or 'approved-document'
@@ -887,7 +970,13 @@ def stamp_rect_for_options(rule, pdf, stamp_options=None, targets=None):
     targets = targets or {}
     mode = stamp_options.get('stamp_mode') or 'executor'
     width, height = stamp_size_for_options(rule, stamp_options)
-    page_index = max(0, pdf.page_count - 1)
+    raw_page_number = parse_decimal_option(stamp_options.get('page_number'), None)
+    if raw_page_number is None:
+        raw_page_number = parse_decimal_option(getattr(rule, 'page_number', None), None)
+    if raw_page_number is not None:
+        page_index = int(max(1, min(pdf.page_count, raw_page_number))) - 1
+    else:
+        page_index = max(0, pdf.page_count - 1)
     page_rect = pdf[page_index].rect
 
     if mode == 'manual':
@@ -914,6 +1003,35 @@ def stamp_rect_for_options(rule, pdf, stamp_options=None, targets=None):
         return page_index, clamp_rect(x, y, width, height, page_rect)
 
     return page_index, stamp_rect_for_rule(rule, page_rect, width=width, height=height)
+
+
+def find_pdf_text_targets(pdf):
+    targets = {}
+    for page_index, page in enumerate(pdf):
+        matches = page.search_for('Исполнитель')
+        if matches:
+            rect = matches[-1]
+            targets['executor'] = {
+                'page_index': page_index,
+                'x': rect.x0,
+                'y': rect.y0,
+                'height': rect.height,
+            }
+            continue
+        try:
+            words = page.get_text('words') or []
+        except Exception:
+            words = []
+        for word in words:
+            text = str(word[4] if len(word) > 4 else '')
+            if 'исполнитель' in text.lower():
+                targets['executor'] = {
+                    'page_index': page_index,
+                    'x': word[0],
+                    'y': word[1],
+                    'height': max(8, word[3] - word[1]),
+                }
+    return targets
 
 
 def stamp_rect_for_rule(rule, page_rect, *, width=None, height=None):

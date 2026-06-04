@@ -1,0 +1,155 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="overflow:hidden; margin-bottom:16px;">
+    <div style="height:260px; margin:-1px -1px 0; position:relative; background:#e8f3ef;">
+        {% if university.cover_image %}
+            <img src="{{ university.cover_image.url }}" alt="{{ university.name }}" style="width:100%; height:100%; object-fit:cover;">
+        {% elif university.logo %}
+            <div style="height:100%; display:grid; place-items:center; background:#f8fafc;">
+                <img src="{{ university.logo.url }}" alt="{{ university.name }}" style="max-width:220px; max-height:150px; object-fit:contain;">
+            </div>
+        {% else %}
+            <div style="height:100%; display:grid; place-items:center; color:#0f766e;"><i data-lucide="graduation-cap" style="width:72px;height:72px;"></i></div>
+        {% endif %}
+        <div style="position:absolute; inset:auto 20px 20px 20px; display:flex; align-items:end; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+            <div style="display:flex; align-items:center; gap:14px;">
+                <div style="width:78px;height:78px;border-radius:16px;background:white;border:1px solid #e5e7eb;display:grid;place-items:center;overflow:hidden;box-shadow:0 12px 30px rgba(15,23,42,.16);">
+                    {% if university.logo %}<img src="{{ university.logo.url }}" alt="" style="width:100%;height:100%;object-fit:contain;padding:8px;">{% else %}<i data-lucide="graduation-cap"></i>{% endif %}
+                </div>
+                <div style="background:rgba(255,255,255,.92); border:1px solid rgba(229,231,235,.8); border-radius:8px; padding:12px 14px;">
+                    <h2 style="margin:0 0 4px;">{{ university.name }}</h2>
+                    <div class="muted small">{{ university.country.name }}{% if university.city %}, {{ university.city.name }}{% endif %}</div>
+                </div>
+            </div>
+            <div class="filters">
+                <a class="btn" href="{% url 'portal:universities' %}"><i data-lucide="arrow-left"></i>К списку</a>
+                <a class="btn" href="{% url 'portal:university_edit' university.id %}"><i data-lucide="pencil"></i>Редактировать</a>
+                <a class="btn primary" href="{% url 'portal:university_program_create' university.id %}"><i data-lucide="plus"></i>Добавить программу</a>
+            </div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="grid cols-4">
+            <div><div class="muted small">Статус</div><span class="pill {% if university.is_active %}ok{% else %}danger{% endif %}">{{ university.is_active|yesno:"Активен,Неактивен" }}</span></div>
+            <div><div class="muted small">Программ</div><div class="strong">{{ programs|length }}</div></div>
+            <div><div class="muted small">Валюта</div><div class="strong">{{ university.local_currency.code|default:"-" }}</div></div>
+            <div><div class="muted small">Сайт</div>{% if university.website %}<a class="strong" href="{{ university.website }}" target="_blank" rel="noopener">Открыть сайт</a>{% else %}<div class="strong">-</div>{% endif %}</div>
+        </div>
+    </div>
+</section>
+
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Основная информация</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><span class="muted">Описание</span><span>{{ university.description|linebreaksbr|default:"Описание пока не заполнено" }}</span></div>
+                <div class="list-row"><span class="muted">Email</span><span>{% if university.email %}<a href="mailto:{{ university.email }}">{{ university.email }}</a>{% else %}-{% endif %}</span></div>
+                <div class="list-row"><span class="muted">Телефон</span><span>{% if university.phone %}<a href="tel:{{ university.phone }}">{{ university.phone }}</a>{% else %}-{% endif %}</span></div>
+                <div class="list-row"><span class="muted">Адрес</span><span>{{ university.address|default:"-" }}</span></div>
+            </div>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Условия</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><span class="muted">Поступление</span><span>{{ university.admission_requirements|linebreaksbr|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">Приглашение</span><span>{{ university.invitation_info|linebreaksbr|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">Общежитие</span><span>{{ university.dormitory_info|linebreaksbr|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">Расходы</span><span>{{ university.expenses_info|linebreaksbr|default:"-" }}</span></div>
+                <div class="list-row"><span class="muted">Возраст</span><span>{{ university.age_limit|default:"-" }}</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Контакты ВУЗа</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                {% for contact in contacts %}
+                    <div class="list-row">
+                        <span class="muted">{{ contact.position|default:"Контакт" }}</span>
+                        <span>
+                            <strong>{{ contact.full_name|default:"Без имени" }}</strong><br>
+                            {% if contact.email %}<a href="mailto:{{ contact.email }}">{{ contact.email }}</a>{% endif %}
+                            {% if contact.phone %}{% if contact.email %} · {% endif %}<a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>{% endif %}
+                            {% if contact.messenger %}<br><span class="muted small">{{ contact.messenger }}</span>{% endif %}
+                        </span>
+                    </div>
+                {% empty %}
+                    <div class="empty">Контакты пока не добавлены.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Документы</h2></div>
+        <div class="panel-body">
+            <div class="list">
+                {% for doc in documents %}
+                    <div class="list-row">
+                        <span class="muted">{% if doc.is_mandatory %}Обязательный{% else %}Дополнительный{% endif %}</span>
+                        <span><strong>{{ doc.title }}</strong>{% if doc.description %}<br><span class="muted small">{{ doc.description }}</span>{% endif %}</span>
+                    </div>
+                {% empty %}
+                    <div class="empty">Общие документы ВУЗа пока не добавлены.</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Программы ВУЗа</h2>
+        <a class="btn primary" href="{% url 'portal:university_program_create' university.id %}"><i data-lucide="plus"></i>Добавить программу</a>
+    </div>
+    <div class="panel-body">
+        {% if programs %}
+            <div class="card-grid">
+                {% for program in programs %}
+                    <div class="item-card">
+                        <div class="item-card-top">
+                            <div>
+                                <div class="item-card-title">{{ program.name }}</div>
+                                <div class="muted small">{{ program.get_degree_display }}{% if program.faculty %} · {{ program.faculty }}{% endif %}</div>
+                            </div>
+                            <span class="pill {% if program.is_active and not program.is_archived %}ok{% elif program.is_archived %}warn{% else %}danger{% endif %}">
+                                {% if program.is_archived %}Архив{% elif program.is_active %}Активна{% else %}Неактивна{% endif %}
+                            </span>
+                        </div>
+                        <div class="item-card-meta">
+                            <span>Язык: {{ program.language|default:"Не указан" }}</span>
+                            <span>Длительность: {{ program.duration|default:"Не указана" }}</span>
+                            {% for fee in program.fees.all %}
+                                {% if forloop.first %}
+                                    <span>Стоимость: {{ fee.tuition_fee|floatformat:2 }} {{ fee.currency.code }} · услуги ${{ fee.service_fee_usd|floatformat:2 }}</span>
+                                {% endif %}
+                            {% empty %}
+                                <span>Стоимость не указана</span>
+                            {% endfor %}
+                            {% for intake in program.intakes.all %}
+                                {% if forloop.first %}
+                                    <span>Intake: {{ intake.title }}{% if intake.application_deadline %} · дедлайн {{ intake.application_deadline|date:"d.m.Y" }}{% endif %}</span>
+                                {% endif %}
+                            {% empty %}
+                                <span>Наборы/intakes не указаны</span>
+                            {% endfor %}
+                        </div>
+                        <div class="filters">
+                            <a class="pill" href="{% url 'portal:program_edit' program.id %}">Открыть</a>
+                            <a class="pill" href="{% url 'portal:program_edit' program.id %}">Редактировать</a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">У этого ВУЗа пока нет программ. Добавьте первую программу.</div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

@@ -1,4 +1,4 @@
-from django.db.models import Prefetch, Q
+from django.db.models import Count, Prefetch, Q
 from rest_framework.response import Response
 from rest_framework import permissions, viewsets
 
@@ -64,7 +64,10 @@ class ClientCountryViewSet(ClientReadOnlyViewSet):
     cache_namespace = 'countries'
 
     def get_queryset(self):
-        qs = Country.objects.filter(is_active=True).order_by('sort_order', 'name')
+        qs = Country.objects.filter(is_active=True).annotate(
+            cities_count=Count('cities', filter=Q(cities__is_active=True), distinct=True),
+            universities_count=Count('universities', filter=Q(universities__is_active=True), distinct=True),
+        ).order_by('sort_order', 'name')
         search = self.request.query_params.get('search') or self.request.query_params.get('q')
         if search:
             qs = qs.filter(Q(name__icontains=search) | Q(code__icontains=search))
@@ -78,7 +81,9 @@ class ClientCityViewSet(ClientReadOnlyViewSet):
     cache_namespace = 'cities'
 
     def get_queryset(self):
-        qs = City.objects.select_related('country').filter(is_active=True, country__is_active=True)
+        qs = City.objects.select_related('country').filter(is_active=True, country__is_active=True).annotate(
+            universities_count=Count('universities', filter=Q(universities__is_active=True), distinct=True),
+        )
         qs = filter_id_or_name(qs, self.request.query_params.get('country'), 'country_id', 'country__name')
         search = self.request.query_params.get('search') or self.request.query_params.get('q')
         if search:
@@ -101,7 +106,9 @@ class ClientUniversityViewSet(ClientReadOnlyViewSet):
         qs = University.objects.select_related('country', 'city').prefetch_related(
             Prefetch('programs', queryset=active_programs),
             Prefetch('required_documents', queryset=RequiredDocument.objects.filter(is_active=True).order_by('sort_order', 'title')),
-        ).filter(is_active=True, country__is_active=True)
+        ).filter(is_active=True, country__is_active=True).annotate(
+            programs_count=Count('programs', filter=Q(programs__is_active=True, programs__is_archived=False), distinct=True),
+        )
         qs = filter_id_or_name(qs, self.request.query_params.get('country'), 'country_id', 'country__name')
         qs = filter_id_or_name(qs, self.request.query_params.get('city'), 'city_id', 'city__name')
         search = self.request.query_params.get('search') or self.request.query_params.get('q')

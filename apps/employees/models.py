@@ -122,6 +122,9 @@ class EmployeeAccess(TimeStampedModel):
     can_manage_documents = models.BooleanField('Может управлять документами', default=False)
     can_manage_catalog = models.BooleanField('Может управлять каталогом вузов', default=False)
     can_be_in_leaderboard = models.BooleanField('Показывать в рейтинге', default=True)
+    rating_priority_enabled = models.BooleanField('Приоритет в рейтинге', default=False)
+    rating_priority_level = models.PositiveIntegerField('Уровень приоритета в рейтинге', default=0)
+    rating_priority_note = models.TextField('Комментарий к приоритету', blank=True)
     must_track_workday = models.BooleanField('Обязан отмечать рабочий день', default=True)
 
     class Meta:

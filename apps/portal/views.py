@@ -12,7 +12,7 @@ from django.contrib.auth.views import LoginView
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.http import FileResponse, Http404
-from django.db.models import Case, Count, IntegerField, Q, Sum, Value, When
+from django.db.models import Case, Count, IntegerField, Prefetch, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils.dateparse import parse_date
@@ -25,7 +25,7 @@ from apps.attendance.models import DailyReport, WorkDay
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, Lead, LeadSource
 from apps.education.cache import education_cache_get, education_cache_set, make_education_cache_key
-from apps.education.models import City, Country, Currency, Program, University
+from apps.education.models import City, Country, Currency, Program, ProgramFee, University
 from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
 from apps.erp_notifications.models import Notification, NotificationBatch, NotificationTemplate
 from apps.employees.models import EmployeeProfile
@@ -106,6 +106,8 @@ NAV_GROUPS = (
         'label': 'Вузы',
         'icon': 'graduation-cap',
         'items': (
+            {'name': 'countries', 'label': 'Страны', 'icon': 'map'},
+            {'name': 'cities', 'label': 'Города', 'icon': 'map-pin'},
             {'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
             {'name': 'programs', 'label': 'Программы', 'icon': 'library-big'},
             {'name': 'services', 'label': 'Услуги', 'icon': 'briefcase-business'},
@@ -1267,6 +1269,54 @@ class PortalFormPageMixin:
         return super().render_to_response(context, **response_kwargs)
 
 
+class CountriesView(ListPageMixin):
+    active_page = 'countries'
+    page_title = 'Страны'
+    table_template = 'portal/partials/countries_table.html'
+    grid_template = 'portal/partials/countries_grid.html'
+    search_fields = ('name', 'code', 'description')
+    status_field = ''
+    default_ordering = 'sort_order'
+
+    def get_queryset(self):
+        qs = Country.objects.annotate(
+            cities_count=Count('cities', distinct=True),
+            universities_count=Count('universities', distinct=True),
+        )
+        is_active = bool_param(self.request.GET.get('is_active'))
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active)
+        return qs
+
+
+class CitiesView(ListPageMixin):
+    active_page = 'cities'
+    page_title = 'Города'
+    table_template = 'portal/partials/cities_table.html'
+    grid_template = 'portal/partials/cities_grid.html'
+    search_fields = ('name', 'description', 'country__name')
+    status_field = ''
+    default_ordering = 'country__name'
+
+    def get_queryset(self):
+        qs = City.objects.select_related('country').annotate(
+            universities_count=Count('universities', distinct=True),
+        )
+        country_id = self.request.GET.get('country')
+        if country_id:
+            qs = qs.filter(country_id=country_id)
+        is_active = bool_param(self.request.GET.get('is_active'))
+        if is_active is not None:
+            qs = qs.filter(is_active=is_active)
+        return qs
+
+    def get_extra_context(self, qs):
+        return {
+            'countries': Country.objects.filter(is_active=True).order_by('sort_order', 'name')[:300],
+            'selected_country': self.request.GET.get('country', ''),
+        }
+
+
 class UniversitiesView(ListPageMixin):
     active_page = 'universities'
     page_title = 'Вузы'
@@ -1280,6 +1330,12 @@ class UniversitiesView(ListPageMixin):
 
     def get_queryset(self):
         qs = university_queryset(self.request.user)
+        country_id = self.request.GET.get('country')
+        city_id = self.request.GET.get('city')
+        if country_id:
+            qs = qs.filter(country_id=country_id)
+        if city_id:
+            qs = qs.filter(city_id=city_id)
         is_active = bool_param(self.request.GET.get('is_active'))
         if is_active is not None:
             qs = qs.filter(is_active=is_active)
@@ -1328,6 +1384,39 @@ class UniversitiesView(ListPageMixin):
         return self.render_to_response(context)
 
 
+class UniversityDetailView(PortalContextMixin, TemplateView):
+    template_name = 'portal/university_detail.html'
+    active_page = 'universities'
+    page_title = 'Карточка ВУЗа'
+
+    def get_university(self):
+        qs = university_queryset(self.request.user).prefetch_related(None).select_related('country', 'city', 'local_currency', 'company').prefetch_related(
+            'contact_people',
+            'required_documents',
+            Prefetch(
+                'programs',
+                queryset=Program.objects.select_related('university').prefetch_related(
+                    Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at')),
+                    'intakes',
+                    'required_documents',
+                ).filter(is_active=True, is_archived=False).order_by('degree', 'name'),
+            ),
+        )
+        return get_object_or_404(qs, pk=self.kwargs['pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        university = self.get_university()
+        context.update({
+            'university': university,
+            'programs': university.programs.all(),
+            'contacts': university.contact_people.all(),
+            'documents': university.required_documents.filter(program__isnull=True, is_active=True),
+            'can_manage_university': is_erp_admin(self.request.user) or self.request.user.is_staff,
+        })
+        return context
+
+
 class ProgramsView(ListPageMixin):
     active_page = 'programs'
     page_title = 'Программы'
@@ -1356,7 +1445,7 @@ class ProgramsView(ListPageMixin):
 
     def get_form(self, data=None, instance=None):
         initial = {}
-        university_id = self.request.GET.get('university')
+        university_id = self.kwargs.get('university_pk') or self.request.GET.get('university')
         if university_id and not data and not instance:
             initial['university'] = university_id
         return PortalProgramForm(
@@ -1379,8 +1468,10 @@ class ProgramsView(ListPageMixin):
         edit_object = self.get_edit_object()
         form = self.get_form(data=request.POST, instance=edit_object)
         if form.is_valid():
-            form.save()
+            program = form.save()
             messages.success(request, 'Программа сохранена.')
+            if self.kwargs.get('university_pk'):
+                return redirect('portal:university_detail', pk=program.university_id)
             return redirect('portal:programs')
         context = self.get_context_data()
         context['form'] = form
@@ -3180,9 +3271,14 @@ class RatingView(PortalContextMixin, TemplateView):
                 + closed_days * 2
                 - missed_days * 5
             )
+            priority_enabled = bool(access and access.rating_priority_enabled)
+            priority_level = int(access.rating_priority_level or 0) if priority_enabled else 0
             rows.append({
                 'profile': profile,
                 'score': score,
+                'priority_enabled': priority_enabled,
+                'priority_level': priority_level,
+                'priority_note': access.rating_priority_note if access and access.rating_priority_note else '',
                 'leads_count': leads_count,
                 'clients_count': clients_count,
                 'applications_count': applications_count,
@@ -3199,7 +3295,7 @@ class RatingView(PortalContextMixin, TemplateView):
                 'is_hidden_from_leaderboard': bool(access and not access.can_be_in_leaderboard),
                 'avatar_url': user.avatar.url if getattr(user, 'avatar', None) else '',
             })
-        rating_rows = sorted(rows, key=lambda item: item['score'], reverse=True)
+        rating_rows = sorted(rows, key=lambda item: (item['priority_enabled'], item['priority_level'], item['score']), reverse=True)
         podium_rows = [row for row in rating_rows if not row['is_hidden_from_leaderboard']][:3]
         context.update({
             'rating_rows': rating_rows,

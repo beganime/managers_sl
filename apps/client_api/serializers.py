@@ -16,22 +16,50 @@ def absolute_file_url(request, file_field):
 
 class ClientCountrySerializer(serializers.ModelSerializer):
     flag = serializers.SerializerMethodField()
+    image_url = serializers.SerializerMethodField()
+    cover_image_url = serializers.SerializerMethodField()
+    cities_count = serializers.SerializerMethodField()
+    universities_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Country
-        fields = ('id', 'name', 'code', 'flag', 'description')
+        fields = ('id', 'name', 'code', 'flag', 'image_url', 'cover_image_url', 'description', 'cities_count', 'universities_count')
 
     def get_flag(self, obj):
         return absolute_file_url(self.context.get('request'), obj.flag)
+
+    def get_image_url(self, obj):
+        return self.get_flag(obj)
+
+    def get_cover_image_url(self, obj):
+        return self.get_flag(obj)
+
+    def get_cities_count(self, obj):
+        return getattr(obj, 'cities_count', None) if hasattr(obj, 'cities_count') else obj.cities.filter(is_active=True).count()
+
+    def get_universities_count(self, obj):
+        return getattr(obj, 'universities_count', None) if hasattr(obj, 'universities_count') else obj.universities.filter(is_active=True).count()
 
 
 class ClientCitySerializer(serializers.ModelSerializer):
     country = serializers.IntegerField(source='country_id', read_only=True)
     country_name = serializers.CharField(source='country.name', read_only=True)
+    image_url = serializers.SerializerMethodField()
+    cover_image_url = serializers.SerializerMethodField()
+    universities_count = serializers.SerializerMethodField()
 
     class Meta:
         model = City
-        fields = ('id', 'country', 'country_name', 'name', 'description')
+        fields = ('id', 'country', 'country_name', 'name', 'description', 'image_url', 'cover_image_url', 'universities_count')
+
+    def get_image_url(self, obj):
+        return None
+
+    def get_cover_image_url(self, obj):
+        return None
+
+    def get_universities_count(self, obj):
+        return getattr(obj, 'universities_count', None) if hasattr(obj, 'universities_count') else obj.universities.filter(is_active=True).count()
 
 
 class ClientProgramFeeSerializer(serializers.ModelSerializer):
@@ -105,6 +133,7 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
     logo_url = serializers.SerializerMethodField()
     cover_image_url = serializers.SerializerMethodField()
     public_contacts = serializers.SerializerMethodField()
+    programs_count = serializers.SerializerMethodField()
     programs = ClientProgramShortSerializer(many=True, read_only=True)
     required_documents = ClientRequiredDocumentSerializer(many=True, read_only=True)
 
@@ -131,6 +160,7 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
             'expenses_info',
             'age_limit',
             'public_contacts',
+            'programs_count',
             'programs',
             'required_documents',
         )
@@ -154,6 +184,9 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
             'phone': obj.phone,
             'address': obj.address,
         }
+
+    def get_programs_count(self, obj):
+        return getattr(obj, 'programs_count', None) if hasattr(obj, 'programs_count') else obj.programs.filter(is_active=True, is_archived=False).count()
 
 
 class ClientProgramSerializer(ClientProgramShortSerializer):

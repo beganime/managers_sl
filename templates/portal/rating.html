@@ -89,6 +89,7 @@
                                 <summary>
                                     <span class="strong">{{ row.profile.user.get_full_name|default:row.profile.user.email }}</span>
                                     {% if row.is_hidden_from_leaderboard %}<span class="pill warn">Скрыт из рейтинга</span>{% endif %}
+                                    {% if can_view_hidden_leaderboard and row.priority_enabled %}<span class="pill ok">Приоритет {{ row.priority_level }}</span>{% endif %}
                                     <div class="muted small">{{ row.profile.position.name|default:row.profile.role.name }}</div>
                                 </summary>
                                 <div class="rating-details">
@@ -117,6 +118,12 @@
                                             <div class="muted small">Дата рождения</div>
                                             <div class="strong">{{ row.profile.user.dob|date:"d.m.Y"|default:"-" }}</div>
                                         </div>
+                                        {% if can_view_hidden_leaderboard and row.priority_enabled %}
+                                            <div>
+                                                <div class="muted small">Приоритет рейтинга</div>
+                                                <div class="strong">Уровень {{ row.priority_level }}{% if row.priority_note %} · {{ row.priority_note }}{% endif %}</div>
+                                            </div>
+                                        {% endif %}
                                     </div>
                                     <div class="contact-actions">
                                         {% if row.profile.user.phone %}<a class="pill ok" href="tel:{{ row.profile.user.phone }}">Позвонить</a>{% endif %}

@@ -35,8 +35,9 @@
                     <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Активен,Неактивен" }}</span></td>
                     <td>
                         <div class="filters">
-                            <a class="pill" href="{% url 'portal:university_edit' item.id %}">Открыть</a>
-                            <a class="pill ok" href="{% url 'portal:program_create' %}?university={{ item.id }}">Добавить программу</a>
+                            <a class="pill" href="{% url 'portal:university_detail' item.id %}">Открыть</a>
+                            <a class="pill" href="{% url 'portal:university_edit' item.id %}">Редактировать</a>
+                            <a class="pill ok" href="{% url 'portal:university_program_create' item.id %}">Добавить программу</a>
                         </div>
                     </td>
                 </tr>
