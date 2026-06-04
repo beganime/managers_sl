@@ -61,6 +61,12 @@ def resolve_company_office(user, data=None):
     return company, office
 
 
+def user_must_track_workday(user):
+    employee = get_employee_profile(user)
+    access = getattr(employee, 'access', None) if employee else None
+    return bool(not access or access.must_track_workday)
+
+
 def apply_common_filters(qs, request, *, date_field='date', search_fields=()):
     company = request.query_params.get('company')
     if company:
@@ -112,7 +118,12 @@ class WorkDayViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         company, office = resolve_company_office(self.request.user, self.request.data)
-        serializer.save(company=company, office=office, employee=self.request.user)
+        serializer.save(
+            company=company,
+            office=office,
+            employee=self.request.user,
+            report_required=user_must_track_workday(self.request.user),
+        )
 
     def get_or_create_today(self, request):
         today = timezone.localdate()
@@ -124,6 +135,7 @@ class WorkDayViewSet(viewsets.ModelViewSet):
             defaults={
                 'office': office,
                 'status': WorkDay.STATUS_NOT_STARTED,
+                'report_required': user_must_track_workday(request.user),
             },
         )
         if office and workday.office_id != office.id:

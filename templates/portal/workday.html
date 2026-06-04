@@ -36,6 +36,9 @@
                         </form>
                     {% endif %}
                 </div>
+                <div style="margin-top:12px;">
+                    <a class="pill" href="{% url 'portal:workday_reports' %}">Открыть историю отчётов</a>
+                </div>
             {% else %}
                 <div class="empty">Для работы нужен профиль сотрудника EmployeeProfile.</div>
             {% endif %}
@@ -74,6 +77,7 @@
         </div>
     </div>
     <div class="panel-body">
+        <div class="muted small" style="margin-bottom:10px;">В списке учитываются только сотрудники, у которых включено “Обязан отмечать рабочий день”.</div>
         {% if today_profiles %}
             <div class="table-wrap">
                 <table>
@@ -116,6 +120,9 @@
             {% else %}
                 <div class="empty">Отчётов пока нет.</div>
             {% endif %}
+            <div style="margin-top:12px;">
+                <a class="pill" href="{% url 'portal:workday_reports' %}">Все отчёты</a>
+            </div>
         </div>
     </div>
     <div class="panel">

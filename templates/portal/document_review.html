@@ -1,0 +1,70 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Проверка документа</h2>
+            <span class="pill {% if document.status == 'approved' %}ok{% elif document.status == 'rejected' %}danger{% else %}warn{% endif %}">{{ document.get_status_display }}</span>
+        </div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><span class="muted">Документ</span><strong>{{ document.title|default:document.template.name }}</strong></div>
+                <div class="list-row"><span class="muted">Шаблон</span><span>{{ document.template.name }}</span></div>
+                <div class="list-row"><span class="muted">Клиент</span><span>{% if document.client %}{{ document.client.full_name }}{% else %}Не привязан{% endif %}</span></div>
+                <div class="list-row"><span class="muted">Менеджер</span><span>{{ document.manager.get_full_name|default:document.manager.email }}</span></div>
+                <div class="list-row"><span class="muted">Создан</span><span>{{ document.created_at|date:"d.m.Y H:i" }}</span></div>
+                <div class="list-row"><span class="muted">Отправлен</span><span>{{ document.submitted_at|date:"d.m.Y H:i"|default:"-" }}</span></div>
+            </div>
+            {% if document.generation_error %}
+                <div class="empty" style="border-color:#fecaca; color:#991b1b;">{{ document.generation_error }}</div>
+            {% endif %}
+            <div class="filters" style="margin-top:14px;">
+                {% if can_download_original %}
+                    <a class="btn" href="{% url 'portal:document_action' document.id 'download-original' %}"><i data-lucide="download"></i>Скачать DOCX без печати</a>
+                {% endif %}
+                {% if has_approved_pdf %}
+                    <a class="btn" href="{% url 'portal:document_action' document.id 'preview-approved' %}" target="_blank"><i data-lucide="eye"></i>Открыть PDF</a>
+                    <a class="btn primary" href="{% url 'portal:document_action' document.id 'download-approved' %}"><i data-lucide="stamp"></i>Скачать PDF с печатью</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Решение администратора</h2></div>
+        <div class="panel-body">
+            {% if document.status == 'pending' %}
+                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" style="margin-bottom:12px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="with_stamp" value="1">
+                    <label><span class="muted small">Комментарий</span><textarea class="textarea" name="comment" rows="3" placeholder="Комментарий к подтверждению"></textarea></label>
+                    <button class="btn primary" type="submit"><i data-lucide="stamp"></i>Одобрить и поставить печать</button>
+                </form>
+                <form method="post" action="{% url 'portal:document_action' document.id 'reject' %}" class="grid">
+                    {% csrf_token %}
+                    <label><span class="muted small">Причина отклонения</span><textarea class="textarea" name="reason" rows="3" placeholder="Что нужно исправить"></textarea></label>
+                    <button class="btn danger" type="submit"><i data-lucide="x"></i>Отклонить</button>
+                </form>
+            {% else %}
+                <div class="empty">Документ уже не ожидает проверки.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Предпросмотр DOCX</h2><span class="pill">Текстовый preview</span></div>
+    <div class="panel-body">
+        {% if preview_lines %}
+            <div class="document-preview" style="background:#fff; border:1px solid #e5e7eb; border-radius:8px; padding:24px; line-height:1.65;">
+                {% for line in preview_lines %}
+                    <p style="margin:0 0 10px;">{{ line }}</p>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">Текстовый предпросмотр недоступен. Скачайте DOCX без печати и проверьте файл вручную.</div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

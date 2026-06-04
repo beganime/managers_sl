@@ -2,33 +2,46 @@
     <table>
         <thead>
             <tr>
-                <th>University</th>
-                <th>Country</th>
-                <th>City</th>
-                <th>Programs</th>
-                <th>Contacts</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>ВУЗ</th>
+                <th>Страна</th>
+                <th>Город</th>
+                <th>Программы</th>
+                <th>Контакты</th>
+                <th>Статус</th>
+                <th>Действия</th>
             </tr>
         </thead>
         <tbody>
             {% for item in items %}
                 <tr>
-                    <td><div class="strong">{{ item.name }}</div><div class="muted small">{{ item.website|default:item.email }}</div></td>
+                    <td>
+                        <div style="display:flex; align-items:center; gap:10px;">
+                            <div class="item-thumb" style="width:42px; height:42px;">
+                                {% if item.logo %}
+                                    <img src="{{ item.logo.url }}" alt="{{ item.name }}">
+                                {% elif item.cover_image %}
+                                    <img src="{{ item.cover_image.url }}" alt="{{ item.name }}">
+                                {% else %}
+                                    <i data-lucide="graduation-cap"></i>
+                                {% endif %}
+                            </div>
+                            <div><div class="strong">{{ item.name }}</div><div class="muted small">{{ item.website|default:item.email }}</div></div>
+                        </div>
+                    </td>
                     <td>{{ item.country.name }}</td>
                     <td>{{ item.city.name|default:"-" }}</td>
                     <td>{{ item.programs.count }}</td>
                     <td>{{ item.phone|default:"-" }}</td>
-                    <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Active,Inactive" }}</span></td>
+                    <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Активен,Неактивен" }}</span></td>
                     <td>
                         <div class="filters">
-                            <a class="pill" href="{% url 'portal:university_edit' item.id %}">Edit</a>
-                            <a class="pill ok" href="{% url 'portal:program_create' %}?university={{ item.id }}">Add program</a>
+                            <a class="pill" href="{% url 'portal:university_edit' item.id %}">Открыть</a>
+                            <a class="pill ok" href="{% url 'portal:program_create' %}?university={{ item.id }}">Добавить программу</a>
                         </div>
                     </td>
                 </tr>
             {% empty %}
-                <tr><td colspan="7"><div class="empty">No universities found.</div></td></tr>
+                <tr><td colspan="7"><div class="empty">ВУЗы не найдены.</div></td></tr>
             {% endfor %}
         </tbody>
     </table>

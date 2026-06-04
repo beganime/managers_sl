@@ -18,8 +18,12 @@
                 {% if item.can_download_original %}
                     <a class="pill" href="{% url 'portal:document_action' item.id 'download-original' %}">DOCX</a>
                 {% endif %}
+                {% if can_review_documents and item.status == 'pending' %}
+                    <a class="pill ok" href="{% url 'portal:document_review' item.id %}">Проверить</a>
+                {% endif %}
                 {% if item.can_download_approved %}
                     <a class="pill ok" href="{% url 'portal:document_action' item.id 'download-approved' %}">PDF с печатью</a>
+                    <a class="pill" href="{% url 'portal:document_action' item.id 'preview-approved' %}" target="_blank">Открыть PDF</a>
                 {% elif item.status == 'pending' %}
                     <span class="pill warn">Ожидает админа</span>
                 {% endif %}

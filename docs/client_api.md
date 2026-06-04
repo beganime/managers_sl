@@ -57,6 +57,8 @@ API для будущего клиентского приложения дост
   "description": "Описание ВУЗа",
   "logo": "https://manager-sl.ru/media/erp/education/university_logos/logo.png",
   "cover": "https://manager-sl.ru/media/erp/education/university_covers/cover.jpg",
+  "logo_url": "https://manager-sl.ru/media/erp/education/university_logos/logo.png",
+  "cover_image_url": "https://manager-sl.ru/media/erp/education/university_covers/cover.jpg",
   "website": "https://example.edu",
   "address": "Москва",
   "admission_requirements": "Условия поступления",
@@ -82,6 +84,8 @@ API для будущего клиентского приложения дост
   "id": 24,
   "university": 12,
   "university_name": "Example University",
+  "university_logo": "https://manager-sl.ru/media/erp/education/university_logos/logo.png",
+  "university_cover": "https://manager-sl.ru/media/erp/education/university_covers/cover.jpg",
   "country": "Россия",
   "city": "Москва",
   "name": "Computer Science",
@@ -114,3 +118,14 @@ API не возвращает:
 - `real_cost` и себестоимость услуг;
 - автора записи и служебные поля добавления;
 - приватные контакты сотрудников/партнёров, если они не вынесены в публичные поля ВУЗа.
+
+## Изображения ВУЗов
+
+Для обратной совместимости API сохраняет старые поля `logo` и `cover`. Новые клиентские приложения могут использовать более явные поля:
+
+- `logo_url` — абсолютный URL логотипа ВУЗа;
+- `cover_image_url` — абсолютный URL обложки ВУЗа;
+- `university_logo` — логотип ВУЗа внутри ответа программы;
+- `university_cover` — обложка ВУЗа внутри ответа программы.
+
+Если изображение не загружено, поле возвращает `null`. В клиентском приложении в этом случае нужно показывать placeholder.

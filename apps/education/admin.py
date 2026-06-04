@@ -171,7 +171,8 @@ class ProgramInline(TabularInline):
     model = Program
     form = UniversityProgramInlineForm
     formset = UniversityProgramInlineFormSet
-    extra = 1
+    extra = 0
+    min_num = 0
     fields = (
         'name',
         'degree',
@@ -306,14 +307,15 @@ class UniversityAdmin(ModelAdmin):
     @admin.display(description='Стоимость программ')
     def program_fee_hint(self, obj):
         if not obj or not obj.pk:
-            return 'Сначала сохраните ВУЗ. После сохранения ниже можно добавить программы и сразу заполнить основные стоимости в USD.'
+            return 'Программы можно добавить сейчас или позже на странице ВУЗа. ВУЗ можно сохранить без программ.'
         url = reverse('admin:education_program_changelist')
         return format_html(
             '<div style="line-height:1.5">'
-            'Программы и основные стоимости в USD добавляются в inline-блоке ниже: стоимость обучения, стоимость услуг, application fee, общежитие и страховка. '
+            'Программы можно добавить сейчас или позже на странице ВУЗа. '
+            'Если программа уже известна, добавьте её в inline-блоке ниже и сразу заполните основные стоимости в USD: стоимость обучения, стоимость услуг, application fee, общежитие и страховка. '
             'Для intakes и документов конкретной программы откройте нужную программу по ссылке «Изменить» в inline-блоке или через раздел '
             '<a href="{}?university__id__exact={}">Программы</a>. '
-            'Если добавили ВУЗ, обязательно добавьте хотя бы одну программу.'
+            'Сохранение ВУЗа без программ разрешено.'
             '</div>',
             url,
             obj.pk,

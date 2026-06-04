@@ -24,6 +24,7 @@ from django.views.generic import TemplateView
 from apps.attendance.models import DailyReport, WorkDay
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, Lead, LeadSource
+from apps.education.cache import education_cache_get, education_cache_set, make_education_cache_key
 from apps.education.models import City, Country, Currency, Program, University
 from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
 from apps.erp_notifications.models import Notification, NotificationBatch, NotificationTemplate
@@ -539,18 +540,52 @@ def office_queryset(user):
 
 
 def university_queryset(user):
-    qs = University.objects.select_related('company', 'country', 'city', 'local_currency')
+    qs = University.objects.select_related('company', 'country', 'city', 'local_currency').prefetch_related('programs')
+    scope = 'admin' if is_erp_admin(user) else 'global'
     if is_erp_admin(user):
-        return qs
+        cache_key = make_education_cache_key('portal-universities-base', scope=scope)
+        cached_ids = education_cache_get(cache_key)
+        if cached_ids is not None:
+            return qs.filter(id__in=cached_ids)
+        ids = list(qs.values_list('id', flat=True))
+        education_cache_set(cache_key, ids)
+        return qs.filter(id__in=ids)
     employee = get_employee_profile(user)
     if not employee:
-        return qs.filter(company__isnull=True)
-    return qs.filter(Q(company=employee.company) | Q(company__isnull=True))
+        cache_key = make_education_cache_key('portal-universities-base', scope='anonymous-employee')
+        cached_ids = education_cache_get(cache_key)
+        if cached_ids is not None:
+            return qs.filter(id__in=cached_ids)
+        scoped = qs.filter(company__isnull=True)
+        ids = list(scoped.values_list('id', flat=True))
+        education_cache_set(cache_key, ids)
+        return qs.filter(id__in=ids)
+    scope = f'company-{employee.company_id}'
+    cache_key = make_education_cache_key('portal-universities-base', scope=scope)
+    cached_ids = education_cache_get(cache_key)
+    if cached_ids is not None:
+        return qs.filter(id__in=cached_ids)
+    scoped = qs.filter(Q(company=employee.company) | Q(company__isnull=True))
+    ids = list(scoped.values_list('id', flat=True))
+    education_cache_set(cache_key, ids)
+    return qs.filter(id__in=ids)
 
 
 def program_queryset(user):
     universities = university_queryset(user).values('id')
-    return Program.objects.select_related('university', 'university__country').prefetch_related('fees', 'intakes').filter(university_id__in=universities)
+    base_qs = Program.objects.select_related('university', 'university__country', 'university__city').prefetch_related('fees', 'intakes').filter(university_id__in=universities)
+    if is_erp_admin(user):
+        scope = 'admin'
+    else:
+        employee = get_employee_profile(user)
+        scope = f'company-{employee.company_id}' if employee and employee.company_id else 'anonymous-employee'
+    cache_key = make_education_cache_key('portal-programs-base', scope=scope)
+    cached_ids = education_cache_get(cache_key)
+    if cached_ids is not None:
+        return base_qs.filter(id__in=cached_ids)
+    ids = list(base_qs.values_list('id', flat=True))
+    education_cache_set(cache_key, ids)
+    return base_qs.filter(id__in=ids)
 
 
 def service_queryset(user):
@@ -610,6 +645,10 @@ def project_section_queryset(user):
 
 def portal_user_queryset(user):
     return User.objects.filter(id__in=employee_queryset(user).values('user_id'), is_active=True).order_by('first_name', 'last_name', 'email')
+
+
+def must_track_workday_q():
+    return Q(access__must_track_workday=True) | Q(access__isnull=True)
 
 
 def can_confirm_finance(user):
@@ -838,12 +877,14 @@ def get_today_workday(user):
     workday = WorkDay.objects.filter(employee=user, date=today).select_related('company', 'office', 'daily_report').first()
     if workday or not employee:
         return workday
+    access = getattr(employee, 'access', None)
     return WorkDay(
         company=employee.company,
         office=employee.office,
         employee=user,
         date=today,
         status=WorkDay.STATUS_NOT_STARTED,
+        report_required=bool(not access or access.must_track_workday),
     )
 
 
@@ -851,12 +892,17 @@ def ensure_today_workday(user):
     employee = get_employee_profile(user)
     if not employee:
         raise ValueError('Employee profile is required.')
+    access = getattr(employee, 'access', None)
     today = timezone.localdate()
     workday, _ = WorkDay.objects.get_or_create(
         company=employee.company,
         employee=user,
         date=today,
-        defaults={'office': employee.office, 'status': WorkDay.STATUS_NOT_STARTED},
+        defaults={
+            'office': employee.office,
+            'status': WorkDay.STATUS_NOT_STARTED,
+            'report_required': bool(not access or access.must_track_workday),
+        },
     )
     if employee.office_id and workday.office_id != employee.office_id:
         workday.office = employee.office
@@ -2524,6 +2570,14 @@ class DocumentActionView(LoginRequiredMixin, View):
                 return redirect('portal:documents')
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
             return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.approved_file.name.split('/')[-1])
+        if action == 'preview-approved':
+            if not document.can_download_approved:
+                messages.error(request, 'PDF с печатью доступен только после подтверждения администратора.')
+                return redirect('portal:documents')
+            log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
+            response = FileResponse(document.approved_file.open('rb'), as_attachment=False, filename=document.approved_file.name.split('/')[-1])
+            response['Content-Type'] = 'application/pdf'
+            return response
         raise Http404
 
 
@@ -2725,7 +2779,7 @@ class WorkdayView(PortalContextMixin, TemplateView):
             if date_to:
                 history = history.filter(date__lte=date_to)
 
-        profiles = employee_queryset(user).filter(is_active=True)
+        profiles = employee_queryset(user).filter(is_active=True).filter(must_track_workday_q())
         today_workdays = WorkDay.objects.select_related('employee', 'office').filter(
             date=today,
             employee_id__in=profiles.values('user_id'),
@@ -2752,6 +2806,53 @@ class WorkdayView(PortalContextMixin, TemplateView):
             'today_started_count': len(started_user_ids),
             'today_not_started_count': profiles.exclude(user_id__in=started_user_ids).count(),
             'can_filter_workday_history': can_delete_admin(user),
+        })
+        return context
+
+
+class WorkdayReportsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/workday_reports.html'
+    active_page = 'workday'
+    page_title = 'История отчётов'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        reports = DailyReport.objects.select_related('workday', 'company', 'office', 'employee')
+
+        if can_delete_admin(user):
+            employee_id = self.request.GET.get('employee') or ''
+            office_id = self.request.GET.get('office') or ''
+            reports = reports.filter(employee_scope_q(user, manager_field='employee'))
+            if employee_id:
+                reports = reports.filter(employee_id=employee_id)
+            if office_id:
+                reports = reports.filter(office_id=office_id)
+        else:
+            employee_id = ''
+            office_id = ''
+            reports = reports.filter(employee=user)
+
+        date_from = parse_date(self.request.GET.get('date_from') or '')
+        date_to = parse_date(self.request.GET.get('date_to') or '')
+        if date_from:
+            reports = reports.filter(date__gte=date_from)
+        if date_to:
+            reports = reports.filter(date__lte=date_to)
+
+        page_obj, page_query = paginate_queryset(self.request, reports.order_by('-date', '-submitted_at'), 25)
+        context.update({
+            'reports': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': page_query,
+            'total_count': reports.count(),
+            'employee_options': employee_queryset(user).filter(is_active=True).order_by('user__first_name', 'user__last_name'),
+            'office_options': office_queryset(user).order_by('name'),
+            'selected_employee': employee_id,
+            'selected_office': office_id,
+            'date_from': self.request.GET.get('date_from', ''),
+            'date_to': self.request.GET.get('date_to', ''),
+            'can_filter_reports': can_delete_admin(user),
         })
         return context
 
@@ -2952,7 +3053,7 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
         employee_id = self.request.GET.get('employee') or ''
         office_id = self.request.GET.get('office') or ''
 
-        profiles = employee_queryset(self.request.user).filter(is_active=True).order_by('office__name', 'user__first_name', 'user__last_name')
+        profiles = employee_queryset(self.request.user).filter(is_active=True).filter(must_track_workday_q()).order_by('office__name', 'user__first_name', 'user__last_name')
         if office_id:
             profiles = profiles.filter(office_id=office_id)
 
@@ -3040,7 +3141,8 @@ class RatingView(PortalContextMixin, TemplateView):
             workdays = WorkDay.objects.filter(employee=user, date__gte=period_start)
             started_days = workdays.exclude(status=WorkDay.STATUS_NOT_STARTED).count()
             closed_days = workdays.filter(status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()
-            missed_days = workdays.filter(status=WorkDay.STATUS_MISSED).count()
+            must_track = not access or access.must_track_workday
+            missed_days = workdays.filter(status=WorkDay.STATUS_MISSED).count() if must_track else 0
             last_workday = workdays.order_by('-date').first()
             score = (
                 leads_count * 2

@@ -102,6 +102,8 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
     city_name = serializers.CharField(source='city.name', read_only=True, default='')
     logo = serializers.SerializerMethodField()
     cover = serializers.SerializerMethodField()
+    logo_url = serializers.SerializerMethodField()
+    cover_image_url = serializers.SerializerMethodField()
     public_contacts = serializers.SerializerMethodField()
     programs = ClientProgramShortSerializer(many=True, read_only=True)
     required_documents = ClientRequiredDocumentSerializer(many=True, read_only=True)
@@ -119,6 +121,8 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
             'description',
             'logo',
             'cover',
+            'logo_url',
+            'cover_image_url',
             'website',
             'address',
             'admission_requirements',
@@ -137,6 +141,12 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
     def get_cover(self, obj):
         return absolute_file_url(self.context.get('request'), obj.cover_image)
 
+    def get_logo_url(self, obj):
+        return self.get_logo(obj)
+
+    def get_cover_image_url(self, obj):
+        return self.get_cover(obj)
+
     def get_public_contacts(self, obj):
         return {
             'website': obj.website,
@@ -148,12 +158,16 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
 
 class ClientProgramSerializer(ClientProgramShortSerializer):
     university_logo = serializers.SerializerMethodField()
+    university_cover = serializers.SerializerMethodField()
 
     class Meta(ClientProgramShortSerializer.Meta):
-        fields = ClientProgramShortSerializer.Meta.fields + ('university_logo',)
+        fields = ClientProgramShortSerializer.Meta.fields + ('university_logo', 'university_cover')
 
     def get_university_logo(self, obj):
         return absolute_file_url(self.context.get('request'), obj.university.logo)
+
+    def get_university_cover(self, obj):
+        return absolute_file_url(self.context.get('request'), obj.university.cover_image)
 
 
 class ClientServiceSerializer(serializers.ModelSerializer):

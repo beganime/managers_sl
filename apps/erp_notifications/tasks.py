@@ -19,7 +19,7 @@ from apps.finance.models import Payment
 from apps.projects_v2.models import ProjectTask
 
 from .models import Notification, NotificationTemplate
-from .services import create_notification, get_admin_users, send_notification
+from .services import create_notification, get_admin_users, send_birthday_reminders_for_date, send_notification
 
 
 def notification_exists(related_object, notification_type, recipient=None, since=None):
@@ -61,7 +61,11 @@ def reminder_recipients(reminder):
     if reminder.employee_id:
         return [reminder.employee]
 
-    employees = EmployeeProfile.objects.filter(company=reminder.company, is_active=True, work_status='working').select_related('user')
+    employees = EmployeeProfile.objects.filter(
+        company=reminder.company,
+        is_active=True,
+        work_status='working',
+    ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).select_related('user')
     if reminder.office_id:
         employees = employees.filter(Q(office=reminder.office) | Q(office__isnull=True))
     return [employee.user for employee in employees]
@@ -107,7 +111,7 @@ def auto_close_workdays():
     qs = WorkDay.objects.select_related('company', 'office', 'employee').filter(
         date__lte=today,
         status__in=[WorkDay.STATUS_NOT_STARTED, WorkDay.STATUS_STARTED, WorkDay.STATUS_REPORT_SUBMITTED],
-    )
+    ).filter(Q(employee__employee_profile__access__must_track_workday=True) | Q(employee__employee_profile__access__isnull=True))
     closed = 0
     missed = 0
     failed = 0
@@ -300,3 +304,8 @@ def payment_confirmation_notification():
             if notification:
                 created += 1
     return {'created': created}
+
+
+@shared_task(name='erp_notifications.send_birthday_reminders')
+def send_birthday_reminders_task():
+    return send_birthday_reminders_for_date()

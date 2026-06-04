@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 
 from apps.core.permissions import get_employee_profile
 from apps.crm.models import Application, Client
-from apps.erp_documents.models import DocumentTemplate, GeneratedDocument
+from apps.erp_documents.models import DocumentTemplate, GeneratedDocument, extract_docx_lines
 from apps.finance.models import Deal
 
 from .views import (
@@ -243,6 +243,33 @@ class DocumentsView(ListPageMixin):
             'can_review_documents': can_delete_admin(self.request.user),
             'templates_count': document_template_queryset(self.request.user).count(),
         }
+
+
+class DocumentReviewView(PortalContextMixin, TemplateView):
+    template_name = 'portal/document_review.html'
+    active_page = 'approvals'
+    page_title = 'Проверка документа'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_delete_admin(request.user):
+            messages.error(request, 'Проверять документы может только администратор.')
+            return redirect('portal:documents')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_document(self):
+        return get_object_or_404(document_queryset(self.request.user), pk=self.kwargs['pk'])
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        document = self.get_document()
+        context.update({
+            'document': document,
+            'preview_lines': extract_docx_lines(document.generated_file) if document.generated_file else [],
+            'can_approve_with_stamp': document.template.allow_with_stamp,
+            'can_download_original': document.can_download_original,
+            'has_approved_pdf': bool(document.approved_file and str(document.approved_file.name).lower().endswith('.pdf')),
+        })
+        return context
 
 
 class DocumentCreateView(PortalContextMixin, TemplateView):

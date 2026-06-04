@@ -50,26 +50,26 @@ def user_display_name(user):
 class DocumentTemplate(TimeStampedModel, ActiveModel):
     company = models.ForeignKey(
         Company,
-        verbose_name='Company',
+        verbose_name='Компания',
         on_delete=models.PROTECT,
         related_name='erp_document_templates',
         null=True,
         blank=True,
     )
-    name = models.CharField('Name', max_length=255, db_index=True)
-    code = models.SlugField('Code', max_length=100, db_index=True)
-    document_type = models.CharField('Document type', max_length=100, blank=True)
-    description = models.TextField('Description', blank=True)
-    file = models.FileField('DOCX template', upload_to=template_upload_path)
-    requires_approval = models.BooleanField('Requires approval', default=True)
-    allow_without_stamp = models.BooleanField('Allow DOCX without stamp', default=True)
-    allow_with_stamp = models.BooleanField('Allow PDF with stamp', default=True)
-    jinja_variables = models.JSONField('Jinja variables', default=list, blank=True)
-    stamp_settings = models.JSONField('Stamp settings', default=dict, blank=True)
-    watermark_settings = models.JSONField('Watermark settings', default=dict, blank=True)
+    name = models.CharField('Название шаблона', max_length=255, db_index=True)
+    code = models.SlugField('Код шаблона', max_length=100, db_index=True)
+    document_type = models.CharField('Тип документа', max_length=100, blank=True)
+    description = models.TextField('Описание', blank=True)
+    file = models.FileField('DOCX-файл шаблона', upload_to=template_upload_path)
+    requires_approval = models.BooleanField('Требуется подтверждение администратора', default=True)
+    allow_without_stamp = models.BooleanField('Разрешить скачать DOCX без печати', default=True)
+    allow_with_stamp = models.BooleanField('Разрешить скачать PDF с печатью', default=True)
+    jinja_variables = models.JSONField('Jinja-переменные', default=list, blank=True)
+    stamp_settings = models.JSONField('Технические настройки печати', default=dict, blank=True)
+    watermark_settings = models.JSONField('Технические настройки водяного знака', default=dict, blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        verbose_name='Created by',
+        verbose_name='Кем создан',
         on_delete=models.SET_NULL,
         related_name='erp_document_templates_created',
         null=True,
@@ -77,8 +77,8 @@ class DocumentTemplate(TimeStampedModel, ActiveModel):
     )
 
     class Meta:
-        verbose_name = 'Document template'
-        verbose_name_plural = 'Document templates'
+        verbose_name = 'Шаблон документа'
+        verbose_name_plural = 'Шаблоны документов'
         ordering = ['company__name', 'name']
         unique_together = [('company', 'code')]
         indexes = [
@@ -105,13 +105,13 @@ class DocumentTemplateField(TimeStampedModel, OrderedModel):
     SOURCE_OFFICE = 'office'
     SOURCE_CUSTOM = 'custom'
     SOURCE_CHOICES = (
-        (SOURCE_CLIENT, 'Client'),
-        (SOURCE_APPLICATION, 'Application'),
-        (SOURCE_DEAL, 'Deal'),
-        (SOURCE_MANAGER, 'Manager'),
-        (SOURCE_COMPANY, 'Company'),
-        (SOURCE_OFFICE, 'Office'),
-        (SOURCE_CUSTOM, 'Custom'),
+        (SOURCE_CLIENT, 'Клиент'),
+        (SOURCE_APPLICATION, 'Заявка'),
+        (SOURCE_DEAL, 'Сделка'),
+        (SOURCE_MANAGER, 'Менеджер'),
+        (SOURCE_COMPANY, 'Компания'),
+        (SOURCE_OFFICE, 'Офис'),
+        (SOURCE_CUSTOM, 'Свое значение'),
     )
 
     FIELD_TYPE_TEXT = 'text'
@@ -121,33 +121,33 @@ class DocumentTemplateField(TimeStampedModel, OrderedModel):
     FIELD_TYPE_BOOLEAN = 'boolean'
     FIELD_TYPE_SELECT = 'select'
     FIELD_TYPE_CHOICES = (
-        (FIELD_TYPE_TEXT, 'Text'),
-        (FIELD_TYPE_TEXTAREA, 'Textarea'),
-        (FIELD_TYPE_NUMBER, 'Number'),
-        (FIELD_TYPE_DATE, 'Date'),
-        (FIELD_TYPE_BOOLEAN, 'Boolean'),
-        (FIELD_TYPE_SELECT, 'Select'),
+        (FIELD_TYPE_TEXT, 'Текст'),
+        (FIELD_TYPE_TEXTAREA, 'Большой текст'),
+        (FIELD_TYPE_NUMBER, 'Число'),
+        (FIELD_TYPE_DATE, 'Дата'),
+        (FIELD_TYPE_BOOLEAN, 'Да/нет'),
+        (FIELD_TYPE_SELECT, 'Выбор'),
     )
 
     template = models.ForeignKey(
         DocumentTemplate,
-        verbose_name='Template',
+        verbose_name='Шаблон',
         on_delete=models.CASCADE,
         related_name='fields',
     )
-    key = models.SlugField('Key', max_length=100)
-    jinja_key = models.CharField('Jinja key', max_length=150, blank=True)
-    data_source = models.CharField('Data source', max_length=32, choices=SOURCE_CHOICES, default=SOURCE_CUSTOM, db_index=True)
-    label = models.CharField('Label', max_length=255)
-    field_type = models.CharField('Field type', max_length=32, choices=FIELD_TYPE_CHOICES, default=FIELD_TYPE_TEXT)
-    default_value = models.CharField('Default value', max_length=255, blank=True)
-    options = models.JSONField('Options', default=list, blank=True)
-    is_required = models.BooleanField('Required', default=True)
-    help_text = models.CharField('Help text', max_length=255, blank=True)
+    key = models.SlugField('Ключ поля', max_length=100)
+    jinja_key = models.CharField('Jinja-ключ', max_length=150, blank=True)
+    data_source = models.CharField('Источник данных', max_length=32, choices=SOURCE_CHOICES, default=SOURCE_CUSTOM, db_index=True)
+    label = models.CharField('Название поля', max_length=255)
+    field_type = models.CharField('Тип поля', max_length=32, choices=FIELD_TYPE_CHOICES, default=FIELD_TYPE_TEXT)
+    default_value = models.CharField('Значение по умолчанию', max_length=255, blank=True)
+    options = models.JSONField('Варианты выбора', default=list, blank=True)
+    is_required = models.BooleanField('Обязательное поле', default=True)
+    help_text = models.CharField('Подсказка', max_length=255, blank=True)
 
     class Meta:
-        verbose_name = 'Document template field'
-        verbose_name_plural = 'Document template fields'
+        verbose_name = 'Поле шаблона документа'
+        verbose_name_plural = 'Поля шаблонов документов'
         ordering = ['sort_order', 'label']
         unique_together = [('template', 'key')]
         indexes = [
@@ -171,27 +171,27 @@ class GeneratedDocument(TimeStampedModel):
     STATUS_REJECTED = 'rejected'
     STATUS_ERROR = 'error'
     STATUS_CHOICES = (
-        (STATUS_DRAFT, 'Draft'),
-        (STATUS_GENERATED, 'Generated'),
-        (STATUS_PENDING, 'Pending approval'),
-        (STATUS_APPROVED, 'Approved'),
-        (STATUS_REJECTED, 'Rejected'),
-        (STATUS_ERROR, 'Generation error'),
+        (STATUS_DRAFT, 'Черновик'),
+        (STATUS_GENERATED, 'Сгенерирован'),
+        (STATUS_PENDING, 'Ожидает подтверждения'),
+        (STATUS_APPROVED, 'Одобрен'),
+        (STATUS_REJECTED, 'Отклонён'),
+        (STATUS_ERROR, 'Ошибка генерации'),
     )
 
-    company = models.ForeignKey(Company, verbose_name='Company', on_delete=models.PROTECT, related_name='erp_generated_documents')
+    company = models.ForeignKey(Company, verbose_name='Компания', on_delete=models.PROTECT, related_name='erp_generated_documents')
     office = models.ForeignKey(
         Office,
-        verbose_name='Office',
+        verbose_name='Офис',
         on_delete=models.SET_NULL,
         related_name='erp_generated_documents',
         null=True,
         blank=True,
     )
-    template = models.ForeignKey(DocumentTemplate, verbose_name='Template', on_delete=models.PROTECT, related_name='generated_documents')
+    template = models.ForeignKey(DocumentTemplate, verbose_name='Шаблон', on_delete=models.PROTECT, related_name='generated_documents')
     client = models.ForeignKey(
         Client,
-        verbose_name='Client',
+        verbose_name='Клиент',
         on_delete=models.PROTECT,
         related_name='erp_generated_documents',
         null=True,
@@ -199,7 +199,7 @@ class GeneratedDocument(TimeStampedModel):
     )
     application = models.ForeignKey(
         Application,
-        verbose_name='Application',
+        verbose_name='Заявка',
         on_delete=models.SET_NULL,
         related_name='erp_generated_documents',
         null=True,
@@ -207,34 +207,34 @@ class GeneratedDocument(TimeStampedModel):
     )
     deal = models.ForeignKey(
         Deal,
-        verbose_name='Deal',
+        verbose_name='Сделка',
         on_delete=models.SET_NULL,
         related_name='erp_generated_documents',
         null=True,
         blank=True,
     )
-    manager = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Manager', on_delete=models.PROTECT, related_name='erp_generated_documents')
-    title = models.CharField('Title', max_length=255, blank=True)
-    context_data = models.JSONField('Context data', default=dict, blank=True)
-    status = models.CharField('Status', max_length=32, choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True)
-    generated_file = models.FileField('Generated DOCX', upload_to=generated_upload_path, null=True, blank=True)
-    approved_file = models.FileField('Approved DOCX', upload_to=approved_upload_path, null=True, blank=True)
-    generation_error = models.TextField('Generation error', blank=True)
-    submitted_at = models.DateTimeField('Submitted at', null=True, blank=True)
-    generated_at = models.DateTimeField('Generated at', null=True, blank=True)
+    manager = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Менеджер', on_delete=models.PROTECT, related_name='erp_generated_documents')
+    title = models.CharField('Название документа', max_length=255, blank=True)
+    context_data = models.JSONField('Данные для подстановки', default=dict, blank=True)
+    status = models.CharField('Статус', max_length=32, choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True)
+    generated_file = models.FileField('DOCX без печати', upload_to=generated_upload_path, null=True, blank=True)
+    approved_file = models.FileField('PDF с печатью / одобренный файл', upload_to=approved_upload_path, null=True, blank=True)
+    generation_error = models.TextField('Ошибка генерации', blank=True)
+    submitted_at = models.DateTimeField('Отправлен на подтверждение', null=True, blank=True)
+    generated_at = models.DateTimeField('Сгенерирован', null=True, blank=True)
     approved_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        verbose_name='Approved by',
+        verbose_name='Кем одобрен',
         on_delete=models.SET_NULL,
         related_name='erp_documents_approved',
         null=True,
         blank=True,
     )
-    approved_at = models.DateTimeField('Approved at', null=True, blank=True)
+    approved_at = models.DateTimeField('Дата одобрения', null=True, blank=True)
 
     class Meta:
-        verbose_name = 'Generated document'
-        verbose_name_plural = 'Generated documents'
+        verbose_name = 'Сгенерированный документ'
+        verbose_name_plural = 'Сгенерированные документы'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['company', 'office', 'status']),
@@ -531,38 +531,38 @@ class DocumentApproval(TimeStampedModel):
     STATUS_APPROVED = 'approved'
     STATUS_REJECTED = 'rejected'
     STATUS_CHOICES = (
-        (STATUS_PENDING, 'Pending'),
-        (STATUS_APPROVED, 'Approved'),
-        (STATUS_REJECTED, 'Rejected'),
+        (STATUS_PENDING, 'Ожидает проверки'),
+        (STATUS_APPROVED, 'Одобрено'),
+        (STATUS_REJECTED, 'Отклонено'),
     )
 
     TYPE_NOT_SELECTED = 'not_selected'
     TYPE_WITHOUT_STAMP = 'without_stamp'
     TYPE_WITH_STAMP = 'with_stamp'
     TYPE_CHOICES = (
-        (TYPE_NOT_SELECTED, 'Not selected'),
-        (TYPE_WITHOUT_STAMP, 'Approve without stamp'),
-        (TYPE_WITH_STAMP, 'Approve with stamp'),
+        (TYPE_NOT_SELECTED, 'Не выбрано'),
+        (TYPE_WITHOUT_STAMP, 'Одобрить без печати'),
+        (TYPE_WITH_STAMP, 'Одобрить с электронной печатью'),
     )
 
-    document = models.OneToOneField(GeneratedDocument, verbose_name='Document', on_delete=models.CASCADE, related_name='approval')
-    status = models.CharField('Status', max_length=32, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
-    approval_type = models.CharField('Approval type', max_length=32, choices=TYPE_CHOICES, default=TYPE_NOT_SELECTED)
-    comment = models.TextField('Comment', blank=True)
-    rejection_reason = models.TextField('Rejection reason', blank=True)
+    document = models.OneToOneField(GeneratedDocument, verbose_name='Документ', on_delete=models.CASCADE, related_name='approval')
+    status = models.CharField('Статус', max_length=32, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    approval_type = models.CharField('Тип подтверждения', max_length=32, choices=TYPE_CHOICES, default=TYPE_NOT_SELECTED)
+    comment = models.TextField('Комментарий', blank=True)
+    rejection_reason = models.TextField('Причина отклонения', blank=True)
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        verbose_name='Reviewed by',
+        verbose_name='Кем проверено',
         on_delete=models.SET_NULL,
         related_name='erp_document_approvals',
         null=True,
         blank=True,
     )
-    reviewed_at = models.DateTimeField('Reviewed at', null=True, blank=True)
+    reviewed_at = models.DateTimeField('Дата проверки', null=True, blank=True)
 
     class Meta:
-        verbose_name = 'Document approval'
-        verbose_name_plural = 'Document approvals'
+        verbose_name = 'Подтверждение документа'
+        verbose_name_plural = 'Подтверждения документов'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['status', 'reviewed_at']),
@@ -580,17 +580,17 @@ class StampRule(TimeStampedModel, ActiveModel, OrderedModel):
     POSITION_CENTER = 'center'
     POSITION_CUSTOM = 'custom'
     POSITION_CHOICES = (
-        (POSITION_BOTTOM_LEFT, 'Bottom left'),
-        (POSITION_BOTTOM_RIGHT, 'Bottom right'),
-        (POSITION_TOP_LEFT, 'Top left'),
-        (POSITION_TOP_RIGHT, 'Top right'),
-        (POSITION_CENTER, 'Center'),
-        (POSITION_CUSTOM, 'Custom'),
+        (POSITION_BOTTOM_LEFT, 'Снизу слева'),
+        (POSITION_BOTTOM_RIGHT, 'Снизу справа'),
+        (POSITION_TOP_LEFT, 'Сверху слева'),
+        (POSITION_TOP_RIGHT, 'Сверху справа'),
+        (POSITION_CENTER, 'По центру'),
+        (POSITION_CUSTOM, 'Своя позиция'),
     )
 
     company = models.ForeignKey(
         Company,
-        verbose_name='Company',
+        verbose_name='Компания',
         on_delete=models.CASCADE,
         related_name='erp_document_stamp_rules',
         null=True,
@@ -598,7 +598,7 @@ class StampRule(TimeStampedModel, ActiveModel, OrderedModel):
     )
     office = models.ForeignKey(
         Office,
-        verbose_name='Office',
+        verbose_name='Офис',
         on_delete=models.CASCADE,
         related_name='erp_document_stamp_rules',
         null=True,
@@ -606,31 +606,31 @@ class StampRule(TimeStampedModel, ActiveModel, OrderedModel):
     )
     template = models.ForeignKey(
         DocumentTemplate,
-        verbose_name='Template',
+        verbose_name='Шаблон',
         on_delete=models.CASCADE,
         related_name='stamp_rules',
         null=True,
         blank=True,
     )
-    name = models.CharField('Name', max_length=150)
-    stamp_image = models.ImageField('Stamp image', upload_to=stamp_upload_path)
-    width_mm = models.PositiveIntegerField('Width, mm', default=40)
-    height_mm = models.PositiveIntegerField('Height, mm', default=40)
-    position = models.CharField('Position', max_length=32, choices=POSITION_CHOICES, default=POSITION_BOTTOM_LEFT)
-    x_mm = models.DecimalField('X, mm', max_digits=8, decimal_places=2, null=True, blank=True)
-    y_mm = models.DecimalField('Y, mm', max_digits=8, decimal_places=2, null=True, blank=True)
-    opacity = models.DecimalField('Opacity', max_digits=4, decimal_places=2, default=1)
-    watermark_enabled = models.BooleanField('Watermark enabled', default=False)
-    watermark_text = models.CharField('Watermark text', max_length=255, blank=True)
-    watermark_image = models.ImageField('Watermark image', upload_to=stamp_upload_path, null=True, blank=True)
-    watermark_position = models.CharField('Watermark position', max_length=32, choices=POSITION_CHOICES, default=POSITION_CENTER)
-    watermark_width_mm = models.PositiveIntegerField('Watermark width, mm', default=160)
-    watermark_height_mm = models.PositiveIntegerField('Watermark height, mm', default=60)
-    watermark_opacity = models.DecimalField('Watermark opacity', max_digits=4, decimal_places=2, default=0.15)
+    name = models.CharField('Название правила', max_length=150)
+    stamp_image = models.ImageField('Файл электронной печати', upload_to=stamp_upload_path)
+    width_mm = models.PositiveIntegerField('Ширина печати, мм', default=40)
+    height_mm = models.PositiveIntegerField('Высота печати, мм', default=40)
+    position = models.CharField('Позиция печати', max_length=32, choices=POSITION_CHOICES, default=POSITION_BOTTOM_LEFT)
+    x_mm = models.DecimalField('Координата X, мм', max_digits=8, decimal_places=2, null=True, blank=True)
+    y_mm = models.DecimalField('Координата Y, мм', max_digits=8, decimal_places=2, null=True, blank=True)
+    opacity = models.DecimalField('Прозрачность печати', max_digits=4, decimal_places=2, default=1)
+    watermark_enabled = models.BooleanField('Включить водяной знак', default=False)
+    watermark_text = models.CharField('Текст водяного знака', max_length=255, blank=True)
+    watermark_image = models.ImageField('Изображение водяного знака', upload_to=stamp_upload_path, null=True, blank=True)
+    watermark_position = models.CharField('Позиция водяного знака', max_length=32, choices=POSITION_CHOICES, default=POSITION_CENTER)
+    watermark_width_mm = models.PositiveIntegerField('Ширина водяного знака, мм', default=160)
+    watermark_height_mm = models.PositiveIntegerField('Высота водяного знака, мм', default=60)
+    watermark_opacity = models.DecimalField('Прозрачность водяного знака', max_digits=4, decimal_places=2, default=0.15)
 
     class Meta:
-        verbose_name = 'Stamp rule'
-        verbose_name_plural = 'Stamp rules'
+        verbose_name = 'Правило электронной печати'
+        verbose_name_plural = 'Правила электронной печати'
         ordering = ['sort_order', 'name']
         indexes = [
             models.Index(fields=['company', 'office', 'is_active']),
@@ -645,27 +645,27 @@ class DocumentDownloadLog(models.Model):
     FILE_TYPE_ORIGINAL = 'original'
     FILE_TYPE_APPROVED = 'approved'
     FILE_TYPE_CHOICES = (
-        (FILE_TYPE_ORIGINAL, 'Original'),
-        (FILE_TYPE_APPROVED, 'Approved'),
+        (FILE_TYPE_ORIGINAL, 'DOCX без печати'),
+        (FILE_TYPE_APPROVED, 'PDF с печатью'),
     )
 
-    document = models.ForeignKey(GeneratedDocument, verbose_name='Document', on_delete=models.CASCADE, related_name='download_logs')
+    document = models.ForeignKey(GeneratedDocument, verbose_name='Документ', on_delete=models.CASCADE, related_name='download_logs')
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        verbose_name='User',
+        verbose_name='Пользователь',
         on_delete=models.SET_NULL,
         related_name='erp_document_download_logs',
         null=True,
         blank=True,
     )
-    file_type = models.CharField('File type', max_length=32, choices=FILE_TYPE_CHOICES)
-    ip_address = models.GenericIPAddressField('IP address', null=True, blank=True)
-    user_agent = models.TextField('User agent', blank=True)
-    created_at = models.DateTimeField('Created at', auto_now_add=True, db_index=True)
+    file_type = models.CharField('Тип файла', max_length=32, choices=FILE_TYPE_CHOICES)
+    ip_address = models.GenericIPAddressField('IP-адрес', null=True, blank=True)
+    user_agent = models.TextField('User-Agent', blank=True)
+    created_at = models.DateTimeField('Дата скачивания', auto_now_add=True, db_index=True)
 
     class Meta:
-        verbose_name = 'Document download log'
-        verbose_name_plural = 'Document download logs'
+        verbose_name = 'Лог скачивания документа'
+        verbose_name_plural = 'Логи скачивания документов'
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['document', 'file_type']),
@@ -704,6 +704,113 @@ def copy_generated_file(document):
     return f'{base}-approved-{uuid4().hex[:10]}.docx', ContentFile(content)
 
 
+def extract_docx_lines(file_field):
+    if not file_field:
+        return []
+    try:
+        file_field.open('rb')
+        raw = file_field.read()
+    finally:
+        try:
+            file_field.close()
+        except Exception:
+            pass
+
+    try:
+        doc = DocxDocument(io.BytesIO(raw))
+    except Exception:
+        return []
+
+    lines = []
+    for paragraph in doc.paragraphs:
+        text = paragraph.text.strip()
+        if text:
+            lines.append(text)
+
+    for table in doc.tables:
+        for row in table.rows:
+            cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+            if cells:
+                lines.append(' | '.join(cells))
+
+    return lines
+
+
+def insert_wrapped_lines(pdf, title, lines, *, footer=''):
+    page = pdf.new_page(width=595, height=842)
+    margin = 42
+    y = 36
+    page.insert_textbox(
+        fitz.Rect(margin, y, 553, y + 42),
+        title,
+        fontsize=15,
+        fontname='helv',
+        color=(0.07, 0.13, 0.11),
+        align=1,
+    )
+    y += 66
+    if not lines:
+        lines = ['DOCX-файл создан, но текст для предпросмотра извлечь не удалось. Скачайте DOCX без печати для ручной проверки.']
+
+    for line in lines:
+        text = str(line or '').strip()
+        if not text:
+            continue
+        estimated_height = max(24, 16 * (len(text) // 86 + 1))
+        if y + estimated_height > 760:
+            if footer:
+                page.insert_textbox(
+                    fitz.Rect(margin, 780, 553, 812),
+                    footer,
+                    fontsize=8,
+                    fontname='helv',
+                    color=(0.42, 0.47, 0.44),
+                    align=1,
+                )
+            page = pdf.new_page(width=595, height=842)
+            y = 42
+        page.insert_textbox(
+            fitz.Rect(margin, y, 553, y + estimated_height),
+            text,
+            fontsize=10.5,
+            fontname='helv',
+            color=(0.12, 0.16, 0.14),
+        )
+        y += estimated_height + 8
+    if footer:
+        page.insert_textbox(
+            fitz.Rect(margin, 780, 553, 812),
+            footer,
+            fontsize=8,
+            fontname='helv',
+            color=(0.42, 0.47, 0.44),
+            align=1,
+        )
+
+
+def apply_stamp_and_watermark(pdf, rule):
+    for page in pdf:
+        if rule.watermark_enabled:
+            watermark_rect = watermark_rect_for_rule(rule, page.rect)
+            if rule.watermark_image:
+                page.insert_image(watermark_rect, filename=rule.watermark_image.path, keep_proportion=True, overlay=False)
+            elif rule.watermark_text:
+                page.insert_textbox(
+                    watermark_rect,
+                    rule.watermark_text,
+                    fontsize=max(12, min(42, watermark_rect.width / 9)),
+                    fontname='helv',
+                    color=(0.78, 0.82, 0.80),
+                    align=1,
+                    overlay=False,
+                )
+
+    if pdf.page_count:
+        page = pdf[-1]
+        stamp_rect = stamp_rect_for_rule(rule, page.rect)
+        page.insert_image(stamp_rect, filename=rule.stamp_image.path, keep_proportion=True, overlay=True)
+
+
 def build_approved_document_file(document, with_stamp=False):
     if not with_stamp:
         return copy_generated_file(document)
@@ -712,67 +819,12 @@ def build_approved_document_file(document, with_stamp=False):
     if not rule or not rule.stamp_image:
         raise ValueError('Для этого шаблона не настроена электронная печать.')
 
-    context = document.build_context()
     pdf = fitz.open()
-    page = pdf.new_page(width=595, height=842)
-    margin = 42
     title = document.title or document.template.name
-    page.insert_textbox(
-        fitz.Rect(margin, 36, 553, 82),
-        title,
-        fontsize=16,
-        fontname='helv',
-        color=(0.07, 0.13, 0.11),
-        align=1,
-    )
-
-    lines = [
-        f'Template: {document.template.name}',
-        f'Client: {context.get("client_full_name", "")}',
-        f'Phone: {context.get("client_phone", "")}',
-        f'Email: {context.get("client_email", "")}',
-        f'Citizenship: {context.get("client_citizenship", "")}',
-        f'Passport: {context.get("client_passport_inter_num", "") or context.get("client_passport_local_num", "")}',
-        f'Application: {context.get("application_university_name", "")} {context.get("application_program_name", "")}',
-        f'Manager: {context.get("manager_name", "")}',
-        f'Company: {context.get("company_name", "")}',
-        f'Office: {context.get("office_city", "")} {context.get("office_address", "")}',
-        f'Approved at: {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")}',
-    ]
-    page.insert_textbox(
-        fitz.Rect(margin, 108, 553, 500),
-        '\n'.join(line for line in lines if line.strip()),
-        fontsize=11,
-        fontname='helv',
-        color=(0.12, 0.16, 0.14),
-        lineheight=1.35,
-    )
-
-    if rule.watermark_enabled:
-        watermark_rect = watermark_rect_for_rule(rule, page.rect)
-        if rule.watermark_image:
-            page.insert_image(watermark_rect, filename=rule.watermark_image.path, keep_proportion=True, overlay=False)
-        elif rule.watermark_text:
-            page.insert_textbox(
-                watermark_rect,
-                rule.watermark_text,
-                fontsize=max(12, min(42, watermark_rect.width / 9)),
-                fontname='helv',
-                color=(0.78, 0.82, 0.80),
-                align=1,
-                overlay=False,
-            )
-
-    stamp_rect = stamp_rect_for_rule(rule, page.rect)
-    page.insert_image(stamp_rect, filename=rule.stamp_image.path, keep_proportion=True, overlay=True)
-    page.insert_textbox(
-        fitz.Rect(margin, 770, 553, 810),
-        'Verified electronic document',
-        fontsize=9,
-        fontname='helv',
-        color=(0.38, 0.44, 0.41),
-        align=1,
-    )
+    lines = extract_docx_lines(document.generated_file)
+    footer = f'Одобрено: {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")} | Электронная печать ManagerSL'
+    insert_wrapped_lines(pdf, title, lines, footer=footer)
+    apply_stamp_and_watermark(pdf, rule)
     buffer = io.BytesIO()
     pdf.save(buffer)
     pdf.close()

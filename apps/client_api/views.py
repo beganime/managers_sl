@@ -1,6 +1,8 @@
 from django.db.models import Prefetch, Q
+from rest_framework.response import Response
 from rest_framework import permissions, viewsets
 
+from apps.education.cache import EDUCATION_CACHE_TTL, education_cache_get, education_cache_set, make_education_cache_key
 from apps.education.models import City, Country, Intake, Program, ProgramFee, RequiredDocument, University
 from apps.erp_services.models import Service
 
@@ -28,9 +30,38 @@ def filter_id_or_name(qs, value, id_field, name_field):
 class ClientReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
+    cache_namespace = ''
+
+    def cache_response(self, namespace, builder):
+        key = make_education_cache_key(namespace, self.request, scope='client-api', extra=str(self.kwargs.get(self.lookup_field, '')))
+        cached = education_cache_get(key)
+        if cached is not None:
+            return Response(cached)
+        response = builder()
+        if response.status_code == 200:
+            education_cache_set(key, response.data, EDUCATION_CACHE_TTL)
+        return response
+
+    def list(self, request, *args, **kwargs):
+        if not self.cache_namespace:
+            return super().list(request, *args, **kwargs)
+        return self.cache_response(
+            f'{self.cache_namespace}:list',
+            lambda: viewsets.ReadOnlyModelViewSet.list(self, request, *args, **kwargs),
+        )
+
+    def retrieve(self, request, *args, **kwargs):
+        if not self.cache_namespace:
+            return super().retrieve(request, *args, **kwargs)
+        return self.cache_response(
+            f'{self.cache_namespace}:detail',
+            lambda: viewsets.ReadOnlyModelViewSet.retrieve(self, request, *args, **kwargs),
+        )
+
 
 class ClientCountryViewSet(ClientReadOnlyViewSet):
     serializer_class = ClientCountrySerializer
+    cache_namespace = 'countries'
 
     def get_queryset(self):
         qs = Country.objects.filter(is_active=True).order_by('sort_order', 'name')
@@ -44,6 +75,7 @@ class ClientCountryViewSet(ClientReadOnlyViewSet):
 
 class ClientCityViewSet(ClientReadOnlyViewSet):
     serializer_class = ClientCitySerializer
+    cache_namespace = 'cities'
 
     def get_queryset(self):
         qs = City.objects.select_related('country').filter(is_active=True, country__is_active=True)
@@ -58,6 +90,7 @@ class ClientCityViewSet(ClientReadOnlyViewSet):
 
 class ClientUniversityViewSet(ClientReadOnlyViewSet):
     serializer_class = ClientUniversitySerializer
+    cache_namespace = 'universities'
 
     def get_queryset(self):
         active_programs = Program.objects.filter(is_active=True, is_archived=False).prefetch_related(
@@ -87,6 +120,7 @@ class ClientUniversityViewSet(ClientReadOnlyViewSet):
 
 class ClientProgramViewSet(ClientReadOnlyViewSet):
     serializer_class = ClientProgramSerializer
+    cache_namespace = 'programs'
 
     def get_queryset(self):
         qs = Program.objects.select_related('university', 'university__country', 'university__city').prefetch_related(

@@ -4,6 +4,7 @@ from .document_views import (
     ClientDocumentCreateView,
     DocumentCreateView,
     DocumentRegenerateView,
+    DocumentReviewView,
     DocumentsView,
 )
 from .views import (
@@ -57,6 +58,7 @@ from .views import (
     UniversityFormView,
     WorkdayCloseView,
     WorkdayReportView,
+    WorkdayReportsView,
     WorkdayStartView,
     WorkdayView,
 )
@@ -111,6 +113,7 @@ urlpatterns = [
     path('approvals/', ApprovalsView.as_view(), name='approvals'),
     path('documents/', DocumentsView.as_view(), name='documents'),
     path('documents/create/', DocumentCreateView.as_view(), name='document_create'),
+    path('documents/<int:pk>/review/', DocumentReviewView.as_view(), name='document_review'),
     path('documents/<int:pk>/regenerate/', DocumentRegenerateView.as_view(), name='document_regenerate'),
     path('documents/<int:pk>/<slug:action>/', DocumentActionView.as_view(), name='document_action'),
     path('knowledge/', KnowledgeView.as_view(), name='knowledge'),
@@ -121,6 +124,7 @@ urlpatterns = [
     path('knowledge/article/<int:pk>/', KnowledgeArticleView.as_view(), name='knowledge_article'),
     path('knowledge/article/<int:pk>/edit/', KnowledgeArticleCreateView.as_view(), name='knowledge_edit_article'),
     path('workday/', WorkdayView.as_view(), name='workday'),
+    path('workday/reports/', WorkdayReportsView.as_view(), name='workday_reports'),
     path('workday/start/', WorkdayStartView.as_view(), name='workday_start'),
     path('workday/report/', WorkdayReportView.as_view(), name='workday_report'),
     path('workday/close/', WorkdayCloseView.as_view(), name='workday_close'),

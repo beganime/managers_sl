@@ -526,9 +526,9 @@ class DocumentTemplateAdmin(ModelAdmin):
     def stamp_help(self, obj):
         return mark_safe(
             '<div style="line-height:1.5">'
-            '<b>Печать:</b> добавляйте через отдельный раздел <b>Stamp rules</b>.<br>'
-            '<b>Важно:</b> если печать не нужна, не создавайте Stamp rule.<br>'
-            '<b>Водяной знак:</b> настраивается в том же Stamp rule.'
+            '<b>Электронная печать:</b> добавляйте через отдельный раздел <b>Правила электронной печати</b>.<br>'
+            '<b>Важно:</b> если печать не нужна, правило электронной печати создавать не нужно.<br>'
+            '<b>Водяной знак:</b> настраивается в том же правиле электронной печати.'
             '</div>'
         )
 
@@ -710,7 +710,7 @@ class GeneratedDocumentAdmin(ModelAdmin):
         ),
     )
 
-    @admin.action(description='Submit selected documents for approval')
+    @admin.action(description='Отправить выбранные документы на подтверждение')
     def submit_for_approval(self, request, queryset):
         ok = 0
         for document in queryset.select_related('template', 'client', 'application', 'deal', 'company', 'office', 'manager'):
@@ -722,7 +722,7 @@ class GeneratedDocumentAdmin(ModelAdmin):
         if ok:
             self.message_user(request, f'Отправлено на подтверждение: {ok}.', messages.SUCCESS)
 
-    @admin.action(description='Approve selected documents without stamp')
+    @admin.action(description='Одобрить выбранные документы без печати')
     def approve_without_stamp(self, request, queryset):
         if not is_admin_user(request.user):
             self.message_user(request, 'Нет прав для этой операции.', messages.ERROR)
@@ -737,7 +737,7 @@ class GeneratedDocumentAdmin(ModelAdmin):
         if ok:
             self.message_user(request, f'Одобрено без печати: {ok}.', messages.SUCCESS)
 
-    @admin.action(description='Approve selected documents with stamp')
+    @admin.action(description='Одобрить выбранные документы с электронной печатью')
     def approve_with_stamp(self, request, queryset):
         if not is_admin_user(request.user):
             self.message_user(request, 'Нет прав для этой операции.', messages.ERROR)

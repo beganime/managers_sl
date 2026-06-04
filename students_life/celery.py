@@ -51,4 +51,8 @@ app.conf.beat_schedule = {
         'task': 'erp_notifications.payment_confirmation_notification',
         'schedule': crontab(minute='*/5'),
     },
+    'erp-birthday-reminders': {
+        'task': 'erp_notifications.send_birthday_reminders',
+        'schedule': crontab(minute=0, hour=8),
+    },
 }

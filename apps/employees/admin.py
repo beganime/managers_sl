@@ -16,6 +16,11 @@ class EmployeeAccessInline(admin.StackedInline):
     model = EmployeeAccess
     can_delete = False
     extra = 0
+    fieldsets = (
+        ('Видимость данных', {'fields': ('can_see_all_company', 'can_see_all_office')}),
+        ('Права управления', {'fields': ('can_manage_finance', 'can_manage_hr', 'can_manage_documents', 'can_manage_catalog')}),
+        ('Рейтинг и рабочий день', {'fields': ('can_be_in_leaderboard', 'must_track_workday')}),
+    )
 
 
 @admin.register(EmployeeProfile)
@@ -51,11 +56,18 @@ class EmployeeProfileAdmin(ModelAdmin):
 
 @admin.register(EmployeeAccess)
 class EmployeeAccessAdmin(ModelAdmin):
-    list_display = ('employee', 'can_see_all_company', 'can_see_all_office', 'can_manage_finance', 'can_manage_hr', 'can_be_in_leaderboard')
-    list_filter = ('can_see_all_company', 'can_see_all_office', 'can_manage_finance', 'can_manage_hr', 'can_be_in_leaderboard')
+    list_display = ('employee', 'can_see_all_company', 'can_see_all_office', 'can_manage_finance', 'can_manage_hr', 'can_be_in_leaderboard', 'must_track_workday')
+    list_filter = ('can_see_all_company', 'can_see_all_office', 'can_manage_finance', 'can_manage_hr', 'can_be_in_leaderboard', 'must_track_workday')
     search_fields = ('employee__user__email', 'employee__user__first_name', 'employee__user__last_name')
     autocomplete_fields = ('employee',)
     readonly_fields = ('created_at', 'updated_at')
+    fieldsets = (
+        ('Сотрудник', {'fields': ('employee',)}),
+        ('Видимость данных', {'fields': ('can_see_all_company', 'can_see_all_office')}),
+        ('Права управления', {'fields': ('can_manage_finance', 'can_manage_hr', 'can_manage_documents', 'can_manage_catalog')}),
+        ('Рейтинг и рабочий день', {'fields': ('can_be_in_leaderboard', 'must_track_workday')}),
+        ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+    )
 
 
 @admin.register(EmployeeRating)
