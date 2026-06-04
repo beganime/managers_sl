@@ -5,7 +5,7 @@
     <div class="panel">
         <div class="panel-header">
             <h2 class="panel-title">Проверка документа</h2>
-            <span class="pill {% if document.status == 'approved' %}ok{% elif document.status == 'rejected' %}danger{% else %}warn{% endif %}">{{ document.get_status_display }}</span>
+            <span class="pill {% if document.status == 'approved' %}ok{% elif document.status == 'rejected' or document.status == 'error' %}danger{% else %}warn{% endif %}">{{ document.get_status_display }}</span>
         </div>
         <div class="panel-body">
             <div class="list">
@@ -15,16 +15,30 @@
                 <div class="list-row"><span class="muted">Менеджер</span><span>{{ document.manager.get_full_name|default:document.manager.email }}</span></div>
                 <div class="list-row"><span class="muted">Создан</span><span>{{ document.created_at|date:"d.m.Y H:i" }}</span></div>
                 <div class="list-row"><span class="muted">Отправлен</span><span>{{ document.submitted_at|date:"d.m.Y H:i"|default:"-" }}</span></div>
+                {% if has_stamp_preview %}
+                    <div class="list-row">
+                        <span class="muted">Предпросмотр печати</span>
+                        <span>
+                            {{ stamp_preview_generated_at|date:"d.m.Y H:i"|default:"создан" }}
+                            {% if stamp_preview_generated_by %}<br><span class="muted small">{{ stamp_preview_generated_by.get_full_name|default:stamp_preview_generated_by.email }}</span>{% endif %}
+                        </span>
+                    </div>
+                {% endif %}
             </div>
+
             {% if document.generation_error %}
-                <div class="empty" style="border-color:#fecaca; color:#991b1b;">{{ document.generation_error }}</div>
+                <div class="empty" style="border-color:#fecaca; color:#991b1b; text-align:left;">{{ document.generation_error }}</div>
             {% endif %}
+
             <div class="filters" style="margin-top:14px;">
                 {% if can_download_original %}
                     <a class="btn" href="{% url 'portal:document_action' document.id 'download-original' %}"><i data-lucide="download"></i>Скачать DOCX без печати</a>
                 {% endif %}
+                {% if has_stamp_preview %}
+                    <a class="btn" href="{% url 'portal:document_action' document.id 'preview-stamp-preview' %}" target="_blank"><i data-lucide="eye"></i>Открыть предпросмотр PDF</a>
+                {% endif %}
                 {% if has_approved_pdf %}
-                    <a class="btn" href="{% url 'portal:document_action' document.id 'preview-approved' %}" target="_blank"><i data-lucide="eye"></i>Открыть PDF</a>
+                    <a class="btn" href="{% url 'portal:document_action' document.id 'preview-approved' %}" target="_blank"><i data-lucide="eye"></i>Открыть подтверждённый PDF</a>
                     <a class="btn primary" href="{% url 'portal:document_action' document.id 'download-approved' %}"><i data-lucide="stamp"></i>Скачать PDF с печатью</a>
                 {% endif %}
             </div>
@@ -35,22 +49,28 @@
         <div class="panel-header"><h2 class="panel-title">Решение администратора</h2></div>
         <div class="panel-body">
             {% if document.status == 'pending' %}
-                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" style="margin-bottom:16px;">
+                <div class="empty" style="text-align:left; margin-bottom:16px;">
+                    Сначала можно создать предпросмотр PDF с печатью и открыть его. Если печать стоит неправильно, измените позицию ниже и нажмите “Перегенерировать предпросмотр”. Финальное скачивание PDF станет доступно только после кнопки “Подтвердить этот PDF”.
+                </div>
+
+                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" style="margin-bottom:18px;">
                     {% csrf_token %}
                     <input type="hidden" name="with_stamp" value="0">
-                    <label><span class="muted small">Комментарий</span><textarea class="textarea" name="comment" rows="2" placeholder="Комментарий к подтверждению без печати"></textarea></label>
-                    <button class="btn" type="submit"><i data-lucide="check"></i>Одобрить без печати</button>
+                    <label>
+                        <span class="muted small">Комментарий</span>
+                        <textarea class="textarea" name="comment" rows="2" placeholder="Комментарий к подтверждению без печати"></textarea>
+                    </label>
+                    <button class="btn" type="submit"><i data-lucide="check"></i>Подтвердить без печати</button>
                 </form>
 
-                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" id="stamp-approval-form" style="margin-bottom:16px;">
+                <form method="post" action="{% url 'portal:document_action' document.id 'generate-stamp-preview' %}" class="grid" id="stamp-approval-form" style="margin-bottom:18px;">
                     {% csrf_token %}
-                    <input type="hidden" name="with_stamp" value="1">
-                    <input type="hidden" name="stamp_x_percent" id="stamp_x_percent" value="12">
-                    <input type="hidden" name="stamp_y_percent" id="stamp_y_percent" value="72">
+                    <input type="hidden" name="stamp_x_percent" id="stamp_x_percent" value="{{ default_stamp_x_percent }}">
+                    <input type="hidden" name="stamp_y_percent" id="stamp_y_percent" value="{{ default_stamp_y_percent }}">
 
                     {% if not stamp_rule %}
                         <div class="empty" style="border-color:#fecaca; color:#991b1b; text-align:left;">
-                            Для шаблона не найдено активное правило электронной печати. Можно одобрить без печати или сначала добавить правило печати в админке.
+                            Для шаблона не найдено активное правило электронной печати. Можно подтвердить без печати или сначала добавить правило печати в админке.
                         </div>
                     {% endif %}
 
@@ -58,14 +78,14 @@
                         <label>
                             <span class="muted small">Куда поставить печать</span>
                             <select class="input" name="stamp_mode" id="stamp_mode">
-                                <option value="executor" selected>Автоматически на слове “Исполнитель”</option>
-                                <option value="manual">Выбрать область вручную</option>
-                                <option value="rule">По правилу из админки</option>
+                                <option value="executor" {% if default_stamp_mode == 'executor' %}selected{% endif %}>Автоматически на слове “Исполнитель”</option>
+                                <option value="manual" {% if default_stamp_mode == 'manual' %}selected{% endif %}>Выбрать область вручную</option>
+                                <option value="rule" {% if default_stamp_mode == 'rule' %}selected{% endif %}>По правилу из админки</option>
                             </select>
                         </label>
                         <label>
-                            <span class="muted small">Комментарий</span>
-                            <textarea class="textarea" name="comment" rows="2" placeholder="Комментарий к подтверждению с печатью"></textarea>
+                            <span class="muted small">Страница PDF</span>
+                            <input class="input" type="number" min="1" step="1" name="page_number" value="{{ default_page_number }}" placeholder="Пусто = последняя страница">
                         </label>
                     </div>
 
@@ -82,18 +102,32 @@
 
                     <div id="manual-stamp-picker" style="display:none;">
                         <div class="empty" style="text-align:left; margin-bottom:10px;">
-                            Перетащите область печати на листе. Размер области меняется полями “Ширина” и “Высота” выше.
+                            Перетащите область печати на листе. Размер меняется через поля “Ширина” и “Высота”. После этого сгенерируйте новый предпросмотр PDF и откройте его.
                         </div>
                         <div id="stamp-page-preview" style="position:relative; width:min(100%, 360px); aspect-ratio:595/842; background:#fff; border:1px solid #d1d5db; border-radius:8px; overflow:hidden; box-shadow:0 12px 30px rgba(15,23,42,.08);">
                             <div style="position:absolute; left:8%; right:8%; top:8%; height:1px; background:#e5e7eb;"></div>
                             <div style="position:absolute; left:8%; right:8%; bottom:18%; height:1px; background:#e5e7eb;"></div>
                             <div style="position:absolute; left:8%; bottom:16%; color:#64748b; font-size:12px;">Исполнитель ____________________</div>
-                            <div id="stamp-box" style="position:absolute; left:12%; top:72%; width:24%; height:10%; border:2px solid #2563eb; border-radius:999px; background:rgba(37,99,235,.10); color:#1d4ed8; display:grid; place-items:center; font-size:12px; font-weight:700; cursor:grab; user-select:none;">Печать</div>
+                            <div id="stamp-box" style="position:absolute; left:{{ default_stamp_x_percent }}%; top:{{ default_stamp_y_percent }}%; width:24%; height:10%; border:2px solid #2563eb; border-radius:999px; background:rgba(37,99,235,.10); color:#1d4ed8; display:grid; place-items:center; font-size:12px; font-weight:700; cursor:grab; user-select:none;">Печать</div>
                         </div>
                     </div>
 
-                    <button class="btn primary" type="submit" {% if not stamp_rule %}disabled{% endif %}><i data-lucide="stamp"></i>Одобрить и поставить электронную печать</button>
+                    <button class="btn primary" type="submit" {% if not stamp_rule %}disabled{% endif %}>
+                        <i data-lucide="stamp"></i>{% if has_stamp_preview %}Перегенерировать предпросмотр PDF{% else %}Сгенерировать предпросмотр PDF{% endif %}
+                    </button>
                 </form>
+
+                {% if has_stamp_preview %}
+                    <form method="post" action="{% url 'portal:document_action' document.id 'approve-stamp-preview' %}" class="grid" style="margin-bottom:18px;">
+                        {% csrf_token %}
+                        <label>
+                            <span class="muted small">Комментарий к подтверждению</span>
+                            <textarea class="textarea" name="comment" rows="2" placeholder="Например: печать проверена, положение корректное"></textarea>
+                        </label>
+                        <button class="btn primary" type="submit"><i data-lucide="check-circle"></i>Подтвердить этот PDF для скачивания</button>
+                    </form>
+                {% endif %}
+
                 <form method="post" action="{% url 'portal:document_action' document.id 'reject' %}" class="grid">
                     {% csrf_token %}
                     <label><span class="muted small">Причина отклонения</span><textarea class="textarea" name="reason" rows="3" placeholder="Что нужно исправить"></textarea></label>

@@ -34,6 +34,10 @@ def approved_upload_path(instance, filename):
     return f'erp/documents/approved/{instance.company_id or "global"}/{filename}'
 
 
+def stamp_preview_upload_path(instance, filename):
+    return f'erp/documents/stamp_previews/{instance.company_id or "global"}/{filename}'
+
+
 def stamp_upload_path(instance, filename):
     return f'erp/documents/stamps/{instance.company_id or "global"}/{filename}'
 
@@ -246,6 +250,17 @@ class GeneratedDocument(TimeStampedModel):
     status = models.CharField('Статус', max_length=32, choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True)
     generated_file = models.FileField('DOCX без печати', upload_to=generated_upload_path, null=True, blank=True)
     approved_file = models.FileField('PDF с печатью / одобренный файл', upload_to=approved_upload_path, null=True, blank=True)
+    stamp_preview_file = models.FileField('Предпросмотр PDF с печатью', upload_to=stamp_preview_upload_path, null=True, blank=True)
+    stamp_preview_options = models.JSONField('Настройки предпросмотра печати', default=dict, blank=True)
+    stamp_preview_generated_at = models.DateTimeField('Предпросмотр печати создан', null=True, blank=True)
+    stamp_preview_generated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Кем создан предпросмотр печати',
+        on_delete=models.SET_NULL,
+        related_name='erp_documents_stamp_previews',
+        null=True,
+        blank=True,
+    )
     generation_error = models.TextField('Ошибка генерации', blank=True)
     submitted_at = models.DateTimeField('Отправлен на подтверждение', null=True, blank=True)
     generated_at = models.DateTimeField('Сгенерирован', null=True, blank=True)
@@ -285,6 +300,10 @@ class GeneratedDocument(TimeStampedModel):
     @property
     def can_download_approved(self):
         return bool(self.approved_file and self.status == self.STATUS_APPROVED)
+
+    @property
+    def has_stamp_preview(self):
+        return bool(self.stamp_preview_file)
 
     @property
     def can_download(self):
@@ -474,6 +493,12 @@ class GeneratedDocument(TimeStampedModel):
 
         if self.generated_file:
             self.generated_file.delete(save=False)
+        if self.stamp_preview_file:
+            self.stamp_preview_file.delete(save=False)
+            self.stamp_preview_file = None
+        self.stamp_preview_options = {}
+        self.stamp_preview_generated_at = None
+        self.stamp_preview_generated_by = None
 
         self.generated_file.save(filename, ContentFile(buffer.getvalue()), save=False)
         self.status = self.STATUS_GENERATED
@@ -481,7 +506,18 @@ class GeneratedDocument(TimeStampedModel):
         self.generated_at = timezone.now()
         if not self.title:
             self.title = self.template.name
-        self.save(update_fields=['generated_file', 'status', 'generation_error', 'generated_at', 'title', 'updated_at'])
+        self.save(update_fields=[
+            'generated_file',
+            'stamp_preview_file',
+            'stamp_preview_options',
+            'stamp_preview_generated_at',
+            'stamp_preview_generated_by',
+            'status',
+            'generation_error',
+            'generated_at',
+            'title',
+            'updated_at',
+        ])
         return self
 
     def submit_for_approval(self, user=None, comment=''):
@@ -505,7 +541,106 @@ class GeneratedDocument(TimeStampedModel):
             if self.approved_file:
                 self.approved_file.delete(save=False)
                 self.approved_file = None
-            self.save(update_fields=['status', 'submitted_at', 'approved_by', 'approved_at', 'approved_file', 'updated_at'])
+            if self.stamp_preview_file:
+                self.stamp_preview_file.delete(save=False)
+                self.stamp_preview_file = None
+            self.stamp_preview_options = {}
+            self.stamp_preview_generated_at = None
+            self.stamp_preview_generated_by = None
+            self.save(update_fields=[
+                'status',
+                'submitted_at',
+                'approved_by',
+                'approved_at',
+                'approved_file',
+                'stamp_preview_file',
+                'stamp_preview_options',
+                'stamp_preview_generated_at',
+                'stamp_preview_generated_by',
+                'updated_at',
+            ])
+        return self
+
+    def generate_stamp_preview(self, user=None, stamp_options=None):
+        if not self.generated_file:
+            raise ValueError('Generated file is required before stamp preview.')
+        if self.status == self.STATUS_APPROVED:
+            raise ValueError('Подтверждённый документ нельзя перегенерировать. Создайте новый документ.')
+        if not self.template.allow_with_stamp:
+            raise ValueError('Этот шаблон не разрешает PDF с электронной печатью.')
+
+        stamp_options = stamp_options or {'stamp_mode': 'executor'}
+        try:
+            preview_file = build_approved_document_file(self, with_stamp=True, stamp_options=stamp_options)
+        except Exception as exc:
+            self.generation_error = str(exc)
+            self.save(update_fields=['generation_error', 'updated_at'])
+            raise ValueError(str(exc)) from exc
+
+        if self.stamp_preview_file:
+            self.stamp_preview_file.delete(save=False)
+        self.stamp_preview_file.save(preview_file[0].replace('-stamped-', '-stamp-preview-'), preview_file[1], save=False)
+        self.stamp_preview_options = stamp_options
+        self.stamp_preview_generated_at = timezone.now()
+        self.stamp_preview_generated_by = user
+        self.generation_error = ''
+        self.save(update_fields=[
+            'stamp_preview_file',
+            'stamp_preview_options',
+            'stamp_preview_generated_at',
+            'stamp_preview_generated_by',
+            'generation_error',
+            'updated_at',
+        ])
+        return self
+
+    def approve_stamp_preview(self, user, comment=''):
+        if not self.stamp_preview_file:
+            raise ValueError('Сначала сгенерируйте предпросмотр PDF с печатью и проверьте его.')
+        if self.status == self.STATUS_APPROVED:
+            raise ValueError('Документ уже подтверждён.')
+        if not self.template.allow_with_stamp:
+            raise ValueError('Этот шаблон не разрешает PDF с электронной печатью.')
+
+        self.stamp_preview_file.open('rb')
+        try:
+            preview_content = self.stamp_preview_file.read()
+        finally:
+            self.stamp_preview_file.close()
+
+        base = slugify(self.title or self.template.name) or 'approved-document'
+        approved_filename = f'{base}-stamped-approved-{uuid4().hex[:10]}.pdf'
+
+        with transaction.atomic():
+            if self.approved_file:
+                self.approved_file.delete(save=False)
+            self.approved_file.save(approved_filename, ContentFile(preview_content), save=False)
+            self.status = self.STATUS_APPROVED
+            self.approved_by = user
+            self.approved_at = timezone.now()
+            self.generation_error = ''
+            stored_context = self.context_data or {}
+            stored_context['last_stamp_options'] = self.stamp_preview_options or {'stamp_mode': 'executor'}
+            stored_context['approved_from_stamp_preview'] = True
+            self.context_data = stored_context
+            self.save(update_fields=[
+                'approved_file',
+                'status',
+                'approved_by',
+                'approved_at',
+                'generation_error',
+                'context_data',
+                'updated_at',
+            ])
+
+            approval, _ = DocumentApproval.objects.get_or_create(document=self)
+            approval.status = DocumentApproval.STATUS_APPROVED
+            approval.approval_type = DocumentApproval.TYPE_WITH_STAMP
+            approval.comment = comment or ''
+            approval.rejection_reason = ''
+            approval.reviewed_by = user
+            approval.reviewed_at = self.approved_at
+            approval.save()
         return self
 
     def approve(self, user, with_stamp=False, comment='', stamp_options=None):

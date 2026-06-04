@@ -60,9 +60,11 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
     deal_title = serializers.CharField(source='deal.title', read_only=True)
     manager_name = serializers.CharField(source='manager.get_full_name', read_only=True)
     approved_by_name = serializers.CharField(source='approved_by.get_full_name', read_only=True)
+    stamp_preview_generated_by_name = serializers.CharField(source='stamp_preview_generated_by.get_full_name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     approval = DocumentApprovalSerializer(read_only=True)
     generated_file_url = serializers.SerializerMethodField()
+    stamp_preview_file_url = serializers.SerializerMethodField()
     approved_file_url = serializers.SerializerMethodField()
     can_download_original = serializers.BooleanField(read_only=True)
     can_download_approved = serializers.BooleanField(read_only=True)
@@ -74,6 +76,10 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
         read_only_fields = (
             'status',
             'generated_file',
+            'stamp_preview_file',
+            'stamp_preview_options',
+            'stamp_preview_generated_at',
+            'stamp_preview_generated_by',
             'approved_file',
             'generation_error',
             'submitted_at',
@@ -86,6 +92,9 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
 
     def get_generated_file_url(self, obj):
         return build_file_url(self.context.get('request'), obj.generated_file)
+
+    def get_stamp_preview_file_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.stamp_preview_file)
 
     def get_approved_file_url(self, obj):
         return build_file_url(self.context.get('request'), obj.approved_file)

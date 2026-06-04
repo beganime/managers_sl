@@ -710,6 +710,9 @@ Base path: `/api/v1/documents/`
 | `/generated/` | Сгенерированные документы |
 | `/generated/{id}/generate/` | Перегенерировать файл |
 | `/generated/{id}/submit-for-approval/` | Отправить на проверку |
+| `/generated/{id}/generate-stamp-preview/` | Сгенерировать или перегенерировать PDF-предпросмотр с печатью, только admin |
+| `/generated/{id}/preview-stamp-preview/` | Открыть PDF-предпросмотр с печатью, только admin |
+| `/generated/{id}/approve-stamp-preview/` | Подтвердить проверенный PDF-предпросмотр для скачивания, только admin |
 | `/generated/{id}/approve/` | Approve, только admin |
 | `/generated/{id}/reject/` | Reject, только admin |
 | `/generated/{id}/download-original/` | Скачать оригинал, если разрешено |
@@ -780,7 +783,62 @@ Response `201`:
 }
 ```
 
-### Approve с печатью
+### Рекомендуемый flow подтверждения PDF с печатью
+
+Сначала администратор создаёт PDF-предпросмотр с печатью:
+
+```http
+POST /api/v1/documents/generated/91/generate-stamp-preview/
+```
+
+Request:
+
+```json
+{
+  "stamp_mode": "executor",
+  "stamp_width_mm": 40,
+  "stamp_height_mm": 40,
+  "page_number": ""
+}
+```
+
+Если печать нужно поставить вручную:
+
+```json
+{
+  "stamp_mode": "manual",
+  "stamp_width_mm": 45,
+  "stamp_height_mm": 45,
+  "stamp_x_percent": 12.5,
+  "stamp_y_percent": 72.0
+}
+```
+
+После генерации администратор открывает предпросмотр:
+
+```http
+GET /api/v1/documents/generated/91/preview-stamp-preview/
+```
+
+Если печать стоит неправильно, повторно вызвать `generate-stamp-preview` с другими координатами. Когда PDF проверен:
+
+```http
+POST /api/v1/documents/generated/91/approve-stamp-preview/
+```
+
+Request:
+
+```json
+{
+  "comment": "PDF checked, stamp placement is correct"
+}
+```
+
+Только после этого `status` станет `approved`, а `download-approved` начнёт отдавать финальный PDF.
+
+### Старый approve с печатью
+
+Endpoint ниже оставлен для обратной совместимости. Для нового интерфейса лучше использовать flow с `generate-stamp-preview` и `approve-stamp-preview`.
 
 ```http
 POST /api/v1/documents/generated/91/approve/

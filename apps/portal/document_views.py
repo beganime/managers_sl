@@ -263,15 +263,24 @@ class DocumentReviewView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         document = self.get_document()
         stamp_rule = find_stamp_rule(document)
+        stamp_preview_options = document.stamp_preview_options or {}
         context.update({
             'document': document,
             'preview_lines': extract_docx_lines(document.generated_file) if document.generated_file else [],
             'stamp_rule': stamp_rule,
-            'default_stamp_width_mm': stamp_rule.width_mm if stamp_rule else 40,
-            'default_stamp_height_mm': stamp_rule.height_mm if stamp_rule else 40,
+            'stamp_preview_options': stamp_preview_options,
+            'default_stamp_mode': stamp_preview_options.get('stamp_mode') or 'executor',
+            'default_stamp_width_mm': stamp_preview_options.get('stamp_width_mm') or (stamp_rule.width_mm if stamp_rule else 40),
+            'default_stamp_height_mm': stamp_preview_options.get('stamp_height_mm') or (stamp_rule.height_mm if stamp_rule else 40),
+            'default_stamp_x_percent': stamp_preview_options.get('stamp_x_percent') or 12,
+            'default_stamp_y_percent': stamp_preview_options.get('stamp_y_percent') or 72,
+            'default_page_number': stamp_preview_options.get('page_number') or '',
             'can_approve_with_stamp': document.template.allow_with_stamp,
             'can_download_original': document.can_download_original,
             'has_approved_pdf': bool(document.approved_file and str(document.approved_file.name).lower().endswith('.pdf')),
+            'has_stamp_preview': document.has_stamp_preview,
+            'stamp_preview_generated_at': document.stamp_preview_generated_at,
+            'stamp_preview_generated_by': document.stamp_preview_generated_by,
         })
         return context
 

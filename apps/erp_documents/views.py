@@ -48,6 +48,7 @@ def stamp_options_from_request(data):
         'stamp_y_percent': data.get('stamp_y_percent') or '',
         'stamp_x_mm': data.get('stamp_x_mm') or '',
         'stamp_y_mm': data.get('stamp_y_mm') or '',
+        'page_number': data.get('page_number') or '',
     }
 
 
@@ -265,6 +266,32 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             raise ValidationError(str(exc))
         return Response(self.get_serializer(document).data, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'], url_path='generate-stamp-preview')
+    def generate_stamp_preview(self, request, pk=None):
+        ensure_admin(request.user)
+        document = self.get_object()
+        try:
+            document.generate_stamp_preview(
+                user=request.user,
+                stamp_options=stamp_options_from_request(request.data),
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc))
+        return Response(self.get_serializer(document).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='approve-stamp-preview')
+    def approve_stamp_preview(self, request, pk=None):
+        ensure_admin(request.user)
+        document = self.get_object()
+        try:
+            document.approve_stamp_preview(
+                user=request.user,
+                comment=request.data.get('comment', ''),
+            )
+        except ValueError as exc:
+            raise ValidationError(str(exc))
+        return Response(self.get_serializer(document).data, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['post'], url_path='reject')
     def reject(self, request, pk=None):
         ensure_admin(request.user)
@@ -287,6 +314,16 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             raise PermissionDenied('Approved document is not available for download.')
         log_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
         return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.approved_file.name.split('/')[-1])
+
+    @action(detail=True, methods=['get'], url_path='preview-stamp-preview')
+    def preview_stamp_preview(self, request, pk=None):
+        ensure_admin(request.user)
+        document = self.get_object()
+        if not document.stamp_preview_file:
+            raise PermissionDenied('Stamp preview is not available yet.')
+        response = FileResponse(document.stamp_preview_file.open('rb'), as_attachment=False, filename=document.stamp_preview_file.name.split('/')[-1])
+        response['Content-Type'] = 'application/pdf'
+        return response
 
 
 class DocumentApprovalViewSet(viewsets.ModelViewSet):

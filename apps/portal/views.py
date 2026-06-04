@@ -701,6 +701,7 @@ def stamp_options_from_post(post_data):
         'stamp_y_percent': post_data.get('stamp_y_percent') or '',
         'stamp_x_mm': post_data.get('stamp_x_mm') or '',
         'stamp_y_mm': post_data.get('stamp_y_mm') or '',
+        'page_number': post_data.get('page_number') or '',
     }
 
 
@@ -2662,6 +2663,22 @@ class DocumentActionView(LoginRequiredMixin, View):
                     stamp_options=stamp_options_from_post(request.POST) if with_stamp else None,
                 )
                 messages.success(request, 'Документ подтверждён.')
+            elif action == 'generate-stamp-preview':
+                if not can_delete_admin(request.user):
+                    raise PermissionError('Недостаточно прав.')
+                document.generate_stamp_preview(
+                    user=request.user,
+                    stamp_options=stamp_options_from_post(request.POST),
+                )
+                messages.success(request, 'Предпросмотр PDF с печатью создан. Откройте его и проверьте положение печати.')
+            elif action == 'approve-stamp-preview':
+                if not can_delete_admin(request.user):
+                    raise PermissionError('Недостаточно прав.')
+                document.approve_stamp_preview(
+                    user=request.user,
+                    comment=request.POST.get('comment', ''),
+                )
+                messages.success(request, 'Проверенный PDF с печатью подтверждён и доступен для скачивания.')
             elif action == 'reject':
                 if not can_delete_admin(request.user):
                     raise PermissionError('Недостаточно прав.')
@@ -2669,7 +2686,7 @@ class DocumentActionView(LoginRequiredMixin, View):
                 messages.success(request, 'Документ отклонён.')
         except Exception as exc:
             messages.error(request, str(exc))
-        if action in {'approve', 'reject'}:
+        if action in {'approve', 'reject', 'generate-stamp-preview', 'approve-stamp-preview'}:
             return redirect('portal:document_review', pk=document.pk)
         return redirect('portal:documents')
 
@@ -2693,6 +2710,16 @@ class DocumentActionView(LoginRequiredMixin, View):
                 return redirect('portal:documents')
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
             response = FileResponse(document.approved_file.open('rb'), as_attachment=False, filename=document.approved_file.name.split('/')[-1])
+            response['Content-Type'] = 'application/pdf'
+            return response
+        if action == 'preview-stamp-preview':
+            if not can_delete_admin(request.user):
+                messages.error(request, 'Недостаточно прав.')
+                return redirect('portal:documents')
+            if not document.stamp_preview_file:
+                messages.error(request, 'Сначала сгенерируйте предпросмотр PDF с печатью.')
+                return redirect('portal:document_review', pk=document.pk)
+            response = FileResponse(document.stamp_preview_file.open('rb'), as_attachment=False, filename=document.stamp_preview_file.name.split('/')[-1])
             response['Content-Type'] = 'application/pdf'
             return response
         raise Http404

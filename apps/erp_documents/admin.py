@@ -636,11 +636,13 @@ class GeneratedDocumentAdmin(ModelAdmin):
         'application',
         'deal',
         'manager',
+        'stamp_preview_generated_by',
         'approved_by',
     )
     readonly_fields = (
         'generated_at',
         'submitted_at',
+        'stamp_preview_generated_at',
         'approved_at',
         'generation_error',
         'created_at',
@@ -669,8 +671,22 @@ class GeneratedDocumentAdmin(ModelAdmin):
             {
                 'fields': (
                     'generated_file',
+                    'stamp_preview_file',
                     'approved_file',
                 )
+            },
+        ),
+        (
+            'Предпросмотр печати',
+            {
+                'fields': (
+                    'stamp_preview_options',
+                    'stamp_preview_generated_by',
+                    'stamp_preview_generated_at',
+                ),
+                'classes': (
+                    'collapse',
+                ),
             },
         ),
         (
