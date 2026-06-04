@@ -690,6 +690,18 @@ def log_document_download(request, document, file_type):
     )
 
 
+def stamp_options_from_post(post_data):
+    return {
+        'stamp_mode': post_data.get('stamp_mode') or 'executor',
+        'stamp_width_mm': post_data.get('stamp_width_mm') or '',
+        'stamp_height_mm': post_data.get('stamp_height_mm') or '',
+        'stamp_x_percent': post_data.get('stamp_x_percent') or '',
+        'stamp_y_percent': post_data.get('stamp_y_percent') or '',
+        'stamp_x_mm': post_data.get('stamp_x_mm') or '',
+        'stamp_y_mm': post_data.get('stamp_y_mm') or '',
+    }
+
+
 def next_annual_date(source_date, today):
     try:
         event_date = date(today.year, source_date.month, source_date.day)
@@ -2384,7 +2396,13 @@ class ApprovalsView(PortalContextMixin, TemplateView):
                 messages.success(request, 'Доход отклонён.')
             elif action == 'approve_document':
                 document = get_object_or_404(document_queryset(request.user), pk=request.POST.get('document_id'))
-                document.approve(user=request.user, with_stamp=request.POST.get('with_stamp') == '1', comment=request.POST.get('comment', ''))
+                with_stamp = request.POST.get('with_stamp') == '1'
+                document.approve(
+                    user=request.user,
+                    with_stamp=with_stamp,
+                    comment=request.POST.get('comment', ''),
+                    stamp_options=stamp_options_from_post(request.POST) if with_stamp else None,
+                )
                 messages.success(request, 'Документ подтверждён.')
             elif action == 'reject_document':
                 document = get_object_or_404(document_queryset(request.user), pk=request.POST.get('document_id'))
@@ -2545,7 +2563,13 @@ class DocumentActionView(LoginRequiredMixin, View):
             elif action == 'approve':
                 if not can_delete_admin(request.user):
                     raise PermissionError('Недостаточно прав.')
-                document.approve(user=request.user, with_stamp=request.POST.get('with_stamp') == '1', comment=request.POST.get('comment', ''))
+                with_stamp = request.POST.get('with_stamp') == '1'
+                document.approve(
+                    user=request.user,
+                    with_stamp=with_stamp,
+                    comment=request.POST.get('comment', ''),
+                    stamp_options=stamp_options_from_post(request.POST) if with_stamp else None,
+                )
                 messages.success(request, 'Документ подтверждён.')
             elif action == 'reject':
                 if not can_delete_admin(request.user):
@@ -2554,6 +2578,8 @@ class DocumentActionView(LoginRequiredMixin, View):
                 messages.success(request, 'Документ отклонён.')
         except Exception as exc:
             messages.error(request, str(exc))
+        if action in {'approve', 'reject'}:
+            return redirect('portal:document_review', pk=document.pk)
         return redirect('portal:documents')
 
     def get(self, request, pk, action):

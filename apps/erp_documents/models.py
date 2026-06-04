@@ -481,7 +481,7 @@ class GeneratedDocument(TimeStampedModel):
             self.save(update_fields=['status', 'submitted_at', 'approved_by', 'approved_at', 'approved_file', 'updated_at'])
         return self
 
-    def approve(self, user, with_stamp=False, comment=''):
+    def approve(self, user, with_stamp=False, comment='', stamp_options=None):
         if not self.generated_file:
             raise ValueError('Generated file is required before approval.')
         if with_stamp and not self.template.allow_with_stamp:
@@ -490,7 +490,12 @@ class GeneratedDocument(TimeStampedModel):
             raise ValueError('Этот шаблон не разрешает подтверждение без печати.')
 
         approval_type = DocumentApproval.TYPE_WITH_STAMP if with_stamp else DocumentApproval.TYPE_WITHOUT_STAMP
-        approved_file = build_approved_document_file(self, with_stamp=with_stamp)
+        try:
+            approved_file = build_approved_document_file(self, with_stamp=with_stamp, stamp_options=stamp_options)
+        except Exception as exc:
+            self.generation_error = str(exc)
+            self.save(update_fields=['generation_error', 'updated_at'])
+            raise ValueError(str(exc)) from exc
 
         with transaction.atomic():
             if self.approved_file:
@@ -500,7 +505,11 @@ class GeneratedDocument(TimeStampedModel):
             self.approved_by = user
             self.approved_at = timezone.now()
             self.generation_error = ''
-            self.save(update_fields=['approved_file', 'status', 'approved_by', 'approved_at', 'generation_error', 'updated_at'])
+            if with_stamp:
+                stored_context = self.context_data or {}
+                stored_context['last_stamp_options'] = stamp_options or {'stamp_mode': 'executor'}
+                self.context_data = stored_context
+            self.save(update_fields=['approved_file', 'status', 'approved_by', 'approved_at', 'generation_error', 'context_data', 'updated_at'])
 
             approval, _ = DocumentApproval.objects.get_or_create(document=self)
             approval.status = DocumentApproval.STATUS_APPROVED
@@ -736,10 +745,20 @@ def extract_docx_lines(file_field):
     return lines
 
 
+def parse_decimal_option(value, default=None):
+    if value in (None, ''):
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def insert_wrapped_lines(pdf, title, lines, *, footer=''):
     page = pdf.new_page(width=595, height=842)
     margin = 42
     y = 36
+    targets = {}
     page.insert_textbox(
         fitz.Rect(margin, y, 553, y + 42),
         title,
@@ -769,6 +788,13 @@ def insert_wrapped_lines(pdf, title, lines, *, footer=''):
                 )
             page = pdf.new_page(width=595, height=842)
             y = 42
+        if 'исполнитель' in text.lower():
+            targets['executor'] = {
+                'page_index': pdf.page_count - 1,
+                'x': margin,
+                'y': y,
+                'height': estimated_height,
+            }
         page.insert_textbox(
             fitz.Rect(margin, y, 553, y + estimated_height),
             text,
@@ -786,9 +812,12 @@ def insert_wrapped_lines(pdf, title, lines, *, footer=''):
             color=(0.42, 0.47, 0.44),
             align=1,
         )
+    return targets
 
 
-def apply_stamp_and_watermark(pdf, rule):
+def apply_stamp_and_watermark(pdf, rule, stamp_options=None, targets=None):
+    stamp_options = stamp_options or {}
+    targets = targets or {}
     for page in pdf:
         if rule.watermark_enabled:
             watermark_rect = watermark_rect_for_rule(rule, page.rect)
@@ -806,12 +835,12 @@ def apply_stamp_and_watermark(pdf, rule):
                 )
 
     if pdf.page_count:
-        page = pdf[-1]
-        stamp_rect = stamp_rect_for_rule(rule, page.rect)
+        page_index, stamp_rect = stamp_rect_for_options(rule, pdf, stamp_options, targets)
+        page = pdf[page_index]
         page.insert_image(stamp_rect, filename=rule.stamp_image.path, keep_proportion=True, overlay=True)
 
 
-def build_approved_document_file(document, with_stamp=False):
+def build_approved_document_file(document, with_stamp=False, stamp_options=None):
     if not with_stamp:
         return copy_generated_file(document)
 
@@ -823,8 +852,8 @@ def build_approved_document_file(document, with_stamp=False):
     title = document.title or document.template.name
     lines = extract_docx_lines(document.generated_file)
     footer = f'Одобрено: {timezone.localtime(timezone.now()).strftime("%Y-%m-%d %H:%M")} | Электронная печать ManagerSL'
-    insert_wrapped_lines(pdf, title, lines, footer=footer)
-    apply_stamp_and_watermark(pdf, rule)
+    targets = insert_wrapped_lines(pdf, title, lines, footer=footer)
+    apply_stamp_and_watermark(pdf, rule, stamp_options=stamp_options, targets=targets)
     buffer = io.BytesIO()
     pdf.save(buffer)
     pdf.close()
@@ -834,18 +863,67 @@ def build_approved_document_file(document, with_stamp=False):
     return f'{base}-stamped-{uuid4().hex[:10]}.pdf', ContentFile(buffer.getvalue())
 
 
+def stamp_size_for_options(rule, stamp_options=None):
+    stamp_options = stamp_options or {}
+    width_mm = parse_decimal_option(stamp_options.get('stamp_width_mm'), rule.width_mm)
+    height_mm = parse_decimal_option(stamp_options.get('stamp_height_mm'), rule.height_mm or width_mm)
+    width_mm = max(10, min(120, width_mm or rule.width_mm or 40))
+    height_mm = max(10, min(120, height_mm or rule.height_mm or width_mm))
+    return mm_to_pt(width_mm), mm_to_pt(height_mm)
+
+
 def mm_to_pt(value):
     return float(value or 0) * 72 / 25.4
 
 
-def stamp_rect_for_rule(rule, page_rect):
-    width = mm_to_pt(rule.width_mm)
-    height = mm_to_pt(rule.height_mm or rule.width_mm)
+def clamp_rect(x, y, width, height, page_rect):
+    x = max(0, min(float(x), page_rect.width - width))
+    y = max(0, min(float(y), page_rect.height - height))
+    return fitz.Rect(x, y, x + width, y + height)
+
+
+def stamp_rect_for_options(rule, pdf, stamp_options=None, targets=None):
+    stamp_options = stamp_options or {}
+    targets = targets or {}
+    mode = stamp_options.get('stamp_mode') or 'executor'
+    width, height = stamp_size_for_options(rule, stamp_options)
+    page_index = max(0, pdf.page_count - 1)
+    page_rect = pdf[page_index].rect
+
+    if mode == 'manual':
+        x_percent = parse_decimal_option(stamp_options.get('stamp_x_percent'))
+        y_percent = parse_decimal_option(stamp_options.get('stamp_y_percent'))
+        if x_percent is not None and y_percent is not None:
+            x = page_rect.width * max(0, min(100, x_percent)) / 100
+            y = page_rect.height * max(0, min(100, y_percent)) / 100
+            return page_index, clamp_rect(x, y, width, height, page_rect)
+        x_mm = parse_decimal_option(stamp_options.get('stamp_x_mm'))
+        y_mm = parse_decimal_option(stamp_options.get('stamp_y_mm'))
+        if x_mm is not None and y_mm is not None:
+            return page_index, clamp_rect(mm_to_pt(x_mm), mm_to_pt(y_mm), width, height, page_rect)
+
+    if mode == 'rule':
+        return page_index, stamp_rect_for_rule(rule, page_rect, width=width, height=height)
+
+    executor = targets.get('executor')
+    if executor:
+        page_index = max(0, min(pdf.page_count - 1, int(executor.get('page_index') or 0)))
+        page_rect = pdf[page_index].rect
+        x = float(executor.get('x') or mm_to_pt(18))
+        y = float(executor.get('y') or page_rect.height - mm_to_pt(50)) - height * 0.45
+        return page_index, clamp_rect(x, y, width, height, page_rect)
+
+    return page_index, stamp_rect_for_rule(rule, page_rect, width=width, height=height)
+
+
+def stamp_rect_for_rule(rule, page_rect, *, width=None, height=None):
+    width = width if width is not None else mm_to_pt(rule.width_mm)
+    height = height if height is not None else mm_to_pt(rule.height_mm or rule.width_mm)
     margin = mm_to_pt(18)
     if rule.position == StampRule.POSITION_CUSTOM and rule.x_mm is not None and rule.y_mm is not None:
         x = mm_to_pt(rule.x_mm)
         y = mm_to_pt(rule.y_mm)
-        return fitz.Rect(x, y, x + width, y + height)
+        return clamp_rect(x, y, width, height, page_rect)
     if rule.position == StampRule.POSITION_BOTTOM_RIGHT:
         return fitz.Rect(page_rect.width - margin - width, page_rect.height - margin - height, page_rect.width - margin, page_rect.height - margin)
     if rule.position == StampRule.POSITION_TOP_LEFT:

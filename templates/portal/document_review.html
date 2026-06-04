@@ -35,11 +35,64 @@
         <div class="panel-header"><h2 class="panel-title">Решение администратора</h2></div>
         <div class="panel-body">
             {% if document.status == 'pending' %}
-                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" style="margin-bottom:12px;">
+                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" style="margin-bottom:16px;">
+                    {% csrf_token %}
+                    <input type="hidden" name="with_stamp" value="0">
+                    <label><span class="muted small">Комментарий</span><textarea class="textarea" name="comment" rows="2" placeholder="Комментарий к подтверждению без печати"></textarea></label>
+                    <button class="btn" type="submit"><i data-lucide="check"></i>Одобрить без печати</button>
+                </form>
+
+                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" id="stamp-approval-form" style="margin-bottom:16px;">
                     {% csrf_token %}
                     <input type="hidden" name="with_stamp" value="1">
-                    <label><span class="muted small">Комментарий</span><textarea class="textarea" name="comment" rows="3" placeholder="Комментарий к подтверждению"></textarea></label>
-                    <button class="btn primary" type="submit"><i data-lucide="stamp"></i>Одобрить и поставить печать</button>
+                    <input type="hidden" name="stamp_x_percent" id="stamp_x_percent" value="12">
+                    <input type="hidden" name="stamp_y_percent" id="stamp_y_percent" value="72">
+
+                    {% if not stamp_rule %}
+                        <div class="empty" style="border-color:#fecaca; color:#991b1b; text-align:left;">
+                            Для шаблона не найдено активное правило электронной печати. Можно одобрить без печати или сначала добавить правило печати в админке.
+                        </div>
+                    {% endif %}
+
+                    <div class="grid cols-2">
+                        <label>
+                            <span class="muted small">Куда поставить печать</span>
+                            <select class="input" name="stamp_mode" id="stamp_mode">
+                                <option value="executor" selected>Автоматически на слове “Исполнитель”</option>
+                                <option value="manual">Выбрать область вручную</option>
+                                <option value="rule">По правилу из админки</option>
+                            </select>
+                        </label>
+                        <label>
+                            <span class="muted small">Комментарий</span>
+                            <textarea class="textarea" name="comment" rows="2" placeholder="Комментарий к подтверждению с печатью"></textarea>
+                        </label>
+                    </div>
+
+                    <div class="grid cols-2">
+                        <label>
+                            <span class="muted small">Ширина печати, мм</span>
+                            <input class="input" type="number" min="10" max="120" step="1" name="stamp_width_mm" id="stamp_width_mm" value="{{ default_stamp_width_mm }}">
+                        </label>
+                        <label>
+                            <span class="muted small">Высота печати, мм</span>
+                            <input class="input" type="number" min="10" max="120" step="1" name="stamp_height_mm" id="stamp_height_mm" value="{{ default_stamp_height_mm }}">
+                        </label>
+                    </div>
+
+                    <div id="manual-stamp-picker" style="display:none;">
+                        <div class="empty" style="text-align:left; margin-bottom:10px;">
+                            Перетащите область печати на листе. Размер области меняется полями “Ширина” и “Высота” выше.
+                        </div>
+                        <div id="stamp-page-preview" style="position:relative; width:min(100%, 360px); aspect-ratio:595/842; background:#fff; border:1px solid #d1d5db; border-radius:8px; overflow:hidden; box-shadow:0 12px 30px rgba(15,23,42,.08);">
+                            <div style="position:absolute; left:8%; right:8%; top:8%; height:1px; background:#e5e7eb;"></div>
+                            <div style="position:absolute; left:8%; right:8%; bottom:18%; height:1px; background:#e5e7eb;"></div>
+                            <div style="position:absolute; left:8%; bottom:16%; color:#64748b; font-size:12px;">Исполнитель ____________________</div>
+                            <div id="stamp-box" style="position:absolute; left:12%; top:72%; width:24%; height:10%; border:2px solid #2563eb; border-radius:999px; background:rgba(37,99,235,.10); color:#1d4ed8; display:grid; place-items:center; font-size:12px; font-weight:700; cursor:grab; user-select:none;">Печать</div>
+                        </div>
+                    </div>
+
+                    <button class="btn primary" type="submit" {% if not stamp_rule %}disabled{% endif %}><i data-lucide="stamp"></i>Одобрить и поставить электронную печать</button>
                 </form>
                 <form method="post" action="{% url 'portal:document_action' document.id 'reject' %}" class="grid">
                     {% csrf_token %}
@@ -67,4 +120,67 @@
         {% endif %}
     </div>
 </section>
+
+<script>
+(() => {
+    const mode = document.getElementById('stamp_mode');
+    const picker = document.getElementById('manual-stamp-picker');
+    const page = document.getElementById('stamp-page-preview');
+    const box = document.getElementById('stamp-box');
+    const xInput = document.getElementById('stamp_x_percent');
+    const yInput = document.getElementById('stamp_y_percent');
+    const widthInput = document.getElementById('stamp_width_mm');
+    const heightInput = document.getElementById('stamp_height_mm');
+    if (!mode || !picker || !page || !box) return;
+
+    const togglePicker = () => {
+        picker.style.display = mode.value === 'manual' ? 'block' : 'none';
+    };
+
+    const resizeBox = () => {
+        const widthMm = Math.max(10, Math.min(120, Number(widthInput.value || 40)));
+        const heightMm = Math.max(10, Math.min(120, Number(heightInput.value || 40)));
+        box.style.width = `${Math.max(10, Math.min(42, widthMm / 2.4))}%`;
+        box.style.height = `${Math.max(5, Math.min(22, heightMm / 4))}%`;
+    };
+
+    const setBoxPosition = (clientX, clientY) => {
+        const rect = page.getBoundingClientRect();
+        const boxRect = box.getBoundingClientRect();
+        let x = ((clientX - rect.left - boxRect.width / 2) / rect.width) * 100;
+        let y = ((clientY - rect.top - boxRect.height / 2) / rect.height) * 100;
+        const maxX = 100 - (boxRect.width / rect.width) * 100;
+        const maxY = 100 - (boxRect.height / rect.height) * 100;
+        x = Math.max(0, Math.min(maxX, x));
+        y = Math.max(0, Math.min(maxY, y));
+        box.style.left = `${x}%`;
+        box.style.top = `${y}%`;
+        xInput.value = x.toFixed(2);
+        yInput.value = y.toFixed(2);
+    };
+
+    let dragging = false;
+    box.addEventListener('pointerdown', (event) => {
+        dragging = true;
+        box.setPointerCapture(event.pointerId);
+        box.style.cursor = 'grabbing';
+        setBoxPosition(event.clientX, event.clientY);
+    });
+    box.addEventListener('pointermove', (event) => {
+        if (dragging) setBoxPosition(event.clientX, event.clientY);
+    });
+    box.addEventListener('pointerup', () => {
+        dragging = false;
+        box.style.cursor = 'grab';
+    });
+    page.addEventListener('click', (event) => {
+        if (mode.value === 'manual') setBoxPosition(event.clientX, event.clientY);
+    });
+    mode.addEventListener('change', togglePicker);
+    widthInput.addEventListener('input', resizeBox);
+    heightInput.addEventListener('input', resizeBox);
+    resizeBox();
+    togglePicker();
+})();
+</script>
 {% endblock %}

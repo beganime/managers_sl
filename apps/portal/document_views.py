@@ -8,7 +8,7 @@ from django.views.generic import TemplateView
 
 from apps.core.permissions import get_employee_profile
 from apps.crm.models import Application, Client
-from apps.erp_documents.models import DocumentTemplate, GeneratedDocument, extract_docx_lines
+from apps.erp_documents.models import DocumentTemplate, GeneratedDocument, extract_docx_lines, find_stamp_rule
 from apps.finance.models import Deal
 
 from .views import (
@@ -262,9 +262,13 @@ class DocumentReviewView(PortalContextMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         document = self.get_document()
+        stamp_rule = find_stamp_rule(document)
         context.update({
             'document': document,
             'preview_lines': extract_docx_lines(document.generated_file) if document.generated_file else [],
+            'stamp_rule': stamp_rule,
+            'default_stamp_width_mm': stamp_rule.width_mm if stamp_rule else 40,
+            'default_stamp_height_mm': stamp_rule.height_mm if stamp_rule else 40,
             'can_approve_with_stamp': document.template.allow_with_stamp,
             'can_download_original': document.can_download_original,
             'has_approved_pdf': bool(document.approved_file and str(document.approved_file.name).lower().endswith('.pdf')),

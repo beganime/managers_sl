@@ -39,6 +39,18 @@ def parse_bool(value):
     return None
 
 
+def stamp_options_from_request(data):
+    return {
+        'stamp_mode': data.get('stamp_mode') or 'executor',
+        'stamp_width_mm': data.get('stamp_width_mm') or '',
+        'stamp_height_mm': data.get('stamp_height_mm') or '',
+        'stamp_x_percent': data.get('stamp_x_percent') or '',
+        'stamp_y_percent': data.get('stamp_y_percent') or '',
+        'stamp_x_mm': data.get('stamp_x_mm') or '',
+        'stamp_y_mm': data.get('stamp_y_mm') or '',
+    }
+
+
 def default_company_office(user):
     employee = get_employee_profile(user)
     if not employee:
@@ -243,7 +255,12 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         if with_stamp is None:
             with_stamp = mode in ('with_stamp', 'approve_with_stamp')
         try:
-            document.approve(user=request.user, with_stamp=with_stamp, comment=request.data.get('comment', ''))
+            document.approve(
+                user=request.user,
+                with_stamp=with_stamp,
+                comment=request.data.get('comment', ''),
+                stamp_options=stamp_options_from_request(request.data) if with_stamp else None,
+            )
         except ValueError as exc:
             raise ValidationError(str(exc))
         return Response(self.get_serializer(document).data, status=status.HTTP_200_OK)
@@ -296,7 +313,12 @@ class DocumentApprovalViewSet(viewsets.ModelViewSet):
         if with_stamp is None:
             with_stamp = mode in ('with_stamp', 'approve_with_stamp')
         try:
-            approval.document.approve(user=request.user, with_stamp=with_stamp, comment=request.data.get('comment', ''))
+            approval.document.approve(
+                user=request.user,
+                with_stamp=with_stamp,
+                comment=request.data.get('comment', ''),
+                stamp_options=stamp_options_from_request(request.data) if with_stamp else None,
+            )
         except ValueError as exc:
             raise ValidationError(str(exc))
         approval.refresh_from_db()

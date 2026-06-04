@@ -58,7 +58,7 @@
                             {% if item.can_download_original %}<a class="btn" href="{% url 'portal:document_action' item.id 'download-original' %}"><i data-lucide="download"></i>DOCX</a>{% endif %}
                             <a class="btn" href="{% url 'portal:document_review' item.id %}"><i data-lucide="eye"></i>Проверить онлайн</a>
                             <form method="post">{% csrf_token %}<input type="hidden" name="action" value="approve_document"><input type="hidden" name="document_id" value="{{ item.id }}"><button class="btn primary" type="submit"><i data-lucide="check"></i>Одобрить без печати</button></form>
-                            <form method="post">{% csrf_token %}<input type="hidden" name="action" value="approve_document"><input type="hidden" name="document_id" value="{{ item.id }}"><input type="hidden" name="with_stamp" value="1"><button class="btn primary" type="submit"><i data-lucide="stamp"></i>Одобрить с печатью</button></form>
+                            <a class="btn primary" href="{% url 'portal:document_review' item.id %}"><i data-lucide="stamp"></i>Проверить и поставить печать</a>
                             <form method="post">{% csrf_token %}<input type="hidden" name="action" value="reject_document"><input type="hidden" name="document_id" value="{{ item.id }}"><button class="btn danger" type="submit"><i data-lucide="x"></i>Отклонить</button></form>
                         </div>
                     </td>
