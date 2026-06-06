@@ -1,3 +1,5 @@
+from urllib.parse import quote
+
 from rest_framework import serializers
 
 from .models import (
@@ -15,6 +17,29 @@ def build_file_url(request, file_field):
         return None
     url = file_field.url
     return request.build_absolute_uri(url) if request else url
+
+
+def build_absolute_path(request, path):
+    return request.build_absolute_uri(path) if request else path
+
+
+def build_document_api_url(request, document, action):
+    if not document or not document.pk:
+        return None
+    return build_absolute_path(request, f'/api/v1/documents/generated/{document.pk}/{action}/')
+
+
+def build_document_portal_url(request, document, action):
+    if not document or not document.pk:
+        return None
+    return build_absolute_path(request, f'/portal/documents/{document.pk}/{action}/')
+
+
+def filename_from_file(file_field):
+    if not file_field:
+        return ''
+    name = getattr(file_field, 'name', '') or ''
+    return name.split('/')[-1]
 
 
 class DocumentTemplateFieldSerializer(serializers.ModelSerializer):
@@ -63,12 +88,33 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
     stamp_preview_generated_by_name = serializers.CharField(source='stamp_preview_generated_by.get_full_name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     approval = DocumentApprovalSerializer(read_only=True)
+
     generated_file_url = serializers.SerializerMethodField()
     stamp_preview_file_url = serializers.SerializerMethodField()
     approved_file_url = serializers.SerializerMethodField()
+
+    generated_file_name = serializers.SerializerMethodField()
+    approved_file_name = serializers.SerializerMethodField()
+    stamp_preview_file_name = serializers.SerializerMethodField()
+
+    download_original_url = serializers.SerializerMethodField()
+    download_approved_url = serializers.SerializerMethodField()
+    preview_approved_url = serializers.SerializerMethodField()
+    stamp_preview_url = serializers.SerializerMethodField()
+
+    portal_download_original_url = serializers.SerializerMethodField()
+    portal_download_approved_url = serializers.SerializerMethodField()
+    portal_preview_approved_url = serializers.SerializerMethodField()
+    portal_stamp_preview_url = serializers.SerializerMethodField()
+    portal_review_url = serializers.SerializerMethodField()
+    portal_regenerate_url = serializers.SerializerMethodField()
+
+    links = serializers.SerializerMethodField()
+
     can_download_original = serializers.BooleanField(read_only=True)
     can_download_approved = serializers.BooleanField(read_only=True)
     can_download = serializers.BooleanField(read_only=True)
+    has_stamp_preview = serializers.BooleanField(read_only=True)
 
     class Meta:
         model = GeneratedDocument
@@ -98,6 +144,88 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
 
     def get_approved_file_url(self, obj):
         return build_file_url(self.context.get('request'), obj.approved_file)
+
+    def get_generated_file_name(self, obj):
+        return filename_from_file(obj.generated_file)
+
+    def get_approved_file_name(self, obj):
+        return filename_from_file(obj.approved_file)
+
+    def get_stamp_preview_file_name(self, obj):
+        return filename_from_file(obj.stamp_preview_file)
+
+    def get_download_original_url(self, obj):
+        if not obj.can_download_original:
+            return None
+        return build_document_api_url(self.context.get('request'), obj, 'download-original')
+
+    def get_download_approved_url(self, obj):
+        if not obj.can_download_approved:
+            return None
+        return build_document_api_url(self.context.get('request'), obj, 'download-approved')
+
+    def get_preview_approved_url(self, obj):
+        if not obj.can_download_approved:
+            return None
+        return build_document_api_url(self.context.get('request'), obj, 'preview-approved')
+
+    def get_stamp_preview_url(self, obj):
+        if not obj.has_stamp_preview:
+            return None
+        return build_document_api_url(self.context.get('request'), obj, 'preview-stamp-preview')
+
+    def get_portal_download_original_url(self, obj):
+        if not obj.can_download_original:
+            return None
+        return build_document_portal_url(self.context.get('request'), obj, 'download-original')
+
+    def get_portal_download_approved_url(self, obj):
+        if not obj.can_download_approved:
+            return None
+        return build_document_portal_url(self.context.get('request'), obj, 'download-approved')
+
+    def get_portal_preview_approved_url(self, obj):
+        if not obj.can_download_approved:
+            return None
+        return build_document_portal_url(self.context.get('request'), obj, 'preview-approved')
+
+    def get_portal_stamp_preview_url(self, obj):
+        if not obj.has_stamp_preview:
+            return None
+        return build_document_portal_url(self.context.get('request'), obj, 'preview-stamp-preview')
+
+    def get_portal_review_url(self, obj):
+        if not obj.pk:
+            return None
+        return build_absolute_path(self.context.get('request'), f'/portal/documents/{obj.pk}/review/')
+
+    def get_portal_regenerate_url(self, obj):
+        if not obj.pk or obj.status == GeneratedDocument.STATUS_APPROVED:
+            return None
+        return build_absolute_path(self.context.get('request'), f'/portal/documents/{obj.pk}/regenerate/')
+
+    def get_links(self, obj):
+        return {
+            'api': {
+                'download_original': self.get_download_original_url(obj),
+                'download_approved': self.get_download_approved_url(obj),
+                'preview_approved': self.get_preview_approved_url(obj),
+                'stamp_preview': self.get_stamp_preview_url(obj),
+            },
+            'portal': {
+                'download_original': self.get_portal_download_original_url(obj),
+                'download_approved': self.get_portal_download_approved_url(obj),
+                'preview_approved': self.get_portal_preview_approved_url(obj),
+                'stamp_preview': self.get_portal_stamp_preview_url(obj),
+                'review': self.get_portal_review_url(obj),
+                'regenerate': self.get_portal_regenerate_url(obj),
+            },
+            'files': {
+                'generated_file': self.get_generated_file_url(obj),
+                'approved_file': self.get_approved_file_url(obj),
+                'stamp_preview_file': self.get_stamp_preview_file_url(obj),
+            },
+        }
 
     def get_application_title(self, obj):
         return str(obj.application) if obj.application_id else ''
