@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.http import FileResponse
 from rest_framework import parsers, permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import NotFound, PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.permissions import filter_by_company_scope, filter_by_office_scope, get_employee_profile, is_erp_admin
@@ -40,16 +40,46 @@ def parse_bool(value):
 
 
 def stamp_options_from_request(data):
+    stamp_position = data.get('stamp_position') or data.get('position') or ''
+    has_manual_coordinates = data.get('stamp_x_mm') or data.get('x_mm') or data.get('stamp_y_mm') or data.get('y_mm')
+    stamp_mode = data.get('stamp_mode') or ''
+    if not stamp_mode:
+        stamp_mode = 'manual' if stamp_position == 'custom' or has_manual_coordinates else 'position' if stamp_position else 'executor'
+
     return {
-        'stamp_mode': data.get('stamp_mode') or 'executor',
-        'stamp_width_mm': data.get('stamp_width_mm') or '',
-        'stamp_height_mm': data.get('stamp_height_mm') or '',
+        'stamp_mode': stamp_mode,
+        'stamp_position': stamp_position,
+        'position': stamp_position,
+        'stamp_width_mm': data.get('stamp_width_mm') or data.get('width_mm') or '',
+        'stamp_height_mm': data.get('stamp_height_mm') or data.get('height_mm') or '',
         'stamp_x_percent': data.get('stamp_x_percent') or '',
         'stamp_y_percent': data.get('stamp_y_percent') or '',
-        'stamp_x_mm': data.get('stamp_x_mm') or '',
-        'stamp_y_mm': data.get('stamp_y_mm') or '',
+        'stamp_x_mm': data.get('stamp_x_mm') or data.get('x_mm') or '',
+        'stamp_y_mm': data.get('stamp_y_mm') or data.get('y_mm') or '',
         'page_number': data.get('page_number') or '',
+        'watermark_enabled': data.get('watermark_enabled'),
+        'watermark_text': data.get('watermark_text') or '',
     }
+
+
+def request_includes_stamp_options(data):
+    return any(
+        key in data
+        for key in (
+            'stamp_position',
+            'position',
+            'stamp_width_mm',
+            'stamp_height_mm',
+            'stamp_x_mm',
+            'stamp_y_mm',
+            'width_mm',
+            'height_mm',
+            'x_mm',
+            'y_mm',
+            'watermark_enabled',
+            'watermark_text',
+        )
+    )
 
 
 def default_company_office(user):
@@ -254,7 +284,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         mode = request.data.get('approval_type') or request.data.get('mode') or ''
         with_stamp = parse_bool(request.data.get('with_stamp'))
         if with_stamp is None:
-            with_stamp = mode in ('with_stamp', 'approve_with_stamp')
+            with_stamp = mode in ('with_stamp', 'approve_with_stamp') or request_includes_stamp_options(request.data)
         try:
             document.approve(
                 user=request.user,
@@ -303,7 +333,20 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
     def download_original(self, request, pk=None):
         document = self.get_object()
         if not document.can_download_original:
-            raise PermissionDenied('Original DOCX document is not available for download.')
+            raise NotFound('Original DOCX document is not available for download.')
+        log_download(request, document, DocumentDownloadLog.FILE_TYPE_ORIGINAL)
+        return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.generated_file.name.split('/')[-1])
+
+    @action(detail=True, methods=['get'], url_path='download-docx')
+    def download_docx(self, request, pk=None):
+        document = self.get_object()
+        if not document.generated_file or document.status not in {
+            GeneratedDocument.STATUS_GENERATED,
+            GeneratedDocument.STATUS_PENDING,
+            GeneratedDocument.STATUS_APPROVED,
+            GeneratedDocument.STATUS_REJECTED,
+        }:
+            raise NotFound('DOCX document is not available for download.')
         log_download(request, document, DocumentDownloadLog.FILE_TYPE_ORIGINAL)
         return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.generated_file.name.split('/')[-1])
 
@@ -311,16 +354,45 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
     def download_approved(self, request, pk=None):
         document = self.get_object()
         if not document.can_download_approved:
-            raise PermissionDenied('Approved document is not available for download.')
+            raise NotFound('Approved document is not available for download.')
         log_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
         return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.approved_file.name.split('/')[-1])
+
+    @action(detail=True, methods=['get'], url_path='download-pdf')
+    def download_pdf(self, request, pk=None):
+        return self.download_approved(request, pk=pk)
+
+    @action(detail=True, methods=['get'], url_path='preview')
+    def preview(self, request, pk=None):
+        document = self.get_object()
+        if document.stamp_preview_file:
+            ensure_admin(request.user)
+            response = FileResponse(
+                document.stamp_preview_file.open('rb'),
+                as_attachment=False,
+                filename=document.stamp_preview_file.name.split('/')[-1],
+            )
+            response['Content-Type'] = 'application/pdf'
+            return response
+        if document.generated_file and document.status in {
+            GeneratedDocument.STATUS_GENERATED,
+            GeneratedDocument.STATUS_PENDING,
+            GeneratedDocument.STATUS_APPROVED,
+            GeneratedDocument.STATUS_REJECTED,
+        }:
+            return FileResponse(
+                document.generated_file.open('rb'),
+                as_attachment=False,
+                filename=document.generated_file.name.split('/')[-1],
+            )
+        raise NotFound('Document preview is not available.')
 
     @action(detail=True, methods=['get'], url_path='preview-stamp-preview')
     def preview_stamp_preview(self, request, pk=None):
         ensure_admin(request.user)
         document = self.get_object()
         if not document.stamp_preview_file:
-            raise PermissionDenied('Stamp preview is not available yet.')
+            raise NotFound('Stamp preview is not available yet.')
         response = FileResponse(document.stamp_preview_file.open('rb'), as_attachment=False, filename=document.stamp_preview_file.name.split('/')[-1])
         response['Content-Type'] = 'application/pdf'
         return response
@@ -348,7 +420,7 @@ class DocumentApprovalViewSet(viewsets.ModelViewSet):
         mode = request.data.get('approval_type') or request.data.get('mode') or ''
         with_stamp = parse_bool(request.data.get('with_stamp'))
         if with_stamp is None:
-            with_stamp = mode in ('with_stamp', 'approve_with_stamp')
+            with_stamp = mode in ('with_stamp', 'approve_with_stamp') or request_includes_stamp_options(request.data)
         try:
             approval.document.approve(
                 user=request.user,

@@ -1,3 +1,6 @@
+from calendar import monthrange
+from datetime import date as date_cls
+
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
@@ -25,6 +28,9 @@ User = get_user_model()
 
 
 class CalendarEventSerializer(serializers.ModelSerializer):
+    date = serializers.DateField(source='event_date', read_only=True)
+    time = serializers.TimeField(source='start_time', read_only=True)
+    type = serializers.SerializerMethodField()
     owner_name = serializers.CharField(source='owner.get_full_name', read_only=True)
     company_name = serializers.CharField(source='company.name', read_only=True)
     office_name = serializers.CharField(source='office.name', read_only=True)
@@ -44,8 +50,11 @@ class CalendarEventSerializer(serializers.ModelSerializer):
         model = CalendarEvent
         fields = (
             'id',
+            'type',
             'title',
             'description',
+            'date',
+            'time',
             'event_date',
             'start_time',
             'end_time',
@@ -63,6 +72,9 @@ class CalendarEventSerializer(serializers.ModelSerializer):
             'updated_at',
         )
         read_only_fields = ('company', 'owner', 'created_at', 'updated_at')
+
+    def get_type(self, obj):
+        return getattr(obj, 'event_type', '') or 'event'
 
     def get_participants_names(self, obj):
         return [user.get_full_name() or user.email for user in obj.participants.all()]
@@ -106,7 +118,7 @@ def calendar_queryset_for_user(user):
 def filtered_calendar_queryset(request):
     qs = calendar_queryset_for_user(request.user)
 
-    day = request.query_params.get('day')
+    day = request.query_params.get('day') or request.query_params.get('date')
     if day:
         parsed_day = parse_date(day)
         if parsed_day:
@@ -129,6 +141,110 @@ def filtered_calendar_queryset(request):
         qs = qs.filter(Q(title__icontains=search) | Q(description__icontains=search))
 
     return qs.order_by('event_date', 'start_time', 'title')
+
+
+def calendar_date_range_from_request(request):
+    params = request.query_params
+    single_day = params.get('date') or params.get('day')
+    if single_day:
+        parsed = parse_date(single_day)
+        if parsed:
+            return parsed, parsed
+
+    year = params.get('year')
+    month = params.get('month')
+    if year and month:
+        try:
+            year_int = int(year)
+            month_int = int(month)
+            last_day = monthrange(year_int, month_int)[1]
+            return date_cls(year_int, month_int, 1), date_cls(year_int, month_int, last_day)
+        except (TypeError, ValueError):
+            return None, None
+
+    date_from = parse_date(params.get('date_from') or '') if params.get('date_from') else None
+    date_to = parse_date(params.get('date_to') or '') if params.get('date_to') else None
+    if date_from or date_to:
+        return date_from, date_to
+
+    return None, None
+
+
+def birthday_profiles_for_user(user):
+    qs = EmployeeProfile.objects.select_related('user', 'company', 'office').filter(
+        is_active=True,
+        user__is_active=True,
+        user__dob__isnull=False,
+    ).exclude(work_status='fired')
+
+    if is_erp_admin(user):
+        return qs
+
+    employee = get_employee_profile(user)
+    if not employee:
+        return qs.none()
+
+    if employee.company_id:
+        qs = qs.filter(company=employee.company)
+    if employee.office_id:
+        qs = qs.filter(office=employee.office)
+    return qs
+
+
+def birthday_events_for_range(user, start_date, end_date):
+    if not start_date or not end_date:
+        return []
+
+    events = []
+    years = range(start_date.year, end_date.year + 1)
+    for profile in birthday_profiles_for_user(user):
+        dob = getattr(profile.user, 'dob', None)
+        if not dob:
+            continue
+        for year in years:
+            try:
+                event_date = date_cls(year, dob.month, dob.day)
+            except ValueError:
+                if dob.month == 2 and dob.day == 29:
+                    event_date = date_cls(year, 2, 28)
+                else:
+                    continue
+            if start_date <= event_date <= end_date:
+                employee_name = profile.user.get_full_name() or profile.user.email
+                events.append({
+                    'id': f'birthday-employee-{profile.user_id}-{year}',
+                    'type': 'birthday',
+                    'title': f'День рождения: {employee_name}',
+                    'description': '',
+                    'date': event_date.isoformat(),
+                    'event_date': event_date.isoformat(),
+                    'time': None,
+                    'start_time': None,
+                    'end_time': None,
+                    'employee_id': profile.user_id,
+                    'employee_name': employee_name,
+                    'office_name': profile.office.city if profile.office_id else '',
+                    'company_name': profile.company.name if profile.company_id else '',
+                    'is_active': True,
+                })
+    return events
+
+
+def calendar_items_for_request(request, start_date=None, end_date=None):
+    qs = filtered_calendar_queryset(request)
+    if start_date:
+        qs = qs.filter(event_date__gte=start_date)
+    if end_date:
+        qs = qs.filter(event_date__lte=end_date)
+
+    items = list(CalendarEventSerializer(qs, many=True, context={'request': request}).data)
+    items.extend(birthday_events_for_range(request.user, start_date, end_date))
+    items.sort(key=lambda item: (
+        item.get('date') or item.get('event_date') or '',
+        item.get('time') or item.get('start_time') or '',
+        item.get('title') or '',
+    ))
+    return items
 
 
 class MeView(APIView):
@@ -220,10 +336,10 @@ class CalendarEventListCreateView(APIView):
     def get(self, request):
         limit = min(int(request.query_params.get('limit', 50) or 50), 200)
         offset = int(request.query_params.get('offset', 0) or 0)
-        qs = filtered_calendar_queryset(request)
-        count = qs.count()
-        serializer = CalendarEventSerializer(qs[offset:offset + limit], many=True, context={'request': request})
-        return Response({'count': count, 'next': None, 'previous': None, 'results': serializer.data})
+        start_date, end_date = calendar_date_range_from_request(request)
+        items = calendar_items_for_request(request, start_date, end_date)
+        count = len(items)
+        return Response({'count': count, 'next': None, 'previous': None, 'results': items[offset:offset + limit]})
 
     def post(self, request):
         serializer = CalendarEventSerializer(data=request.data, context={'request': request})
@@ -238,6 +354,43 @@ class CalendarEventListCreateView(APIView):
             office=serializer.validated_data.get('office') or office,
         )
         return Response(CalendarEventSerializer(event, context={'request': request}).data, status=status.HTTP_201_CREATED)
+
+
+class CalendarMonthView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        today = timezone.localdate()
+        try:
+            year = int(request.query_params.get('year') or today.year)
+            month = int(request.query_params.get('month') or today.month)
+            last_day = monthrange(year, month)[1]
+        except (TypeError, ValueError):
+            return Response({'detail': 'Invalid year or month.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        start_date = date_cls(year, month, 1)
+        end_date = date_cls(year, month, last_day)
+        events = calendar_items_for_request(request, start_date, end_date)
+        events_by_date = {}
+        for event in events:
+            event_date = event.get('date') or event.get('event_date')
+            events_by_date.setdefault(event_date, []).append(event)
+
+        days = [
+            {
+                'date': date_cls(year, month, day).isoformat(),
+                'events': events_by_date.get(date_cls(year, month, day).isoformat(), []),
+            }
+            for day in range(1, last_day + 1)
+        ]
+        return Response({
+            'year': year,
+            'month': month,
+            'count': len(events),
+            'events': events,
+            'results': events,
+            'days': days,
+        })
 
 
 class CalendarEventDetailView(APIView):
@@ -355,6 +508,7 @@ class RatingView(APIView):
 
     def get(self, request):
         qs = User.objects.select_related('office', 'managersalary').filter(is_active=True)
+        include_hidden = is_erp_admin(request.user) and request.query_params.get('include_hidden') in {'1', 'true', 'True', 'yes', 'on'}
         search = request.query_params.get('search')
         if search:
             qs = qs.filter(
@@ -373,13 +527,25 @@ class RatingView(APIView):
         if position and position != 'all':
             qs = qs.filter(Q(job_description__icontains=position) | Q(role__icontains=position))
 
+        request_employee = get_employee_profile(request.user)
+        if not is_erp_admin(request.user) and request_employee:
+            scoped_profiles = EmployeeProfile.objects.filter(is_active=True, company=request_employee.company)
+            if request_employee.office_id:
+                scoped_profiles = scoped_profiles.filter(office=request_employee.office)
+            qs = qs.filter(id__in=scoped_profiles.values('user_id'))
+
         users = list(qs.order_by('first_name', 'last_name', 'email'))
-        profiles = EmployeeProfile.objects.select_related('company', 'office').filter(user_id__in=[user.id for user in users])
+        profiles = EmployeeProfile.objects.select_related('company', 'office', 'access').filter(user_id__in=[user.id for user in users])
         profile_by_user = {profile.user_id: profile for profile in profiles}
 
         rows = []
         for user in users:
             profile = profile_by_user.get(user.id)
+            access = getattr(profile, 'access', None) if profile else None
+            can_be_in_leaderboard = bool(not access or access.can_be_in_leaderboard)
+            is_hidden_from_rating = not can_be_in_leaderboard
+            if is_hidden_from_rating and not include_hidden:
+                continue
             salary = getattr(user, 'managersalary', None)
             role_display = user.get_role_display() if hasattr(user, 'get_role_display') else user.role
             job_description = (getattr(user, 'job_description', '') or '').strip()
@@ -402,6 +568,13 @@ class RatingView(APIView):
                 ),
                 'company_name': profile.company.name if profile else '',
                 'score': score,
+                'rating_score': score,
+                'points': score,
+                'rating': score,
+                'can_be_in_leaderboard': can_be_in_leaderboard,
+                'is_hidden_from_rating': is_hidden_from_rating,
+                'rating_priority_enabled': bool(access.rating_priority_enabled) if access else False,
+                'rating_priority_level': access.rating_priority_level if access else 0,
                 'revenue_usd': float(getattr(salary, 'current_month_revenue', 0) or 0),
             })
 

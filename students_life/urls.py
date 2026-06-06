@@ -14,6 +14,7 @@ from students_life.api_views import HealthCheckView, AppConfigView, DashboardSum
 from students_life.mobile_api import (
     CalendarEventDetailView,
     CalendarEventListCreateView,
+    CalendarMonthView,
     DashboardView as MobileDashboardView,
     MeView,
     MobileBootstrapView,
@@ -47,6 +48,7 @@ urlpatterns = [
     path('api/v1/dashboard/', MobileDashboardView.as_view(), name='api_v1_dashboard'),
     path('api/v1/calendar/events/', CalendarEventListCreateView.as_view(), name='api_v1_calendar_events'),
     path('api/v1/calendar/events/<int:pk>/', CalendarEventDetailView.as_view(), name='api_v1_calendar_event_detail'),
+    path('api/v1/calendar/month/', CalendarMonthView.as_view(), name='api_v1_calendar_month'),
     path('api/v1/mobile/bootstrap/', MobileBootstrapView.as_view(), name='api_v1_mobile_bootstrap'),
     path('api/v1/mobile/search/', MobileSearchView.as_view(), name='api_v1_mobile_search'),
     path('api/v1/rating/', MobileRatingView.as_view(), name='api_v1_rating'),

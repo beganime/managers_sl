@@ -61,6 +61,8 @@ API для будущего клиентского приложения дост
   "cover_image_url": "https://manager-sl.ru/media/erp/education/university_covers/cover.jpg",
   "programs_count": 14,
   "website": "https://example.edu",
+  "email": "info@example.edu",
+  "phone": "+79990000000",
   "address": "Москва",
   "admission_requirements": "Условия поступления",
   "invitation_info": "Информация по приглашению",
@@ -73,6 +75,9 @@ API для будущего клиентского приложения дост
     "phone": "+79990000000",
     "address": "Москва"
   },
+  "contacts": [],
+  "contact_people": [],
+  "fees_summary": [],
   "programs": [],
   "required_documents": []
 }
@@ -148,3 +153,14 @@ API не возвращает:
 - `university_cover` — обложка ВУЗа внутри ответа программы.
 
 Если изображение не загружено, поле возвращает `null`. В клиентском приложении в этом случае нужно показывать placeholder.
+
+## Mobile support fields
+
+The public client API now also returns mobile-friendly fields:
+
+- Countries: `flag_url`, `image_url`, `cover_image_url`.
+- Cities: `image_url`, `cover_image_url`.
+- Universities: `email`, `phone`, `address`, `contacts`, `contact_people`, `fees_summary`.
+- University detail keeps public fields such as `admission_requirements`, `invitation_info`, `dormitory_info`, `expenses_info`, `age_limit`, `required_documents`, `programs`.
+
+Internal fields such as `commission_info`, `custom_data`, internal notes and private partner terms are still not exposed by the client API.

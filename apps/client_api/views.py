@@ -3,7 +3,7 @@ from rest_framework.response import Response
 from rest_framework import permissions, viewsets
 
 from apps.education.cache import EDUCATION_CACHE_TTL, education_cache_get, education_cache_set, make_education_cache_key
-from apps.education.models import City, Country, Intake, Program, ProgramFee, RequiredDocument, University
+from apps.education.models import City, Country, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
 from apps.erp_services.models import Service
 
 from .serializers import (
@@ -106,6 +106,7 @@ class ClientUniversityViewSet(ClientReadOnlyViewSet):
         qs = University.objects.select_related('country', 'city').prefetch_related(
             Prefetch('programs', queryset=active_programs),
             Prefetch('required_documents', queryset=RequiredDocument.objects.filter(is_active=True).order_by('sort_order', 'title')),
+            Prefetch('contact_people', queryset=UniversityContact.objects.filter(is_active=True).order_by('full_name', 'id')),
         ).filter(is_active=True, country__is_active=True).annotate(
             programs_count=Count('programs', filter=Q(programs__is_active=True, programs__is_archived=False), distinct=True),
         )

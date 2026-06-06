@@ -10,6 +10,8 @@ from apps.organizations.models import Company
 class Country(TimeStampedModel, ActiveModel, OrderedModel):
     name = models.CharField('Страна', max_length=120, unique=True)
     code = models.CharField('Код страны', max_length=8, blank=True, db_index=True)
+    image = models.ImageField('Изображение', upload_to='erp/education/country_images/', blank=True, null=True)
+    cover_image = models.ImageField('Обложка', upload_to='erp/education/country_covers/', blank=True, null=True)
     flag = models.ImageField('Флаг', upload_to='erp/education/flags/', blank=True, null=True)
     description = models.TextField('Описание', blank=True)
 
@@ -25,6 +27,8 @@ class Country(TimeStampedModel, ActiveModel, OrderedModel):
 class City(TimeStampedModel, ActiveModel, OrderedModel):
     country = models.ForeignKey(Country, verbose_name='Страна', on_delete=models.CASCADE, related_name='cities')
     name = models.CharField('Город', max_length=120)
+    image = models.ImageField('Изображение', upload_to='erp/education/city_images/', blank=True, null=True)
+    cover_image = models.ImageField('Обложка', upload_to='erp/education/city_covers/', blank=True, null=True)
     description = models.TextField('Описание', blank=True)
 
     class Meta:

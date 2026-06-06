@@ -15,20 +15,51 @@ from .models import (
 )
 
 
+def build_file_url(request, file_field):
+    if not file_field:
+        return None
+    try:
+        url = file_field.url
+    except ValueError:
+        return None
+    return request.build_absolute_uri(url) if request else url
+
+
 class CountrySerializer(serializers.ModelSerializer):
+    image_url = serializers.SerializerMethodField()
+    cover_image_url = serializers.SerializerMethodField()
+    flag_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Country
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
 
+    def get_image_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.image)
+
+    def get_cover_image_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.cover_image)
+
+    def get_flag_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.flag)
+
 
 class CitySerializer(serializers.ModelSerializer):
     country_name = serializers.CharField(source='country.name', read_only=True)
+    image_url = serializers.SerializerMethodField()
+    cover_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = City
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
+
+    def get_image_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.image)
+
+    def get_cover_image_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.cover_image)
 
 
 class CurrencySerializer(serializers.ModelSerializer):
@@ -115,12 +146,21 @@ class UniversitySerializer(serializers.ModelSerializer):
     currency_code = serializers.CharField(source='local_currency.code', read_only=True)
     programs_count = serializers.IntegerField(source='programs.count', read_only=True)
     contacts = UniversityContactSerializer(source='contact_people', many=True, read_only=True)
+    contact_people = UniversityContactSerializer(many=True, read_only=True)
     required_documents = RequiredDocumentSerializer(many=True, read_only=True)
+    logo_url = serializers.SerializerMethodField()
+    cover_image_url = serializers.SerializerMethodField()
 
     class Meta:
         model = University
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
+
+    def get_logo_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.logo)
+
+    def get_cover_image_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.cover_image)
 
 
 class UniversityDetailSerializer(UniversitySerializer):

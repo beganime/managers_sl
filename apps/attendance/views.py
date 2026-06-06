@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
 from apps.core.permissions import get_employee_profile, is_erp_admin
@@ -13,6 +13,7 @@ from .serializers import (
     AttendanceReminderSerializer,
     AutoCloseLogSerializer,
     DailyReportSerializer,
+    WorkDayHistorySerializer,
     WorkDaySerializer,
 )
 
@@ -147,6 +148,36 @@ class WorkDayViewSet(viewsets.ModelViewSet):
     def today(self, request):
         workday = self.get_or_create_today(request)
         return Response(self.get_serializer(workday).data, status=status.HTTP_200_OK)
+
+    @action(detail=False, methods=['get'], url_path='history')
+    def history(self, request):
+        qs = WorkDay.objects.select_related('company', 'office', 'employee', 'daily_report').filter(
+            employee_scope_filters(request.user),
+        )
+
+        user_id = request.query_params.get('user_id') or request.query_params.get('employee') or request.query_params.get('manager')
+        if user_id:
+            if not is_erp_admin(request.user) and str(user_id) != str(request.user.id):
+                raise PermissionDenied('You can view only your own workday history.')
+            qs = qs.filter(employee_id=user_id)
+        elif not is_erp_admin(request.user):
+            qs = qs.filter(employee=request.user)
+
+        date_from = request.query_params.get('date_from')
+        if date_from:
+            qs = qs.filter(date__gte=date_from)
+        date_to = request.query_params.get('date_to')
+        if date_to:
+            qs = qs.filter(date__lte=date_to)
+
+        qs = qs.order_by('-date', '-created_at')
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            serializer = WorkDayHistorySerializer(page, many=True, context={'request': request})
+            return self.get_paginated_response(serializer.data)
+
+        serializer = WorkDayHistorySerializer(qs, many=True, context={'request': request})
+        return Response({'count': qs.count(), 'next': None, 'previous': None, 'results': serializer.data})
 
     @action(detail=False, methods=['post'], url_path='start')
     def start(self, request):

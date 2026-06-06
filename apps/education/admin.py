@@ -21,29 +21,81 @@ def get_usd_currency():
 
 @admin.register(Country)
 class CountryAdmin(ModelAdmin):
-    list_display = ('name', 'code', 'sort_order', 'is_active')
+    list_display = ('name', 'code', 'country_image_preview', 'sort_order', 'is_active')
     list_filter = ('is_active',)
     search_fields = ('name', 'code')
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('flag_preview', 'country_image_preview', 'country_cover_preview', 'created_at', 'updated_at')
     fieldsets = (
         ('Основное', {'fields': ('name', 'code', 'flag', 'description')}),
         ('Публикация', {'fields': ('sort_order', 'is_active')}),
         ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
 
+    def get_fieldsets(self, request, obj=None):
+        return (
+            ('Основное', {'fields': ('name', 'code', 'description')}),
+            ('Изображения', {'fields': ('flag', 'flag_preview', 'image', 'country_image_preview', 'cover_image', 'country_cover_preview')}),
+            ('Публикация', {'fields': ('sort_order', 'is_active')}),
+            ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+        )
+
+    def render_image_preview(self, file_field, empty_text):
+        if file_field:
+            return format_html(
+                '<img src="{}" style="max-width:160px; max-height:100px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />',
+                file_field.url,
+            )
+        return empty_text
+
+    @admin.display(description='Флаг')
+    def flag_preview(self, obj):
+        return self.render_image_preview(obj.flag if obj else None, '-')
+
+    @admin.display(description='Изображение')
+    def country_image_preview(self, obj):
+        return self.render_image_preview(obj.image if obj else None, '-')
+
+    @admin.display(description='Обложка')
+    def country_cover_preview(self, obj):
+        return self.render_image_preview(obj.cover_image if obj else None, '-')
+
 
 @admin.register(City)
 class CityAdmin(ModelAdmin):
-    list_display = ('name', 'country', 'sort_order', 'is_active')
+    list_display = ('name', 'country', 'city_image_preview', 'sort_order', 'is_active')
     list_filter = ('country', 'is_active')
     search_fields = ('name', 'country__name')
     autocomplete_fields = ('country',)
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('city_image_preview', 'city_cover_preview', 'created_at', 'updated_at')
     fieldsets = (
         ('Основное', {'fields': ('country', 'name', 'description')}),
         ('Публикация', {'fields': ('sort_order', 'is_active')}),
         ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
+
+    def get_fieldsets(self, request, obj=None):
+        return (
+            ('Основное', {'fields': ('country', 'name', 'description')}),
+            ('Изображения', {'fields': ('image', 'city_image_preview', 'cover_image', 'city_cover_preview')}),
+            ('Публикация', {'fields': ('sort_order', 'is_active')}),
+            ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
+        )
+
+    def render_image_preview(self, file_field, empty_text):
+        if file_field:
+            return format_html(
+                '<img src="{}" style="max-width:160px; max-height:100px; border:1px solid #e5e7eb; border-radius:8px; padding:6px; background:#fff;" />',
+                file_field.url,
+            )
+        return empty_text
+
+    @admin.display(description='Изображение')
+    def city_image_preview(self, obj):
+        return self.render_image_preview(obj.image if obj else None, '-')
+
+    @admin.display(description='Обложка')
+    def city_cover_preview(self, obj):
+        return self.render_image_preview(obj.cover_image if obj else None, '-')
 
 
 @admin.register(Currency)

@@ -1,7 +1,9 @@
 from urllib.parse import quote
 
 from rest_framework import serializers
+from rest_framework.reverse import reverse
 
+from apps.core.permissions import is_erp_admin
 from .models import (
     DocumentApproval,
     DocumentDownloadLog,
@@ -15,7 +17,10 @@ from .models import (
 def build_file_url(request, file_field):
     if not file_field:
         return None
-    url = file_field.url
+    try:
+        url = file_field.url
+    except ValueError:
+        return None
     return request.build_absolute_uri(url) if request else url
 
 
@@ -111,6 +116,16 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
 
     links = serializers.SerializerMethodField()
 
+    preview_url = serializers.SerializerMethodField()
+    download_docx_url = serializers.SerializerMethodField()
+    download_pdf_url = serializers.SerializerMethodField()
+    approved_pdf_url = serializers.SerializerMethodField()
+    original_docx_url = serializers.SerializerMethodField()
+    can_download_docx = serializers.SerializerMethodField()
+    can_download_pdf = serializers.SerializerMethodField()
+    can_preview = serializers.SerializerMethodField()
+    can_approve = serializers.SerializerMethodField()
+    can_reject = serializers.SerializerMethodField()
     can_download_original = serializers.BooleanField(read_only=True)
     can_download_approved = serializers.BooleanField(read_only=True)
     can_download = serializers.BooleanField(read_only=True)
@@ -226,6 +241,76 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
                 'stamp_preview_file': self.get_stamp_preview_file_url(obj),
             },
         }
+
+    def build_action_url(self, obj, action_name):
+        request = self.context.get('request')
+        if not request:
+            return None
+        return reverse(
+            f'erp-generated-document-{action_name}',
+            kwargs={'pk': obj.pk},
+            request=request,
+        )
+
+    def get_preview_url(self, obj):
+        if not self.get_can_preview(obj):
+            return None
+        return self.build_action_url(obj, 'preview')
+
+    def get_download_docx_url(self, obj):
+        if not self.get_can_download_docx(obj):
+            return None
+        return self.build_action_url(obj, 'download-docx')
+
+    def get_download_pdf_url(self, obj):
+        if not self.get_can_download_pdf(obj):
+            return None
+        return self.build_action_url(obj, 'download-pdf')
+
+    def get_approved_pdf_url(self, obj):
+        return self.get_download_pdf_url(obj)
+
+    def get_original_docx_url(self, obj):
+        return build_file_url(self.context.get('request'), obj.generated_file)
+
+    def get_can_download_docx(self, obj):
+        return bool(obj.generated_file and obj.status in {
+            GeneratedDocument.STATUS_GENERATED,
+            GeneratedDocument.STATUS_PENDING,
+            GeneratedDocument.STATUS_APPROVED,
+            GeneratedDocument.STATUS_REJECTED,
+        })
+
+    def get_can_download_pdf(self, obj):
+        return bool(obj.can_download_approved)
+
+    def get_can_preview(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if obj.stamp_preview_file:
+            return bool(user and user.is_authenticated and is_erp_admin(user))
+        return self.get_can_download_docx(obj)
+
+    def get_can_approve(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        return bool(
+            user
+            and user.is_authenticated
+            and is_erp_admin(user)
+            and obj.generated_file
+            and obj.status not in {GeneratedDocument.STATUS_APPROVED, GeneratedDocument.STATUS_REJECTED}
+        )
+
+    def get_can_reject(self, obj):
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        return bool(
+            user
+            and user.is_authenticated
+            and is_erp_admin(user)
+            and obj.status not in {GeneratedDocument.STATUS_APPROVED, GeneratedDocument.STATUS_REJECTED}
+        )
 
     def get_application_title(self, obj):
         return str(obj.application) if obj.application_id else ''

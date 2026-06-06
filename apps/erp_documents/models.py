@@ -1104,6 +1104,7 @@ def stamp_rect_for_options(rule, pdf, stamp_options=None, targets=None):
     stamp_options = stamp_options or {}
     targets = targets or {}
     mode = stamp_options.get('stamp_mode') or 'executor'
+    requested_position = stamp_options.get('stamp_position') or stamp_options.get('position') or ''
     width, height = stamp_size_for_options(rule, stamp_options)
     raw_page_number = parse_decimal_option(stamp_options.get('page_number'), None)
     if raw_page_number is None:
@@ -1113,6 +1114,15 @@ def stamp_rect_for_options(rule, pdf, stamp_options=None, targets=None):
     else:
         page_index = max(0, pdf.page_count - 1)
     page_rect = pdf[page_index].rect
+
+    if requested_position in {
+        StampRule.POSITION_BOTTOM_LEFT,
+        StampRule.POSITION_BOTTOM_RIGHT,
+        StampRule.POSITION_TOP_LEFT,
+        StampRule.POSITION_TOP_RIGHT,
+        StampRule.POSITION_CENTER,
+    }:
+        return page_index, stamp_rect_for_position(requested_position, page_rect, width=width, height=height)
 
     if mode == 'manual':
         x_percent = parse_decimal_option(stamp_options.get('stamp_x_percent'))
@@ -1138,6 +1148,21 @@ def stamp_rect_for_options(rule, pdf, stamp_options=None, targets=None):
         return page_index, clamp_rect(x, y, width, height, page_rect)
 
     return page_index, stamp_rect_for_rule(rule, page_rect, width=width, height=height)
+
+
+def stamp_rect_for_position(position, page_rect, *, width, height):
+    margin = mm_to_pt(18)
+    if position == StampRule.POSITION_BOTTOM_RIGHT:
+        return fitz.Rect(page_rect.width - margin - width, page_rect.height - margin - height, page_rect.width - margin, page_rect.height - margin)
+    if position == StampRule.POSITION_TOP_LEFT:
+        return fitz.Rect(margin, margin, margin + width, margin + height)
+    if position == StampRule.POSITION_TOP_RIGHT:
+        return fitz.Rect(page_rect.width - margin - width, margin, page_rect.width - margin, margin + height)
+    if position == StampRule.POSITION_CENTER:
+        x = (page_rect.width - width) / 2
+        y = (page_rect.height - height) / 2
+        return fitz.Rect(x, y, x + width, y + height)
+    return fitz.Rect(margin, page_rect.height - margin - height, margin + width, page_rect.height - margin)
 
 
 def find_pdf_text_targets(pdf):
