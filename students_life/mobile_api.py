@@ -27,6 +27,19 @@ from users.serializers import UserSerializer
 User = get_user_model()
 
 
+def user_avatar_url(request, user):
+    avatar = getattr(user, 'avatar', None)
+    if not avatar:
+        return ''
+
+    try:
+        url = avatar.url
+    except ValueError:
+        return ''
+
+    return request.build_absolute_uri(url) if request else url
+
+
 class CalendarEventSerializer(serializers.ModelSerializer):
     date = serializers.DateField(source='event_date', read_only=True)
     time = serializers.TimeField(source='start_time', read_only=True)
@@ -551,12 +564,15 @@ class RatingView(APIView):
             job_description = (getattr(user, 'job_description', '') or '').strip()
             position_label = job_description.splitlines()[0].strip() if job_description else role_display
             score = float(getattr(profile, 'rating', 0) or 0) if profile else 0
+            avatar_url = user_avatar_url(request, user)
             rows.append({
                 'id': profile.id if profile else user.id,
                 'user_id': user.id,
                 'name': user.get_full_name() or user.email,
                 'full_name': user.get_full_name() or user.email,
                 'email': user.email,
+                'avatar': avatar_url,
+                'avatar_url': avatar_url,
                 'role': user.role,
                 'role_display': role_display,
                 'position': position_label,
