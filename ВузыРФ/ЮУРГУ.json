@@ -1,0 +1,551 @@
+[
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Механика и математическое моделирование",
+    "degree": "bachelor",
+    "tuition_fee": 150600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Фундаментальная информатика и информационные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Прикладные математика и физика",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Дизайн архитектурной среды",
+    "degree": "bachelor",
+    "tuition_fee": 182700.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Инфокоммуникационные технологии и системы связи",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Конструирование и технология электронных средств",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Электроника и наноэлектроника",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Приборостроение",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Энергетическое машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Технологические машины и оборудование",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Прикладная механика",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Автоматизация технологических процессов и производств",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Конструкторско-технологическое обеспечение машиностроительных производств",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Мехатроника и робототехника",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Энерго- и ресурсосберегающие процессы в химической технологии, нефтехимии и биотехнологии",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Технология продукции и организация общественного питания",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Техносферная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Землеустройство и кадастры",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Материаловедение и технологии материалов",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Металлургия",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Технология транспортных процессов",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Наземные транспортно-технологические комплексы",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Эксплуатация транспортно-технологических машин и комплексов",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Ракетные комплексы и космонавтика",
+    "degree": "specialist",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Авиастроение",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Управление в технических системах",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Технология художественной обработки материалов",
+    "degree": "bachelor",
+    "tuition_fee": 194300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 165800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Бизнес-информатика",
+    "degree": "bachelor",
+    "tuition_fee": 165800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 150600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 177800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Зарубежное регионоведение",
+    "degree": "bachelor",
+    "tuition_fee": 165800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Политология",
+    "degree": "bachelor",
+    "tuition_fee": 150600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 158600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 166000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Гостиничное дело",
+    "degree": "bachelor",
+    "tuition_fee": 158600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 170000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Фундаментальная и прикладная лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 165800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 166000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ЮУРГУ (Южно-Уральский Государственный Университет)",
+    "name": "Физическая культура",
+    "degree": "bachelor",
+    "tuition_fee": 235600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

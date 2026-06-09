@@ -1,0 +1,65 @@
+[
+  {
+    "university": "Пекинский технологический институт",
+    "name": "Авиационная и космическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический институт",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический институт",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический институт",
+    "name": "Мехатронная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический институт",
+    "name": "Электронные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический институт",
+    "name": "Механическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический институт",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

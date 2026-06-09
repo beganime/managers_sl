@@ -1,0 +1,443 @@
+[
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Микробиология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Биоинженерия и биоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Экология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "География, экспериментальная программа",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Гидрометеорология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Геология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Геоэкология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Геотехнологии туризма и экскурсионная деятельность",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Геоинформационные системы",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Космоаэрокартография и геодезия",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Страноведение и переводческая деятельност",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 267397.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Математика",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Математика и компьютерные науки",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Механика и математическое моделирование",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Компьютерная математика и системный анализ",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 279552.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Физика, экспериментальная программа",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Радиофизика и информационные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 279552.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Интеллектуальная электроника",
+    "degree": "bachelor",
+    "tuition_fee": 279552.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Кибербезопасность",
+    "degree": "bachelor",
+    "tuition_fee": 279552.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Русская филология",
+    "degree": "bachelor",
+    "tuition_fee": 299809.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Романо-германская филология",
+    "degree": "bachelor",
+    "tuition_fee": 299809.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Восточная филология",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Мировая экономика",
+    "degree": "bachelor",
+    "tuition_fee": 352479.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 352479.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Международное право",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Африканистика",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Международная конфликтология",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Международная логистика",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Компьютерное моделирование и разработка вебприложений",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Графический дизайн и мультимедиа-дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Современные иностранные языки (с указанием языков)",
+    "degree": "bachelor",
+    "tuition_fee": 263346.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Социальные коммуникации",
+    "degree": "bachelor",
+    "tuition_fee": 287655.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 259294.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Финансы и кредит",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Экономическое право",
+    "degree": "bachelor",
+    "tuition_fee": 344376.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Правоведение",
+    "degree": "bachelor",
+    "tuition_fee": 352479.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БГУ (Белорусский государственный университет)",
+    "name": "Политология",
+    "degree": "bachelor",
+    "tuition_fee": 287655.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

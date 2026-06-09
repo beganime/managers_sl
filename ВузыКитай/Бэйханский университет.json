@@ -1,0 +1,596 @@
+[
+  {
+    "university": "Бэйханский университет",
+    "name": "Наноматериалы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Электронная информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерия связи",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Электронная наука и технология",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерия робототехники",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Энергетика и силовая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Проектирование и инженерия летательных аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Низковысотные технологии и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерия среды и жизнеобеспечения летательных аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерная механика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Управление и информационная инженерия летательных аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Технологии виртуальной реальности",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Производственная инженерия летательных аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерия микроэлектромеханических систем",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерия интеллектуального производства",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Автомобильная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Интеллектуальный транспорт",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Умная транспортная инфраструктура",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Технология летной годности летательных аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Техника безопасности",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерия качества и надёжности летательных аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Двигательные установки летательных аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Технологии интеллектуальных летательных аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Интеллектуальная электрореактивная тяга для космических аппаратов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Оптоэлектронная информационная наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Технология измерения, контроля и приборостроения",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Наука и инженерия микроэлектроники",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Ядерная физика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Информатика и вычислительные науки",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Космическая наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Транспорт",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Технологии и инструменты измерения и контроля",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерный менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Управление информацией и информационные системы",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Промышленная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Экономическая статистика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Энергетическая экономика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Государственное управление",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Дизайн визуальных коммуникаций",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Живопись",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Электронная информационная инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Проектирование и инженерия летательных аппаратов (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Низковысотные технологии и инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Компьютерные науки и технологии (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Машиностроение (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерия робототехники (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Техника безопасности (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Инженерия качества и надёжности летательных аппаратов (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Искусственный интеллект (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Биомедицинская инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Бэйханский университет",
+    "name": "Международная экономика и торговля (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

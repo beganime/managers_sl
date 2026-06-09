@@ -1,0 +1,317 @@
+[
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 306600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Электроника и наноэлектроника",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Приборостроение",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Оптотехника",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Биотехнические системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Ядерные физика и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 404600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Атомные станции: проектирование, эксплуатация и инжиниринг",
+    "degree": "specialist",
+    "tuition_fee": 404600.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Электроника и автоматика физических установок",
+    "degree": "specialist",
+    "tuition_fee": 404600.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Технологические машины и оборудование",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Автоматизация технологических процессов и производств",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Мехатроника и робототехника",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Химическая технология материалов современной энергетики",
+    "degree": "specialist",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Техносферная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Прикладная геология",
+    "degree": "specialist",
+    "tuition_fee": 404600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Технология геологической разведки",
+    "degree": "specialist",
+    "tuition_fee": 404600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Нефтегазовое дело",
+    "degree": "bachelor",
+    "tuition_fee": 404600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Землеустройство и кадастры",
+    "degree": "bachelor",
+    "tuition_fee": 404600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Материаловедение и технологии материалов",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Управление качеством",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Инноватика",
+    "degree": "bachelor",
+    "tuition_fee": 344700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 306600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 306600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 306600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ТПУ (Томский политехнический университет)",
+    "name": "Перевод и переводоведение",
+    "degree": "specialist",
+    "tuition_fee": 306600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

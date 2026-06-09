@@ -1,0 +1,425 @@
+[
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Международное право",
+    "degree": "specialist",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Правоведение",
+    "degree": "specialist",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Таможенное дело",
+    "degree": "specialist",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Экономическое право",
+    "degree": "specialist",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Белорусская филология",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Русская филология",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Современные иностранные языки (английский, немецкий) (английский, французский) (английский, польский)",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Романо-германская филология",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Экономика и управление",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Электронная экономика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Бухгалтерский учет, анализ и аудит",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Мировая экономика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Финансы и кредит",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Кибербезопасность",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Математика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Дошкольное образование",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Специальное и инклюзивное образование",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Начальное образование",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Робототехнические системы",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Компьютерная физика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Строительство зданий и сооружений",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Эксплуатация наземных транспортных и технологических машин и комплексов",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Транспортная логистика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Фундаментальная и прикладная биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Экология",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Биоинженерия и биоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Биохимия",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Лингвистика (английский, немецкий) (английский, итальянский) (английский, испанский)",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Лингвистика (китайский, английский с указанием языка)",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Туризм и гостеприимство",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Социально-педагогическое и психологическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Графический дизайн и мультимедиадизайн",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Музыкальное образование",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный университет им Янки Купалы",
+    "name": "Художественное образование",
+    "degree": "bachelor",
+    "tuition_fee": 2400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

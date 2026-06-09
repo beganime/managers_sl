@@ -1,0 +1,20 @@
+[
+  {
+    "university": "Гомельский государственный медицинский университет",
+    "name": "Лечебное дело",
+    "degree": "specialist",
+    "tuition_fee": 3900.0,
+    "service_fee": 1000.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный медицинский университет",
+    "name": "Лечебное дело (на английском языке)",
+    "degree": "specialist",
+    "tuition_fee": 4300.0,
+    "service_fee": 1000.0,
+    "duration": "6 лет",
+    "is_active": true
+  }
+]

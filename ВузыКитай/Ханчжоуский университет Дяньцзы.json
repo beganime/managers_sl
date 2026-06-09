@@ -1,0 +1,128 @@
+[
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Механическое проектирование, производство и автоматизация (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Телекоммуникационная инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Компьютерные науки и технологии (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Программная инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Искусственный интеллект (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Электронная и информационная инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Материаловедение и инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Цифровая экономика",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Цифровая экономика (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Управление бизнесом",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Управление бизнесом (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Наука коммуникации",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Наука коммуникации (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ханчжоуский университет Дяньцзы",
+    "name": "Английский язык (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

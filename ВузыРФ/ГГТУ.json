@@ -1,0 +1,164 @@
+[
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Фармация (Высшее образование)",
+    "degree": "specialist",
+    "tuition_fee": 297000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Педагогическое образование (математика)",
+    "degree": "bachelor",
+    "tuition_fee": 273000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 273000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 273000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Специальное (дефектологическое) образование",
+    "degree": "bachelor",
+    "tuition_fee": 273000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Фармация (Среднее проф. образование)",
+    "degree": "bachelor",
+    "tuition_fee": 150000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Дошкольное образование",
+    "degree": "bachelor",
+    "tuition_fee": 148000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Специальное дошкольное образование",
+    "degree": "bachelor",
+    "tuition_fee": 148000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Операционная деятельность в логистике",
+    "degree": "bachelor",
+    "tuition_fee": 148000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Туризм и гостеприимство",
+    "degree": "bachelor",
+    "tuition_fee": 148000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Профессиональное обучение",
+    "degree": "bachelor",
+    "tuition_fee": 148000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Информационные системы и программирование",
+    "degree": "bachelor",
+    "tuition_fee": 150000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Банковское дело",
+    "degree": "bachelor",
+    "tuition_fee": 137000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Торговое дело",
+    "degree": "bachelor",
+    "tuition_fee": 148000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 151000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Технология машиностроения",
+    "degree": "bachelor",
+    "tuition_fee": 150000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 137000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГГТУ (Государственный гуманитарно-технологический университет)",
+    "name": "Сестринское дело",
+    "degree": "bachelor",
+    "tuition_fee": 150000.0,
+    "service_fee": 500.0,
+    "duration": "3 года",
+    "is_active": true
+  }
+]

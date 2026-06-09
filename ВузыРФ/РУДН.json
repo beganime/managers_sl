@@ -1,0 +1,551 @@
+[
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Агрономия",
+    "degree": "bachelor",
+    "tuition_fee": 347000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Ветеринария",
+    "degree": "specialist",
+    "tuition_fee": 370000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Ветеринарно-санитарная экспертиза",
+    "degree": "bachelor",
+    "tuition_fee": 470000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Стандартизация и метрология",
+    "degree": "bachelor",
+    "tuition_fee": 347000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Землеустройство и кадастры",
+    "degree": "bachelor",
+    "tuition_fee": 396000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 450000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 390000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 470000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Религиоведение",
+    "degree": "bachelor",
+    "tuition_fee": 313000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 365000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 313000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Искусства и гуманитарные науки",
+    "degree": "bachelor",
+    "tuition_fee": 330000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Управление в технических системах",
+    "degree": "bachelor",
+    "tuition_fee": 347000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Инноватика",
+    "degree": "bachelor",
+    "tuition_fee": 390000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Эксплуатация транспортно-технологических машин и комплексов",
+    "degree": "bachelor",
+    "tuition_fee": 347000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Архитектура (многопрофильный конкурс)",
+    "degree": "bachelor",
+    "tuition_fee": 360000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Прикладная геология, горное дело, нефтегазовое дело и геодезия (специалитет)",
+    "degree": "specialist",
+    "tuition_fee": 396000.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Конструкторско-технологическое обеспечение машиностроительных производств",
+    "degree": "bachelor",
+    "tuition_fee": 347000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 352000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Нефтегазовое дело",
+    "degree": "bachelor",
+    "tuition_fee": 396000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 320000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Наноинженерия",
+    "degree": "bachelor",
+    "tuition_fee": 396000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Лечебное дело",
+    "degree": "specialist",
+    "tuition_fee": 650000.0,
+    "service_fee": 1100.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Стоматология",
+    "degree": "specialist",
+    "tuition_fee": 750000.0,
+    "service_fee": 1100.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Сестринское дело",
+    "degree": "bachelor",
+    "tuition_fee": 347000.0,
+    "service_fee": 900.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Фармация",
+    "degree": "specialist",
+    "tuition_fee": 360000.0,
+    "service_fee": 1100.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 470000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Телевидение",
+    "degree": "bachelor",
+    "tuition_fee": 450000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 450000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 380000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 360000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 480000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Математика и механика",
+    "degree": "bachelor",
+    "tuition_fee": 313000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Компьютерные и информационные науки",
+    "degree": "bachelor",
+    "tuition_fee": 320000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Фундаментальная информатика и информационные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 450000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Востоковедение и африканистика",
+    "degree": "bachelor",
+    "tuition_fee": 385000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 347000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 400000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 450000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Бизнес-информатика",
+    "degree": "bachelor",
+    "tuition_fee": 390000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Профиль: Управление природными ресурсами",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Энерго- и ресурсосберегающие процессы в химической технологии",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Экономика и управление",
+    "degree": "bachelor",
+    "tuition_fee": 470000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Зарубежное регионоведение",
+    "degree": "bachelor",
+    "tuition_fee": 390000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 470000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Профиль: Международное право",
+    "degree": "bachelor",
+    "tuition_fee": 430000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 400000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 313000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Гостиничное дело",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Биоинженерия и биоинформатика",
+    "degree": "specialist",
+    "tuition_fee": 365000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 320000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Интеллектуальные системы в гуманитарной сфере",
+    "degree": "bachelor",
+    "tuition_fee": 315000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 530000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 530000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Горное дело",
+    "degree": "specialist",
+    "tuition_fee": 396000.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Клиническая психология",
+    "degree": "specialist",
+    "tuition_fee": 430000.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Экономическая безопасность",
+    "degree": "specialist",
+    "tuition_fee": 390000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РУДН (Российский университет дружбы народов)",
+    "name": "Таможенное дело",
+    "degree": "specialist",
+    "tuition_fee": 370000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

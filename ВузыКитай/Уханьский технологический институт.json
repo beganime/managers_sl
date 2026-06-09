@@ -1,0 +1,371 @@
+[
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Химическая инженерия и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Фармацевтическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Полимерные материалы и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Процессное оборудование и управление",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Интеллектуальная наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Горное дело",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Материаловедение и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Биомедицинская инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 10000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Электрическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Электронная коммерция",
+    "degree": "bachelor",
+    "tuition_fee": 10000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 10000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Оборудование и управление технологическими процессами",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Системы управления",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Оптоэлектронная информационная наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Инженерия энергетики и силовых систем",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Инженерия минеральных процессов",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Биотехнологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Технологии измерений, испытаний и приборостроение",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Инженерия охраны окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Неорганические неметаллические материалы",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Материаловедение",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 10000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Инженерия безопасности",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Экологический дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Механический дизайн, производство и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Административное управление",
+    "degree": "bachelor",
+    "tuition_fee": 10000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 10000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 10000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Коммуникационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Уханьский технологический институт",
+    "name": "Информационные и вычислительные науки",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

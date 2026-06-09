@@ -1,0 +1,416 @@
+[
+  {
+    "university": "Цзянханьский университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Текстильная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Инженерия светлой химии",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Пищевая наука и инжиниринг",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Качество и безопасность пищевых продуктов",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Питание и здоровье",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Биоинженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Инженерия пивоварения",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Синтетическая биология",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Продуктовый дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Дизайн визуальной коммуникации",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Экологический дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Публичное искусство",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Химическая инженерия и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Инженерия макромолекулярных материалов",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Технология интернета вещей",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Экологическая наука",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Идеологическое и политическое воспитание",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Сестринское дело",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Фармация",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Фармацевтическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Применение больших данных в менеджменте",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Информационная и вычислительная наука",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Оптическая информационная наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Хореография",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Японский язык",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Право",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Социальная работа",
+    "degree": "bachelor",
+    "tuition_fee": 14800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Дизайн моды и одежды",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Цифровое медиа-искусство",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Наука и инженерия микроэлектроники",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Технология электронного упаковки",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянханьский университет",
+    "name": "Робототехническая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

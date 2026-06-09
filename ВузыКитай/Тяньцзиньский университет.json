@@ -1,0 +1,515 @@
+[
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Материаловедение и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Материаловедение и инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Формование материалов и инженерия управления",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Функциональные материалы",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Географические науки",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Инженерия интеллектуальных энергосетей",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Электротехническая инженерия и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Электронная информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Инженерия интернета вещей",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Инженерия связи",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Управление информацией и информационные системы",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Системная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Промышленная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Управление строительством",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Деловое администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Финансовый менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Электронная коммерция",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Китайский язык (трансграничная электронная коммерция)",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Китайский язык (деловой китайский)",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Преподавание китайского языка как иностранного",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Морская наука",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Морская техника",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Пожарная химическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Оборудование для технологических процессов и инженерия управления",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Инженерия пищевых продуктов",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Пищевая наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Синтетическая биология",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Биологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Фармацевтическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Инженерия окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Экологическая наука",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Механический дизайн, производство и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Инженерная механика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Гидротехническая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Портовая, водная и прибрежная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Военно-морская и океаническая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Градостроительство и сельское планирование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Электронная наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Оптоэлектронная информационная наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Биологические науки",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Финансовая математика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Фармацевтические науки",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Биомедицинская инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Тяньцзиньский университет",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

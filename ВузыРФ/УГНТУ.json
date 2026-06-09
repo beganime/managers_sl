@@ -1,0 +1,362 @@
+[
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Геология",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 225000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Технологические машины и оборудование",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Автоматизация технологических процессов и производств",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Энерго- и ресурсосберегающие процессы в химической технологии",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Продукты питания из растительного сырья",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Техносферная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Нефтегазовое дело",
+    "degree": "bachelor",
+    "tuition_fee": 245000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Управление в технических системах",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Технологии и проектирование текстильных изделий",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Конструирование изделий легкой промышленности",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Зарубежное регионоведение",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Гостиничное дело",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Социально-культурная деятельность",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 320000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Искусство костюма и текстиля",
+    "degree": "bachelor",
+    "tuition_fee": 320000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Строительство уникальных зданий и сооружений",
+    "degree": "specialist",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Пожарная безопасность",
+    "degree": "specialist",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Прикладная геология",
+    "degree": "specialist",
+    "tuition_fee": 245000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Технологии геологической разведки",
+    "degree": "specialist",
+    "tuition_fee": 245000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Нефтегазовые техника и технологии",
+    "degree": "specialist",
+    "tuition_fee": 245000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Наземные транспортно-технические средства",
+    "degree": "specialist",
+    "tuition_fee": 245000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Экономическая безопасность",
+    "degree": "specialist",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Электроэнергетика и электротехника (на английском)",
+    "degree": "bachelor",
+    "tuition_fee": 270000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Технологические машины и оборудование (на английском)",
+    "degree": "bachelor",
+    "tuition_fee": 270000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Химическая технология (на английском)",
+    "degree": "bachelor",
+    "tuition_fee": 270000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "УГНТУ (Уфимский государственный нефтяной технический университет)",
+    "name": "Нефтегазовое дело (на английском)",
+    "degree": "bachelor",
+    "tuition_fee": 280000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

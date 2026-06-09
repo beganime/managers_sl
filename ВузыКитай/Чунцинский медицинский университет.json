@@ -1,0 +1,38 @@
+[
+  {
+    "university": "Чунцинский медицинский университет",
+    "name": "Клиническая медицина",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Чунцинский медицинский университет",
+    "name": "Судебная медицина",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Чунцинский медицинский университет",
+    "name": "Педиатрия",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Чунцинский медицинский университет",
+    "name": "Государственное управление",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

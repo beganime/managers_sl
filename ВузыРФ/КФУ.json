@@ -1,0 +1,479 @@
+[
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 237600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Педагогическое образование (Биология и английский / Биология и ОБЖ)",
+    "degree": "bachelor",
+    "tuition_fee": 211200.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 231000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Землеустройство и кадастры",
+    "degree": "bachelor",
+    "tuition_fee": 231000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Гидрометеорология",
+    "degree": "bachelor",
+    "tuition_fee": 231000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Почвоведение",
+    "degree": "bachelor",
+    "tuition_fee": 231000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 250800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Геология (многопрофильный конкурс)",
+    "degree": "bachelor",
+    "tuition_fee": 270600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Нефтегазовое дело",
+    "degree": "bachelor",
+    "tuition_fee": 297000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 362880.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Востоковедение и африканистика (Китайский/Корейский/Японский/Турецкий и др.)",
+    "degree": "bachelor",
+    "tuition_fee": 302400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Экономика (Международные экономические отношения)",
+    "degree": "bachelor",
+    "tuition_fee": 331272.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Зарубежное регионоведение",
+    "degree": "bachelor",
+    "tuition_fee": 237600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Регионоведение России",
+    "degree": "bachelor",
+    "tuition_fee": 217800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 211200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 252000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Лингвистика (Перевод и переводоведение)",
+    "degree": "bachelor",
+    "tuition_fee": 317088.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Математика (Математика в цифровой экономике)",
+    "degree": "bachelor",
+    "tuition_fee": 198000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Механика и математическое моделирование",
+    "degree": "bachelor",
+    "tuition_fee": 198000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Математика и компьютерные науки (Наука о данных)",
+    "degree": "bachelor",
+    "tuition_fee": 198000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 231000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Радиофизика",
+    "degree": "bachelor",
+    "tuition_fee": 231000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 309672.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Информационная безопасность автоматизированных систем",
+    "degree": "specialist",
+    "tuition_fee": 309672.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Биотехнические системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 250800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Геодезия и дистанционное зондирование",
+    "degree": "bachelor",
+    "tuition_fee": 283860.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Инноватика",
+    "degree": "bachelor",
+    "tuition_fee": 252000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Нанотехнологии и микросистемная техника",
+    "degree": "bachelor",
+    "tuition_fee": 303660.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 201168.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Фундаментальная и прикладная химия",
+    "degree": "specialist",
+    "tuition_fee": 201168.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 360000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 273744.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Бизнес-информатика",
+    "degree": "bachelor",
+    "tuition_fee": 303660.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Филология (Прикладная филология)",
+    "degree": "bachelor",
+    "tuition_fee": 272160.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 360000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Журналистика / Телевидение / Медиакоммуникация",
+    "degree": "bachelor",
+    "tuition_fee": 302400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Клиническая психология",
+    "degree": "specialist",
+    "tuition_fee": 265320.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Менеджмент (Управление бизнесом / Маркетинг)",
+    "degree": "bachelor",
+    "tuition_fee": 331272.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 289584.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 382464.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Елабуга] Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 231000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Елабуга] Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 221184.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Елабуга] Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 221184.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Елабуга] Педагогическое образование (с двумя профилями подготовки)",
+    "degree": "bachelor",
+    "tuition_fee": 198000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Елабуга] Лингвистика (Перевод и переводоведение)",
+    "degree": "bachelor",
+    "tuition_fee": 221184.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Наб. Челны] Психология",
+    "degree": "bachelor",
+    "tuition_fee": 245880.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Наб. Челны] Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 221184.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Наб. Челны] Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 221184.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Наб. Челны] Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 221184.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Наб. Челны] Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 221184.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Наб. Челны] Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 221184.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Наб. Челны] Таможенное дело",
+    "degree": "specialist",
+    "tuition_fee": 202752.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "КФУ (Казанский федеральный университет)",
+    "name": "[Наб. Челны] Перевод и переводоведение",
+    "degree": "specialist",
+    "tuition_fee": 202752.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

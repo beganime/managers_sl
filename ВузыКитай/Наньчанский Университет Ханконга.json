@@ -1,0 +1,47 @@
+[
+  {
+    "university": "Наньчанский Университет Ханконга",
+    "name": "Авиационная техника",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Наньчанский Университет Ханконга",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Наньчанский Университет Ханконга",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Наньчанский Университет Ханконга",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Наньчанский Университет Ханконга",
+    "name": "Электронная коммерция",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

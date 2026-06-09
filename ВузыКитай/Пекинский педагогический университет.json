@@ -1,0 +1,290 @@
+[
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Китайский как иностранный",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Преподавание китайского как иностранного",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Коммуникация",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Педагогика (включая педагогика, дошкольная педагогика, специальное образование)",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Японский язык",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Русский язык",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Литература театра, кино и телевидения",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Цифровые медиа",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Каллиграфия",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Изобразительное искусство",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Музыковедение",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Хореография",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Физическое воспитание",
+    "degree": "bachelor",
+    "tuition_fee": 24000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Статистика",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Астрономия",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Географические науки (физическая география и природные ресурсы и окружающая среда, человеческая география и планирование город–село, геоинформационная наука, науки о природных ресурсах и окружающей среде)",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский педагогический университет",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 27700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

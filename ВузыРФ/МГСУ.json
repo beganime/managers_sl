@@ -1,0 +1,128 @@
+[
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Реконструкция и реставрация архитектурного наследия",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Градостроительство",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 385000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Автоматизация технологических процессов и производств",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Техносферная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Землеустройство и кадастры",
+    "degree": "bachelor",
+    "tuition_fee": 396000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 316000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 316000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 316000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Строительство уникальных зданий и сооружений",
+    "degree": "specialist",
+    "tuition_fee": 370000.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГСУ (Московский государственный строительный университет)",
+    "name": "Наземные транспортно-технологические средства",
+    "degree": "specialist",
+    "tuition_fee": 350000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

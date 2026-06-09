@@ -1,0 +1,380 @@
+[
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 182600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Фундаментальная информатика и информационные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 182600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Математическое обеспечение и администрирование информационных систем",
+    "degree": "bachelor",
+    "tuition_fee": 187400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 199500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Радиофизика",
+    "degree": "bachelor",
+    "tuition_fee": 191000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 200900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 200900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 200900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 210600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 199500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 200900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 211600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 211600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Инфокоммуникационные технологии и системы связи",
+    "degree": "bachelor",
+    "tuition_fee": 237200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 203300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Техническая физика",
+    "degree": "bachelor",
+    "tuition_fee": 242100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 237200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Землеустройство и кадастры",
+    "degree": "bachelor",
+    "tuition_fee": 215000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Технология транспортных процессов",
+    "degree": "bachelor",
+    "tuition_fee": 203300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 200900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 181500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 182600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Бизнес-информатика",
+    "degree": "bachelor",
+    "tuition_fee": 183900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 181500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 193600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Политология",
+    "degree": "bachelor",
+    "tuition_fee": 182600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 300000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 240000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 210600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Сервис",
+    "degree": "bachelor",
+    "tuition_fee": 182600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 181500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Гостиничное дело",
+    "degree": "bachelor",
+    "tuition_fee": 183900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Специальное (дефектологическое) образование",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Педагогическое образование (с двумя профилями подготовки)",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Педагогическое образование (английский + второй ин. язык по выбору)",
+    "degree": "bachelor",
+    "tuition_fee": 183900.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 181500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Филология (русский язык как иностранный)",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 253500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 225900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 181500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Физическая культура",
+    "degree": "bachelor",
+    "tuition_fee": 267400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БФУ (Балтийский федеральный университет им Иммануила Канта)",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 320000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

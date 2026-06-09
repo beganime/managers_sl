@@ -1,0 +1,776 @@
+[
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Клиническая лабораторная диагностика",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Педиатрия",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Науки об атмосфере",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Прикладная метеорология",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Биофармация",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Энергетическое химическое машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Финансовая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Биологические науки",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Биоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Экология",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Информационные и вычислительные науки",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Статистика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Фармацевтическая наука",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Зоотехника",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Телекоммуникационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Профилактическая медицина",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Стоматология",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Преподавание китайского языка как иностранного",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Китайский язык",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Строительная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Геология",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Клиническая медицина",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Сестринское дело",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Международная политика",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Драматургия, кино и телевидение",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Реклама",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Цифровые медиа-технологии",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Радиационная защита и ядерная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Право",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Материаловедение",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Физика материалов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Наука о микроэлектронике и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Клиническая фармация",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Медицинская визуализация",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Анестезиология",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Управление человеческими ресурсами",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Маркетинг",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Информационный менеджмент и информационные системы",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Административное управление",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Ядерная химия и ядерное топливное хозяйство",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Ядерная инженерия и ядерные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Политика и управление",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Геохимия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Геологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Теоретическая и прикладная механика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Культурные реликвии и музеология",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Этнология",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Всеобщая история",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Науки о данных и технологии больших данных",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Электроника и информационная наука",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Луговодство",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Гидрология и водные ресурсы",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Экология и охрана окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Социально-экономическая география и градостроительное планирование",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Геоинформационные науки",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Физическая география и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Музыкальное исполнительство",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Экономика сельского и лесного хозяйства",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Функциональные материалы",
+    "degree": "bachelor",
+    "tuition_fee": 0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Новые энергетические материалы и устройства",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Идеолого-политическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Теория марксизма",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Русский язык",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Ланьчжоуский университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

@@ -1,0 +1,740 @@
+[
+  {
+    "university": "Фучжоуский университет",
+    "name": "Электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Инженерия интеллектуальных энергосетей",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Инженерия накопителей энергии",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Робототехническая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Инженерия обработки и контроля материалов",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Автомобилестроение",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Проектирование, производство и автоматизация машиностроения",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Информационные науки и технологии больших данных",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Кибербезопасность",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Сетевое проектирование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Интеллектуальное строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Транспортная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Транспорт и логистика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Инженерный менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Водоснабжение и водоотведение",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Гидротехническое, портовое, прибрежное и морское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Экологическая и промышленная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Наука и инженерия переработки ресурсов",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "География человека и территориальное планирование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Инженерия безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Биомедицина",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Пищевая наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Биологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Градостроительство и региональное планирование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Геологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Инженерия переработки полезных ископаемых",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Горное дело",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Инженерия разведки природных ресурсов",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Материаловедение и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Устойчивая энергетика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Полимерные материалы и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Химическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Хранение и транспортировка нефти и газа",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Процессное оборудование и автоматизация управления",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Передовое производство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Управление логистикой",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Электронная и информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Промышленная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Международная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Электронная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Фармацевтическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Прикладная психология",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Деловое администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Электронная коммерция",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Маркетинг",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Публичное управление",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Иностранные языки и литература",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Немецкий язык",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Японский язык",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Музыка",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Скульптура",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Живопись",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Декоративно-прикладное искусство",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Цифровое медиа-искусство",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Дизайн одежды и моды",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Дизайн продукта",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Фучжоуский университет",
+    "name": "Экологический дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

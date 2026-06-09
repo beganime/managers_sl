@@ -1,0 +1,65 @@
+[
+  {
+    "university": "Белорусский государственный медицинский университет",
+    "name": "Лечебное дело",
+    "degree": "specialist",
+    "tuition_fee": 4950.0,
+    "service_fee": 1000.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Белорусский государственный медицинский университет",
+    "name": "Лечебное дело (на английском языке)",
+    "degree": "specialist",
+    "tuition_fee": 5850.0,
+    "service_fee": 1000.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Белорусский государственный медицинский университет",
+    "name": "Стоматология",
+    "degree": "specialist",
+    "tuition_fee": 5350.0,
+    "service_fee": 1000.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Белорусский государственный медицинский университет",
+    "name": "Стоматология (на английском языке)",
+    "degree": "specialist",
+    "tuition_fee": 6450.0,
+    "service_fee": 1000.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Белорусский государственный медицинский университет",
+    "name": "Медико-профилактическое дело",
+    "degree": "specialist",
+    "tuition_fee": 4950.0,
+    "service_fee": 1000.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Белорусский государственный медицинский университет",
+    "name": "Фармация",
+    "degree": "specialist",
+    "tuition_fee": 4950.0,
+    "service_fee": 1000.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Белорусский государственный медицинский университет",
+    "name": "Фармация (на английском языке)",
+    "degree": "specialist",
+    "tuition_fee": 5850.0,
+    "service_fee": 1000.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

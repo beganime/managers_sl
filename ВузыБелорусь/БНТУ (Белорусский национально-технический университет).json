@@ -1,0 +1,182 @@
+[
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 4200.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Таможенное дело",
+    "degree": "specialist",
+    "tuition_fee": 4000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Экономика и управление",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 3950.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Оборудование и технологии упаковочного производства, торговли и экспозиционно-рекламных объектов",
+    "degree": "bachelor",
+    "tuition_fee": 3600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Оборудование и технологии вакуумной, компрессорной и низкотемпературной техники",
+    "degree": "bachelor",
+    "tuition_fee": 3600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 3600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 3700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Информационные технологии и робототехника",
+    "degree": "bachelor",
+    "tuition_fee": 3600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Экспертиза и управление недвижимостью",
+    "degree": "bachelor",
+    "tuition_fee": 3950.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Транспортная логистика",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Технологии транспортных процессов",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Экологический аудит и обеспечение качества окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Информационно-измерительные приборы и системы",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Оптико-электронная и лазерная техника",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Биомедицинская инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Микро- и наносистемная техника",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Направления в области энергетики",
+    "degree": "bachelor",
+    "tuition_fee": 3600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Автоматизация технологических процессов и производств",
+    "degree": "bachelor",
+    "tuition_fee": 3900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "БНТУ (Белорусский национально-технический университет)",
+    "name": "Технологические и производственные направления",
+    "degree": "bachelor",
+    "tuition_fee": 3600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

@@ -1,0 +1,380 @@
+[
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Дошкольное образование",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Начальное образование",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Социально-педагогическое и психологическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Образование в области физической культуры",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Музыкальное образование",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Туризм и гостеприимство",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Лингвистика (английский, немецкий)",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Романо-германская филология",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Современные иностранные языки (английский, немецкий) (английский, китайский)",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Белорусский, английский",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Графический дизайн и мультимедиадизайн",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Дизайн предметно-пространственной среды",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Инженерные сети, оборудование зданий и сооружений",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Строительство зданий",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Переработка нефти и газа, промышленный органический синтез",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Производство изделий на основе трехмерных технологий",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Эксплуатация наземных транспортных и технологических машин и комплексов",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Технологические машины и оборудование",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Технология машиностроения, металлорежущие станки и инструменты",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Трубопроводный транспорт, хранение нефти и газа",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Геодезия",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Компьютерная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Кибербезопасность",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Компьютерная физика",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Технологическое образование (Технический труд и информатика)",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Физико-математическое образование (математика и физика)",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Электронные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Бухгалтерский учет, анализ и аудит",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Логистика",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Социальные коммуникации",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Финансы и кредит",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Экономика и управление",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Экономическая безопасность",
+    "degree": "specialist",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Электронная экономика",
+    "degree": "bachelor",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Правоведение",
+    "degree": "specialist",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Полоцкий государственный университет имени Ефросинии Полоцкой",
+    "name": "Таможенное дело",
+    "degree": "specialist",
+    "tuition_fee": 2500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

@@ -1,0 +1,128 @@
+[
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Авиакосмическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Наука о материалах и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Инженерия механика",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Электроника и информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Коммуникационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-Западный Политехнический Университет",
+    "name": "Немецкий язык",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

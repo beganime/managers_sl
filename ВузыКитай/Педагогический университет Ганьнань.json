@@ -1,0 +1,281 @@
+[
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Преподавание китайского языка носителям других языков",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Искусство вещания и ведения программ",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Монтаж радио и телевидения",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Образовательные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Электронная информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Электронная наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Садоводство",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Гуманитарная география, градостроительство и планирование сельских территорий",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Физическая культура",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Цифровое медиаискусство",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Дизайн продукта",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Изобразительное искусство (китайская живопись)",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Музыковедение",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Хореография",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Деловой английский язык (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Английский перевод (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Наука об окружающей среде (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Географическая информация (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Международная экономика и торговля (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Бухгалтерский учет (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Педагогический университет Ганьнань",
+    "name": "Компьютерные науки и технологии (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 12000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

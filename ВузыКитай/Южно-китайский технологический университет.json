@@ -1,0 +1,326 @@
+[
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Городское и сельское планирование",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Электрическая инженерия и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Энергетика и энергетическая машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Электронная информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Инженерия автоматизации",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Опто-электронные информационные науки и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Финансовая менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Компьютерные науки",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Компьютерные науки технологии",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Финансовые технологии",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Менеджмент туризма",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Управление большими данными и их применение",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Коммуникация",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Реклама",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Интеллектуальная собственность",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Музыковедение",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Хореография",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Музыка",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Экологический дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Дизайн продукта",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Дизайн одежды",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Южно-китайский технологический университет",
+    "name": "Преподавание китайского языка как иностранный",
+    "degree": "bachelor",
+    "tuition_fee": 18200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

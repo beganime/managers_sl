@@ -1,0 +1,722 @@
+[
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Математическое обеспечение и администрирование информационных систем",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Прикладные математика и физика",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Реконструкция и реставрация архитектурного наследия",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Градостроительство",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Электроника, радиотехника и системы связи",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Радиотехника",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Инфокоммуникационные технологии и системы связи",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Электроника и наноэлектроника",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Фотоника, приборостроение, оптические и биотехнические системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Приборостроение",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Биотехнические системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Электро- и теплоэнергетика",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Прикладная механика",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Холодильная, криогенная техника и системы жизнеобеспечения",
+    "degree": "bachelor",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Промышленная экология и биотехнологии",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Продукты питания из растительного сырья",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Продукты питания животного происхождения",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Техносферная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Прикладная геология",
+    "degree": "specialist",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Горное дело",
+    "degree": "specialist",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Нефтегазовое дело",
+    "degree": "bachelor",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Геодезия",
+    "degree": "bachelor",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Землеустройство и кадастры",
+    "degree": "bachelor",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Металлургия",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Техника и технология наземного транспорта",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Технология транспортных процессов",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Эксплуатация транспортно-технологических машин и комплексов",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Авиастроение",
+    "degree": "specialist",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Техническая эксплуатация летательных аппаратов и двигателей",
+    "degree": "specialist",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Управление качеством",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Инноватика",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Наноинженерия",
+    "degree": "bachelor",
+    "tuition_fee": 211500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Технологии легкой промышленности",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Агроинженерия",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Экономика и управление",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Управление персоналом",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Торговое дело",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Социальная работа",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 217400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Сервис и туризм",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Гостиничное дело",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Специальное (дефектологическое) образование",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Профессиональное обучение (по отраслям)",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Педагогическое образование (с двумя профилями подготовки)",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Документоведение и архивоведение",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Теология",
+    "degree": "bachelor",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 310400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Биоинженерия и биоинформатика",
+    "degree": "specialist",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Строительство уникальных зданий и сооружений",
+    "degree": "specialist",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Информационная безопасность автоматизированных систем",
+    "degree": "specialist",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Пожарная безопасность",
+    "degree": "specialist",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Наземные транспортно - технологические средства",
+    "degree": "specialist",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Фармация",
+    "degree": "specialist",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Ветеринария",
+    "degree": "specialist",
+    "tuition_fee": 176300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Клиническая психология",
+    "degree": "specialist",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Психология служебной деятельности",
+    "degree": "specialist",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Экономическая безопасность",
+    "degree": "specialist",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Таможенное дело",
+    "degree": "specialist",
+    "tuition_fee": 155300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Перевод и переводоведение",
+    "degree": "specialist",
+    "tuition_fee": 207000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ДГТУ (Донской государственный технический университет)",
+    "name": "Монументально-декоративное искусство",
+    "degree": "specialist",
+    "tuition_fee": 310400.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  }
+]

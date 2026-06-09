@@ -1,0 +1,227 @@
+[
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Микробиология",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Экология",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Педагогическое образование: Биология и химия",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Правоведение",
+    "degree": "specialist",
+    "tuition_fee": 4491.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Международное право",
+    "degree": "specialist",
+    "tuition_fee": 4491.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Педагогическое образование: Физическая культура",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Педагогическое образование: Математика и физика",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Управление информационными ресурсами",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Лингвистическое обеспечение межкультурной коммуникации",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Романо-германская филология",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Белорусская филология",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Русская филология",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Педагогическое образование: История",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Дизайн предметно-пространственной среды",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Педагогическое образование: Художественное образование",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Социальная работа и консультирование",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Начальное образование",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Дошкольное образование",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Олигофренопедагогика",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Витебский государственный университет имени П.М Машерова",
+    "name": "Музыкальное образование",
+    "degree": "bachelor",
+    "tuition_fee": 4015.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

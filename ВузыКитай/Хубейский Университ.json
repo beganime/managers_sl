@@ -1,0 +1,713 @@
+[
+  {
+    "university": "Хубейский Университ",
+    "name": "Электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Инженерия интеллектуальных энергосетей",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Инженерия накопителей энергии",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Робототехническая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Инженерия обработки и контроля материалов",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Автомобилестроение",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Проектирование, производство и автоматизация машиностроения",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Информационные науки и технологии больших данных",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Кибербезопасность",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Сетевое проектирование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Интеллектуальное строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Транспортная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Транспорт и логистика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Инженерный менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Водоснабжение и водоотведение",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Гидротехническое, портовое, прибрежное и морское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Экологическая и промышленная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Наука и инженерия переработки ресурсов",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "География человека и территориальное планирование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Инженерия безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Биомедицина",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Пищевая наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Биологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Градостроительство и региональное планирование",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Геологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Инженерия переработки полезных ископаемых",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Горное дело",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Инженерия разведки природных ресурсов",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Материаловедение и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Устойчивая энергетика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Полимерные материалы и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Химическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Хранение и транспортировка нефти и газа",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Процессное оборудование и автоматизация управления",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Управление логистикой",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Электронная и информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Промышленная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Международная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Электронная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Фармацевтическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Прикладная психология",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Деловое администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Электронная коммерция",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Маркетинг",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Публичное управление",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Иностранные языки и литература",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Немецкий язык",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Японский язык",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Музыка",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Скульптура",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Живопись",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Дизайн одежды и моды",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Дизайн продукта",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хубейский Университ",
+    "name": "Экологический дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

@@ -1,0 +1,371 @@
+[
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 188000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Статистика",
+    "degree": "bachelor",
+    "tuition_fee": 189000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Математика и компьютерные науки",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Математическое обеспечение и администрирование информационных систем",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Прикладные математика и физика",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Прикладная математика и информатика (технический профиль)",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Радиофизика",
+    "degree": "bachelor",
+    "tuition_fee": 215000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Информатика и вычислительная техника (профиль 1)",
+    "degree": "bachelor",
+    "tuition_fee": 215000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Геология",
+    "degree": "bachelor",
+    "tuition_fee": 215000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Информатика и вычислительная техника (профиль 2)",
+    "degree": "bachelor",
+    "tuition_fee": 214000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Радиотехника",
+    "degree": "bachelor",
+    "tuition_fee": 215000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Информатика и вычислительная техника (профиль 3)",
+    "degree": "bachelor",
+    "tuition_fee": 215000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Инфокоммуникационные технологии и системы связи",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Фотоника и оптоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Биотехнические системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 214000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Управление качеством",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Нанотехнологии и микросистемная техника",
+    "degree": "bachelor",
+    "tuition_fee": 325000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 211000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 211000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 189000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 227000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Политология",
+    "degree": "bachelor",
+    "tuition_fee": 186000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 216000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 212000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 189000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 182000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 182000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Педагогическое образование (с двумя профилями): Организация работы с молодежью",
+    "degree": "bachelor",
+    "tuition_fee": 182000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Педагогическое образование (с двумя профилями): Английский язык и испанский язык",
+    "degree": "bachelor",
+    "tuition_fee": 182000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Педагогическое образование (с двумя профилями): Английский язык и немецкий язык",
+    "degree": "bachelor",
+    "tuition_fee": 182000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Педагогическое образование (с двумя профилями): Русский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 182000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 187000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 203000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "Фундаментальная и прикладная лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 193000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ВолГУ (Волгоградский государственный университет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 187000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

@@ -1,0 +1,227 @@
+[
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Традиционная китайская медицина",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Клиническая медицина",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Технология медицинской визуализации",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Иглоукалывание и массаж",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1000.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Ортопедия традиционной китайской медицины",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Реабилитационная терапия",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Китайская фармация",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Фармация",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Ресурсы и разработка лекарственных средств традиционной китайской медицины",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Фармацевтическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Производство китайских фармацевтических препаратов",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Технология медицинской лабораторной диагностики",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Санитарный контроль и карантин",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Качество и безопасность пищевых продуктов",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Сестринское дело",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Технологии медицинского эксперимента",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Маркетинг",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Логистический менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Международный бизнес",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Управление в сфере государственных услуг",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Информационный менеджмент и информационные системы",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Медицинская информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Инженерия интернета вещей",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэбэйский медицинский университет",
+    "name": "Международное образование в области китайского языка",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

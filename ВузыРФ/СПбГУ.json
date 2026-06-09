@@ -1,0 +1,947 @@
+[
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Почвоведение",
+    "degree": "bachelor",
+    "tuition_fee": 380700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 432400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 453300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Нефтегазовое дело",
+    "degree": "bachelor",
+    "tuition_fee": 495300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Математика",
+    "degree": "bachelor",
+    "tuition_fee": 407400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Прикладная математика и информатика (Прикладная математика, фундаментальная информатика и программирование)",
+    "degree": "bachelor",
+    "tuition_fee": 397000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Прикладная математика и информатика (Современное программирование)",
+    "degree": "bachelor",
+    "tuition_fee": 336800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Математика и компьютерные науки",
+    "degree": "bachelor",
+    "tuition_fee": 385200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Математика и компьютерные науки (Науки о данных)",
+    "degree": "bachelor",
+    "tuition_fee": 385200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Фундаментальная информатика и информационные технологии (Большие данные и распределенная цифровая платформа)",
+    "degree": "bachelor",
+    "tuition_fee": 419700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Фундаментальная информатика и информационные технологии (Программирование и информационные технологии)",
+    "degree": "bachelor",
+    "tuition_fee": 344300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Математическое обеспечение и администрирование информационных систем (Технологии программирования)",
+    "degree": "bachelor",
+    "tuition_fee": 482500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Прикладные математика и физика (Инженерно-ориентированная физика)",
+    "degree": "bachelor",
+    "tuition_fee": 429800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Прикладные математика и физика",
+    "degree": "bachelor",
+    "tuition_fee": 441200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 418400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 416800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Химия, физика и механика материалов (Химическое материаловедение)",
+    "degree": "bachelor",
+    "tuition_fee": 386900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Геология",
+    "degree": "bachelor",
+    "tuition_fee": 436800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 373800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Картография и геоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 368800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Гидрометеорология",
+    "degree": "bachelor",
+    "tuition_fee": 368800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 380700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 409900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Биология (Биология: биоинженерные технологии)",
+    "degree": "bachelor",
+    "tuition_fee": 430000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Землеустройство и кадастры (Кадастр недвижимости: оценка и информационное обеспечение)",
+    "degree": "bachelor",
+    "tuition_fee": 519700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Системный анализ и управление (Прикладные компьютерные технологии)",
+    "degree": "bachelor",
+    "tuition_fee": 446900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Сестринское дело",
+    "degree": "bachelor",
+    "tuition_fee": 430200.0,
+    "service_fee": 900.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Сестринское дело (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 461200.0,
+    "service_fee": 900.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 378000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 532700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Экономика (с углубленным изучением экономики Китая и китайского языка)",
+    "degree": "bachelor",
+    "tuition_fee": 538900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Экономико-математические методы",
+    "degree": "bachelor",
+    "tuition_fee": 508600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Менеджмент (Международный менеджмент)",
+    "degree": "bachelor",
+    "tuition_fee": 697400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 651100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Управление персоналом",
+    "degree": "bachelor",
+    "tuition_fee": 510700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 501700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Бизнес-информатика",
+    "degree": "bachelor",
+    "tuition_fee": 535300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Социология (Социологические исследования в цифровом обществе)",
+    "degree": "bachelor",
+    "tuition_fee": 344500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 344500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Социальная работа",
+    "degree": "bachelor",
+    "tuition_fee": 307300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 508700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Юриспруденция (с углубленным изучением китайского языка и права КНР)",
+    "degree": "bachelor",
+    "tuition_fee": 571500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Политология",
+    "degree": "bachelor",
+    "tuition_fee": 382800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 487500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 482100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 471200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Журналистика (Международная журналистика)",
+    "degree": "bachelor",
+    "tuition_fee": 487400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Туризм (Организация туристской деятельности (с углубленным изучением китайского языка))",
+    "degree": "bachelor",
+    "tuition_fee": 420100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 325700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Филология (Английский язык и литература)",
+    "degree": "bachelor",
+    "tuition_fee": 462800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Филология (Классическая филология (древнегреческий и латинский языки; античная литература))",
+    "degree": "bachelor",
+    "tuition_fee": 463300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Филология (Новогреческий язык, византийская и новогреческая филология)",
+    "degree": "bachelor",
+    "tuition_fee": 432000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Филология (Отечественная филология (Русский язык и литература))",
+    "degree": "bachelor",
+    "tuition_fee": 463300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Английский язык как иностранный в обучении и коммуникации)",
+    "degree": "bachelor",
+    "tuition_fee": 476000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Испанский язык)",
+    "degree": "bachelor",
+    "tuition_fee": 466100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Немецкий язык)",
+    "degree": "bachelor",
+    "tuition_fee": 466100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Норвежский язык)",
+    "degree": "bachelor",
+    "tuition_fee": 449000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Общая и прикладная фонетика)",
+    "degree": "bachelor",
+    "tuition_fee": 466100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Прикладная, компьютерная и математическая лингвистика)",
+    "degree": "bachelor",
+    "tuition_fee": 466100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Русский язык как иностранный)",
+    "degree": "bachelor",
+    "tuition_fee": 464300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Сравнительно-историческое языкознание)",
+    "degree": "bachelor",
+    "tuition_fee": 453000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Теоретическое и экспериментальное языкознание)",
+    "degree": "bachelor",
+    "tuition_fee": 467100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Теория и практика межкультурной коммуникации)",
+    "degree": "bachelor",
+    "tuition_fee": 467100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Французский язык)",
+    "degree": "bachelor",
+    "tuition_fee": 466100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Шведский язык)",
+    "degree": "bachelor",
+    "tuition_fee": 449000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Иностранные языки в глобальных коммуникациях)",
+    "degree": "bachelor",
+    "tuition_fee": 467100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лингвистика (Английский язык как язык кросскультурного взаимодействия)",
+    "degree": "bachelor",
+    "tuition_fee": 418300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "История (Археология)",
+    "degree": "bachelor",
+    "tuition_fee": 357300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 357300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 378900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Религиоведение",
+    "degree": "bachelor",
+    "tuition_fee": 395400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Физическая культура (Физическая культура и спорт)",
+    "degree": "bachelor",
+    "tuition_fee": 357300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Искусства и гуманитарные науки",
+    "degree": "bachelor",
+    "tuition_fee": 507100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "История искусств",
+    "degree": "bachelor",
+    "tuition_fee": 359900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Культурология",
+    "degree": "bachelor",
+    "tuition_fee": 409400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Музеология и охрана объектов культурного и природного наследия",
+    "degree": "bachelor",
+    "tuition_fee": 331400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Музыкально-инструментальное искусство (Орган, клавесин, карильон)",
+    "degree": "bachelor",
+    "tuition_fee": 638200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Музыкально-инструментальное искусство (Скрипка)",
+    "degree": "bachelor",
+    "tuition_fee": 582200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Вокальное искусство (Академическое пение)",
+    "degree": "bachelor",
+    "tuition_fee": 592700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Дизайн (Графический дизайн)",
+    "degree": "bachelor",
+    "tuition_fee": 507500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Дизайн (Дизайн среды)",
+    "degree": "bachelor",
+    "tuition_fee": 525000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Декоративно-прикладное искусство и народные промыслы",
+    "degree": "bachelor",
+    "tuition_fee": 529100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Реставрация",
+    "degree": "bachelor",
+    "tuition_fee": 591400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (Ассириология)",
+    "degree": "bachelor",
+    "tuition_fee": 539300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (Исламоведение)",
+    "degree": "bachelor",
+    "tuition_fee": 539300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (История арабских стран)",
+    "degree": "bachelor",
+    "tuition_fee": 539300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (История Ирана и Афганистана)",
+    "degree": "bachelor",
+    "tuition_fee": 539300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (История Турции)",
+    "degree": "bachelor",
+    "tuition_fee": 539200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (История Центральной Азии)",
+    "degree": "bachelor",
+    "tuition_fee": 539300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (Китайская филология)",
+    "degree": "bachelor",
+    "tuition_fee": 539300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (Корейская филология)",
+    "degree": "bachelor",
+    "tuition_fee": 539300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (Тибетско-монгольская филология)",
+    "degree": "bachelor",
+    "tuition_fee": 557600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Востоковедение и африканистика (Японская филология)",
+    "degree": "bachelor",
+    "tuition_fee": 539300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Фундаментальные математика и механика (Фундаментальная математика)",
+    "degree": "specialist",
+    "tuition_fee": 352000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Фундаментальные математика и механика (Фундаментальная механика)",
+    "degree": "specialist",
+    "tuition_fee": 352000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Астрономия",
+    "degree": "specialist",
+    "tuition_fee": 357600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лечебное дело",
+    "degree": "specialist",
+    "tuition_fee": 535800.0,
+    "service_fee": 1100.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Лечебное дело (на английском языке)",
+    "degree": "specialist",
+    "tuition_fee": 546500.0,
+    "service_fee": 1100.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Стоматология",
+    "degree": "specialist",
+    "tuition_fee": 507200.0,
+    "service_fee": 1100.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Стоматология (на английском языке)",
+    "degree": "specialist",
+    "tuition_fee": 511800.0,
+    "service_fee": 1100.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Клиническая психология",
+    "degree": "specialist",
+    "tuition_fee": 378000.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Психология служебной деятельности",
+    "degree": "specialist",
+    "tuition_fee": 351000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Актёрское искусство (Артист драматического театра и кино)",
+    "degree": "specialist",
+    "tuition_fee": 543100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Живопись (Станковая живопись)",
+    "degree": "specialist",
+    "tuition_fee": 460500.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "СПбГУ (Санкт-Петербургский государственный университет)",
+    "name": "Живопись (Художник кино и телевидения)",
+    "degree": "specialist",
+    "tuition_fee": 445500.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  }
+]

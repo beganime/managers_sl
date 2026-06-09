@@ -1,0 +1,299 @@
+[
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Актерское искусство",
+    "degree": "specialist",
+    "tuition_fee": 532900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 280000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Вокальное искусство",
+    "degree": "bachelor",
+    "tuition_fee": 553800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 267100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 238500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Зарубежное регионоведение",
+    "degree": "bachelor",
+    "tuition_fee": 277500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Изящные искусства",
+    "degree": "bachelor",
+    "tuition_fee": 490000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 266200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 266200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "История искусств",
+    "degree": "bachelor",
+    "tuition_fee": 490000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Клиническая психология",
+    "degree": "specialist",
+    "tuition_fee": 276200.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Конфликтология",
+    "degree": "bachelor",
+    "tuition_fee": 245500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 307000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 245500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 532900.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Педагогическое образование (с двумя профилями подготовки)",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 245500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Профессиональное обучение (по отраслям)",
+    "degree": "bachelor",
+    "tuition_fee": 245500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 248700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 245500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 245500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 245500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Специальное (дефектологическое) образование",
+    "degree": "bachelor",
+    "tuition_fee": 238500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Управление персоналом",
+    "degree": "bachelor",
+    "tuition_fee": 249500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 266200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Физическая культура",
+    "degree": "bachelor",
+    "tuition_fee": 307000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 260000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 245500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 274700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Хореографическое искусство",
+    "degree": "specialist",
+    "tuition_fee": 532900.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 269000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "РГПУ (Российский государственный педагогический университет) им. Герцена",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 276200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

@@ -1,0 +1,938 @@
+[
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Математика",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Математика и компьютерные науки",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Фундаментальная и прикладная химия",
+    "degree": "specialist",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Реконструкция и реставрация архитектурного наследия",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Дизайн архитектурной среды",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Градостроительство",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Строительство уникальных зданий и сооружений",
+    "degree": "specialist",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Прикладная информатика (Интернет технологии и мобильные приложения)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Прикладная информатика в искусстве и интерактивных медиа",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Прикладная информатика (Цифровая экономика)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Радиотехника",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Инфокоммуникационные технологии и системы связи",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Электроника и наноэлектроника",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Радиоэлектронные системы и комплексы",
+    "degree": "specialist",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Специальные радиотехнические системы",
+    "degree": "specialist",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Фотоника и опто-информатика",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Технологические машины и оборудование (нефтегазовые производства)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Прикладная механика",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Автоматизация технологических процессов и производств (промышленные предприятия)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Автоматизация технологических процессов и производств (в металлургии)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Конструкторско-технологическое обеспечение машиностроительных производств",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Мехатроника и робототехника",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Продукты питания из растительного сырья",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Продукты питания животного происхождения",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Технология продукции и организация общественного питания",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Техносферная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Техносферная безопасность (Безопасность жизнедеятельности в техносфере)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Природообустройство и водопользование",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Пожарная безопасность",
+    "degree": "specialist",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Нефтегазовое дело",
+    "degree": "bachelor",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Прикладная геология (многопрофильный конкурс)",
+    "degree": "specialist",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Прикладная геология (Геология месторождений нефти и газа)",
+    "degree": "specialist",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Технология геологической разведки (Технология и техника разведки)",
+    "degree": "specialist",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Технология геологической разведки (Геофизические методы)",
+    "degree": "specialist",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Горное дело",
+    "degree": "specialist",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Нефтегазовые техника и технологии",
+    "degree": "specialist",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Материаловедение и технологии материалов в машиностроении",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Материаловедение и технологии материалов (Физико-химия материалов)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Металлургия",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Технология транспортных процессов",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Наземные транспортно-технологические комплексы",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Эксплуатация транспортно-технологических машин и комплексов (Нефтегазовая логистика)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Эксплуатация транспортно-технологических машин и комплексов (Автосервис)",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Наземные транспортно-технологические средства (Автомобили и тракторы)",
+    "degree": "specialist",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Транспортные средства специального назначения",
+    "degree": "specialist",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Техническая эксплуатация транспортного радиооборудования",
+    "degree": "specialist",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Стандартизация и метрология",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Управление качеством",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Системный анализ и управление",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Управление в технических системах",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Инноватика",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Технология художественной обработки материалов",
+    "degree": "bachelor",
+    "tuition_fee": 246000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Менеджмент (Высшая школа ресторанного менеджмента)",
+    "degree": "bachelor",
+    "tuition_fee": 290000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Менеджмент (Высшая школа гастрономии)",
+    "degree": "bachelor",
+    "tuition_fee": 590000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Управление персоналом",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Бизнес-информатика",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Торговое дело",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Товароведение",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Таможенное дело",
+    "degree": "specialist",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Социальная работа",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Сервис",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Гостиничное дело",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Педагогическое образование (с двумя профилями подготовки)",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Перевод и переводоведение",
+    "degree": "specialist",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Документоведение и архивоведение",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Антропология и этнология",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Религиоведение",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Физическая культура",
+    "degree": "bachelor",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Рекреация и спортивно-оздоровительный туризм",
+    "degree": "bachelor",
+    "tuition_fee": 285000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Искусства и гуманитарные науки",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Социально-культурная деятельность",
+    "degree": "bachelor",
+    "tuition_fee": 222000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "СФУ (Сибирский федеральный университет)",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 437000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

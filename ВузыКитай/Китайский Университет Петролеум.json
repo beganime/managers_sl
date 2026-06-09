@@ -1,0 +1,155 @@
+[
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Инженерия шельфовой нефти и газа",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Инженерия разведки ресурсов",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Химическая инженерия и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Машиностроение проектирование, производство и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Энергетика и силовая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Инженерия хранение и транспортировки нефти и газа",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Финансовый менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Энергетическая экономика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Управление информацией и информационные системы",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Электронная информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Китайский Университет Петролеум",
+    "name": "Нефтяная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

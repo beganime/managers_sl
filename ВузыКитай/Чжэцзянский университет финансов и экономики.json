@@ -1,0 +1,101 @@
+[
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Государственные финансы",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Налогообложение",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Электронная коммерция",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Деловой английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Дизайн окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Чжэцзянский университет финансов и экономики",
+    "name": "Китайское право",
+    "degree": "bachelor",
+    "tuition_fee": 19000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

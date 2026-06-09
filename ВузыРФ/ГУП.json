@@ -1,0 +1,461 @@
+[
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 310000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 315000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 315000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (Математика)",
+    "degree": "bachelor",
+    "tuition_fee": 270000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (Информатика)",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 310000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Математика и физика",
+    "degree": "bachelor",
+    "tuition_fee": 310000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Физика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 310000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Профессиональное обучение (по отраслям): Педагог профессионального образования",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Технологии и экономическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Технологическое образование и робототехника",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Экономика (Финансы и кредит)",
+    "degree": "bachelor",
+    "tuition_fee": 240000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Экономика (Экономика предприятий и организаций)",
+    "degree": "bachelor",
+    "tuition_fee": 240000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Менеджмент (Управление малым бизнесом)",
+    "degree": "bachelor",
+    "tuition_fee": 240000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Менеджмент (Логистика и управление закупками)",
+    "degree": "bachelor",
+    "tuition_fee": 240000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 240000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 240000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Политология",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): История и обществознание",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): История и основы религиозной культуры",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): История и общественно-политические дисциплины",
+    "degree": "bachelor",
+    "tuition_fee": 207300.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 210000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Филология (Русский язык как иностранный)",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Русский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Русский язык и английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Специальное (дефектологическое) образование",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Дошкольное и начальное образование",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Начальное образование и доп. профиль",
+    "degree": "bachelor",
+    "tuition_fee": 300000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование: Иностранный язык (английский / китайский / испанский)",
+    "degree": "bachelor",
+    "tuition_fee": 300000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Лингвистика (Теория и практика перевода: английский + японский)",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Лингвистика (Цифровая лингвистика: английский + китайский)",
+    "degree": "bachelor",
+    "tuition_fee": 257000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Лингвистика (Иностранные языки и культуры: английский + китайский/испанский)",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Перевод и переводоведение (английский + китайский)",
+    "degree": "specialist",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Лингвистика (Иностранный язык и МКК: английский + нем/фр/ит/араб)",
+    "degree": "bachelor",
+    "tuition_fee": 220000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование: Иностранный язык (английский + нем/фр/ит/араб)",
+    "degree": "bachelor",
+    "tuition_fee": 275100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Лингвистика (Теория и методика преподавания: немецкий + английский)",
+    "degree": "bachelor",
+    "tuition_fee": 275100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 235100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): Биология и химия",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педагогическое образование (с двумя профилями): География и экономика",
+    "degree": "bachelor",
+    "tuition_fee": 290100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Физическая культура",
+    "degree": "bachelor",
+    "tuition_fee": 270000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Организация работы с молодёжью",
+    "degree": "bachelor",
+    "tuition_fee": 210000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Информационные системы и технологии (профиль 2)",
+    "degree": "bachelor",
+    "tuition_fee": 300000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Дизайн",
+    "degree": "specialist",
+    "tuition_fee": 365700.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Декоративно-прикладное искусство и народные промыслы",
+    "degree": "specialist",
+    "tuition_fee": 330000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Живопись",
+    "degree": "specialist",
+    "tuition_fee": 330000.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Лечебное дело",
+    "degree": "specialist",
+    "tuition_fee": 420000.0,
+    "service_fee": 1100.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "ГУП (Государственный университет просвещения)",
+    "name": "Педиатрия",
+    "degree": "specialist",
+    "tuition_fee": 350000.0,
+    "service_fee": 1100.0,
+    "duration": "6 лет",
+    "is_active": true
+  }
+]

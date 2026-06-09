@@ -1,0 +1,452 @@
+[
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Лесное дело",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Наука об окружающей среде",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Геоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Деревообработка и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Легкая химическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Химическая инженерия и технология растительных продуктов",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Химия природных соединений",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Полимерные материалы и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Управление дикой природой и заповедниками",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Ветеринария",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Строительство и управление природными парками",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Пищевая наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Наука о данных и большие данные",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Инженерия электронной информации",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Инженерная связь",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Машиностроение и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Инженерное дело приборостроения",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Промышленная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Сельскохозяйственная и энергетическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Транспортное машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Строительная экология и энергосистемы",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Строительство и развитие транспортных систем",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Транспортное строительство",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Градостроительство и сельское планирование",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Сельскохозяйственная и лесная экономика",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Управление маркетингом",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Экономическая статистика",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Информатика и вычислительная наука",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Право",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Социальная работа",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Реклама",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Политология и государственное управление",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Русский язык",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Дизайн и инженерия мебели",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Дизайн среды",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Дизайн продукции",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Северо-восточный университет лесного хозяйства",
+    "name": "Экология",
+    "degree": "bachelor",
+    "tuition_fee": 16500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

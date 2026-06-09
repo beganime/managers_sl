@@ -1,0 +1,281 @@
+[
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Физика материалов",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Инженерия неорганических неметаллических материалов",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Инженерия связи",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Химическая инженерия и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Инженерия полимерных материалов",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Автотранспортная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Градостроительство и планирование территории",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Дизайн окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Машиностроение, производство и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Наука и инженерия пищевых продуктов",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Контроль качества и безопасность пищевых продуктов",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Строительная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Маркетинг",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Финансовая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Цифровая экономика",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Статистика",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Информационные вычислительные науки",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Индонезийский язык",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хэфэйский технологический университет",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

@@ -1,0 +1,254 @@
+[
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Инженерное дело",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Энергетика и энергетическое машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Наука и инженерия в области новых источников энергии",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Инженерия связи",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Инженерия в области робототехники",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Инженерия программного обеспечения",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Инженерия интернета",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Цифровые медиатехнологии",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Инженерия транспортных систем",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Инженерия транспортного оборудования и систем управления",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Химическое биология",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Биомедицинская инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Информационные и вычислительные науки",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Управление и применение больших данных",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Международная торговля и коммерция",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Экономическая статистика",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Право",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Декоративно-прикладное искусство",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Пекинский технологический университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 21000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

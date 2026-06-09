@@ -1,0 +1,371 @@
+[
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Лечебное дело",
+    "degree": "bachelor",
+    "tuition_fee": 40000.0,
+    "service_fee": 1200.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Электротехника и автоматизация (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Интеллектуальное производство",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Энергетика",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Материаловедение и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Информационные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Государственное управление",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Управление и применение больших данных",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Новая энергетическая наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Интернет и новые медиа",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Материаловедение",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Инженерия энергетического интернета",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Электронная наука и технология",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Энергетика и силовая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Ядерная инженерия и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Наука и инженерия хранения энергии",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Наука и технологии обустройства среды проживания",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Философия",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Дизайн окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 40000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Каллиграфия",
+    "degree": "bachelor",
+    "tuition_fee": 40000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Биомедицинская инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Японский язык",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Французский язык",
+    "degree": "bachelor",
+    "tuition_fee": 20000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Химическая инженерия и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Инженерия технологического оборудования и автоматизации",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Сианьский университет Цзяотун",
+    "name": "Технологии измерений, контроля и приборостроение",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

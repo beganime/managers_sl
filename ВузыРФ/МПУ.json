@@ -1,0 +1,344 @@
+[
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 330700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 426100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 386800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 386800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 386800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Радиотехника",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Энергетическое машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Технологические машины и оборудование",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Прикладная механика",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Автоматизация технологических процессов и производств",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Конструкторско-технологическое обеспечение машиностроительных производств",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Мехатроника и робототехника",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Холодильная, криогенная техника и системы жизнеобеспечения",
+    "degree": "bachelor",
+    "tuition_fee": 399500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Энерго- и ресурсосберегающие процессы химической технологии, нефтехимии и биотехнологии",
+    "degree": "bachelor",
+    "tuition_fee": 399500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 370700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Техносферная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Материаловедение и технологии материалов",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Эксплуатация транспортно-технологических машин и комплексов",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Управление качеством",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Управление в технических системах",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Инноватика",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Технология полиграфического и упаковочного производства",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Технология художественной обработки материалов",
+    "degree": "bachelor",
+    "tuition_fee": 355300.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 345100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 345100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 345100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 345100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Издательское дело",
+    "degree": "bachelor",
+    "tuition_fee": 345100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Дизайн (Транспортный и промышленный дизайн)",
+    "degree": "bachelor",
+    "tuition_fee": 651700.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Дизайн (Графический дизайн мультимедиа)",
+    "degree": "bachelor",
+    "tuition_fee": 680000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Строительство уникальных зданий и сооружений",
+    "degree": "specialist",
+    "tuition_fee": 355100.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Информационная безопасность автоматизированных систем",
+    "degree": "specialist",
+    "tuition_fee": 370600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Наземные транспортно-технологические средства",
+    "degree": "specialist",
+    "tuition_fee": 370700.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МПУ (Московский политехнический университет)",
+    "name": "Графика",
+    "degree": "specialist",
+    "tuition_fee": 680000.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  }
+]

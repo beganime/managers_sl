@@ -1,0 +1,308 @@
+[
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 425000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 353740.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Фундаментальная информатика и информационные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 353740.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 425000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Приборостроение",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Биотехнические системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Материаловедение и технологии материалов",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Металлургия",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Авиастроение",
+    "degree": "bachelor",
+    "tuition_fee": 449170.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Техническая эксплуатация летательных аппаратов и двигателей",
+    "degree": "bachelor",
+    "tuition_fee": 449170.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Системный анализ и управление",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Управление в технических системах",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Инноватика",
+    "degree": "bachelor",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 353740.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 353740.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Управление персоналом",
+    "degree": "bachelor",
+    "tuition_fee": 353740.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Государственное и муниципальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 353740.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Бизнес-информатика",
+    "degree": "bachelor",
+    "tuition_fee": 353740.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 325000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 325000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Информационная безопасность телекоммуникационных систем",
+    "degree": "specialist",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Радиоэлектронные системы и комплексы",
+    "degree": "specialist",
+    "tuition_fee": 406210.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Проектирование, производство и эксплуатация ракет и ракетно-космических комплексов",
+    "degree": "specialist",
+    "tuition_fee": 449170.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Проектирование авиационных и ракетных двигателей",
+    "degree": "specialist",
+    "tuition_fee": 449170.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Интегрированные системы летательных аппаратов",
+    "degree": "specialist",
+    "tuition_fee": 449170.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Системы управления летательными аппаратами",
+    "degree": "specialist",
+    "tuition_fee": 449170.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МАИ (Московский авиационный институт)",
+    "name": "Самолёто- и вертолётостроение",
+    "degree": "specialist",
+    "tuition_fee": 449170.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  }
+]

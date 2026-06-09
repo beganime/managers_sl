@@ -1,0 +1,110 @@
+[
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Технологии цифровых медиа",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Наука и инженерия в области энергонакопления",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Машиностроение и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Мехатронная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Инженерная защита окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Сервисная инженерия автомобилей",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Электроника и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Цзянсуский университет науки и технологий",
+    "name": "Визуальные коммуникации и дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

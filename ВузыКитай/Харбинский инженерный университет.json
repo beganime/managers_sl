@@ -1,0 +1,299 @@
+[
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Кораблестроение и океанотехника",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 45000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Судовая энергетика",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 22000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Приборостроение, метрология и управление в технических системах",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Автоматизация технологических процессов и производств",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Робототехника и мехатроника",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Гидроакустика и гидроакустическая техника",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Электроника и наноэлектроника",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Морские информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Инженерия программного обеспечения",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Машиностроение и автоматизация производств",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Инженерия интеллектуального производства",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Инженерия электронной информации",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Инженерия связи",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Управление и применение больших данных",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Материаловедение и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Химическая технология и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Новые энергетические материалы и устройства",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Оптоэлектроника, информационная наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 16000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский инженерный университет",
+    "name": "Ядерная энергетика и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 17000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

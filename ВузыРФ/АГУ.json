@@ -1,0 +1,272 @@
+[
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Педагогическое образование (с двумя профилями подготовки)",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 282100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Агрономия / Агроинженерия (Многопрофильный конкурс)",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Ветеринария",
+    "degree": "specialist",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Биология / Почвоведение (Многопрофильный конкурс)",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Фундаментальная и прикладная химия",
+    "degree": "specialist",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Картография и геоинформатика / Экология (Многопрофильный конкурс)",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Гостиничное дело",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Специальное (дефектологическое) образование",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 156100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Политология / МО / Зарубежное регионоведение (Многопрофильный конкурс)",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Культурология",
+    "degree": "bachelor",
+    "tuition_fee": 156100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Правовое обеспечение национальной безопасности",
+    "degree": "specialist",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Судебная и прокурорская деятельность",
+    "degree": "specialist",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Экономика и управление (Экономика/Менеджмент/УП/ГМУ)",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Экономическая безопасность",
+    "degree": "specialist",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Перевод и переводоведение",
+    "degree": "specialist",
+    "tuition_fee": 144600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

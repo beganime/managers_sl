@@ -1,0 +1,632 @@
+[
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Проектирование, производство и автоматизация машин",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Автомобилестроение",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Энергетика и силовая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Литьё и контроль материалов",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Тестовые, измерительные технологии и приборы",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Мехатроника",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Дорожно-транспортная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Транспорт и логистика",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Механизация сельского хозяйства и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Пищевая наука и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Электронная информационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Электронная информационная наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Технология цифровых медиа",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Телекоммуникационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Химическая инженерия и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Прикладная химия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Металлургическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Инженерия геодезии и картографии",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Градостроительство и сельское планирование",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Геоинформационные системы",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Управление инженерными проектами",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Горное дело",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Технология поисков и разведки месторождений",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Переработка минерального сырья",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Наука и инженерия переработки ресурсов",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Химия материалов",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Наука и инженерия материалов",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Полимерные материалы и инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Биоинженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Биологические науки",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Оптоэлектронная информационная наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Статистика",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Информационная и вычислительная наука",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Финансовый менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Промышленная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Бухгалтерский учёт",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Финансы",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Маркетинг",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Управление информацией и информационные системы",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Реклама",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Корейский язык",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Японский язык",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Право",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Социальная работа",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Административное управление",
+    "degree": "bachelor",
+    "tuition_fee": 13600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Дизайн окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Изобразительное искусство",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Визуальный коммуникационный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Музыкальное исполнительство",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Музыкознание",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Физическое воспитание",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Спортивная тренировка",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Текстильная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 14600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шаньдунский технологический университет",
+    "name": "Дизайн одежды и костюма",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

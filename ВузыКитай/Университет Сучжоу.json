@@ -1,0 +1,317 @@
+[
+  {
+    "university": "Университет Сучжоу",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Цифровая экономика",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Японский язык",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Испанский язык",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Русский язык",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Французский язык",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Прикладная психология",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Музыка",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Исполнительское искусство",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Интернет и новые медиа",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Реклама",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Дизайн окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Дизайн продукции",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Дизайн визуальных коммуникаций",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Дизайн одежды",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Право",
+    "degree": "bachelor",
+    "tuition_fee": 9000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Электронная наука и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Инженерия связи",
+    "degree": "bachelor",
+    "tuition_fee": 0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Проектирование и интеграция микросхем",
+    "degree": "bachelor",
+    "tuition_fee": 0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Сигнализация и управление на рельсовом транспорте",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Электротехника и интеллектуальное управление",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Машиностроение",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Инженерные системы обеспечения среды зданий",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Гражданское строительство",
+    "degree": "bachelor",
+    "tuition_fee": 0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Градостроительство",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Проект сохранения исторических зданий",
+    "degree": "bachelor",
+    "tuition_fee": 11000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Клиническая медицина",
+    "degree": "bachelor",
+    "tuition_fee": 16250.0,
+    "service_fee": 1200.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Фармацевтика",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Университет Сучжоу",
+    "name": "Профилактическая медицина",
+    "degree": "bachelor",
+    "tuition_fee": 14000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

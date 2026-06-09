@@ -1,0 +1,38 @@
+[
+  {
+    "university": "Гродненский государственный медицинский университет",
+    "name": "Лечебное дело",
+    "degree": "specialist",
+    "tuition_fee": 4200.0,
+    "service_fee": 1000.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный медицинский университет",
+    "name": "Педиатрия",
+    "degree": "specialist",
+    "tuition_fee": 4200.0,
+    "service_fee": 1000.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный медицинский университет",
+    "name": "Медико-психологическое дело",
+    "degree": "specialist",
+    "tuition_fee": 4200.0,
+    "service_fee": 1000.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гродненский государственный медицинский университет",
+    "name": "Медико-диагностическое дело",
+    "degree": "specialist",
+    "tuition_fee": 4200.0,
+    "service_fee": 1000.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

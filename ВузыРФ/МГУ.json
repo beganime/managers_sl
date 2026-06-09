@@ -1,0 +1,569 @@
+[
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Лечебное дело",
+    "degree": "specialist",
+    "tuition_fee": 240200.0,
+    "service_fee": 1100.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Лечебное дело (на английском языке)",
+    "degree": "specialist",
+    "tuition_fee": 333600.0,
+    "service_fee": 1100.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Педиатрия",
+    "degree": "specialist",
+    "tuition_fee": 184800.0,
+    "service_fee": 1100.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Фармация",
+    "degree": "specialist",
+    "tuition_fee": 154100.0,
+    "service_fee": 1100.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Стоматология",
+    "degree": "specialist",
+    "tuition_fee": 258700.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Стоматология (на английском языке)",
+    "degree": "specialist",
+    "tuition_fee": 348700.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Политология",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 149200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Фундаментальная и прикладная химия",
+    "degree": "specialist",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Радиоэлектронные системы и комплексы",
+    "degree": "specialist",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "5.5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Химическая технология",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Фотоника и оптоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Теплоэнергетика и теплотехника",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Агроинженерия",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Техносферная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Эксплуатация транспортно - технологических машин и комплексов",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Продукты питания животного происхождения",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Ветеринария",
+    "degree": "specialist",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Агрономия",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Зоотехния",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Картография и геоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Землеустройство и кадастры",
+    "degree": "bachelor",
+    "tuition_fee": 184800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Медиакоммуникации",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Народная художественная культура",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Актерское искусство",
+    "degree": "specialist",
+    "tuition_fee": 256600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Педагогическое образование (профиль 2)",
+    "degree": "bachelor",
+    "tuition_fee": 149200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Искусство народного пения",
+    "degree": "bachelor",
+    "tuition_fee": 256600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Библиотечно-информационная деятельность",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Сервис",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Электроника и наноэлектроника",
+    "degree": "bachelor",
+    "tuition_fee": 135400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Инфокоммуникационные технологии и системы связи",
+    "degree": "bachelor",
+    "tuition_fee": 135400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Оптотехника",
+    "degree": "bachelor",
+    "tuition_fee": 135400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 135400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Электроэнергетика и электротехника (профиль 2)",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Стандартизация и метрология",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Педагогическое образование (профиль 3)",
+    "degree": "bachelor",
+    "tuition_fee": 149200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Перевод и переводоведение",
+    "degree": "specialist",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Лингвистика",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Педагогическое образование (профиль 4)",
+    "degree": "bachelor",
+    "tuition_fee": 149200.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Экономическая безопасность",
+    "degree": "specialist",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Статистика",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Управление качеством",
+    "degree": "bachelor",
+    "tuition_fee": 135400.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 135600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МГУ им. Огарева (Мордовский государственный униврситет)",
+    "name": "Конструкторскотехнологическое обеспечение машиностроительных производств",
+    "degree": "bachelor",
+    "tuition_fee": 154100.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

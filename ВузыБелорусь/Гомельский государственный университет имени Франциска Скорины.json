@@ -1,0 +1,371 @@
+[
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Лесное хозяйство",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Природоведческое образование",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Прикладная физика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Компьютерная физика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Кибербезопасность",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Компьютерная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Системы управления информацией",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Электронные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Геология",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Геоэкология",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Экология",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Филологическое образование: Белорусский язык и литература. Английский язык",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Филологическое образование: Русский язык и литература. Дополнительный иностранный язык",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Языкознание",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Литературоведение",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Лингвистическое образование (английский)",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Современные иностранные языки (английский, немецкий) (английский, французский)",
+    "degree": "bachelor",
+    "tuition_fee": 3935.88,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Музейное дело и охрана историко-культурного наследия",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Математика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Информатика и технологии программирования",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Социально-педагогическое и психологическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Социальная педагогика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Социальная работа",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 3935.88,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Образование в области физической культуры",
+    "degree": "bachelor",
+    "tuition_fee": 3935.88,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Тренерская деятельность (с указанием вида спорта)",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Экономическая информатика",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Бухгалтерский учет, анализ, аудит",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Финансы и кредит",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Экономика и управление",
+    "degree": "bachelor",
+    "tuition_fee": 3783.84,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Экономическое право",
+    "degree": "specialist",
+    "tuition_fee": 3935.88,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Гомельский государственный университет имени Франциска Скорины",
+    "name": "Правоведение",
+    "degree": "specialist",
+    "tuition_fee": 3935.88,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

@@ -1,0 +1,155 @@
+[
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Строительство",
+    "degree": "bachelor",
+    "tuition_fee": 140827.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Информатика и вычислительная техника",
+    "degree": "bachelor",
+    "tuition_fee": 140827.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 140827.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Электроэнергетика и электротехника",
+    "degree": "bachelor",
+    "tuition_fee": 140827.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Конструкторско-технологическое обеспечение машиностроительных производств",
+    "degree": "bachelor",
+    "tuition_fee": 140827.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Нефтегазовое дело",
+    "degree": "bachelor",
+    "tuition_fee": 170280.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Управление в технических системах",
+    "degree": "bachelor",
+    "tuition_fee": 140827.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 122305.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 122305.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 122305.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Строительство уникальных зданий и сооружений",
+    "degree": "specialist",
+    "tuition_fee": 140827.0,
+    "service_fee": 500.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Наземные транспортно-технологические средства",
+    "degree": "specialist",
+    "tuition_fee": 140827.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Строительство (очно-заочно)",
+    "degree": "bachelor",
+    "tuition_fee": 36000.0,
+    "service_fee": 500.0,
+    "duration": "4.5 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Нефтегазовое дело (очно-заочно)",
+    "degree": "bachelor",
+    "tuition_fee": 42500.0,
+    "service_fee": 500.0,
+    "duration": "4.5 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Экономика (очно-заочно)",
+    "degree": "bachelor",
+    "tuition_fee": 36000.0,
+    "service_fee": 500.0,
+    "duration": "4.5 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Менеджмент (очно-заочно)",
+    "degree": "bachelor",
+    "tuition_fee": 36000.0,
+    "service_fee": 500.0,
+    "duration": "4.5 года",
+    "is_active": true
+  },
+  {
+    "university": "МПУ филиал г.Чебоксары (Московский политехнический университет)",
+    "name": "Юриспруденция (очно-заочно)",
+    "degree": "bachelor",
+    "tuition_fee": 36000.0,
+    "service_fee": 500.0,
+    "duration": "4.5 года",
+    "is_active": true
+  }
+]

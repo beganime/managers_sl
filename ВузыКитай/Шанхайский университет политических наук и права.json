@@ -1,0 +1,74 @@
+[
+  {
+    "university": "Шанхайский университет политических наук и права",
+    "name": "Международная политика",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шанхайский университет политических наук и права",
+    "name": "Электронная коммерция и право",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шанхайский университет политических наук и права",
+    "name": "Режиссура и телерадиовещания",
+    "degree": "bachelor",
+    "tuition_fee": 42000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шанхайский университет политических наук и права",
+    "name": "Интеллектуальная собственность",
+    "degree": "bachelor",
+    "tuition_fee": 32000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шанхайский университет политических наук и права",
+    "name": "Экономика и финансы",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шанхайский университет политических наук и права",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шанхайский университет политических наук и права",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Шанхайский университет политических наук и права",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 23000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

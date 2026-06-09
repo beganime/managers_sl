@@ -1,0 +1,398 @@
+[
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Механическое проектирование, производство и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Механическое проектирование, производство и автоматизация (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Промышленная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Электротехника и автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Биомедицинская инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Биомедицинская инженерия (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Биоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Биотехнологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Биологические науки",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Биофармацевтика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Электронная и информационная техника",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Телекоммуникационная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 30000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Искусственный интеллект",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Автоматизация",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Электронная наука и техника",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Наука о данных и технологии больших данных",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Строительная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Интеллектуальное строительство",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Управление строительством",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Транспортная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Водное хозяйство и гидроэнергетика",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Экологическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Бизнес-администрирование",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Управление цепями поставок",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Международная экономика и торговля",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Международный бизнес",
+    "degree": "bachelor",
+    "tuition_fee": 25000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Преподавание китайского как иностранного",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Фармация",
+    "degree": "bachelor",
+    "tuition_fee": 33000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Фармация (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Стоматология",
+    "degree": "bachelor",
+    "tuition_fee": 33000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Судебная медицина",
+    "degree": "bachelor",
+    "tuition_fee": 33000.0,
+    "service_fee": 1200.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Клиническая медицина",
+    "degree": "bachelor",
+    "tuition_fee": 33000.0,
+    "service_fee": 1200.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Клиническая медицина (на английском языке)",
+    "degree": "bachelor",
+    "tuition_fee": 35000.0,
+    "service_fee": 1200.0,
+    "duration": "6 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Градостроительство",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Ландшафтная архитектура",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Цифровое медиа-искусство",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Промышленный дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Хуачжунский университет науки и технологий",
+    "name": "Дизайн среды",
+    "degree": "bachelor",
+    "tuition_fee": 18000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]

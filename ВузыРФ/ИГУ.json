@@ -1,0 +1,398 @@
+[
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Прикладная математика и информатика",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Фундаментальная информатика и информационные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Математическое обеспечение и администрирование информационных систем",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Менеджмент (Управление проектами, контроллинг и консалтинг)",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Управление персоналом",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Торговое дело",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Социология",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Политология",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Международные отношения",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Реклама и связи с общественностью",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Журналистика (Журналистика и новые медиа)",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Журналистика (Международная журналистика)",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Сервис",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Туризм",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Гостиничное дело",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Психолого-педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Специальное (дефектологическое) образование",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Профессиональное обучение (по отраслям)",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Педагогическое образование (с двумя профилями подготовки)",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Филология",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Лингвистика (ИФИЯМ)",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Лингвистика (МИЭЛ)",
+    "degree": "bachelor",
+    "tuition_fee": 196000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Социально-культурная деятельность",
+    "degree": "bachelor",
+    "tuition_fee": 192500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Радиофизика",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 250000.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Геология",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Гидрометеорология",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Экология и природопользование",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Биология",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Почвоведение",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Информационные системы и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Прикладная информатика",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Электроника и наноэлектроника",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Биоинженерия и биоинформатика",
+    "degree": "bachelor",
+    "tuition_fee": 215800.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "ИГУ (Иркутский государственный университет)",
+    "name": "Прикладная геология",
+    "degree": "specialist",
+    "tuition_fee": 251900.0,
+    "service_fee": 500.0,
+    "duration": "5 лет",
+    "is_active": true
+  }
+]

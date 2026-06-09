@@ -1,0 +1,533 @@
+[
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Секретарское дело",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Педагогическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Психология",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Образовательные технологии",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Дошкольное образование",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Начальное школьное образование",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Математика и прикладная математика",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Информационные и вычислительные науки",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Прикладная статистика",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Изобразительное искусство",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Дизайн одежды",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Дизайн визуальных коммуникаций",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Китайская живопись",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Экологический дизайн",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Скульптура",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Индустриальное искусство",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Каллиграфия",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Биологические науки",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Биотехнология",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Экология",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Теория марксизма",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Идеологическое и политическое образование",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "География",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Информационные науки о Земле",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Физическая география и ресурсы окружающей среды",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Гуманитарная география и городское, сельское планирование",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "История",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Туризм менеджмент",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Технологии сохранения культурных реликвий",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Физика",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Электронные и информационные науки",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Новые энергетические материалы и устройства",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Китайский язык и литература",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Преподавание китайского языка как иностранного",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Юриспруденция",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Химия",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Химия материалов",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Фармацевтическая инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 1000.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Компьютерные науки и технологии",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Цифровые медиа-технологии",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Программная инженерия",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Музыковедение",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Музыкальное представление",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Хореография",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Радио и телевидение",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Журналистика",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Анимация",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Цифровое медиаискусство",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Управление человеческими ресурсами",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Управление логистикой",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Государственное управление",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Бухгалтерский учет",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Экономика",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Экономика торговли",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Физическая культура",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Спортивная подготовка",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Обучение и управление социальным спортом",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  },
+  {
+    "university": "Харбинский педагогический Университет",
+    "name": "Спортивная реабилитация",
+    "degree": "bachelor",
+    "tuition_fee": 15500.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]
