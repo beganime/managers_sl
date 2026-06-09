@@ -430,7 +430,16 @@ class ProgramAdmin(ModelAdmin):
 
         result = None
         if request.method == 'POST':
-            form = ProgramJsonImportForm(request.POST, request.FILES)
+            form_data = request.POST.copy()
+            run_mode = form_data.get('run_mode')
+            if run_mode == 'dry_run':
+                form_data['dry_run'] = 'on'
+            elif run_mode == 'import':
+                form_data.pop('dry_run', None)
+            else:
+                form_data['dry_run'] = 'on'
+
+            form = ProgramJsonImportForm(form_data, request.FILES)
             if form.is_valid():
                 result = import_programs_from_json(
                     form.cleaned_data['json_file'].read(),

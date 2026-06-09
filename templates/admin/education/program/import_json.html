@@ -10,80 +10,372 @@
 {% endblock %}
 
 {% block content %}
-<div id="content-main">
-    <div class="module" style="padding: 20px; max-width: 980px;">
-        <h1 style="margin-top:0;">Импорт программ из JSON</h1>
-        <p>
-            Загрузите JSON-файл с программами. Импорт работает с новым модулем
-            <strong>apps.education</strong>: программа сохраняется в <strong>Program</strong>,
-            стоимость — в <strong>ProgramFee</strong>.
-        </p>
-        <p>
-            Университет должен уже существовать в разделе “ВУЗы”. Если университет не найден,
-            строка будет пропущена с понятной ошибкой.
-        </p>
+<style>
+    .program-import-wrap {
+        max-width: 1120px;
+    }
 
-        <form method="post" enctype="multipart/form-data" novalidate style="margin-top: 20px;">
-            {% csrf_token %}
-            {{ form.non_field_errors }}
+    .program-import-card {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        box-shadow: 0 12px 30px rgba(15, 23, 42, .06);
+        margin-bottom: 22px;
+        overflow: hidden;
+    }
 
-            <fieldset class="module aligned">
-                {% for field in form %}
-                    <div class="form-row{% if field.errors %} errors{% endif %}">
-                        {{ field.errors }}
-                        <div>
-                            {{ field.label_tag }}
-                            {{ field }}
-                            {% if field.help_text %}
-                                <div class="help">{{ field.help_text }}</div>
-                            {% endif %}
+    .program-import-head {
+        background: linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+        border-bottom: 1px solid #e5e7eb;
+        padding: 24px;
+    }
+
+    .program-import-head h1 {
+        font-size: 28px;
+        line-height: 1.2;
+        margin: 0 0 10px;
+    }
+
+    .program-import-head p {
+        color: #475569;
+        font-size: 15px;
+        margin: 0;
+        max-width: 860px;
+    }
+
+    .program-import-body {
+        padding: 24px;
+    }
+
+    .program-import-steps {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        margin-bottom: 22px;
+    }
+
+    .program-import-step {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .program-import-step strong {
+        color: #111827;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    .program-import-step span {
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.45;
+    }
+
+    .program-import-upload {
+        background: #f9fafb;
+        border: 2px dashed #cbd5e1;
+        border-radius: 14px;
+        padding: 22px;
+    }
+
+    .program-import-upload label {
+        color: #111827;
+        display: block;
+        font-size: 16px;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+
+    .program-import-upload input[type="file"] {
+        background: #fff;
+        border: 1px solid #cbd5e1;
+        border-radius: 10px;
+        box-sizing: border-box;
+        color: #111827;
+        display: block;
+        font-size: 15px;
+        padding: 12px;
+        width: 100%;
+    }
+
+    .program-import-help {
+        color: #64748b;
+        font-size: 13px;
+        line-height: 1.45;
+        margin-top: 10px;
+    }
+
+    .program-import-options {
+        align-items: flex-start;
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        margin-top: 18px;
+    }
+
+    .program-import-option {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+    }
+
+    .program-import-option label {
+        align-items: center;
+        color: #111827;
+        display: flex;
+        font-weight: 700;
+        gap: 10px;
+        margin: 0 0 6px;
+    }
+
+    .program-import-option input {
+        height: 18px;
+        width: 18px;
+    }
+
+    .program-import-actions {
+        align-items: center;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        margin-top: 22px;
+    }
+
+    .program-import-btn {
+        border: 0;
+        border-radius: 10px;
+        cursor: pointer;
+        font-size: 15px;
+        font-weight: 800;
+        min-height: 48px;
+        padding: 13px 20px;
+        text-decoration: none;
+    }
+
+    .program-import-btn-check {
+        background: #0f172a;
+        color: #fff;
+    }
+
+    .program-import-btn-import {
+        background: #16a34a;
+        color: #fff;
+    }
+
+    .program-import-btn-back {
+        background: #f1f5f9;
+        color: #334155;
+        display: inline-flex;
+        align-items: center;
+    }
+
+    .program-import-example {
+        background: #0f172a;
+        border-radius: 12px;
+        color: #e2e8f0;
+        font-size: 13px;
+        line-height: 1.55;
+        margin-top: 18px;
+        overflow-x: auto;
+        padding: 16px;
+        white-space: pre;
+    }
+
+    .program-import-errors {
+        color: #b91c1c;
+        font-weight: 700;
+        margin-bottom: 12px;
+    }
+
+    .program-import-result-grid {
+        display: grid;
+        gap: 12px;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        margin: 18px 0;
+    }
+
+    .program-import-stat {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 14px;
+    }
+
+    .program-import-stat span {
+        color: #64748b;
+        display: block;
+        font-size: 12px;
+        margin-bottom: 6px;
+    }
+
+    .program-import-stat strong {
+        color: #111827;
+        display: block;
+        font-size: 24px;
+    }
+
+    .program-import-table {
+        border-collapse: collapse;
+        width: 100%;
+    }
+
+    .program-import-table th,
+    .program-import-table td {
+        border-bottom: 1px solid #e5e7eb;
+        padding: 12px;
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .program-import-table th {
+        background: #f8fafc;
+        color: #334155;
+        font-weight: 800;
+    }
+
+    @media (max-width: 900px) {
+        .program-import-steps,
+        .program-import-options,
+        .program-import-result-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<div id="content-main" class="program-import-wrap">
+    <div class="program-import-card">
+        <div class="program-import-head">
+            <h1>Импорт программ из JSON</h1>
+            <p>
+                Загрузите файл с программами. Импорт работает с новым модулем <strong>apps.education</strong>:
+                программа сохраняется в <strong>Program</strong>, стоимость — в <strong>ProgramFee</strong>.
+                Университет должен уже существовать в разделе “ВУЗы”.
+            </p>
+        </div>
+
+        <div class="program-import-body">
+            <div class="program-import-steps">
+                <div class="program-import-step">
+                    <strong>1. Выберите JSON-файл</strong>
+                    <span>Подходит обычный массив JSON или несколько объектов через запятую без внешних квадратных скобок.</span>
+                </div>
+                <div class="program-import-step">
+                    <strong>2. Сначала проверьте</strong>
+                    <span>Нажмите “Проверить без сохранения”. Система покажет, что будет создано, обновлено или пропущено.</span>
+                </div>
+                <div class="program-import-step">
+                    <strong>3. Импортируйте в базу</strong>
+                    <span>Если отчёт нормальный, нажмите “Импортировать в базу”. Тогда программы и цены будут сохранены.</span>
+                </div>
+            </div>
+
+            <form method="post" enctype="multipart/form-data" novalidate>
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+
+                {% if form.json_file.errors %}
+                    <div class="program-import-errors">{{ form.json_file.errors }}</div>
+                {% endif %}
+
+                <div class="program-import-upload">
+                    <label for="{{ form.json_file.id_for_label }}">JSON-файл с программами</label>
+                    {{ form.json_file }}
+                    <div class="program-import-help">
+                        Файл .json до 10 MB. Обязательные поля в каждой строке: <strong>university</strong>,
+                        <strong>name</strong>, <strong>degree</strong>. Стоимости можно указывать как числа.
+                    </div>
+                </div>
+
+                <div class="program-import-options">
+                    <div class="program-import-option">
+                        <label for="{{ form.update_existing.id_for_label }}">
+                            {{ form.update_existing }}
+                            Обновлять существующие программы
+                        </label>
+                        <div class="program-import-help">
+                            Если программа уже найдена по ВУЗу, названию, степени и длительности, система обновит статус и стоимость.
                         </div>
                     </div>
-                {% endfor %}
-            </fieldset>
+                    <div class="program-import-option">
+                        <strong>Режим запуска выбирается кнопкой</strong>
+                        <div class="program-import-help">
+                            Левая кнопка ничего не сохраняет. Правая кнопка реально создаёт и обновляет записи в базе.
+                        </div>
+                    </div>
+                </div>
 
-            <div class="submit-row">
-                <input type="submit" value="Запустить импорт" class="default">
-                <a href="{% url 'admin:education_program_changelist' %}" class="closelink">Назад к программам</a>
-            </div>
-        </form>
+                <div class="program-import-actions">
+                    <button type="submit" name="run_mode" value="dry_run" class="program-import-btn program-import-btn-check">
+                        Проверить без сохранения
+                    </button>
+                    <button type="submit" name="run_mode" value="import" class="program-import-btn program-import-btn-import">
+                        Импортировать в базу
+                    </button>
+                    <a href="{% url 'admin:education_program_changelist' %}" class="program-import-btn program-import-btn-back">
+                        Назад к программам
+                    </a>
+                </div>
+            </form>
+
+            <pre class="program-import-example">[
+  {
+    "university": "АГУ (Астраханский государственный университет)",
+    "name": "Информационная безопасность",
+    "degree": "bachelor",
+    "tuition_fee": 163600.0,
+    "service_fee": 500.0,
+    "duration": "4 года",
+    "is_active": true
+  }
+]</pre>
+        </div>
     </div>
 
     {% if result %}
-        <div class="module" style="padding: 20px; max-width: 980px; margin-top: 20px;">
-            <h2>Отчёт импорта</h2>
-            <table>
-                <tbody>
-                    <tr><th>Режим</th><td>{% if result.dry_run %}Тестовый импорт / dry-run{% else %}Боевой импорт{% endif %}</td></tr>
-                    <tr><th>Строк прочитано</th><td>{{ result.total_rows }}</td></tr>
-                    <tr><th>Создано</th><td>{{ result.created }}</td></tr>
-                    <tr><th>Обновлено</th><td>{{ result.updated }}</td></tr>
-                    <tr><th>Пропущено</th><td>{{ result.skipped }}</td></tr>
-                    <tr><th>Ошибок</th><td>{{ result.errors|length }}</td></tr>
-                </tbody>
-            </table>
+        <div class="program-import-card">
+            <div class="program-import-head">
+                <h2 style="margin: 0;">Отчёт импорта</h2>
+                <p>
+                    Режим:
+                    <strong>{% if result.dry_run %}проверка без сохранения{% else %}импорт в базу{% endif %}</strong>.
+                </p>
+            </div>
+            <div class="program-import-body">
+                <div class="program-import-result-grid">
+                    <div class="program-import-stat"><span>Строк прочитано</span><strong>{{ result.total_rows }}</strong></div>
+                    <div class="program-import-stat"><span>Создано</span><strong>{{ result.created }}</strong></div>
+                    <div class="program-import-stat"><span>Обновлено</span><strong>{{ result.updated }}</strong></div>
+                    <div class="program-import-stat"><span>Пропущено</span><strong>{{ result.skipped }}</strong></div>
+                    <div class="program-import-stat"><span>Ошибок</span><strong>{{ result.errors|length }}</strong></div>
+                </div>
 
-            {% if result.errors %}
-                <h3 style="margin-top: 24px;">Ошибки по строкам</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 120px;">Строка</th>
-                            <th>Ошибка</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for error in result.errors %}
+                {% if result.errors %}
+                    <h3>Ошибки по строкам</h3>
+                    <table class="program-import-table">
+                        <thead>
                             <tr>
-                                <td>{% if error.row_number %}{{ error.row_number }}{% else %}-{% endif %}</td>
-                                <td>{{ error.message }}</td>
+                                <th style="width: 120px;">Строка</th>
+                                <th>Ошибка</th>
                             </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            {% else %}
-                <p class="success">Ошибок нет.</p>
-            {% endif %}
+                        </thead>
+                        <tbody>
+                            {% for error in result.errors %}
+                                <tr>
+                                    <td>{% if error.row_number %}{{ error.row_number }}{% else %}-{% endif %}</td>
+                                    <td>{{ error.message }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p style="background:#ecfdf5; border:1px solid #bbf7d0; border-radius:12px; color:#166534; padding:14px 16px;">
+                        Ошибок нет. Если это была проверка без сохранения, теперь можно нажать “Импортировать в базу”.
+                    </p>
+                {% endif %}
+            </div>
         </div>
     {% endif %}
 </div>

@@ -5,6 +5,7 @@ class ProgramJsonImportForm(forms.Form):
     json_file = forms.FileField(
         label='JSON-файл с программами',
         help_text='Загрузите файл .json до 10 MB. Поддерживается JSON-массив или несколько объектов через запятую без внешних квадратных скобок.',
+        widget=forms.FileInput(attrs={'accept': '.json,application/json'}),
     )
     dry_run = forms.BooleanField(
         label='Тестовый импорт / dry-run',
