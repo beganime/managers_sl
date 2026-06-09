@@ -1,13 +1,18 @@
 from decimal import Decimal
 
 from django import forms
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.core.exceptions import PermissionDenied
 from django.db.models import Count
 from django.forms.models import BaseInlineFormSet
+from django.template.response import TemplateResponse
+from django.urls import path
 from django.urls import reverse
 from django.utils.html import format_html
 from unfold.admin import ModelAdmin, TabularInline
 
+from .forms import ProgramJsonImportForm
+from .importers import import_programs_from_json
 from .models import City, Country, Currency, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
 
 
@@ -376,6 +381,7 @@ class UniversityAdmin(ModelAdmin):
 
 @admin.register(Program)
 class ProgramAdmin(ModelAdmin):
+    change_list_template = 'admin/education/program/change_list.html'
     list_display = (
         'name',
         'university',
@@ -406,6 +412,55 @@ class ProgramAdmin(ModelAdmin):
         ('Расширенные данные', {'fields': ('custom_data',), 'classes': ('collapse',)}),
         ('Аудит', {'fields': ('created_at', 'updated_at'), 'classes': ('collapse',)}),
     )
+
+    def get_urls(self):
+        urls = super().get_urls()
+        custom_urls = [
+            path(
+                'import-json/',
+                self.admin_site.admin_view(self.import_json_view),
+                name='education_program_import_json',
+            ),
+        ]
+        return custom_urls + urls
+
+    def import_json_view(self, request):
+        if not (self.has_add_permission(request) or self.has_change_permission(request)):
+            raise PermissionDenied
+
+        result = None
+        if request.method == 'POST':
+            form = ProgramJsonImportForm(request.POST, request.FILES)
+            if form.is_valid():
+                result = import_programs_from_json(
+                    form.cleaned_data['json_file'].read(),
+                    dry_run=form.cleaned_data['dry_run'],
+                    update_existing=form.cleaned_data['update_existing'],
+                )
+                if result.has_errors:
+                    self.message_user(
+                        request,
+                        f'Импорт завершён с ошибками: {len(result.errors)}. Создано: {result.created}, обновлено: {result.updated}, пропущено: {result.skipped}.',
+                        level=messages.WARNING,
+                    )
+                else:
+                    mode = 'Тестовый импорт' if result.dry_run else 'Импорт'
+                    self.message_user(
+                        request,
+                        f'{mode} завершён успешно. Создано: {result.created}, обновлено: {result.updated}, пропущено: {result.skipped}.',
+                    )
+        else:
+            form = ProgramJsonImportForm()
+
+        context = {
+            **self.admin_site.each_context(request),
+            'opts': self.model._meta,
+            'title': 'Импорт программ из JSON',
+            'form': form,
+            'result': result,
+            'has_view_permission': self.has_view_permission(request),
+        }
+        return TemplateResponse(request, 'admin/education/program/import_json.html', context)
 
     def get_queryset(self, request):
         return super().get_queryset(request).annotate(

@@ -1,6 +1,22 @@
 from django.db import migrations
 
 
+def drop_programfee_valid_dates(apps, schema_editor):
+    ProgramFee = apps.get_model('education', 'ProgramFee')
+    table_name = ProgramFee._meta.db_table
+
+    with schema_editor.connection.cursor() as cursor:
+        existing_columns = {
+            column.name
+            for column in schema_editor.connection.introspection.get_table_description(cursor, table_name)
+        }
+
+    for field_name in ('valid_from', 'valid_to'):
+        field = ProgramFee._meta.get_field(field_name)
+        if field.column in existing_columns:
+            schema_editor.remove_field(ProgramFee, field)
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,13 +26,7 @@ class Migration(migrations.Migration):
     operations = [
         migrations.SeparateDatabaseAndState(
             database_operations=[
-                migrations.RunSQL(
-                    sql=(
-                        'ALTER TABLE education_programfee DROP COLUMN IF EXISTS valid_from CASCADE;'
-                        'ALTER TABLE education_programfee DROP COLUMN IF EXISTS valid_to CASCADE;'
-                    ),
-                    reverse_sql=migrations.RunSQL.noop,
-                ),
+                migrations.RunPython(drop_programfee_valid_dates, migrations.RunPython.noop),
             ],
             state_operations=[
                 migrations.RemoveField(
