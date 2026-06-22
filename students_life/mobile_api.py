@@ -1,8 +1,8 @@
 from calendar import monthrange
-from datetime import date as date_cls
+from datetime import date as date_cls, timedelta
 
 from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -12,12 +12,12 @@ from rest_framework.views import APIView
 
 from apps.attendance.models import WorkDay
 from apps.core.permissions import filter_manager_owned, get_employee_profile, is_erp_admin
-from apps.crm.models import Client, Lead
+from apps.crm.models import Application, Client, Lead
 from apps.education.models import Program, University
 from apps.employees.models import EmployeeProfile
 from apps.erp_documents.models import GeneratedDocument
 from apps.erp_notifications.models import Notification
-from apps.finance.models import Deal
+from apps.finance.models import Deal, EmployeeCommission, Income, Payment
 from apps.organizations.models import Company, Office
 from apps.portal.models import CalendarEvent
 from apps.projects_v2.models import ProjectTask
@@ -520,53 +520,153 @@ class RatingView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
-        qs = User.objects.select_related('office', 'managersalary').filter(is_active=True)
+        today = timezone.localdate()
+        period = request.query_params.get('period') or 'month'
+        if period == 'week':
+            period_start = today - timedelta(days=7)
+        elif period == 'quarter':
+            period_start = today - timedelta(days=90)
+        else:
+            period_start = today.replace(day=1)
+
         include_hidden = is_erp_admin(request.user) and request.query_params.get('include_hidden') in {'1', 'true', 'True', 'yes', 'on'}
+        profiles = EmployeeProfile.objects.select_related(
+            'user',
+            'user__office',
+            'user__managersalary',
+            'company',
+            'office',
+            'department',
+            'position',
+            'role',
+            'access',
+        ).filter(is_active=True, user__is_active=True)
+
+        request_employee = get_employee_profile(request.user)
+        if not is_erp_admin(request.user):
+            if not request_employee:
+                profiles = profiles.filter(user=request.user)
+            else:
+                request_access = getattr(request_employee, 'access', None)
+                role_type = request_employee.role.role_type if request_employee.role_id else None
+                if role_type == 'company_owner' or (request_access and request_access.can_see_all_company):
+                    profiles = profiles.filter(company=request_employee.company)
+                elif role_type == 'office_director' or (request_access and request_access.can_see_all_office):
+                    profiles = profiles.filter(company=request_employee.company)
+                    if request_employee.office_id:
+                        profiles = profiles.filter(office=request_employee.office)
+                elif request_employee.office_id:
+                    profiles = profiles.filter(company=request_employee.company, office=request_employee.office)
+                else:
+                    profiles = profiles.filter(company=request_employee.company)
+
         search = request.query_params.get('search')
         if search:
-            qs = qs.filter(
-                Q(first_name__icontains=search) |
-                Q(last_name__icontains=search) |
-                Q(email__icontains=search) |
-                Q(job_description__icontains=search) |
+            profiles = profiles.filter(
+                Q(user__first_name__icontains=search) |
+                Q(user__last_name__icontains=search) |
+                Q(user__email__icontains=search) |
+                Q(user__job_description__icontains=search) |
+                Q(position__name__icontains=search) |
+                Q(role__name__icontains=search) |
+                Q(company__name__icontains=search) |
+                Q(office__name__icontains=search) |
                 Q(office__city__icontains=search)
             )
 
         role = request.query_params.get('role')
         if role and role != 'all':
-            qs = qs.filter(role=role)
+            profiles = profiles.filter(
+                Q(user__role=role) |
+                Q(role__role_type=role) |
+                Q(role__code__icontains=role) |
+                Q(role__name__icontains=role) |
+                Q(position__name__icontains=role)
+            )
 
         position = request.query_params.get('position')
         if position and position != 'all':
-            qs = qs.filter(Q(job_description__icontains=position) | Q(role__icontains=position))
+            profiles = profiles.filter(
+                Q(position__name__icontains=position) |
+                Q(role__name__icontains=position) |
+                Q(user__job_description__icontains=position) |
+                Q(user__role__icontains=position)
+            )
 
-        request_employee = get_employee_profile(request.user)
-        if not is_erp_admin(request.user) and request_employee:
-            scoped_profiles = EmployeeProfile.objects.filter(is_active=True, company=request_employee.company)
-            if request_employee.office_id:
-                scoped_profiles = scoped_profiles.filter(office=request_employee.office)
-            qs = qs.filter(id__in=scoped_profiles.values('user_id'))
+        office_id = request.query_params.get('office') or request.query_params.get('office_id')
+        if office_id:
+            profiles = profiles.filter(office_id=office_id)
 
-        users = list(qs.order_by('first_name', 'last_name', 'email'))
-        profiles = EmployeeProfile.objects.select_related('company', 'office', 'access').filter(user_id__in=[user.id for user in users])
-        profile_by_user = {profile.user_id: profile for profile in profiles}
+        visible_q = Q(access__can_be_in_leaderboard=True) | Q(access__isnull=True)
+        if not include_hidden:
+            profiles = profiles.filter(visible_q)
 
         rows = []
-        for user in users:
-            profile = profile_by_user.get(user.id)
-            access = getattr(profile, 'access', None) if profile else None
+        for profile in profiles:
+            user = profile.user
+            access = getattr(profile, 'access', None)
             can_be_in_leaderboard = bool(not access or access.can_be_in_leaderboard)
             is_hidden_from_rating = not can_be_in_leaderboard
             if is_hidden_from_rating and not include_hidden:
                 continue
+
             salary = getattr(user, 'managersalary', None)
             role_display = user.get_role_display() if hasattr(user, 'get_role_display') else user.role
             job_description = (getattr(user, 'job_description', '') or '').strip()
-            position_label = job_description.splitlines()[0].strip() if job_description else role_display
-            score = float(getattr(profile, 'rating', 0) or 0) if profile else 0
+            position_label = (
+                profile.position.name if profile.position_id
+                else job_description.splitlines()[0].strip() if job_description
+                else role_display
+            )
+            leads_count = Lead.objects.filter(manager=user, created_at__date__gte=period_start).count()
+            clients_count = Client.objects.filter(manager=user).exclude(status__in=['archive', 'rejected']).count()
+            applications_count = Application.objects.filter(manager=user, created_at__date__gte=period_start).count()
+            payments_usd = Payment.objects.filter(
+                manager=user,
+                is_confirmed=True,
+                payment_date__gte=period_start,
+            ).aggregate(total=Sum('amount_usd'))['total'] or 0
+            income_usd = Income.objects.filter(
+                employee=user,
+                is_confirmed=True,
+                date__gte=period_start,
+            ).aggregate(total=Sum('amount_usd'))['total'] or 0
+            commission_usd = EmployeeCommission.objects.filter(
+                employee=user,
+            ).exclude(status='cancelled').aggregate(total=Sum('amount_usd'))['total'] or 0
+            try:
+                balance_usd = salary.current_balance
+            except Exception:
+                balance_usd = commission_usd
+            tasks_done = ProjectTask.objects.filter(
+                assigned_to=user,
+                status=ProjectTask.STATUS_DONE,
+                completed_at__date__gte=period_start,
+            ).count()
+            tasks_total = ProjectTask.objects.filter(
+                assigned_to=user,
+                created_at__date__gte=period_start,
+            ).count()
+            workdays = WorkDay.objects.filter(employee=user, date__gte=period_start)
+            started_days = workdays.exclude(status=WorkDay.STATUS_NOT_STARTED).count()
+            closed_days = workdays.filter(status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()
+            must_track = not access or access.must_track_workday
+            missed_days = workdays.filter(status=WorkDay.STATUS_MISSED).count() if must_track else 0
+            score = (
+                leads_count * 2
+                + clients_count * 3
+                + applications_count * 4
+                + int((payments_usd or 0) + (income_usd or 0)) // 100
+                + tasks_done * 3
+                + started_days
+                + closed_days * 2
+                - missed_days * 5
+            )
+            priority_enabled = bool(access and access.rating_priority_enabled)
+            priority_level = int(access.rating_priority_level or 0) if priority_enabled else 0
             avatar_url = user_avatar_url(request, user)
             rows.append({
-                'id': profile.id if profile else user.id,
+                'id': profile.id,
                 'user_id': user.id,
                 'name': user.get_full_name() or user.email,
                 'full_name': user.get_full_name() or user.email,
@@ -578,23 +678,49 @@ class RatingView(APIView):
                 'position': position_label,
                 'job_description': job_description,
                 'office_name': (
-                    profile.office.city if profile and profile.office_id
+                    profile.office.city if profile.office_id
                     else user.office.city if getattr(user, 'office_id', None)
                     else ''
                 ),
-                'company_name': profile.company.name if profile else '',
+                'company_name': profile.company.name,
                 'score': score,
                 'rating_score': score,
                 'points': score,
                 'rating': score,
+                'profile_rating': float(getattr(profile, 'rating', 0) or 0),
                 'can_be_in_leaderboard': can_be_in_leaderboard,
                 'is_hidden_from_rating': is_hidden_from_rating,
-                'rating_priority_enabled': bool(access.rating_priority_enabled) if access else False,
-                'rating_priority_level': access.rating_priority_level if access else 0,
-                'revenue_usd': float(getattr(salary, 'current_month_revenue', 0) or 0),
+                'rating_priority_enabled': priority_enabled,
+                'rating_priority_level': priority_level,
+                'rating_priority_note': access.rating_priority_note if access and access.rating_priority_note else '',
+                'leads': leads_count,
+                'lead_count': leads_count,
+                'leads_count': leads_count,
+                'clients': clients_count,
+                'client_count': clients_count,
+                'clients_count': clients_count,
+                'applications': applications_count,
+                'applications_count': applications_count,
+                'payments_usd': float(payments_usd or 0),
+                'income_usd': float(income_usd or 0),
+                'commission_usd': float(commission_usd or 0),
+                'balance_usd': float(balance_usd or 0),
+                'tasks': tasks_total,
+                'tasks_total': tasks_total,
+                'tasks_done': tasks_done,
+                'workdays': started_days,
+                'workdays_count': started_days,
+                'started_days': started_days,
+                'closed_days': closed_days,
+                'missed_days': missed_days,
+                'revenue': float((payments_usd or 0) + (income_usd or 0)),
+                'revenue_usd': float((payments_usd or 0) + (income_usd or 0)),
+                'current_month_revenue': float(getattr(salary, 'current_month_revenue', 0) or 0),
+                'period': period,
+                'period_start': str(period_start),
             })
 
-        rows.sort(key=lambda item: (-item['score'], item['name']))
+        rows.sort(key=lambda item: (item['rating_priority_enabled'], item['rating_priority_level'], item['score']), reverse=True)
         count = len(rows)
         limit = min(int(request.query_params.get('limit', 50) or 50), 200)
         offset = int(request.query_params.get('offset', 0) or 0)
