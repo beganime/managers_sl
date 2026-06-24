@@ -44,7 +44,7 @@
         <div class="panel-header"><h2 class="panel-title">Документы</h2></div>
         <div class="panel-body">
             {% if documents %}
-                <div class="list">{% for item in documents %}<div class="list-row"><div><div class="strong">{{ item.title|default:item.template.name }}</div><div class="muted small">{{ item.created_at|date:"Y-m-d H:i" }}</div></div><span class="pill">{{ item.get_status_display }}</span></div>{% endfor %}</div>
+                <div class="list">{% for item in documents %}<div class="list-row"><div><div class="strong">{{ item.display_title }}</div><div class="muted small">{{ item.created_at|date:"Y-m-d H:i" }}</div></div><span class="pill">{{ item.get_status_display }}</span></div>{% endfor %}</div>
             {% else %}<div class="empty">Документов пока нет.</div>{% endif %}
         </div>
     </div>

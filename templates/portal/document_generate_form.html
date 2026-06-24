@@ -29,7 +29,7 @@
                 <div class="filters">
                     {% if not client %}
                         <select class="select" name="client" style="min-width:260px;">
-                            <option value="">Без клиента</option>
+                            <option value="">Клиент не выбран</option>
                             {% for option in form.fields.client.queryset %}
                                 <option value="{{ option.id }}"{% if selected_client_id == option.id %} selected{% endif %}>{{ option.full_name }}{% if option.phone %} — {{ option.phone }}{% endif %}</option>
                             {% endfor %}

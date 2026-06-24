@@ -49,7 +49,7 @@
             <tbody>
             {% for item in pending_documents %}
                 <tr>
-                    <td><div class="strong">{{ item.title|default:item.template.name }}</div><div class="muted small">{{ item.template.name }}</div></td>
+                    <td><div class="strong">{{ item.display_title }}</div><div class="muted small">{{ item.template.name }}</div></td>
                     <td>{{ item.client.full_name|default:"-" }}</td>
                     <td>{{ item.manager.get_full_name|default:item.manager.email }}</td>
                     <td>{{ item.created_at|date:"d.m.Y H:i" }}</td>

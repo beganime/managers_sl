@@ -1888,7 +1888,11 @@ class ClientDocumentCreateView(PortalContextMixin, TemplateView):
                 application=application,
                 deal=deal,
                 manager=request.user,
-                title=form.cleaned_data.get('title') or f'{template.name} - {client.full_name}',
+                title=(
+                    f'{form.cleaned_data.get("title").strip()} - {client.full_name}'
+                    if form.cleaned_data.get('title') and client.full_name.lower() not in form.cleaned_data.get('title').lower()
+                    else form.cleaned_data.get('title') or f'{template.name} - {client.full_name}'
+                ),
                 context_data=context_data,
             )
             try:
@@ -2697,19 +2701,19 @@ class DocumentActionView(LoginRequiredMixin, View):
                 messages.error(request, 'DOCX без печати недоступен для этого документа.')
                 return redirect('portal:documents')
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_ORIGINAL)
-            return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.generated_file.name.split('/')[-1])
+            return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_ORIGINAL))
         if action == 'download-approved':
             if not document.can_download_approved:
                 messages.error(request, 'PDF с печатью доступен только после подтверждения администратора.')
                 return redirect('portal:documents')
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
-            return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.approved_file.name.split('/')[-1])
+            return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED))
         if action == 'preview-approved':
             if not document.can_download_approved:
                 messages.error(request, 'PDF с печатью доступен только после подтверждения администратора.')
                 return redirect('portal:documents')
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
-            response = FileResponse(document.approved_file.open('rb'), as_attachment=False, filename=document.approved_file.name.split('/')[-1])
+            response = FileResponse(document.approved_file.open('rb'), as_attachment=False, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED))
             response['Content-Type'] = 'application/pdf'
             return response
         if action == 'preview-stamp-preview':
@@ -2719,7 +2723,7 @@ class DocumentActionView(LoginRequiredMixin, View):
             if not document.stamp_preview_file:
                 messages.error(request, 'Сначала сгенерируйте предпросмотр PDF с печатью.')
                 return redirect('portal:document_review', pk=document.pk)
-            response = FileResponse(document.stamp_preview_file.open('rb'), as_attachment=False, filename=document.stamp_preview_file.name.split('/')[-1])
+            response = FileResponse(document.stamp_preview_file.open('rb'), as_attachment=False, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED))
             response['Content-Type'] = 'application/pdf'
             return response
         raise Http404

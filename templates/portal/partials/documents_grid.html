@@ -3,7 +3,7 @@
         <div class="item-card">
             <div class="item-card-top">
                 <div>
-                    <div class="item-card-title">{{ item.title|default:item.template.name }}</div>
+                    <div class="item-card-title">{{ item.display_title }}</div>
                     <div class="muted small">{{ item.template.name }}</div>
                 </div>
                 <span class="pill {% if item.status == 'approved' %}ok{% elif item.status == 'rejected' or item.status == 'error' %}danger{% else %}warn{% endif %}">{{ item.get_status_display }}</span>

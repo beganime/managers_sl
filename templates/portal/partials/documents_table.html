@@ -14,7 +14,7 @@
         {% for item in items %}
             <tr>
                 <td>
-                    <div class="strong">{{ item.title|default:item.template.name }}</div>
+                    <div class="strong">{{ item.display_title }}</div>
                     {% if item.generation_error %}<div class="muted small" style="color:#b91c1c;">{{ item.generation_error|truncatechars:120 }}</div>{% endif %}
                     {% if item.rejection_reason %}<div class="muted small" style="color:#b91c1c;">Причина: {{ item.rejection_reason|truncatechars:120 }}</div>{% endif %}
                 </td>

@@ -40,13 +40,6 @@ def build_document_portal_url(request, document, action):
     return build_absolute_path(request, f'/portal/documents/{document.pk}/{action}/')
 
 
-def filename_from_file(file_field):
-    if not file_field:
-        return ''
-    name = getattr(file_field, 'name', '') or ''
-    return name.split('/')[-1]
-
-
 class DocumentTemplateFieldSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentTemplateField
@@ -70,7 +63,7 @@ class DocumentTemplateSerializer(serializers.ModelSerializer):
 
 
 class DocumentApprovalSerializer(serializers.ModelSerializer):
-    document_title = serializers.CharField(source='document.title', read_only=True)
+    document_title = serializers.CharField(source='document.display_title', read_only=True)
     reviewed_by_name = serializers.CharField(source='reviewed_by.get_full_name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
     approval_type_display = serializers.CharField(source='get_approval_type_display', read_only=True)
@@ -92,6 +85,7 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
     approved_by_name = serializers.CharField(source='approved_by.get_full_name', read_only=True)
     stamp_preview_generated_by_name = serializers.CharField(source='stamp_preview_generated_by.get_full_name', read_only=True)
     status_display = serializers.CharField(source='get_status_display', read_only=True)
+    display_title = serializers.CharField(read_only=True)
     approval = DocumentApprovalSerializer(read_only=True)
 
     generated_file_url = serializers.SerializerMethodField()
@@ -161,13 +155,13 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
         return build_file_url(self.context.get('request'), obj.approved_file)
 
     def get_generated_file_name(self, obj):
-        return filename_from_file(obj.generated_file)
+        return obj.download_filename(DocumentDownloadLog.FILE_TYPE_ORIGINAL) if obj.generated_file else ''
 
     def get_approved_file_name(self, obj):
-        return filename_from_file(obj.approved_file)
+        return obj.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED) if obj.approved_file else ''
 
     def get_stamp_preview_file_name(self, obj):
-        return filename_from_file(obj.stamp_preview_file)
+        return obj.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED) if obj.stamp_preview_file else ''
 
     def get_download_original_url(self, obj):
         if not obj.can_download_original:
@@ -332,7 +326,7 @@ class StampRuleSerializer(serializers.ModelSerializer):
 
 
 class DocumentDownloadLogSerializer(serializers.ModelSerializer):
-    document_title = serializers.CharField(source='document.title', read_only=True)
+    document_title = serializers.CharField(source='document.display_title', read_only=True)
     user_name = serializers.CharField(source='user.get_full_name', read_only=True)
     file_type_display = serializers.CharField(source='get_file_type_display', read_only=True)
 

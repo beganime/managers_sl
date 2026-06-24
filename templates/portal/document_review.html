@@ -9,7 +9,7 @@
         </div>
         <div class="panel-body">
             <div class="list">
-                <div class="list-row"><span class="muted">Документ</span><strong>{{ document.title|default:document.template.name }}</strong></div>
+                <div class="list-row"><span class="muted">Документ</span><strong>{{ document.display_title }}</strong></div>
                 <div class="list-row"><span class="muted">Шаблон</span><span>{{ document.template.name }}</span></div>
                 <div class="list-row"><span class="muted">Клиент</span><span>{% if document.client %}{{ document.client.full_name }}{% else %}Не привязан{% endif %}</span></div>
                 <div class="list-row"><span class="muted">Менеджер</span><span>{{ document.manager.get_full_name|default:document.manager.email }}</span></div>

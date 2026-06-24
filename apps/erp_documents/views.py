@@ -335,7 +335,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         if not document.can_download_original:
             raise NotFound('Original DOCX document is not available for download.')
         log_download(request, document, DocumentDownloadLog.FILE_TYPE_ORIGINAL)
-        return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.generated_file.name.split('/')[-1])
+        return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_ORIGINAL))
 
     @action(detail=True, methods=['get'], url_path='download-docx')
     def download_docx(self, request, pk=None):
@@ -348,7 +348,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         }:
             raise NotFound('DOCX document is not available for download.')
         log_download(request, document, DocumentDownloadLog.FILE_TYPE_ORIGINAL)
-        return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.generated_file.name.split('/')[-1])
+        return FileResponse(document.generated_file.open('rb'), as_attachment=True, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_ORIGINAL))
 
     @action(detail=True, methods=['get'], url_path='download-approved')
     def download_approved(self, request, pk=None):
@@ -356,7 +356,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         if not document.can_download_approved:
             raise NotFound('Approved document is not available for download.')
         log_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
-        return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.approved_file.name.split('/')[-1])
+        return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED))
 
     @action(detail=True, methods=['get'], url_path='download-pdf')
     def download_pdf(self, request, pk=None):
@@ -370,7 +370,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             response = FileResponse(
                 document.stamp_preview_file.open('rb'),
                 as_attachment=False,
-                filename=document.stamp_preview_file.name.split('/')[-1],
+                filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED),
             )
             response['Content-Type'] = 'application/pdf'
             return response
@@ -383,7 +383,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
             return FileResponse(
                 document.generated_file.open('rb'),
                 as_attachment=False,
-                filename=document.generated_file.name.split('/')[-1],
+                filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_ORIGINAL),
             )
         raise NotFound('Document preview is not available.')
 
@@ -393,7 +393,7 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         document = self.get_object()
         if not document.stamp_preview_file:
             raise NotFound('Stamp preview is not available yet.')
-        response = FileResponse(document.stamp_preview_file.open('rb'), as_attachment=False, filename=document.stamp_preview_file.name.split('/')[-1])
+        response = FileResponse(document.stamp_preview_file.open('rb'), as_attachment=False, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED))
         response['Content-Type'] = 'application/pdf'
         return response
 

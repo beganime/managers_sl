@@ -8,6 +8,7 @@ from uuid import uuid4
 import fitz
 from django.conf import settings
 from django.core.files.base import ContentFile
+from django.utils.text import get_valid_filename
 from django.db import models, transaction
 from django.template.defaultfilters import slugify
 from django.utils import timezone
@@ -76,6 +77,12 @@ def user_display_name(user):
     if not user:
         return ''
     return user.get_full_name() or getattr(user, 'email', '') or safe_text(user)
+
+
+def clean_download_name(value):
+    value = safe_text(value).strip().replace('/', '-').replace('\\', '-')
+    value = ' '.join(value.split())
+    return get_valid_filename(value) or 'document'
 
 
 class DocumentTemplate(TimeStampedModel, ActiveModel):
@@ -286,7 +293,41 @@ class GeneratedDocument(TimeStampedModel):
         ]
 
     def __str__(self):
-        return self.title or f'{self.template.name} #{self.pk}'
+        return self.display_title
+
+    @property
+    def resolved_client(self):
+        client = getattr(self, 'client', None)
+        if client:
+            return client
+        application = getattr(self, 'application', None)
+        if application and getattr(application, 'client', None):
+            return application.client
+        deal = getattr(self, 'deal', None)
+        if deal and getattr(deal, 'client', None):
+            return deal.client
+        return None
+
+    @property
+    def display_title(self):
+        title = (self.title or '').strip()
+        client = self.resolved_client
+        client_name = (getattr(client, 'full_name', '') or '').strip()
+        template = getattr(self, 'template', None)
+        template_name = template.name if template else 'Документ'
+
+        if title and 'без клиента' not in title.lower():
+            if client_name and client_name.lower() not in title.lower():
+                return f'{title} - {client_name}'
+            return title
+        if client_name:
+            return f'{template_name} - {client_name}'
+        return title or f'{template_name} #{self.pk or ""}'.strip()
+
+    def download_filename(self, file_type='original'):
+        extension = 'pdf' if file_type in {'approved', 'pdf', DocumentDownloadLog.FILE_TYPE_APPROVED} else 'docx'
+        suffix = 'с печатью' if extension == 'pdf' else 'без печати'
+        return f'{clean_download_name(f"{self.display_title} - {suffix}")}.{extension}'
 
     @property
     def can_download_original(self):
@@ -488,7 +529,10 @@ class GeneratedDocument(TimeStampedModel):
         doc.save(buffer)
         buffer.seek(0)
 
-        base = slugify(self.title or self.template.name) or 'document'
+        if not self.title or 'без клиента' in self.title.lower():
+            self.title = self.display_title
+
+        base = slugify(self.display_title) or 'document'
         filename = f'{base}-{uuid4().hex[:10]}.docx'
 
         if self.generated_file:
@@ -504,8 +548,6 @@ class GeneratedDocument(TimeStampedModel):
         self.status = self.STATUS_GENERATED
         self.generation_error = ''
         self.generated_at = timezone.now()
-        if not self.title:
-            self.title = self.template.name
         self.save(update_fields=[
             'generated_file',
             'stamp_preview_file',
@@ -608,7 +650,7 @@ class GeneratedDocument(TimeStampedModel):
         finally:
             self.stamp_preview_file.close()
 
-        base = slugify(self.title or self.template.name) or 'approved-document'
+        base = slugify(self.display_title) or 'approved-document'
         approved_filename = f'{base}-stamped-approved-{uuid4().hex[:10]}.pdf'
 
         with transaction.atomic():
@@ -871,7 +913,7 @@ def copy_generated_file(document):
     finally:
         document.generated_file.close()
 
-    base = slugify(document.title or document.template.name) or 'approved-document'
+    base = slugify(document.display_title) or 'approved-document'
     return f'{base}-approved-{uuid4().hex[:10]}.docx', ContentFile(content)
 
 
@@ -1077,7 +1119,7 @@ def build_approved_document_file(document, with_stamp=False, stamp_options=None)
         raise ValueError('Конвертация DOCX в PDF заняла слишком много времени и была остановлена.') from exc
     buffer.seek(0)
 
-    base = slugify(document.title or document.template.name) or 'approved-document'
+    base = slugify(document.display_title) or 'approved-document'
     return f'{base}-stamped-{uuid4().hex[:10]}.pdf', ContentFile(buffer.getvalue())
 
 
