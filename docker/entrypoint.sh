@@ -29,6 +29,11 @@ done
 
 echo "✅ Django database connection is ready"
 
+if [ "$#" -gt 0 ]; then
+  echo "▶️ Running command: $*"
+  exec "$@"
+fi
+
 echo "⏳ Running migrations..."
 MIGRATE_ATTEMPTS=${MIGRATE_ATTEMPTS:-5}
 MIGRATE_SLEEP=${MIGRATE_SLEEP:-5}
