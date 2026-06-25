@@ -82,7 +82,28 @@ def user_display_name(user):
 def clean_download_name(value):
     value = safe_text(value).strip().replace('/', '-').replace('\\', '-')
     value = ' '.join(value.split())
-    return get_valid_filename(value) or 'document'
+    return (get_valid_filename(value) or 'document')[:140].strip(' ._-') or 'document'
+
+
+def safe_file_slug(value, fallback='document', max_length=80):
+    slug = slugify(safe_text(value)).strip('-_')[:max_length].strip('-_')
+    return slug or fallback
+
+
+def safe_document_title(template_name='', client_name='', title='', max_length=255):
+    template_name = safe_text(template_name).strip() or 'Документ'
+    client_name = safe_text(client_name).strip()
+    title = safe_text(title).strip()
+
+    if not title or 'без клиента' in title.lower():
+        title = f'{template_name} - {client_name}' if client_name else template_name
+    elif client_name and client_name.lower() not in title.lower():
+        title = f'{title} - {client_name}'
+
+    title = ' '.join(title.split())
+    if len(title) > max_length:
+        title = title[:max_length].rstrip(' ._-')
+    return title or template_name[:max_length]
 
 
 class DocumentTemplate(TimeStampedModel, ActiveModel):
@@ -316,13 +337,9 @@ class GeneratedDocument(TimeStampedModel):
         template = getattr(self, 'template', None)
         template_name = template.name if template else 'Документ'
 
-        if title and 'без клиента' not in title.lower():
-            if client_name and client_name.lower() not in title.lower():
-                return f'{title} - {client_name}'
-            return title
-        if client_name:
-            return f'{template_name} - {client_name}'
-        return title or f'{template_name} #{self.pk or ""}'.strip()
+        if title or client_name:
+            return safe_document_title(template_name, client_name, title)
+        return f'{template_name} #{self.pk or ""}'.strip()
 
     def download_filename(self, file_type='original'):
         if file_type in {'approved', 'pdf', DocumentDownloadLog.FILE_TYPE_APPROVED}:
@@ -555,9 +572,14 @@ class GeneratedDocument(TimeStampedModel):
         buffer.seek(0)
 
         if not self.title or 'без клиента' in self.title.lower():
-            self.title = self.display_title
+            client = self.resolved_client
+            self.title = safe_document_title(
+                self.template.name,
+                getattr(client, 'full_name', '') if client else '',
+                self.title,
+            )
 
-        base = slugify(self.display_title) or 'document'
+        base = safe_file_slug(self.display_title, 'document')
         filename = f'{base}-{uuid4().hex[:10]}.docx'
 
         if self.generated_file:
@@ -638,7 +660,7 @@ class GeneratedDocument(TimeStampedModel):
 
         stamp_options = stamp_options or {'stamp_mode': 'executor'}
         try:
-            preview_file = build_approved_document_file(self, with_stamp=True, stamp_options=stamp_options)
+            preview_file = build_fast_stamp_preview_file(self, stamp_options=stamp_options)
         except Exception as exc:
             self.generation_error = str(exc)
             self.save(update_fields=['generation_error', 'updated_at'])
@@ -646,7 +668,7 @@ class GeneratedDocument(TimeStampedModel):
 
         if self.stamp_preview_file:
             self.stamp_preview_file.delete(save=False)
-        self.stamp_preview_file.save(preview_file[0].replace('-stamped-', '-stamp-preview-'), preview_file[1], save=False)
+        self.stamp_preview_file.save(preview_file[0], preview_file[1], save=False)
         self.stamp_preview_options = stamp_options
         self.stamp_preview_generated_at = timezone.now()
         self.stamp_preview_generated_by = user
@@ -712,7 +734,7 @@ class GeneratedDocument(TimeStampedModel):
         finally:
             self.stamp_preview_file.close()
 
-        base = slugify(self.display_title) or 'approved-document'
+        base = safe_file_slug(self.display_title, 'approved-document')
         approved_filename = f'{base}-stamped-approved-{uuid4().hex[:10]}.pdf'
 
         with transaction.atomic():
@@ -969,7 +991,7 @@ def copy_generated_file(document):
     finally:
         document.generated_file.close()
 
-    base = slugify(document.display_title) or 'approved-document'
+    base = safe_file_slug(document.display_title, 'approved-document')
     return f'{base}-approved-{uuid4().hex[:10]}.docx', ContentFile(content)
 
 
@@ -1148,6 +1170,29 @@ def apply_stamp_and_watermark(pdf, rule, stamp_options=None, targets=None):
         page.insert_image(stamp_rect, filename=rule.stamp_image.path, keep_proportion=True, overlay=True)
 
 
+def build_fast_stamp_preview_file(document, stamp_options=None):
+    rule = find_stamp_rule(document)
+    if not rule or not rule.stamp_image:
+        raise ValueError('Для этого шаблона не настроена электронная печать.')
+
+    pdf = fitz.open()
+    try:
+        lines = extract_docx_lines(document.generated_file)
+        footer = f'{document.display_title} · предварительный просмотр печати'
+        targets = insert_wrapped_lines(pdf, document.display_title, lines, footer=footer)
+        if pdf.page_count == 0:
+            pdf.new_page(width=595, height=842)
+        apply_stamp_and_watermark(pdf, rule, stamp_options=stamp_options, targets=targets)
+        buffer = io.BytesIO()
+        pdf.save(buffer, deflate=True, garbage=3)
+    finally:
+        pdf.close()
+    buffer.seek(0)
+
+    base = safe_file_slug(document.display_title, 'stamp-preview')
+    return f'{base}-stamp-preview-{uuid4().hex[:10]}.pdf', ContentFile(buffer.getvalue())
+
+
 def build_approved_document_file(document, with_stamp=False, stamp_options=None):
     if not with_stamp:
         return copy_generated_file(document)
@@ -1178,7 +1223,7 @@ def build_approved_document_file(document, with_stamp=False, stamp_options=None)
         raise ValueError('Конвертация DOCX в PDF заняла слишком много времени и была остановлена.') from exc
     buffer.seek(0)
 
-    base = slugify(document.display_title) or 'approved-document'
+    base = safe_file_slug(document.display_title, 'approved-document')
     return f'{base}-stamped-{uuid4().hex[:10]}.pdf', ContentFile(buffer.getvalue())
 
 

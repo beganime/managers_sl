@@ -8,7 +8,13 @@ from django.views.generic import TemplateView
 
 from apps.core.permissions import get_employee_profile
 from apps.crm.models import Application, Client
-from apps.erp_documents.models import DocumentTemplate, GeneratedDocument, extract_docx_lines, find_stamp_rule
+from apps.erp_documents.models import (
+    DocumentTemplate,
+    GeneratedDocument,
+    extract_docx_lines,
+    find_stamp_rule,
+    safe_document_title,
+)
 from apps.finance.models import Deal
 
 from .views import (
@@ -143,7 +149,7 @@ class PortalDocumentGenerateForm(forms.Form):
             self.fields['template'].initial = template.pk
             self.add_template_fields(template)
             if not existing_document and self.selected_client and not self.data:
-                self.fields['title'].initial = f'{template.name} - {self.selected_client.full_name}'
+                self.fields['title'].initial = safe_document_title(template.name, self.selected_client.full_name)
 
         self.style_fields()
 
@@ -414,12 +420,11 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
         if not company:
             raise ValueError('Не найдена компания для генерации документа. Укажите компанию в шаблоне или привяжите сотрудника к компании.')
 
-        client_name = (client.full_name if client else '').strip()
-        title = (form.cleaned_data.get('title') or '').strip()
-        if not title or 'без клиента' in title.lower():
-            title = f'{template.name} - {client_name}' if client_name else template.name
-        elif client_name and client_name.lower() not in title.lower():
-            title = f'{title} - {client_name}'
+        title = safe_document_title(
+            template.name,
+            client.full_name if client else '',
+            form.cleaned_data.get('title') or '',
+        )
         if existing_document:
             if existing_document.status == GeneratedDocument.STATUS_APPROVED:
                 raise ValueError('Подтверждённый документ нельзя перегенерировать. Создайте новый документ.')
