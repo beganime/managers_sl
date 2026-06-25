@@ -420,7 +420,18 @@ def expense_queryset(user):
 
 
 def document_queryset(user):
-    qs = GeneratedDocument.objects.select_related('company', 'office', 'template', 'client', 'manager', 'approval')
+    qs = GeneratedDocument.objects.select_related(
+        'company',
+        'office',
+        'template',
+        'client',
+        'application',
+        'deal',
+        'manager',
+        'approved_by',
+        'stamp_preview_generated_by',
+        'approval',
+    )
     if is_erp_admin(user):
         return qs
     employee = get_employee_profile(user)

@@ -661,11 +661,48 @@ class GeneratedDocument(TimeStampedModel):
         ])
         return self
 
+    def mark_approval_record_approved(self, user, approval_type, comment='', reviewed_at=None):
+        reviewed_at = reviewed_at or timezone.now()
+        approval, _ = DocumentApproval.objects.get_or_create(document=self)
+        approval.status = DocumentApproval.STATUS_APPROVED
+        approval.approval_type = approval_type
+        approval.comment = comment or approval.comment or ''
+        approval.rejection_reason = ''
+        approval.reviewed_by = user or approval.reviewed_by
+        approval.reviewed_at = reviewed_at
+        approval.save()
+        return approval
+
+    def already_approved_result(self, user=None, approval_type=None, comment=''):
+        if self.status != self.STATUS_APPROVED or not self.approved_file:
+            return None
+        update_fields = []
+        if self.generation_error:
+            self.generation_error = ''
+            update_fields.append('generation_error')
+        if not self.approved_by and user:
+            self.approved_by = user
+            update_fields.append('approved_by')
+        if not self.approved_at:
+            self.approved_at = timezone.now()
+            update_fields.append('approved_at')
+        if update_fields:
+            update_fields.append('updated_at')
+            self.save(update_fields=update_fields)
+        actual_approval_type = (
+            DocumentApproval.TYPE_WITH_STAMP
+            if self.approved_file_is_pdf
+            else DocumentApproval.TYPE_WITHOUT_STAMP
+        )
+        self.mark_approval_record_approved(user, actual_approval_type, comment=comment, reviewed_at=self.approved_at)
+        return self
+
     def approve_stamp_preview(self, user, comment=''):
+        approved = self.already_approved_result(user, DocumentApproval.TYPE_WITH_STAMP, comment=comment)
+        if approved:
+            return approved
         if not self.stamp_preview_file:
             raise ValueError('Сначала сгенерируйте предпросмотр PDF с печатью и проверьте его.')
-        if self.status == self.STATUS_APPROVED:
-            raise ValueError('Документ уже подтверждён.')
         if not self.template.allow_with_stamp:
             raise ValueError('Этот шаблон не разрешает PDF с электронной печатью.')
 
@@ -700,14 +737,12 @@ class GeneratedDocument(TimeStampedModel):
                 'updated_at',
             ])
 
-            approval, _ = DocumentApproval.objects.get_or_create(document=self)
-            approval.status = DocumentApproval.STATUS_APPROVED
-            approval.approval_type = DocumentApproval.TYPE_WITH_STAMP
-            approval.comment = comment or ''
-            approval.rejection_reason = ''
-            approval.reviewed_by = user
-            approval.reviewed_at = self.approved_at
-            approval.save()
+            self.mark_approval_record_approved(
+                user,
+                DocumentApproval.TYPE_WITH_STAMP,
+                comment=comment,
+                reviewed_at=self.approved_at,
+            )
         return self
 
     def approve(self, user, with_stamp=False, comment='', stamp_options=None):
@@ -719,6 +754,9 @@ class GeneratedDocument(TimeStampedModel):
             raise ValueError('Этот шаблон не разрешает подтверждение без печати.')
 
         approval_type = DocumentApproval.TYPE_WITH_STAMP if with_stamp else DocumentApproval.TYPE_WITHOUT_STAMP
+        approved = self.already_approved_result(user, approval_type, comment=comment)
+        if approved:
+            return approved
         try:
             approved_file = build_approved_document_file(self, with_stamp=with_stamp, stamp_options=stamp_options)
         except Exception as exc:
@@ -740,14 +778,7 @@ class GeneratedDocument(TimeStampedModel):
                 self.context_data = stored_context
             self.save(update_fields=['approved_file', 'status', 'approved_by', 'approved_at', 'generation_error', 'context_data', 'updated_at'])
 
-            approval, _ = DocumentApproval.objects.get_or_create(document=self)
-            approval.status = DocumentApproval.STATUS_APPROVED
-            approval.approval_type = approval_type
-            approval.comment = comment or ''
-            approval.rejection_reason = ''
-            approval.reviewed_by = user
-            approval.reviewed_at = self.approved_at
-            approval.save()
+            self.mark_approval_record_approved(user, approval_type, comment=comment, reviewed_at=self.approved_at)
         return self
 
     def reject(self, user, reason=''):
@@ -969,12 +1000,15 @@ def convert_docx_to_pdf_path(document, workdir):
         )
 
     source_path = workdir / 'source.docx'
+    libreoffice_profile = workdir / 'lo_profile'
+    libreoffice_profile.mkdir(parents=True, exist_ok=True)
     write_generated_docx_to_path(document, source_path)
     command = [
         soffice,
         '--headless',
         '--nologo',
         '--nofirststartwizard',
+        f'-env:UserInstallation={libreoffice_profile.as_uri()}',
         '--convert-to',
         'pdf:writer_pdf_Export',
         '--outdir',

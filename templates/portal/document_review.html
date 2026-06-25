@@ -55,7 +55,7 @@
                     Сначала можно создать предпросмотр PDF с печатью и открыть его. Если печать стоит неправильно, измените позицию ниже и нажмите “Перегенерировать предпросмотр”. Финальное скачивание PDF станет доступно только после кнопки “Подтвердить этот PDF”.
                 </div>
 
-                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" style="margin-bottom:18px;">
+                <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" style="margin-bottom:18px;" data-disable-on-submit>
                     {% csrf_token %}
                     <input type="hidden" name="with_stamp" value="0">
                     <label>
@@ -65,7 +65,7 @@
                     <button class="btn" type="submit"><i data-lucide="check"></i>Подтвердить без печати</button>
                 </form>
 
-                <form method="post" action="{% url 'portal:document_action' document.id 'generate-stamp-preview' %}" class="grid" id="stamp-approval-form" style="margin-bottom:18px;">
+                <form method="post" action="{% url 'portal:document_action' document.id 'generate-stamp-preview' %}" class="grid" id="stamp-approval-form" style="margin-bottom:18px;" data-disable-on-submit>
                     {% csrf_token %}
                     <input type="hidden" name="stamp_x_percent" id="stamp_x_percent" value="{{ default_stamp_x_percent }}">
                     <input type="hidden" name="stamp_y_percent" id="stamp_y_percent" value="{{ default_stamp_y_percent }}">
@@ -120,7 +120,7 @@
                 </form>
 
                 {% if has_stamp_preview %}
-                    <form method="post" action="{% url 'portal:document_action' document.id 'approve-stamp-preview' %}" class="grid" style="margin-bottom:18px;">
+                    <form method="post" action="{% url 'portal:document_action' document.id 'approve-stamp-preview' %}" class="grid" style="margin-bottom:18px;" data-disable-on-submit>
                         {% csrf_token %}
                         <label>
                             <span class="muted small">Комментарий к подтверждению</span>
@@ -130,7 +130,7 @@
                     </form>
                 {% endif %}
 
-                <form method="post" action="{% url 'portal:document_action' document.id 'reject' %}" class="grid">
+                <form method="post" action="{% url 'portal:document_action' document.id 'reject' %}" class="grid" data-disable-on-submit>
                     {% csrf_token %}
                     <label><span class="muted small">Причина отклонения</span><textarea class="textarea" name="reason" rows="3" placeholder="Что нужно исправить"></textarea></label>
                     <button class="btn danger" type="submit"><i data-lucide="x"></i>Отклонить</button>

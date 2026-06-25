@@ -499,6 +499,20 @@
         document.body.addEventListener('htmx:afterSwap', function () {
             if (window.lucide) window.lucide.createIcons();
         });
+        document.addEventListener('submit', function (event) {
+            const form = event.target;
+            if (!form || !form.matches('form[data-disable-on-submit]')) return;
+            if (form.dataset.submitted === '1') {
+                event.preventDefault();
+                return;
+            }
+            form.dataset.submitted = '1';
+            form.querySelectorAll('button[type="submit"]').forEach(function (button) {
+                button.dataset.originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<span>Обработка...</span>';
+            });
+        }, true);
     </script>
 </body>
 </html>
