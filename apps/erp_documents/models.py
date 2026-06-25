@@ -325,8 +325,12 @@ class GeneratedDocument(TimeStampedModel):
         return title or f'{template_name} #{self.pk or ""}'.strip()
 
     def download_filename(self, file_type='original'):
-        extension = 'pdf' if file_type in {'approved', 'pdf', DocumentDownloadLog.FILE_TYPE_APPROVED} else 'docx'
-        suffix = 'с печатью' if extension == 'pdf' else 'без печати'
+        if file_type in {'approved', 'pdf', DocumentDownloadLog.FILE_TYPE_APPROVED}:
+            extension = self.approved_file_extension or 'pdf'
+            suffix = 'с печатью' if extension == 'pdf' else 'одобренный документ'
+        else:
+            extension = 'docx'
+            suffix = 'без печати'
         return f'{clean_download_name(f"{self.display_title} - {suffix}")}.{extension}'
 
     @property
@@ -341,6 +345,27 @@ class GeneratedDocument(TimeStampedModel):
     @property
     def can_download_approved(self):
         return bool(self.approved_file and self.status == self.STATUS_APPROVED)
+
+    @property
+    def approved_file_extension(self):
+        if not self.approved_file:
+            return ''
+        name = str(getattr(self.approved_file, 'name', '') or '')
+        return Path(name).suffix.lower().lstrip('.') or 'pdf'
+
+    @property
+    def approved_file_is_pdf(self):
+        return self.approved_file_extension == 'pdf'
+
+    @property
+    def can_preview_approved(self):
+        return bool(self.can_download_approved and self.approved_file_is_pdf)
+
+    @property
+    def approved_download_label(self):
+        if self.approved_file_is_pdf:
+            return 'Скачать PDF с печатью'
+        return 'Скачать одобренный DOCX'
 
     @property
     def has_stamp_preview(self):

@@ -37,9 +37,11 @@
                 {% if has_stamp_preview %}
                     <a class="btn" href="{% url 'portal:document_action' document.id 'preview-stamp-preview' %}" target="_blank"><i data-lucide="eye"></i>Открыть предпросмотр PDF</a>
                 {% endif %}
-                {% if has_approved_pdf %}
-                    <a class="btn" href="{% url 'portal:document_action' document.id 'preview-approved' %}" target="_blank"><i data-lucide="eye"></i>Открыть подтверждённый PDF</a>
-                    <a class="btn primary" href="{% url 'portal:document_action' document.id 'download-approved' %}"><i data-lucide="stamp"></i>Скачать PDF с печатью</a>
+                {% if document.can_download_approved %}
+                    {% if document.can_preview_approved %}
+                        <a class="btn" href="{% url 'portal:document_action' document.id 'preview-approved' %}" target="_blank"><i data-lucide="eye"></i>Открыть подтверждённый PDF</a>
+                    {% endif %}
+                    <a class="btn primary" href="{% url 'portal:document_action' document.id 'download-approved' %}"><i data-lucide="stamp"></i>{{ document.approved_download_label }}</a>
                 {% endif %}
             </div>
         </div>

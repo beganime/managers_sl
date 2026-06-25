@@ -2500,10 +2500,12 @@ class ApprovalsView(PortalContextMixin, TemplateView):
                     stamp_options=stamp_options_from_post(request.POST) if with_stamp else None,
                 )
                 messages.success(request, 'Документ подтверждён.')
+                return redirect('portal:document_review', pk=document.pk)
             elif action == 'reject_document':
                 document = get_object_or_404(document_queryset(request.user), pk=request.POST.get('document_id'))
                 document.reject(user=request.user, reason=request.POST.get('reason', ''))
                 messages.success(request, 'Документ отклонён.')
+                return redirect('portal:document_review', pk=document.pk)
         except Exception as exc:
             messages.error(request, str(exc))
         return redirect('portal:approvals')
@@ -2709,9 +2711,9 @@ class DocumentActionView(LoginRequiredMixin, View):
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
             return FileResponse(document.approved_file.open('rb'), as_attachment=True, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED))
         if action == 'preview-approved':
-            if not document.can_download_approved:
-                messages.error(request, 'PDF с печатью доступен только после подтверждения администратора.')
-                return redirect('portal:documents')
+            if not document.can_preview_approved:
+                messages.error(request, 'Предпросмотр доступен только для PDF с печатью. Одобренный DOCX можно скачать без предпросмотра.')
+                return redirect('portal:document_review', pk=document.pk)
             log_document_download(request, document, DocumentDownloadLog.FILE_TYPE_APPROVED)
             response = FileResponse(document.approved_file.open('rb'), as_attachment=False, filename=document.download_filename(DocumentDownloadLog.FILE_TYPE_APPROVED))
             response['Content-Type'] = 'application/pdf'

@@ -47,8 +47,10 @@
                             </form>
                         {% endif %}
                         {% if item.can_download_approved %}
-                            <a class="pill ok" href="{% url 'portal:document_action' item.id 'download-approved' %}">Скачать PDF с печатью</a>
-                            <a class="pill" href="{% url 'portal:document_action' item.id 'preview-approved' %}" target="_blank">Открыть PDF</a>
+                            <a class="pill ok" href="{% url 'portal:document_action' item.id 'download-approved' %}">{{ item.approved_download_label }}</a>
+                            {% if item.can_preview_approved %}
+                                <a class="pill" href="{% url 'portal:document_action' item.id 'preview-approved' %}" target="_blank">Открыть PDF</a>
+                            {% endif %}
                         {% elif item.status == 'pending' %}
                             <span class="pill warn">Ожидает админа</span>
                         {% endif %}

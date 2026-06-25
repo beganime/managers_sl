@@ -174,7 +174,7 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
         return build_document_api_url(self.context.get('request'), obj, 'download-approved')
 
     def get_preview_approved_url(self, obj):
-        if not obj.can_download_approved:
+        if not obj.can_preview_approved:
             return None
         return build_document_api_url(self.context.get('request'), obj, 'preview-approved')
 
@@ -194,7 +194,7 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
         return build_document_portal_url(self.context.get('request'), obj, 'download-approved')
 
     def get_portal_preview_approved_url(self, obj):
-        if not obj.can_download_approved:
+        if not obj.can_preview_approved:
             return None
         return build_document_portal_url(self.context.get('request'), obj, 'preview-approved')
 
@@ -276,7 +276,7 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
         })
 
     def get_can_download_pdf(self, obj):
-        return bool(obj.can_download_approved)
+        return bool(obj.can_download_approved and obj.approved_file_is_pdf)
 
     def get_can_preview(self, obj):
         request = self.context.get('request')
