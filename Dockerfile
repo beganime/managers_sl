@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     netcat-openbsd \
     libreoffice \
     libreoffice-writer \
+    default-jre-headless \
+    libreoffice-java-common \
     fonts-dejavu-core \
     fonts-liberation \
     && update-ca-certificates \
