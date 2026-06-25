@@ -52,7 +52,7 @@
         <div class="panel-body">
             {% if document.status == 'pending' %}
                 <div class="empty" style="text-align:left; margin-bottom:16px;">
-                    Сначала можно создать предпросмотр PDF с печатью и открыть его. Если печать стоит неправильно, измените позицию ниже и нажмите “Перегенерировать предпросмотр”. Финальное скачивание PDF станет доступно только после кнопки “Подтвердить этот PDF”.
+                    Сначала можно создать быстрый предпросмотр положения печати и открыть его. Если печать стоит неправильно, измените позицию ниже и нажмите “Перегенерировать предпросмотр”. После подтверждения система создаст финальный PDF из исходного DOCX-шаблона, поэтому внешний вид договора сохранится как в загруженном шаблоне.
                 </div>
 
                 <form method="post" action="{% url 'portal:document_action' document.id 'approve' %}" class="grid" style="margin-bottom:18px;" data-disable-on-submit>
@@ -126,7 +126,7 @@
                             <span class="muted small">Комментарий к подтверждению</span>
                             <textarea class="textarea" name="comment" rows="2" placeholder="Например: печать проверена, положение корректное"></textarea>
                         </label>
-                        <button class="btn primary" type="submit"><i data-lucide="check-circle"></i>Подтвердить этот PDF для скачивания</button>
+                        <button class="btn primary" type="submit"><i data-lucide="check-circle"></i>Подтвердить и создать финальный PDF с печатью</button>
                     </form>
                 {% endif %}
 

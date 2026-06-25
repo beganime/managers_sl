@@ -728,26 +728,26 @@ class GeneratedDocument(TimeStampedModel):
         if not self.template.allow_with_stamp:
             raise ValueError('Этот шаблон не разрешает PDF с электронной печатью.')
 
-        self.stamp_preview_file.open('rb')
+        stamp_options = self.stamp_preview_options or {'stamp_mode': 'executor'}
         try:
-            preview_content = self.stamp_preview_file.read()
-        finally:
-            self.stamp_preview_file.close()
-
-        base = safe_file_slug(self.display_title, 'approved-document')
-        approved_filename = f'{base}-stamped-approved-{uuid4().hex[:10]}.pdf'
+            approved_file = build_approved_document_file(self, with_stamp=True, stamp_options=stamp_options)
+        except Exception as exc:
+            self.generation_error = str(exc)
+            self.save(update_fields=['generation_error', 'updated_at'])
+            raise ValueError(str(exc)) from exc
 
         with transaction.atomic():
             if self.approved_file:
                 self.approved_file.delete(save=False)
-            self.approved_file.save(approved_filename, ContentFile(preview_content), save=False)
+            self.approved_file.save(approved_file[0], approved_file[1], save=False)
             self.status = self.STATUS_APPROVED
             self.approved_by = user
             self.approved_at = timezone.now()
             self.generation_error = ''
             stored_context = self.context_data or {}
-            stored_context['last_stamp_options'] = self.stamp_preview_options or {'stamp_mode': 'executor'}
-            stored_context['approved_from_stamp_preview'] = True
+            stored_context['last_stamp_options'] = stamp_options
+            stored_context['approved_from_stamp_preview'] = False
+            stored_context['approved_from_original_docx'] = True
             self.context_data = stored_context
             self.save(update_fields=[
                 'approved_file',
