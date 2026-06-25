@@ -142,7 +142,7 @@ class PortalDocumentGenerateForm(forms.Form):
         if existing_document:
             self.fields['application'].initial = existing_document.application_id
             self.fields['deal'].initial = existing_document.deal_id
-            self.fields['title'].initial = existing_document.display_title
+            self.fields['title'].initial = existing_document.title or ''
 
         template = self.resolve_selected_template(selected_template)
         if template:

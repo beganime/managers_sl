@@ -557,6 +557,8 @@ class GeneratedDocument(TimeStampedModel):
         return missing
 
     def generate_file(self):
+        if self.status == self.STATUS_APPROVED:
+            raise ValueError('Подтверждённый документ нельзя перегенерировать. Создайте новый документ.')
         if not self.template.file:
             raise ValueError('Template file is required.')
 
@@ -586,6 +588,9 @@ class GeneratedDocument(TimeStampedModel):
 
         if self.generated_file:
             self.generated_file.delete(save=False)
+        if self.approved_file:
+            self.approved_file.delete(save=False)
+            self.approved_file = None
         if self.stamp_preview_file:
             self.stamp_preview_file.delete(save=False)
             self.stamp_preview_file = None
@@ -597,8 +602,12 @@ class GeneratedDocument(TimeStampedModel):
         self.status = self.STATUS_GENERATED
         self.generation_error = ''
         self.generated_at = timezone.now()
+        self.submitted_at = None
+        self.approved_by = None
+        self.approved_at = None
         self.save(update_fields=[
             'generated_file',
+            'approved_file',
             'stamp_preview_file',
             'stamp_preview_options',
             'stamp_preview_generated_at',
@@ -606,9 +615,13 @@ class GeneratedDocument(TimeStampedModel):
             'status',
             'generation_error',
             'generated_at',
+            'submitted_at',
+            'approved_by',
+            'approved_at',
             'title',
             'updated_at',
         ])
+        DocumentApproval.objects.filter(document=self).delete()
         return self
 
     def submit_for_approval(self, user=None, comment=''):

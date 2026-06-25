@@ -34,6 +34,9 @@
                 {% if can_download_original %}
                     <a class="btn" href="{% url 'portal:document_action' document.id 'download-original' %}"><i data-lucide="download"></i>Скачать DOCX без печати</a>
                 {% endif %}
+                {% if document.status != 'approved' %}
+                    <a class="btn" href="{% url 'portal:document_regenerate' document.id %}"><i data-lucide="refresh-cw"></i>Изменить и перегенерировать DOCX</a>
+                {% endif %}
                 {% if has_stamp_preview %}
                     <a class="btn" href="{% url 'portal:document_action' document.id 'preview-stamp-preview' %}" target="_blank"><i data-lucide="eye"></i>Открыть предпросмотр PDF</a>
                 {% endif %}

@@ -41,10 +41,7 @@
                             </form>
                         {% endif %}
                         {% if item.status != 'approved' %}
-                            <form method="post" action="{% url 'portal:document_action' item.id 'regenerate' %}">
-                                {% csrf_token %}
-                                <button class="pill" type="submit">Повторить</button>
-                            </form>
+                            <a class="pill" href="{% url 'portal:document_regenerate' item.id %}">Перегенерировать</a>
                         {% endif %}
                         {% if item.can_download_approved %}
                             <a class="pill ok" href="{% url 'portal:document_action' item.id 'download-approved' %}">{{ item.approved_download_label }}</a>
