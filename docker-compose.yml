@@ -38,6 +38,11 @@ services:
     restart: unless-stopped
     env_file:
       - .env
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
+      GUNICORN_TIMEOUT: ${GUNICORN_TIMEOUT:-180}
+      GUNICORN_MAX_REQUESTS: ${GUNICORN_MAX_REQUESTS:-200}
+      MALLOC_ARENA_MAX: "2"
     depends_on:
       db:
         condition: service_healthy
@@ -48,6 +53,7 @@ services:
       - ./staticfiles:/app/staticfiles
       - ./secrets:/app/secrets:ro
       - ./branding:/app/branding:ro
+    shm_size: "512m"
     expose:
       - "8000"
     networks:
@@ -67,9 +73,12 @@ services:
     build: .
     container_name: managers_sl_celery
     restart: unless-stopped
-    command: celery -A students_life worker -l info
+    command: sh -c "celery -A students_life worker -l info --concurrency=$${CELERY_WORKER_CONCURRENCY:-1} --max-tasks-per-child=50"
     env_file:
       - .env
+    environment:
+      CELERY_WORKER_CONCURRENCY: ${CELERY_WORKER_CONCURRENCY:-1}
+      MALLOC_ARENA_MAX: "2"
     depends_on:
       db:
         condition: service_healthy
@@ -80,6 +89,7 @@ services:
       - ./staticfiles:/app/staticfiles
       - ./secrets:/app/secrets:ro
       - ./branding:/app/branding:ro
+    shm_size: "512m"
     networks:
       - app_net
 
@@ -90,6 +100,8 @@ services:
     command: celery -A students_life beat -l info
     env_file:
       - .env
+    environment:
+      MALLOC_ARENA_MAX: "2"
     depends_on:
       db:
         condition: service_healthy

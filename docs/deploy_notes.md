@@ -22,3 +22,24 @@ apt install -y libreoffice libreoffice-writer fonts-dejavu-core fonts-liberation
 - без этих пакетов PDF может не создаться или текст может отображаться некорректно.
 
 В Dockerfile проекта эти зависимости уже указаны. На сервере без Docker их нужно установить вручную.
+## LibreOffice exit=137
+
+Если при подтверждении договора появляется `exit=137`, это означает, что Linux убил LibreOffice из-за нехватки оперативной памяти. Это не ошибка DOCX-шаблона.
+
+Для стабильной конвертации на небольшом VPS:
+
+- держите `WEB_CONCURRENCY=1`;
+- держите `CELERY_WORKER_CONCURRENCY=1`;
+- пересобирайте Docker-образ после изменения Dockerfile;
+- добавьте swap 2G на сервере.
+
+Пример swap для Ubuntu/Debian:
+
+```bash
+fallocate -l 2G /swapfile
+chmod 600 /swapfile
+mkswap /swapfile
+swapon /swapfile
+grep -q '/swapfile' /etc/fstab || echo '/swapfile none swap sw 0 0' >> /etc/fstab
+free -h
+```

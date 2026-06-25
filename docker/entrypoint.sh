@@ -53,10 +53,16 @@ echo "📦 Collecting static..."
 python manage.py collectstatic --noinput --clear
 
 echo "🚀 Starting Gunicorn..."
+WEB_CONCURRENCY=${WEB_CONCURRENCY:-1}
+GUNICORN_TIMEOUT=${GUNICORN_TIMEOUT:-180}
+GUNICORN_MAX_REQUESTS=${GUNICORN_MAX_REQUESTS:-200}
+
 exec gunicorn students_life.wsgi:application \
   --bind 0.0.0.0:8000 \
-  --workers 3 \
+  --workers "$WEB_CONCURRENCY" \
   --worker-class sync \
-  --timeout 120 \
+  --timeout "$GUNICORN_TIMEOUT" \
+  --max-requests "$GUNICORN_MAX_REQUESTS" \
+  --max-requests-jitter 20 \
   --access-logfile - \
   --error-logfile -

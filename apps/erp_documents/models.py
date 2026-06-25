@@ -1051,6 +1051,39 @@ def wait_for_pdf_path(workdir, expected_path, timeout_seconds=8):
     return newest_pdf_path(workdir)
 
 
+def acquire_pdf_conversion_lock(timeout_seconds=180):
+    lock_path = Path(tempfile.gettempdir()) / 'managers_sl_docx_pdf.lock'
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        try:
+            fd = os.open(str(lock_path), os.O_CREAT | os.O_EXCL | os.O_RDWR)
+            os.write(fd, str(os.getpid()).encode('ascii', errors='ignore'))
+            return fd, lock_path
+        except FileExistsError:
+            try:
+                if time.time() - lock_path.stat().st_mtime > 600:
+                    lock_path.unlink(missing_ok=True)
+                    continue
+            except FileNotFoundError:
+                continue
+            time.sleep(0.5)
+    raise ValueError('Сервер уже конвертирует другой документ в PDF. Подождите минуту и повторите.')
+
+
+def release_pdf_conversion_lock(lock):
+    if not lock:
+        return
+    fd, lock_path = lock
+    try:
+        os.close(fd)
+    except OSError:
+        pass
+    try:
+        lock_path.unlink(missing_ok=True)
+    except OSError:
+        pass
+
+
 def convert_docx_with_libreoffice(soffice, source_path, workdir, attempt_name, convert_to):
     attempt_dir = workdir / attempt_name
     attempt_dir.mkdir(parents=True, exist_ok=True)
@@ -1116,34 +1149,40 @@ def convert_docx_to_pdf_path(document, workdir):
             attempts.append((binary, f'{Path(binary).stem}_{convert_to.replace(":", "_")}', convert_to))
 
     logs = []
-    for binary, attempt_name, convert_to in attempts:
-        try:
-            returncode, pdf_path, output, command_text = convert_docx_with_libreoffice(
-                binary,
-                source_path,
-                workdir,
-                attempt_name,
-                convert_to,
-            )
-        except subprocess.TimeoutExpired:
-            logs.append(f'{attempt_name}: timeout after 150 seconds')
-            continue
-        except Exception as exc:
-            logs.append(f'{attempt_name}: {exc}')
-            continue
+    lock = acquire_pdf_conversion_lock()
+    try:
+        for binary, attempt_name, convert_to in attempts:
+            try:
+                returncode, pdf_path, output, command_text = convert_docx_with_libreoffice(
+                    binary,
+                    source_path,
+                    workdir,
+                    attempt_name,
+                    convert_to,
+                )
+            except subprocess.TimeoutExpired:
+                logs.append(f'{attempt_name}: timeout after 150 seconds')
+                continue
+            except Exception as exc:
+                logs.append(f'{attempt_name}: {exc}')
+                continue
 
-        if pdf_path and pdf_path.exists() and pdf_path.stat().st_size > 0:
-            return pdf_path
+            if pdf_path and pdf_path.exists() and pdf_path.stat().st_size > 0:
+                return pdf_path
 
-        status = f'exit={returncode}'
-        output = output or 'без вывода'
-        logs.append(f'{attempt_name}: {status}; command={command_text}; output={output[-1200:]}')
+            status = f'exit={returncode}'
+            output = output or 'без вывода'
+            logs.append(f'{attempt_name}: {status}; command={command_text}; output={output[-1200:]}')
+            if returncode == 137:
+                break
+    finally:
+        release_pdf_conversion_lock(lock)
 
     details = '\n'.join(logs[-6:]) or 'LibreOffice не вернул подробностей.'
     raise ValueError(
-        'LibreOffice не смог создать PDF после нескольких попыток. '
-        'Проверьте, что контейнер пересобран с libreoffice-writer, default-jre-headless, '
-        'libreoffice-java-common, fonts-dejavu-core и fonts-liberation.\n'
+        'LibreOffice не смог создать PDF. Если в деталях есть exit=137, серверу не хватает RAM: '
+        'оставьте WEB_CONCURRENCY=1/CELERY_WORKER_CONCURRENCY=1 и добавьте swap 2G на VPS. '
+        'Также проверьте, что контейнер пересобран с libreoffice-writer и шрифтами.\n'
         f'{details}'
     )
 
