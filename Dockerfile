@@ -14,9 +14,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice-writer \
     default-jre-headless \
     libreoffice-java-common \
+    fontconfig \
     fonts-dejavu-core \
     fonts-liberation \
+    fonts-noto-core \
+    fonts-noto-cjk \
     && update-ca-certificates \
+    && fc-cache -f \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

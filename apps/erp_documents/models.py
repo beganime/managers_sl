@@ -3,6 +3,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import time
 from pathlib import Path
 from uuid import uuid4
 
@@ -1006,6 +1007,20 @@ def get_soffice_binary():
     return None
 
 
+def get_soffice_binaries():
+    configured = getattr(settings, 'LIBREOFFICE_BINARY', '')
+    candidates = [configured] if configured else []
+    candidates.extend(['soffice', 'libreoffice'])
+    binaries = []
+    seen = set()
+    for candidate in candidates:
+        resolved = shutil.which(candidate) if candidate else None
+        if resolved and resolved not in seen:
+            binaries.append(resolved)
+            seen.add(resolved)
+    return binaries
+
+
 def write_generated_docx_to_path(document, path):
     document.generated_file.open('rb')
     try:
@@ -1014,66 +1029,123 @@ def write_generated_docx_to_path(document, path):
         document.generated_file.close()
 
 
-def convert_docx_to_pdf_path(document, workdir):
-    soffice = get_soffice_binary()
-    if not soffice:
-        raise ValueError(
-            'На сервере не найден LibreOffice для конвертации DOCX в PDF. '
-            'Установите libreoffice и шрифты fonts-dejavu/fonts-liberation.'
-        )
+def newest_pdf_path(workdir):
+    pdf_files = sorted(workdir.glob('*.pdf'), key=lambda item: item.stat().st_mtime, reverse=True)
+    for pdf_path in pdf_files:
+        if pdf_path.exists() and pdf_path.stat().st_size > 0:
+            return pdf_path
+    return None
 
-    source_path = workdir / 'source.docx'
-    libreoffice_profile = workdir / 'lo_profile'
-    libreoffice_home = workdir / 'home'
-    libreoffice_config = workdir / 'config'
-    libreoffice_cache = workdir / 'cache'
+
+def wait_for_pdf_path(workdir, expected_path, timeout_seconds=8):
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if expected_path.exists() and expected_path.stat().st_size > 0:
+            return expected_path
+        candidate = newest_pdf_path(workdir)
+        if candidate:
+            return candidate
+        time.sleep(0.25)
+    if expected_path.exists() and expected_path.stat().st_size > 0:
+        return expected_path
+    return newest_pdf_path(workdir)
+
+
+def convert_docx_with_libreoffice(soffice, source_path, workdir, attempt_name, convert_to):
+    attempt_dir = workdir / attempt_name
+    attempt_dir.mkdir(parents=True, exist_ok=True)
+    attempt_source = attempt_dir / source_path.name
+    shutil.copy2(source_path, attempt_source)
+
+    libreoffice_profile = attempt_dir / 'lo_profile'
+    libreoffice_home = attempt_dir / 'home'
+    libreoffice_config = attempt_dir / 'config'
+    libreoffice_cache = attempt_dir / 'cache'
     libreoffice_profile.mkdir(parents=True, exist_ok=True)
     libreoffice_home.mkdir(parents=True, exist_ok=True)
     libreoffice_config.mkdir(parents=True, exist_ok=True)
     libreoffice_cache.mkdir(parents=True, exist_ok=True)
-    write_generated_docx_to_path(document, source_path)
+
     command = [
         soffice,
+        f'-env:UserInstallation={libreoffice_profile.as_uri()}',
         '--headless',
         '--nologo',
         '--nofirststartwizard',
         '--nodefault',
         '--nolockcheck',
         '--norestore',
-        f'-env:UserInstallation={libreoffice_profile.as_uri()}',
         '--convert-to',
-        'pdf:writer_pdf_Export',
+        convert_to,
         '--outdir',
-        str(workdir),
-        str(source_path),
+        str(attempt_dir),
+        str(attempt_source),
     ]
     env = os.environ.copy()
     env.update({
         'HOME': str(libreoffice_home),
         'XDG_CONFIG_HOME': str(libreoffice_config),
         'XDG_CACHE_HOME': str(libreoffice_cache),
-        'TMPDIR': str(workdir),
+        'TMPDIR': str(attempt_dir),
         'LANG': env.get('LANG') or 'C.UTF-8',
         'LC_ALL': env.get('LC_ALL') or 'C.UTF-8',
+        'SAL_USE_VCLPLUGIN': 'svp',
+        'JAVA_TOOL_OPTIONS': env.get('JAVA_TOOL_OPTIONS') or '-Djava.awt.headless=true',
     })
-    completed = subprocess.run(command, capture_output=True, text=True, timeout=120, cwd=str(workdir), env=env)
+    completed = subprocess.run(command, capture_output=True, text=True, timeout=150, cwd=str(attempt_dir), env=env)
+    pdf_path = wait_for_pdf_path(attempt_dir, attempt_dir / f'{attempt_source.stem}.pdf')
+    output = '\n'.join(part for part in (completed.stdout.strip(), completed.stderr.strip()) if part)
+    return completed.returncode, pdf_path, output, ' '.join(command)
 
-    pdf_path = workdir / 'source.pdf'
-    if not pdf_path.exists():
-        converted = sorted(workdir.glob('*.pdf'), key=lambda item: item.stat().st_mtime, reverse=True)
-        if converted:
-            pdf_path = converted[0]
 
-    if completed.returncode != 0 and (not pdf_path.exists() or pdf_path.stat().st_size == 0):
-        error = completed.stderr.strip() or completed.stdout.strip() or 'LibreOffice не смог создать PDF.'
-        raise ValueError(f'Ошибка конвертации DOCX в PDF: {error}')
+def convert_docx_to_pdf_path(document, workdir):
+    binaries = get_soffice_binaries()
+    if not binaries:
+        raise ValueError(
+            'На сервере не найден LibreOffice для конвертации DOCX в PDF. '
+            'Установите libreoffice, libreoffice-writer и шрифты fonts-dejavu/fonts-liberation.'
+        )
 
-    if not pdf_path.exists() or pdf_path.stat().st_size == 0:
-        output = completed.stderr.strip() or completed.stdout.strip()
-        if 'javaldx' in output.lower():
-            output = f'{output}\nPDF не создан. Проверьте, что в контейнере установлены libreoffice-writer и шрифты.'
-        raise ValueError(f'LibreOffice завершился, но PDF-файл не был создан. {output}'.strip())
-    return pdf_path
+    source_path = workdir / 'source.docx'
+    write_generated_docx_to_path(document, source_path)
+
+    attempts = []
+    convert_modes = ('pdf:writer_pdf_Export', 'pdf')
+    for binary in binaries:
+        for convert_to in convert_modes:
+            attempts.append((binary, f'{Path(binary).stem}_{convert_to.replace(":", "_")}', convert_to))
+
+    logs = []
+    for binary, attempt_name, convert_to in attempts:
+        try:
+            returncode, pdf_path, output, command_text = convert_docx_with_libreoffice(
+                binary,
+                source_path,
+                workdir,
+                attempt_name,
+                convert_to,
+            )
+        except subprocess.TimeoutExpired:
+            logs.append(f'{attempt_name}: timeout after 150 seconds')
+            continue
+        except Exception as exc:
+            logs.append(f'{attempt_name}: {exc}')
+            continue
+
+        if pdf_path and pdf_path.exists() and pdf_path.stat().st_size > 0:
+            return pdf_path
+
+        status = f'exit={returncode}'
+        output = output or 'без вывода'
+        logs.append(f'{attempt_name}: {status}; command={command_text}; output={output[-1200:]}')
+
+    details = '\n'.join(logs[-6:]) or 'LibreOffice не вернул подробностей.'
+    raise ValueError(
+        'LibreOffice не смог создать PDF после нескольких попыток. '
+        'Проверьте, что контейнер пересобран с libreoffice-writer, default-jre-headless, '
+        'libreoffice-java-common, fonts-dejavu-core и fonts-liberation.\n'
+        f'{details}'
+    )
 
 
 def extract_docx_lines(file_field):
