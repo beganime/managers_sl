@@ -1,4 +1,5 @@
 import io
+import os
 import shutil
 import subprocess
 import tempfile
@@ -660,7 +661,7 @@ class GeneratedDocument(TimeStampedModel):
 
         stamp_options = stamp_options or {'stamp_mode': 'executor'}
         try:
-            preview_file = build_fast_stamp_preview_file(self, stamp_options=stamp_options)
+            preview_file = build_approved_document_file(self, with_stamp=True, stamp_options=stamp_options)
         except Exception as exc:
             self.generation_error = str(exc)
             self.save(update_fields=['generation_error', 'updated_at'])
@@ -1023,13 +1024,22 @@ def convert_docx_to_pdf_path(document, workdir):
 
     source_path = workdir / 'source.docx'
     libreoffice_profile = workdir / 'lo_profile'
+    libreoffice_home = workdir / 'home'
+    libreoffice_config = workdir / 'config'
+    libreoffice_cache = workdir / 'cache'
     libreoffice_profile.mkdir(parents=True, exist_ok=True)
+    libreoffice_home.mkdir(parents=True, exist_ok=True)
+    libreoffice_config.mkdir(parents=True, exist_ok=True)
+    libreoffice_cache.mkdir(parents=True, exist_ok=True)
     write_generated_docx_to_path(document, source_path)
     command = [
         soffice,
         '--headless',
         '--nologo',
         '--nofirststartwizard',
+        '--nodefault',
+        '--nolockcheck',
+        '--norestore',
         f'-env:UserInstallation={libreoffice_profile.as_uri()}',
         '--convert-to',
         'pdf:writer_pdf_Export',
@@ -1037,14 +1047,32 @@ def convert_docx_to_pdf_path(document, workdir):
         str(workdir),
         str(source_path),
     ]
-    completed = subprocess.run(command, capture_output=True, text=True, timeout=90)
-    if completed.returncode != 0:
+    env = os.environ.copy()
+    env.update({
+        'HOME': str(libreoffice_home),
+        'XDG_CONFIG_HOME': str(libreoffice_config),
+        'XDG_CACHE_HOME': str(libreoffice_cache),
+        'TMPDIR': str(workdir),
+        'LANG': env.get('LANG') or 'C.UTF-8',
+        'LC_ALL': env.get('LC_ALL') or 'C.UTF-8',
+    })
+    completed = subprocess.run(command, capture_output=True, text=True, timeout=120, cwd=str(workdir), env=env)
+
+    pdf_path = workdir / 'source.pdf'
+    if not pdf_path.exists():
+        converted = sorted(workdir.glob('*.pdf'), key=lambda item: item.stat().st_mtime, reverse=True)
+        if converted:
+            pdf_path = converted[0]
+
+    if completed.returncode != 0 and (not pdf_path.exists() or pdf_path.stat().st_size == 0):
         error = completed.stderr.strip() or completed.stdout.strip() or 'LibreOffice не смог создать PDF.'
         raise ValueError(f'Ошибка конвертации DOCX в PDF: {error}')
 
-    pdf_path = workdir / 'source.pdf'
     if not pdf_path.exists() or pdf_path.stat().st_size == 0:
-        raise ValueError('LibreOffice завершился без ошибки, но PDF-файл не был создан.')
+        output = completed.stderr.strip() or completed.stdout.strip()
+        if 'javaldx' in output.lower():
+            output = f'{output}\nPDF не создан. Проверьте, что в контейнере установлены libreoffice-writer и шрифты.'
+        raise ValueError(f'LibreOffice завершился, но PDF-файл не был создан. {output}'.strip())
     return pdf_path
 
 
