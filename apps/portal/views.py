@@ -18,7 +18,9 @@ from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils.dateparse import parse_date
 from django.utils import timezone
 from django.utils.text import slugify
+from django.utils.decorators import method_decorator
 from django.views import View
+from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
@@ -941,6 +943,10 @@ class PortalContextMixin(LoginRequiredMixin):
     active_page = ''
     page_title = ''
 
+    @method_decorator(ensure_csrf_cookie)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         employee = get_employee_profile(self.request.user)
@@ -988,6 +994,10 @@ class PortalHomeView(View):
 class PortalLoginView(LoginView):
     template_name = 'portal/login.html'
     redirect_authenticated_user = True
+
+    @method_decorator(ensure_csrf_cookie)
+    def dispatch(self, request, *args, **kwargs):
+        return super().dispatch(request, *args, **kwargs)
 
     def get_success_url(self):
         return self.get_redirect_url() or reverse('portal:dashboard')

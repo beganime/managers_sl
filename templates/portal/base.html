@@ -478,6 +478,11 @@
                         {% endfor %}
                     </div>
                 {% endif %}
+                {% if request.GET.csrf_error %}
+                    <div class="messages">
+                        <div class="message warning">Сессия формы устарела. Страница обновлена, повторите действие ещё раз.</div>
+                    </div>
+                {% endif %}
                 {% block content %}{% endblock %}
             </main>
         </div>

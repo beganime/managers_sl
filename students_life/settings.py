@@ -62,9 +62,13 @@ CORS_ALLOW_HEADERS = list(default_headers) + [
 ]
 CORS_ALLOW_METHODS = list(default_methods)
 
-CSRF_TRUSTED_ORIGINS = [
+DEFAULT_CSRF_TRUSTED_ORIGINS = [
     'https://manager-sl.ru',
     'https://www.manager-sl.ru',
+    'http://manager-sl.ru',
+    'http://www.manager-sl.ru',
+    'https://91.229.10.83',
+    'http://91.229.10.83',
     'http://localhost:8000',
     'http://127.0.0.1:8000',
     'http://localhost:8081',
@@ -72,6 +76,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://localhost:19006',
     'http://127.0.0.1:19006',
 ]
+CSRF_TRUSTED_ORIGINS = sorted(set(
+    DEFAULT_CSRF_TRUSTED_ORIGINS + env_list('CSRF_TRUSTED_ORIGINS', '')
+))
+CSRF_FAILURE_VIEW = 'students_life.csrf.csrf_failure'
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 USE_X_FORWARDED_HOST = True
@@ -79,6 +87,8 @@ USE_X_FORWARDED_HOST = True
 SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', not DEBUG)
 SESSION_COOKIE_SECURE = env_bool('SESSION_COOKIE_SECURE', not DEBUG)
 CSRF_COOKIE_SECURE = env_bool('CSRF_COOKIE_SECURE', not DEBUG)
+SESSION_COOKIE_SAMESITE = os.environ.get('SESSION_COOKIE_SAMESITE', 'Lax')
+CSRF_COOKIE_SAMESITE = os.environ.get('CSRF_COOKIE_SAMESITE', 'Lax')
 SECURE_HSTS_SECONDS = int(os.environ.get('SECURE_HSTS_SECONDS', '31536000' if not DEBUG else '0'))
 SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', not DEBUG)
 SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', not DEBUG)

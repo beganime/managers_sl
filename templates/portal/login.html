@@ -96,6 +96,9 @@
         {% if form.errors %}
             <div class="errors">Не удалось войти. Проверьте email и пароль.</div>
         {% endif %}
+        {% if request.GET.csrf_error %}
+            <div class="errors">Сессия формы устарела. Страница обновлена, попробуйте войти ещё раз.</div>
+        {% endif %}
 
         <form method="post" action="{% url 'portal:login' %}">
             {% csrf_token %}
