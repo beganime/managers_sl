@@ -1,7 +1,7 @@
 # leads/urls.py
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import LeadCreateAPIView, LeadViewSet
+from .views import LeadCreateAPIView, LeadViewSet, MobileClientDocumentSyncAPIView, MobileClientSyncAPIView
 
 # Используем роутер для мобильного ViewSet
 router = DefaultRouter()
@@ -11,6 +11,8 @@ router.register(r'mobile', LeadViewSet, basename='lead-mobile')
 urlpatterns = [
     # Эндпоинт для сайта
     path('leads/create/', LeadCreateAPIView.as_view(), name='lead-create'),
+    path('mobile/clients/sync/', MobileClientSyncAPIView.as_view(), name='mobile-client-sync'),
+    path('mobile/documents/sync/', MobileClientDocumentSyncAPIView.as_view(), name='mobile-document-sync'),
     # Эндпоинты для мобильного приложения
     path('leads/', include(router.urls)),
 ]

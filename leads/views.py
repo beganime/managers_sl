@@ -1,5 +1,6 @@
 # leads/views.py
 from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.db.models import Q
 from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
@@ -9,11 +10,13 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
-from apps.crm.models import Lead as CrmLead, LeadSource as CrmLeadSource
+from apps.crm.models import Client as CrmClient, ClientFile as CrmClientFile, Lead as CrmLead, LeadSource as CrmLeadSource
 from apps.organizations.models import Company
 
 from .models import Lead
 from .serializers import LeadSerializer, MobileLeadSerializer
+
+User = get_user_model()
 
 
 def clean_header(value, max_length=None) -> str:
@@ -23,6 +26,12 @@ def clean_header(value, max_length=None) -> str:
         return value[:max_length]
 
     return value
+
+
+def parse_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
 def get_client_ip(request) -> str | None:
@@ -94,6 +103,121 @@ def default_crm_lead_company():
         if company:
             return company
     return qs.first()
+
+
+def default_crm_manager():
+    return User.objects.filter(is_active=True, is_staff=True).order_by('id').first() or User.objects.filter(is_active=True).order_by('id').first()
+
+
+def find_mobile_client(data):
+    mobile_user_id = data.get('mobile_user_id') or data.get('user_id')
+    email = clean_header(data.get('email'), 255)
+    phone = clean_header(data.get('phone') or data.get('whatsapp'), 50)
+    qs = CrmClient.objects.all()
+    if mobile_user_id:
+        client = qs.filter(mobile_app_user_id=mobile_user_id).first()
+        if client:
+            return client
+    if email:
+        client = qs.filter(email__iexact=email).first()
+        if client:
+            return client
+    if phone:
+        client = qs.filter(phone=phone).first()
+        if client:
+            return client
+    return None
+
+
+def upsert_mobile_client(data):
+    company = default_crm_lead_company()
+    manager = default_crm_manager()
+    if not company or not manager:
+        raise ValueError('No company or manager exists for mobile client sync.')
+
+    mobile_user_id = data.get('mobile_user_id') or data.get('user_id')
+    profile = data.get('profile') or {}
+    full_name = clean_header(
+        data.get('full_name')
+        or ' '.join(part for part in [data.get('first_name'), data.get('last_name')] if part)
+        or data.get('username')
+        or data.get('email')
+        or 'Mobile client',
+        255,
+    )
+    phone = clean_header(data.get('phone') or profile.get('phone') or profile.get('whatsapp') or '', 50)
+    email = clean_header(data.get('email'), 255) or None
+    client = find_mobile_client({'mobile_user_id': mobile_user_id, 'email': email, 'phone': phone})
+    created = False
+    if not client:
+        client = CrmClient(company=company, manager=manager, full_name=full_name, phone=phone or '-', email=email)
+        created = True
+
+    client.company = client.company or company
+    client.manager = client.manager or manager
+    client.full_name = full_name or client.full_name
+    client.phone = phone or client.phone
+    client.email = email or client.email
+    client.citizenship = clean_header(profile.get('citizenship') or data.get('citizenship'), 100)
+    client.city = clean_header(profile.get('city') or data.get('city'), 100)
+    client.mobile_app_user_id = mobile_user_id or client.mobile_app_user_id
+    client.mobile_app_source = True
+    custom_data = dict(client.custom_data or {})
+    custom_data['mobile_app_profile'] = data
+    client.custom_data = custom_data
+    client.save()
+    return client, created
+
+
+class MobileClientSyncAPIView(APIView):
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        actual_key = getattr(settings, 'LEADS_API_KEY', '')
+        if not actual_key or request.headers.get('X-API-KEY') != actual_key:
+            return Response({'detail': 'Invalid API key.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            client, created = upsert_mobile_client(request.data)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        return Response({'id': client.id, 'created': created, 'detail': 'Client synced.'}, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+
+class MobileClientDocumentSyncAPIView(APIView):
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        actual_key = getattr(settings, 'LEADS_API_KEY', '')
+        if not actual_key or request.headers.get('X-API-KEY') != actual_key:
+            return Response({'detail': 'Invalid API key.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            client, _ = upsert_mobile_client(request.data.get('client') or request.data)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        mobile_document_id = request.data.get('mobile_document_id') or request.data.get('document_id')
+        if not mobile_document_id:
+            return Response({'detail': 'mobile_document_id is required.'}, status=status.HTTP_400_BAD_REQUEST)
+        document_status = request.data.get('status') or CrmClientFile.STATUS_PENDING
+        if document_status not in {CrmClientFile.STATUS_PENDING, CrmClientFile.STATUS_APPROVED, CrmClientFile.STATUS_REJECTED}:
+            return Response({'status': 'Invalid document status.'}, status=status.HTTP_400_BAD_REQUEST)
+        document, _ = CrmClientFile.objects.update_or_create(
+            external_mobile_document_id=mobile_document_id,
+            defaults={
+                'client': client,
+                'title': clean_header(request.data.get('title'), 255) or 'Mobile document',
+                'file': '',
+                'file_type': clean_header(request.data.get('file_type') or 'mobile_document', 100),
+                'external_file_url': clean_header(request.data.get('file_url') or request.data.get('file'), 1000),
+                'external_mobile_user_id': request.data.get('mobile_user_id') or getattr(client, 'mobile_app_user_id', None),
+                'source': 'students_life_mobile_app',
+                'has_translation': parse_bool(request.data.get('has_translation')),
+                'status': document_status,
+                'review_comment': request.data.get('admin_comment') or '',
+                'comment': request.data.get('description') or '',
+            },
+        )
+        return Response({'id': document.id, 'client_id': client.id, 'detail': 'Document synced.'})
 
 
 def normalize_crm_lead_payload(data):

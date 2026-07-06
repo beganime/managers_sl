@@ -222,6 +222,10 @@ class Client(TimeStampedModel):
         return f'{self.full_name} [{self.get_status_display()}]'
 
 
+    mobile_app_user_id = models.PositiveIntegerField('Mobile app user ID', null=True, blank=True, db_index=True)
+    mobile_app_source = models.BooleanField('Mobile app client', default=False)
+
+
 class Application(TimeStampedModel):
     STATUS_CHOICES = (
         ('draft', 'Черновик'),
@@ -311,6 +315,15 @@ class ClientNote(TimeStampedModel):
 
 
 class ClientFile(TimeStampedModel):
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Pending review'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    )
+
     client = models.ForeignKey(Client, verbose_name='Клиент', on_delete=models.CASCADE, related_name='files')
     application = models.ForeignKey(Application, verbose_name='Заявка', on_delete=models.CASCADE, null=True, blank=True, related_name='files')
     uploaded_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Кто загрузил', on_delete=models.SET_NULL, null=True, blank=True, related_name='crm_files')
@@ -326,3 +339,13 @@ class ClientFile(TimeStampedModel):
 
     def __str__(self):
         return self.title
+
+    external_file_url = models.URLField('External file URL', max_length=1000, blank=True)
+    external_mobile_document_id = models.PositiveIntegerField('Mobile document ID', null=True, blank=True, db_index=True)
+    external_mobile_user_id = models.PositiveIntegerField('Mobile user ID', null=True, blank=True, db_index=True)
+    source = models.CharField('Source', max_length=80, blank=True)
+    has_translation = models.BooleanField('Has translation', default=False)
+    status = models.CharField('Review status', max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    review_comment = models.TextField('Review comment', blank=True)
+    reviewed_at = models.DateTimeField('Reviewed at', null=True, blank=True)
+    reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Reviewed by', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_crm_files')

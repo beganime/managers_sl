@@ -3,7 +3,10 @@ import json
 from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
+from urllib import error as urlerror
+from urllib import request as urlrequest
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import get_user_model, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
@@ -25,7 +28,7 @@ from django.views.generic import TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
 from apps.core.permissions import get_employee_profile, is_erp_admin
-from apps.crm.models import Application, Client, Lead, LeadSource
+from apps.crm.models import Application, Client, ClientFile, Lead, LeadSource
 from apps.education.cache import education_cache_get, education_cache_set, make_education_cache_key
 from apps.education.models import City, Country, Currency, Program, ProgramFee, University
 from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
@@ -85,6 +88,7 @@ NAV_GROUPS = (
             {'name': 'leads', 'label': 'Лиды', 'icon': 'radar'},
             {'name': 'incoming_leads', 'label': 'Потенциальные клиенты', 'icon': 'inbox'},
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
+            {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
             {'name': 'applications', 'label': 'Заявки', 'icon': 'file-check-2'},
             {'name': 'tasks', 'label': 'Задачи', 'icon': 'check-square'},
             {'name': 'projects', 'label': 'Проекты', 'icon': 'folder-kanban'},
@@ -1929,6 +1933,90 @@ class ClientDocumentCreateView(PortalContextMixin, TemplateView):
         context['form'] = form
         return self.render_to_response(context)
 
+
+def notify_mobile_document_review(document):
+    base_url = str(getattr(settings, 'STUDENTS_LIFE_API_BASE_URL', '') or '').rstrip('/')
+    api_key = getattr(settings, 'STUDENTS_LIFE_API_KEY', '') or getattr(settings, 'LEADS_API_KEY', '')
+    if not base_url or not api_key or not document.external_mobile_document_id:
+        return
+
+    payload = json.dumps({
+        'document_id': document.external_mobile_document_id,
+        'status': document.status,
+        'admin_comment': document.review_comment,
+    }).encode('utf-8')
+    request = urlrequest.Request(
+        f'{base_url}/api/v1/documents/external-review/',
+        data=payload,
+        headers={'Content-Type': 'application/json', 'Accept': 'application/json', 'X-API-KEY': api_key},
+        method='POST',
+    )
+    try:
+        urlrequest.urlopen(request, timeout=8).read()
+    except (urlerror.URLError, TimeoutError, ValueError):
+        pass
+
+
+class ClientDocumentsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/client_documents.html'
+    active_page = 'client_documents'
+    page_title = 'Документы клиентов'
+
+    def get_clients(self):
+        qs = client_queryset(self.request.user).annotate(
+            uploaded_documents=Count('files', filter=Q(files__source='students_life_mobile_app'), distinct=True),
+            approved_documents=Count('files', filter=Q(files__source='students_life_mobile_app', files__status=ClientFile.STATUS_APPROVED), distinct=True),
+            rejected_documents=Count('files', filter=Q(files__source='students_life_mobile_app', files__status=ClientFile.STATUS_REJECTED), distinct=True),
+            pending_documents=Count('files', filter=Q(files__source='students_life_mobile_app', files__status=ClientFile.STATUS_PENDING), distinct=True),
+        )
+        query = self.request.GET.get('q') or ''
+        if query:
+            qs = qs.filter(Q(full_name__icontains=query) | Q(phone__icontains=query) | Q(email__icontains=query))
+        return qs.order_by('-updated_at', '-created_at')
+
+    def get_selected_client(self):
+        client_id = self.kwargs.get('pk') or self.request.GET.get('client')
+        if not client_id:
+            return None
+        return client_queryset(self.request.user).filter(pk=client_id).first()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        clients_page, clients_query = paginate_queryset(self.request, self.get_clients(), 20)
+        selected_client = self.get_selected_client() or (clients_page.object_list[0] if clients_page.object_list else None)
+        documents = ClientFile.objects.none()
+        if selected_client:
+            documents = selected_client.files.filter(source='students_life_mobile_app').select_related('reviewed_by').order_by('-updated_at')
+        context.update({
+            'clients': clients_page.object_list,
+            'clients_page_obj': clients_page,
+            'clients_page_query': clients_query,
+            'selected_client': selected_client,
+            'client_documents': documents,
+            'query': self.request.GET.get('q', ''),
+        })
+        return context
+
+
+class ClientDocumentReviewPortalView(PortalContextMixin, View):
+    active_page = 'client_documents'
+
+    def post(self, request, pk, document_id):
+        client = get_object_or_404(client_queryset(request.user), pk=pk)
+        document = get_object_or_404(client.files, pk=document_id, source='students_life_mobile_app')
+        status_value = request.POST.get('status')
+        if status_value not in {ClientFile.STATUS_APPROVED, ClientFile.STATUS_REJECTED, ClientFile.STATUS_PENDING}:
+            messages.error(request, 'Некорректный статус документа.')
+            return redirect(f'{reverse("portal:client_documents_detail", args=[client.id])}')
+
+        document.status = status_value
+        document.review_comment = request.POST.get('review_comment', '').strip()
+        document.reviewed_by = request.user
+        document.reviewed_at = timezone.now()
+        document.save(update_fields=['status', 'review_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
+        notify_mobile_document_review(document)
+        messages.success(request, 'Статус документа сохранён.')
+        return redirect(f'{reverse("portal:client_documents_detail", args=[client.id])}')
 
 class ApplicationsView(ListPageMixin):
     active_page = 'applications'

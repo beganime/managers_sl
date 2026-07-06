@@ -86,6 +86,8 @@ class ClientFileSerializer(serializers.ModelSerializer):
 
     def get_file_url(self, obj):
         request = self.context.get('request')
+        if getattr(obj, 'external_file_url', ''):
+            return obj.external_file_url
         if not obj.file:
             return None
         url = obj.file.url

@@ -77,15 +77,15 @@ class ClientNoteInline(TabularInline):
 class ClientFileInline(TabularInline):
     model = ClientFile
     extra = 0
-    fields = ('title', 'file', 'file_type', 'uploaded_by', 'created_at')
+    fields = ('title', 'file', 'external_file_url', 'file_type', 'source', 'status', 'has_translation', 'uploaded_by', 'created_at')
     readonly_fields = ('created_at',)
 
 
 @admin.register(Client)
 class ClientAdmin(ModelAdmin):
-    list_display = ('full_name', 'phone', 'company', 'office', 'manager', 'status', 'is_priority', 'is_partner_client', 'created_at')
-    list_filter = ('status', 'company', 'office', 'manager', 'is_priority', 'is_partner_client', 'created_at')
-    search_fields = ('full_name', 'phone', 'email', 'passport_local_num', 'passport_inter_num', 'partner_name')
+    list_display = ('full_name', 'phone', 'company', 'office', 'manager', 'status', 'mobile_app_source', 'is_priority', 'is_partner_client', 'created_at')
+    list_filter = ('status', 'company', 'office', 'manager', 'mobile_app_source', 'is_priority', 'is_partner_client', 'created_at')
+    search_fields = ('full_name', 'phone', 'email', 'passport_local_num', 'passport_inter_num', 'partner_name', 'mobile_app_user_id')
     autocomplete_fields = ('company', 'office', 'manager', 'shared_with', 'source_lead')
     readonly_fields = ('created_at', 'updated_at')
     filter_horizontal = ('shared_with',)
@@ -115,6 +115,19 @@ class ClientAdmin(ModelAdmin):
             'classes': ('collapse',),
         }),
     )
+
+
+    def get_fieldsets(self, request, obj=None):
+        fieldsets = list(super().get_fieldsets(request, obj))
+        if not any('mobile_app_source' in item[1].get('fields', ()) for item in fieldsets):
+            fieldsets.append((
+                'Mobile app',
+                {
+                    'fields': ('mobile_app_source', 'mobile_app_user_id'),
+                    'classes': ('collapse',),
+                },
+            ))
+        return fieldsets
 
 
 @admin.register(Application)
@@ -147,8 +160,8 @@ class ClientNoteAdmin(ModelAdmin):
 
 @admin.register(ClientFile)
 class ClientFileAdmin(ModelAdmin):
-    list_display = ('title', 'client', 'application', 'file_type', 'uploaded_by', 'created_at')
-    list_filter = ('file_type', 'created_at')
-    search_fields = ('title', 'client__full_name', 'client__phone', 'comment')
-    autocomplete_fields = ('client', 'application', 'uploaded_by')
+    list_display = ('title', 'client', 'application', 'file_type', 'source', 'status', 'has_translation', 'reviewed_by', 'created_at')
+    list_filter = ('file_type', 'source', 'status', 'has_translation', 'created_at')
+    search_fields = ('title', 'client__full_name', 'client__phone', 'comment', 'external_mobile_document_id', 'external_mobile_user_id')
+    autocomplete_fields = ('client', 'application', 'uploaded_by', 'reviewed_by')
     readonly_fields = ('created_at', 'updated_at')
