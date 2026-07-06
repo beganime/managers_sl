@@ -23,6 +23,30 @@
     </div>
 </section>
 
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Анкета абитуриента</h2>
+        {% if questionnaire %}
+            <div class="filters">
+                <a class="btn secondary" href="{% url 'portal:client_questionnaire_detail' questionnaire.id %}"><i data-lucide="clipboard-list"></i>Открыть анкету</a>
+                <a class="btn" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}"><i data-lucide="download"></i>Скачать анкету</a>
+            </div>
+        {% endif %}
+    </div>
+    <div class="panel-body">
+        {% if questionnaire %}
+            <div class="grid cols-4">
+                <div><div class="muted small">Статус</div><span class="pill">{{ questionnaire.get_status_display }}</span></div>
+                <div><div class="muted small">Заполнена</div><div class="strong">{{ questionnaire.submitted_at|date:"d.m.Y H:i"|default:"-" }}</div></div>
+                <div><div class="muted small">Обновлена</div><div class="strong">{{ questionnaire.updated_at|date:"d.m.Y H:i" }}</div></div>
+                <div><div class="muted small">Желаемая программа</div><div class="strong">{{ questionnaire.desired_program|default:"-" }}</div></div>
+            </div>
+        {% else %}
+            <div class="empty">Клиент пока не заполнил анкету в мобильном приложении.</div>
+        {% endif %}
+    </div>
+</section>
+
 <section class="grid cols-3">
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Заявки</h2></div>

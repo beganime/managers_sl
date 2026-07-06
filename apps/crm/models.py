@@ -1,9 +1,17 @@
+import io
+from uuid import uuid4
+
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.db import models
 from django.utils import timezone
 
 from apps.core.models import ActiveModel, TimeStampedModel
 from apps.organizations.models import Company, Office
+
+
+def client_questionnaire_document_upload_to(instance, filename):
+    return f'erp/crm/client_questionnaires/{instance.client_id}/{uuid4().hex}-{filename}'
 
 
 class LeadSource(TimeStampedModel, ActiveModel):
@@ -349,3 +357,150 @@ class ClientFile(TimeStampedModel):
     review_comment = models.TextField('Review comment', blank=True)
     reviewed_at = models.DateTimeField('Reviewed at', null=True, blank=True)
     reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Reviewed by', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_crm_files')
+
+
+class ClientQuestionnaire(TimeStampedModel):
+    STATUS_DRAFT = 'draft'
+    STATUS_SUBMITTED = 'submitted'
+    STATUS_UPDATED = 'updated'
+    STATUS_CHOICES = (
+        (STATUS_DRAFT, 'Не заполнена'),
+        (STATUS_SUBMITTED, 'Заполнена'),
+        (STATUS_UPDATED, 'Обновлена'),
+    )
+
+    client = models.OneToOneField(Client, verbose_name='Клиент', on_delete=models.CASCADE, related_name='questionnaire')
+    mobile_questionnaire_id = models.PositiveIntegerField('Mobile questionnaire ID', null=True, blank=True, db_index=True)
+    external_mobile_user_id = models.PositiveIntegerField('Mobile user ID', null=True, blank=True, db_index=True)
+    source = models.CharField('Источник', max_length=80, blank=True, default='students_life_mobile_app')
+    status = models.CharField('Статус анкеты', max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT, db_index=True)
+
+    full_name = models.CharField('ФИО', max_length=255, blank=True)
+    phone = models.CharField('Телефон', max_length=80, blank=True)
+    email = models.EmailField('Email', blank=True, null=True)
+    citizenship = models.CharField('Гражданство', max_length=120, blank=True)
+    desired_program = models.CharField('Желаемая программа / Вуз', max_length=255, blank=True)
+    desired_country = models.CharField('Желаемая страна', max_length=120, blank=True)
+    desired_city = models.CharField('Желаемый город', max_length=120, blank=True)
+    face_photo_url = models.URLField('Фото абитуриента', max_length=1000, blank=True)
+    data = models.JSONField('Данные анкеты', default=dict, blank=True)
+    generated_file = models.FileField('Сгенерированный документ', upload_to=client_questionnaire_document_upload_to, blank=True, null=True)
+    submitted_at = models.DateTimeField('Дата заполнения', null=True, blank=True)
+    last_synced_at = models.DateTimeField('Последняя синхронизация', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Анкета клиента'
+        verbose_name_plural = 'Анкеты клиентов'
+        ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['status', 'updated_at']),
+            models.Index(fields=['external_mobile_user_id']),
+        ]
+
+    def __str__(self):
+        return f'Анкета: {self.full_name or self.client.full_name}'
+
+    def generate_file(self):
+        from docx import Document
+        from docx.enum.text import WD_ALIGN_PARAGRAPH
+        from docx.shared import Pt
+
+        document = Document()
+        title = document.add_paragraph()
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = title.add_run("Student's Life\nАнкета абитуриента")
+        run.bold = True
+        run.font.size = Pt(18)
+        document.add_paragraph(f'Дата формирования: {timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M")}')
+
+        sections = [
+            ('Личные данные', ('full_name', 'birth_date', 'gender', 'citizenship', 'marital_status')),
+            ('Адрес проживания', ('residence_country', 'residence_region', 'residence_city', 'residence_street', 'residence_house', 'residence_postal_code')),
+            ('Паспортные данные', ('passport_number', 'passport_issued_by', 'passport_issue_date', 'passport_expiry_date', 'has_international_passport')),
+            ('Контакты', ('phone', 'email', 'extra_phone', 'imo', 'telegram', 'preferred_contact_method')),
+            ('Родители / представители', ('parent_full_name', 'parent_relation', 'parent_contacts', 'parent_workplace', 'family_members')),
+            ('Образование', ('education_level', 'school_class', 'school_name', 'school_country', 'school_city', 'graduation_year', 'education_status')),
+            ('Поступление', ('desired_program', 'admission_goal', 'desired_city', 'desired_country', 'desired_language', 'desired_education_level', 'admission_urgency')),
+            ('Виза', ('has_visa', 'visa_country', 'visa_city', 'visa_valid_until')),
+            ('Дополнительно', ('hobbies', 'applicant_comment', 'referral_source')),
+        ]
+        labels = {
+            'full_name': 'ФИО',
+            'birth_date': 'Дата рождения',
+            'gender': 'Пол',
+            'citizenship': 'Гражданство',
+            'marital_status': 'Семейное положение',
+            'residence_country': 'Страна',
+            'residence_region': 'Регион',
+            'residence_city': 'Город',
+            'residence_street': 'Улица',
+            'residence_house': 'Дом / квартира',
+            'residence_postal_code': 'Почтовый индекс',
+            'passport_number': 'Паспорт',
+            'passport_issued_by': 'Где оформлен',
+            'passport_issue_date': 'Дата начала действия',
+            'passport_expiry_date': 'Дата окончания действия',
+            'has_international_passport': 'Загранпаспорт',
+            'phone': 'Телефон',
+            'email': 'Email',
+            'extra_phone': 'Доп. телефон',
+            'imo': 'Imo',
+            'telegram': 'Telegram',
+            'preferred_contact_method': 'Способ связи',
+            'parent_full_name': 'ФИО родителя',
+            'parent_relation': 'Кем является',
+            'parent_contacts': 'Контакты родителя',
+            'parent_workplace': 'Работа родителя',
+            'family_members': 'Семья',
+            'education_level': 'Уровень образования',
+            'school_class': 'Класс',
+            'school_name': 'Учебное заведение',
+            'school_country': 'Страна учебы',
+            'school_city': 'Город учебы',
+            'graduation_year': 'Год окончания',
+            'education_status': 'Статус',
+            'desired_program': 'Программа / Вуз',
+            'admission_goal': 'Цель',
+            'desired_city': 'Город',
+            'desired_country': 'Страна',
+            'desired_language': 'Язык обучения',
+            'desired_education_level': 'Уровень обучения',
+            'admission_urgency': 'Срочность',
+            'has_visa': 'Виза',
+            'visa_country': 'Страна визы',
+            'visa_city': 'Город визы',
+            'visa_valid_until': 'Срок визы',
+            'hobbies': 'Хобби',
+            'applicant_comment': 'Комментарий',
+            'referral_source': 'Источник',
+        }
+
+        for section_title, fields in sections:
+            document.add_heading(section_title, level=2)
+            table = document.add_table(rows=0, cols=2)
+            table.style = 'Table Grid'
+            for field in fields:
+                value = self.data.get(field)
+                if value in (None, '', []):
+                    continue
+                row = table.add_row().cells
+                row[0].text = labels.get(field, field)
+                row[1].text = str(value)
+
+        for list_title, field in (('Достижения', 'achievements'), ('Языки', 'languages'), ('Нужна помощь с', 'help_needed')):
+            value = self.data.get(field) or []
+            if not value:
+                continue
+            document.add_heading(list_title, level=2)
+            if isinstance(value, list):
+                for item in value:
+                    document.add_paragraph(str(item), style='List Bullet')
+            else:
+                document.add_paragraph(str(value))
+
+        buffer = io.BytesIO()
+        document.save(buffer)
+        filename = f'anketa-{self.client_id}-{uuid4().hex[:8]}.docx'
+        self.generated_file.save(filename, ContentFile(buffer.getvalue()), save=False)
+        self.save(update_fields=['generated_file', 'updated_at'])
+        return self.generated_file

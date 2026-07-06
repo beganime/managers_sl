@@ -28,7 +28,7 @@ from django.views.generic import TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
 from apps.core.permissions import get_employee_profile, is_erp_admin
-from apps.crm.models import Application, Client, ClientFile, Lead, LeadSource
+from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource
 from apps.education.cache import education_cache_get, education_cache_set, make_education_cache_key
 from apps.education.models import City, Country, Currency, Program, ProgramFee, University
 from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
@@ -89,6 +89,7 @@ NAV_GROUPS = (
             {'name': 'incoming_leads', 'label': 'Потенциальные клиенты', 'icon': 'inbox'},
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
+            {'name': 'client_questionnaires', 'label': 'Анкеты клиентов', 'icon': 'clipboard-list'},
             {'name': 'applications', 'label': 'Заявки', 'icon': 'file-check-2'},
             {'name': 'tasks', 'label': 'Задачи', 'icon': 'check-square'},
             {'name': 'projects', 'label': 'Проекты', 'icon': 'folder-kanban'},
@@ -1844,6 +1845,7 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             'applications': application_queryset(self.request.user).filter(client=client).order_by('-created_at'),
             'deals': deal_queryset(self.request.user).filter(client=client).order_by('-created_at'),
             'documents': document_queryset(self.request.user).filter(client=client).order_by('-created_at'),
+            'questionnaire': getattr(client, 'questionnaire', None),
         })
         return context
 
@@ -1962,61 +1964,181 @@ class ClientDocumentsView(PortalContextMixin, TemplateView):
     active_page = 'client_documents'
     page_title = 'Документы клиентов'
 
-    def get_clients(self):
-        qs = client_queryset(self.request.user).annotate(
-            uploaded_documents=Count('files', filter=Q(files__source='students_life_mobile_app'), distinct=True),
-            approved_documents=Count('files', filter=Q(files__source='students_life_mobile_app', files__status=ClientFile.STATUS_APPROVED), distinct=True),
-            rejected_documents=Count('files', filter=Q(files__source='students_life_mobile_app', files__status=ClientFile.STATUS_REJECTED), distinct=True),
-            pending_documents=Count('files', filter=Q(files__source='students_life_mobile_app', files__status=ClientFile.STATUS_PENDING), distinct=True),
+    def get_documents(self):
+        allowed_clients = client_queryset(self.request.user).values('id')
+        qs = (
+            ClientFile.objects
+            .select_related('client', 'reviewed_by')
+            .filter(source='students_life_mobile_app', client_id__in=allowed_clients)
+            .order_by('-created_at', '-updated_at')
         )
+        status_value = self.request.GET.get('status') or ''
+        if status_value in {ClientFile.STATUS_PENDING, ClientFile.STATUS_APPROVED, ClientFile.STATUS_REJECTED}:
+            qs = qs.filter(status=status_value)
         query = self.request.GET.get('q') or ''
         if query:
-            qs = qs.filter(Q(full_name__icontains=query) | Q(phone__icontains=query) | Q(email__icontains=query))
-        return qs.order_by('-updated_at', '-created_at')
-
-    def get_selected_client(self):
-        client_id = self.kwargs.get('pk') or self.request.GET.get('client')
-        if not client_id:
-            return None
-        return client_queryset(self.request.user).filter(pk=client_id).first()
+            qs = qs.filter(
+                Q(title__icontains=query)
+                | Q(client__full_name__icontains=query)
+                | Q(client__phone__icontains=query)
+                | Q(client__email__icontains=query)
+            )
+        document_type = self.request.GET.get('type') or ''
+        if document_type:
+            qs = qs.filter(title__icontains=document_type)
+        return qs
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        clients_page, clients_query = paginate_queryset(self.request, self.get_clients(), 20)
-        selected_client = self.get_selected_client() or (clients_page.object_list[0] if clients_page.object_list else None)
-        documents = ClientFile.objects.none()
-        if selected_client:
-            documents = selected_client.files.filter(source='students_life_mobile_app').select_related('reviewed_by').order_by('-updated_at')
+        documents_page, documents_query = paginate_queryset(self.request, self.get_documents(), 24)
+        base_qs = ClientFile.objects.filter(source='students_life_mobile_app', client_id__in=client_queryset(self.request.user).values('id'))
         context.update({
-            'clients': clients_page.object_list,
-            'clients_page_obj': clients_page,
-            'clients_page_query': clients_query,
-            'selected_client': selected_client,
-            'client_documents': documents,
+            'documents': documents_page.object_list,
+            'documents_page_obj': documents_page,
+            'documents_page_query': documents_query,
             'query': self.request.GET.get('q', ''),
+            'type_query': self.request.GET.get('type', ''),
+            'status_filter': self.request.GET.get('status', ''),
+            'status_choices': (
+                ('', 'Все'),
+                (ClientFile.STATUS_PENDING, 'На проверке'),
+                (ClientFile.STATUS_APPROVED, 'Принятые'),
+                (ClientFile.STATUS_REJECTED, 'Отклонённые'),
+            ),
+            'total_documents': base_qs.count(),
+            'pending_documents': base_qs.filter(status=ClientFile.STATUS_PENDING).count(),
+            'approved_documents': base_qs.filter(status=ClientFile.STATUS_APPROVED).count(),
+            'rejected_documents': base_qs.filter(status=ClientFile.STATUS_REJECTED).count(),
         })
+        return context
+
+
+class ClientDocumentReviewDetailView(PortalContextMixin, TemplateView):
+    template_name = 'portal/client_document_review.html'
+    active_page = 'client_documents'
+    page_title = 'Проверка документа'
+
+    def get_document(self):
+        return get_object_or_404(
+            ClientFile.objects.select_related('client', 'reviewed_by').filter(
+                source='students_life_mobile_app',
+                client_id__in=client_queryset(self.request.user).values('id'),
+            ),
+            pk=self.kwargs['document_id'],
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['document'] = self.get_document()
         return context
 
 
 class ClientDocumentReviewPortalView(PortalContextMixin, View):
     active_page = 'client_documents'
 
-    def post(self, request, pk, document_id):
-        client = get_object_or_404(client_queryset(request.user), pk=pk)
-        document = get_object_or_404(client.files, pk=document_id, source='students_life_mobile_app')
-        status_value = request.POST.get('status')
-        if status_value not in {ClientFile.STATUS_APPROVED, ClientFile.STATUS_REJECTED, ClientFile.STATUS_PENDING}:
-            messages.error(request, 'Некорректный статус документа.')
-            return redirect(f'{reverse("portal:client_documents_detail", args=[client.id])}')
+    def post(self, request, document_id):
+        document = get_object_or_404(
+            ClientFile.objects.select_related('client').filter(
+                source='students_life_mobile_app',
+                client_id__in=client_queryset(request.user).values('id'),
+            ),
+            pk=document_id,
+        )
+        action = request.POST.get('action') or request.POST.get('status')
+        comment = request.POST.get('review_comment', '').strip()
+        if action in {'approve', ClientFile.STATUS_APPROVED}:
+            document.status = ClientFile.STATUS_APPROVED
+            document.review_comment = ''
+        elif action in {'reject', ClientFile.STATUS_REJECTED}:
+            if not comment:
+                messages.error(request, 'Укажите причину отказа для клиента.')
+                return redirect(reverse('portal:client_document_review', args=[document.id]))
+            document.status = ClientFile.STATUS_REJECTED
+            document.review_comment = comment
+        else:
+            messages.error(request, 'Некорректное действие проверки.')
+            return redirect(reverse('portal:client_document_review', args=[document.id]))
 
-        document.status = status_value
-        document.review_comment = request.POST.get('review_comment', '').strip()
         document.reviewed_by = request.user
         document.reviewed_at = timezone.now()
         document.save(update_fields=['status', 'review_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
         notify_mobile_document_review(document)
         messages.success(request, 'Статус документа сохранён.')
-        return redirect(f'{reverse("portal:client_documents_detail", args=[client.id])}')
+        return redirect(reverse('portal:client_document_review', args=[document.id]))
+
+
+class ClientQuestionnairesView(PortalContextMixin, TemplateView):
+    template_name = 'portal/client_questionnaires.html'
+    active_page = 'client_questionnaires'
+    page_title = 'Анкеты клиентов'
+
+    def get_queryset(self):
+        qs = ClientQuestionnaire.objects.select_related('client').filter(client_id__in=client_queryset(self.request.user).values('id'))
+        query = self.request.GET.get('q') or ''
+        if query:
+            qs = qs.filter(
+                Q(full_name__icontains=query)
+                | Q(phone__icontains=query)
+                | Q(email__icontains=query)
+                | Q(client__full_name__icontains=query)
+                | Q(desired_program__icontains=query)
+            )
+        status_value = self.request.GET.get('status') or ''
+        if status_value in {ClientQuestionnaire.STATUS_DRAFT, ClientQuestionnaire.STATUS_SUBMITTED, ClientQuestionnaire.STATUS_UPDATED}:
+            qs = qs.filter(status=status_value)
+        return qs.order_by('-updated_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        page_obj, query = paginate_queryset(self.request, self.get_queryset(), 24)
+        context.update({
+            'questionnaires': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': query,
+            'query': self.request.GET.get('q', ''),
+            'status_filter': self.request.GET.get('status', ''),
+            'status_choices': (
+                ('', 'Все'),
+                (ClientQuestionnaire.STATUS_DRAFT, 'Не заполнена'),
+                (ClientQuestionnaire.STATUS_SUBMITTED, 'Заполнена'),
+                (ClientQuestionnaire.STATUS_UPDATED, 'Обновлена'),
+            ),
+        })
+        return context
+
+
+class ClientQuestionnaireDetailView(PortalContextMixin, TemplateView):
+    template_name = 'portal/client_questionnaire_detail.html'
+    active_page = 'client_questionnaires'
+    page_title = 'Анкета клиента'
+
+    def get_questionnaire(self):
+        return get_object_or_404(
+            ClientQuestionnaire.objects.select_related('client').filter(client_id__in=client_queryset(self.request.user).values('id')),
+            pk=self.kwargs['pk'],
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        questionnaire = self.get_questionnaire()
+        context['questionnaire'] = questionnaire
+        context['data'] = questionnaire.data or {}
+        return context
+
+
+class ClientQuestionnaireDownloadView(PortalContextMixin, View):
+    active_page = 'client_questionnaires'
+
+    def get(self, request, pk):
+        questionnaire = get_object_or_404(
+            ClientQuestionnaire.objects.select_related('client').filter(client_id__in=client_queryset(request.user).values('id')),
+            pk=pk,
+        )
+        if not questionnaire.generated_file:
+            questionnaire.generate_file()
+        if not questionnaire.generated_file:
+            raise Http404('Questionnaire document is not generated.')
+        return FileResponse(questionnaire.generated_file.open('rb'), as_attachment=True, filename=f'anketa-{questionnaire.client_id}.docx')
 
 class ApplicationsView(ListPageMixin):
     active_page = 'applications'
@@ -2733,7 +2855,7 @@ class ClientFormView(PortalFormPageMixin, ClientsView):
             {'title': 'Личные данные', 'open': False, 'fields': form_fields(form, ('dob', 'citizenship', 'city', 'address', 'address_registration'))},
             {'title': 'Паспорт', 'open': False, 'fields': form_fields(form, ('passport_local_num', 'passport_inter_num', 'passport_issued_by', 'passport_issued_date', 'passport_valid_until', 'passport_birth_place'))},
             {'title': 'Родственник и образование', 'open': False, 'fields': form_fields(form, ('relative_full_name', 'relative_relation', 'relative_phone', 'relative_workplace', 'current_education', 'current_school', 'current_study_country', 'interested_country', 'interested_university', 'interested_program'))},
-            {'title': 'Документы', 'open': False, 'fields': form_fields(form, ('has_passport', 'has_education_doc', 'has_translation', 'has_photo'))},
+            {'title': 'Документы', 'open': False, 'fields': form_fields(form, ('has_passport', 'has_education_doc', 'has_photo'))},
         ]
 
 

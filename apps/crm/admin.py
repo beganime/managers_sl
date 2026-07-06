@@ -7,6 +7,7 @@ from .models import (
     ClientActivity,
     ClientFile,
     ClientNote,
+    ClientQuestionnaire,
     Lead,
     LeadSource,
 )
@@ -77,8 +78,15 @@ class ClientNoteInline(TabularInline):
 class ClientFileInline(TabularInline):
     model = ClientFile
     extra = 0
-    fields = ('title', 'file', 'external_file_url', 'file_type', 'source', 'status', 'has_translation', 'uploaded_by', 'created_at')
+    fields = ('title', 'file', 'external_file_url', 'file_type', 'source', 'status', 'uploaded_by', 'created_at')
     readonly_fields = ('created_at',)
+
+
+class ClientQuestionnaireInline(TabularInline):
+    model = ClientQuestionnaire
+    extra = 0
+    fields = ('status', 'full_name', 'phone', 'citizenship', 'desired_program', 'generated_file', 'submitted_at', 'last_synced_at')
+    readonly_fields = ('submitted_at', 'last_synced_at')
 
 
 @admin.register(Client)
@@ -89,7 +97,7 @@ class ClientAdmin(ModelAdmin):
     autocomplete_fields = ('company', 'office', 'manager', 'shared_with', 'source_lead')
     readonly_fields = ('created_at', 'updated_at')
     filter_horizontal = ('shared_with',)
-    inlines = [ApplicationInline, ClientNoteInline, ClientFileInline]
+    inlines = [ApplicationInline, ClientNoteInline, ClientFileInline, ClientQuestionnaireInline]
     date_hierarchy = 'created_at'
     fieldsets = (
         ('Основная информация', {
@@ -160,8 +168,17 @@ class ClientNoteAdmin(ModelAdmin):
 
 @admin.register(ClientFile)
 class ClientFileAdmin(ModelAdmin):
-    list_display = ('title', 'client', 'application', 'file_type', 'source', 'status', 'has_translation', 'reviewed_by', 'created_at')
-    list_filter = ('file_type', 'source', 'status', 'has_translation', 'created_at')
+    list_display = ('title', 'client', 'application', 'file_type', 'source', 'status', 'reviewed_by', 'created_at')
+    list_filter = ('file_type', 'source', 'status', 'created_at')
     search_fields = ('title', 'client__full_name', 'client__phone', 'comment', 'external_mobile_document_id', 'external_mobile_user_id')
     autocomplete_fields = ('client', 'application', 'uploaded_by', 'reviewed_by')
     readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(ClientQuestionnaire)
+class ClientQuestionnaireAdmin(ModelAdmin):
+    list_display = ('client', 'full_name', 'phone', 'citizenship', 'desired_program', 'status', 'submitted_at', 'last_synced_at')
+    list_filter = ('status', 'source', 'submitted_at', 'last_synced_at')
+    search_fields = ('client__full_name', 'client__phone', 'full_name', 'phone', 'email', 'desired_program', 'desired_country')
+    autocomplete_fields = ('client',)
+    readonly_fields = ('created_at', 'updated_at', 'last_synced_at')

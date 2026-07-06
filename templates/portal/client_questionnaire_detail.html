@@ -1,0 +1,59 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">{{ questionnaire.full_name|default:questionnaire.client.full_name }}</h2>
+        <div class="contact-actions">
+            <a class="pill" href="{% url 'portal:client_detail' questionnaire.client.id %}">Карточка клиента</a>
+            <a class="pill ok" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}">Скачать анкету</a>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="grid cols-3">
+            <div><div class="muted small">Телефон</div><strong>{{ questionnaire.phone|default:questionnaire.client.phone|default:"-" }}</strong></div>
+            <div><div class="muted small">Email</div><strong>{{ questionnaire.email|default:questionnaire.client.email|default:"-" }}</strong></div>
+            <div><div class="muted small">Гражданство</div><strong>{{ questionnaire.citizenship|default:"-" }}</strong></div>
+            <div><div class="muted small">Желаемая страна</div><strong>{{ questionnaire.desired_country|default:"-" }}</strong></div>
+            <div><div class="muted small">Желаемый город</div><strong>{{ questionnaire.desired_city|default:"-" }}</strong></div>
+            <div><div class="muted small">Программа / Вуз</div><strong>{{ questionnaire.desired_program|default:"-" }}</strong></div>
+            <div><div class="muted small">Дата заполнения</div><strong>{{ questionnaire.submitted_at|date:"d.m.Y H:i"|default:"-" }}</strong></div>
+            <div><div class="muted small">Последнее обновление</div><strong>{{ questionnaire.updated_at|date:"d.m.Y H:i" }}</strong></div>
+            <div><div class="muted small">Статус</div><strong>{{ questionnaire.get_status_display }}</strong></div>
+        </div>
+        {% if questionnaire.face_photo_url %}
+            <div style="margin-top:14px;">
+                <a class="btn secondary" href="{{ questionnaire.face_photo_url }}" target="_blank" rel="noopener"><i data-lucide="image"></i>Фото абитуриента</a>
+            </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Все данные анкеты</h2>
+    </div>
+    <div class="panel-body">
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Поле</th>
+                        <th>Значение</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key,value in data.items %}
+                        <tr>
+                            <td class="strong">{{ key }}</td>
+                            <td style="white-space:pre-wrap;">{{ value }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr><td colspan="2"><div class="empty">Данные анкеты пока не синхронизированы.</div></td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

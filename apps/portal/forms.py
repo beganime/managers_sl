@@ -279,7 +279,6 @@ class PortalClientForm(PortalFormMixin, forms.ModelForm):
             'interested_program',
             'has_passport',
             'has_education_doc',
-            'has_translation',
             'has_photo',
         ]
         widgets = {

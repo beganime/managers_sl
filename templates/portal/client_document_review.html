@@ -1,0 +1,86 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<div class="grid cols-2">
+    <section class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Клиент</h2>
+            <a class="pill" href="{% url 'portal:client_detail' document.client.id %}">Открыть карточку</a>
+        </div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><span class="muted">ФИО</span><strong>{{ document.client.full_name }}</strong></div>
+                <div class="list-row"><span class="muted">Телефон</span><strong>{{ document.client.phone|default:"-" }}</strong></div>
+                <div class="list-row"><span class="muted">Email</span><strong>{{ document.client.email|default:"-" }}</strong></div>
+                <div class="list-row"><span class="muted">Гражданство</span><strong>{{ document.client.citizenship|default:"-" }}</strong></div>
+                <div class="list-row"><span class="muted">Статус клиента</span><strong>{{ document.client.get_status_display }}</strong></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Документ</h2>
+            {% if document.status == "approved" %}
+                <span class="pill ok">Принят</span>
+            {% elif document.status == "rejected" %}
+                <span class="pill danger">Не подходит</span>
+            {% else %}
+                <span class="pill warn">На проверке</span>
+            {% endif %}
+        </div>
+        <div class="panel-body">
+            <div class="list">
+                <div class="list-row"><span class="muted">Название</span><strong>{{ document.title }}</strong></div>
+                <div class="list-row"><span class="muted">Загружен</span><strong>{{ document.created_at|date:"d.m.Y H:i" }}</strong></div>
+                <div class="list-row"><span class="muted">Проверен</span><strong>{{ document.reviewed_at|date:"d.m.Y H:i"|default:"-" }}</strong></div>
+                <div class="list-row"><span class="muted">Проверил</span><strong>{{ document.reviewed_by.get_full_name|default:"-" }}</strong></div>
+            </div>
+            {% if document.comment %}
+                <div class="empty" style="text-align:left; margin-top:12px;">Описание: {{ document.comment }}</div>
+            {% endif %}
+            {% if document.review_comment %}
+                <div class="empty" style="text-align:left; margin-top:12px;">Комментарий отказа: {{ document.review_comment }}</div>
+            {% endif %}
+            <div class="contact-actions" style="margin-top:14px;">
+                {% if document.external_file_url %}
+                    <a class="btn secondary" href="{{ document.external_file_url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть файл</a>
+                    <a class="btn" href="{{ document.external_file_url }}" target="_blank" rel="noopener"><i data-lucide="download"></i>Скачать</a>
+                {% elif document.file %}
+                    <a class="btn secondary" href="{{ document.file.url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть файл</a>
+                    <a class="btn" href="{{ document.file.url }}" download><i data-lucide="download"></i>Скачать</a>
+                {% else %}
+                    <span class="pill warn">Файл не прикреплен</span>
+                {% endif %}
+            </div>
+        </div>
+    </section>
+</div>
+
+<section class="panel" style="margin-top:16px;" x-data="{ rejectOpen: false }">
+    <div class="panel-header">
+        <h2 class="panel-title">Результат проверки</h2>
+        <a class="pill" href="{% url 'portal:client_documents' %}">К списку документов</a>
+    </div>
+    <div class="panel-body">
+        <div class="contact-actions">
+            <form method="post" action="{% url 'portal:client_document_review_action' document.id %}" data-disable-on-submit>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve">
+                <button class="btn primary" type="submit"><i data-lucide="check"></i>Принять</button>
+            </form>
+            <button class="btn danger" type="button" @click="rejectOpen = !rejectOpen"><i data-lucide="x"></i>Отклонить</button>
+        </div>
+
+        <form x-show="rejectOpen" x-cloak method="post" action="{% url 'portal:client_document_review_action' document.id %}" style="margin-top:16px;" data-disable-on-submit>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reject">
+            <label>
+                <span class="muted small">Причина отказа для клиента</span>
+                <textarea class="textarea" name="review_comment" rows="4" required>{{ document.review_comment }}</textarea>
+            </label>
+            <button class="btn danger" type="submit" style="margin-top:10px;"><i data-lucide="save"></i>Сохранить отказ</button>
+        </form>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,70 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Анкеты клиентов</h2>
+        <span class="pill">{{ page_obj.paginator.count }} анкет</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="ФИО, телефон, программа">
+                <select class="select" name="status" style="max-width:190px;">
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+                <a class="btn" href="{% url 'portal:client_questionnaires' %}"><i data-lucide="rotate-ccw"></i>Сбросить</a>
+            </div>
+        </form>
+
+        <div class="card-grid">
+            {% for questionnaire in questionnaires %}
+                <article class="item-card">
+                    <div class="item-card-top">
+                        <div style="min-width:0;">
+                            <div class="item-card-title">{{ questionnaire.full_name|default:questionnaire.client.full_name }}</div>
+                            <div class="item-card-meta">
+                                <span>{{ questionnaire.phone|default:questionnaire.client.phone }}{% if questionnaire.email %} · {{ questionnaire.email }}{% endif %}</span>
+                                <span>{{ questionnaire.citizenship|default:"Гражданство не указано" }}</span>
+                                <span>{{ questionnaire.desired_program|default:"Программа не указана" }}</span>
+                                <span>Обновлена: {{ questionnaire.updated_at|date:"d.m.Y H:i" }}</span>
+                            </div>
+                        </div>
+                        {% if questionnaire.status == "updated" %}
+                            <span class="pill warn">Обновлена</span>
+                        {% elif questionnaire.status == "submitted" %}
+                            <span class="pill ok">Заполнена</span>
+                        {% else %}
+                            <span class="pill">Не заполнена</span>
+                        {% endif %}
+                    </div>
+                    <div class="contact-actions">
+                        <a class="btn primary" href="{% url 'portal:client_questionnaire_detail' questionnaire.id %}"><i data-lucide="clipboard-list"></i>Открыть</a>
+                        <a class="btn" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}"><i data-lucide="download"></i>Скачать</a>
+                        <a class="btn" href="{% url 'portal:client_detail' questionnaire.client.id %}"><i data-lucide="user-round"></i>Клиент</a>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty">Анкет пока нет.</div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+            <div class="toolbar" style="margin-top:14px;">
+                <div class="muted small">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</div>
+                <div class="filters">
+                    {% if page_obj.has_previous %}
+                        <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.previous_page_number }}"><i data-lucide="chevron-left"></i>Назад</a>
+                    {% endif %}
+                    {% if page_obj.has_next %}
+                        <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.next_page_number }}">Дальше<i data-lucide="chevron-right"></i></a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

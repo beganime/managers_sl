@@ -2,6 +2,7 @@
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.db.models import Q
+from django.utils import timezone
 from django.utils.dateparse import parse_datetime
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
@@ -10,7 +11,13 @@ from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 
-from apps.crm.models import Client as CrmClient, ClientFile as CrmClientFile, Lead as CrmLead, LeadSource as CrmLeadSource
+from apps.crm.models import (
+    Client as CrmClient,
+    ClientFile as CrmClientFile,
+    ClientQuestionnaire as CrmClientQuestionnaire,
+    Lead as CrmLead,
+    LeadSource as CrmLeadSource,
+)
 from apps.organizations.models import Company
 
 from .models import Lead
@@ -26,12 +33,6 @@ def clean_header(value, max_length=None) -> str:
         return value[:max_length]
 
     return value
-
-
-def parse_bool(value) -> bool:
-    if isinstance(value, bool):
-        return value
-    return str(value or '').strip().lower() in {'1', 'true', 'yes', 'on'}
 
 
 def get_client_ip(request) -> str | None:
@@ -211,13 +212,59 @@ class MobileClientDocumentSyncAPIView(APIView):
                 'external_file_url': clean_header(request.data.get('file_url') or request.data.get('file'), 1000),
                 'external_mobile_user_id': request.data.get('mobile_user_id') or getattr(client, 'mobile_app_user_id', None),
                 'source': 'students_life_mobile_app',
-                'has_translation': parse_bool(request.data.get('has_translation')),
                 'status': document_status,
                 'review_comment': request.data.get('admin_comment') or '',
                 'comment': request.data.get('description') or '',
             },
         )
         return Response({'id': document.id, 'client_id': client.id, 'detail': 'Document synced.'})
+
+
+class MobileClientQuestionnaireSyncAPIView(APIView):
+    permission_classes = []
+
+    def post(self, request, *args, **kwargs):
+        actual_key = getattr(settings, 'LEADS_API_KEY', '')
+        if not actual_key or request.headers.get('X-API-KEY') != actual_key:
+            return Response({'detail': 'Invalid API key.'}, status=status.HTTP_403_FORBIDDEN)
+        try:
+            client, _ = upsert_mobile_client(request.data.get('client') or request.data)
+        except ValueError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        mobile_questionnaire_id = request.data.get('mobile_questionnaire_id') or request.data.get('questionnaire_id')
+        submitted_at = parse_datetime(request.data.get('submitted_at') or '')
+        data = dict(request.data)
+        questionnaire, _ = CrmClientQuestionnaire.objects.update_or_create(
+            client=client,
+            defaults={
+                'mobile_questionnaire_id': mobile_questionnaire_id or None,
+                'external_mobile_user_id': request.data.get('mobile_user_id') or getattr(client, 'mobile_app_user_id', None),
+                'source': request.data.get('source') or 'students_life_mobile_app',
+                'status': request.data.get('status') or CrmClientQuestionnaire.STATUS_SUBMITTED,
+                'full_name': clean_header(request.data.get('full_name') or client.full_name, 255),
+                'phone': clean_header(request.data.get('phone') or client.phone, 80),
+                'email': clean_header(request.data.get('email') or client.email, 255) or None,
+                'citizenship': clean_header(request.data.get('citizenship'), 120),
+                'desired_program': clean_header(request.data.get('desired_program'), 255),
+                'desired_country': clean_header(request.data.get('desired_country'), 120),
+                'desired_city': clean_header(request.data.get('desired_city'), 120),
+                'face_photo_url': clean_header(request.data.get('face_photo_url'), 1000),
+                'data': data,
+                'submitted_at': submitted_at,
+                'last_synced_at': timezone.now(),
+            },
+        )
+        questionnaire.generate_file()
+        generated_url = ''
+        if questionnaire.generated_file:
+            generated_url = request.build_absolute_uri(questionnaire.generated_file.url)
+        return Response({
+            'id': questionnaire.id,
+            'client_id': client.id,
+            'generated_document_url': generated_url,
+            'detail': 'Questionnaire synced.',
+        })
 
 
 def normalize_crm_lead_payload(data):

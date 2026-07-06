@@ -1,115 +1,87 @@
 {% extends "portal/base.html" %}
 
 {% block content %}
-<section class="panel" style="margin-bottom:16px;">
+<div class="metric-grid">
+    <div class="metric"><div class="metric-top"><span>Всего документов</span><i data-lucide="files"></i></div><div class="metric-value">{{ total_documents }}</div></div>
+    <div class="metric"><div class="metric-top"><span>На проверке</span><i data-lucide="clock"></i></div><div class="metric-value">{{ pending_documents }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Принято</span><i data-lucide="check-circle"></i></div><div class="metric-value">{{ approved_documents }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Отклонено</span><i data-lucide="x-circle"></i></div><div class="metric-value">{{ rejected_documents }}</div></div>
+</div>
+
+<section class="panel">
     <div class="panel-header">
         <h2 class="panel-title">Документы клиентов</h2>
-        <span class="pill">{{ clients_page_obj.paginator.count }} клиентов</span>
+        <span class="pill">{{ documents_page_obj.paginator.count }} файлов</span>
     </div>
     <div class="panel-body">
         <form class="toolbar" method="get">
             <div class="filters">
-                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по ФИО, телефону или email">
-                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="ФИО, телефон, email или документ">
+                <input class="input" style="max-width:240px;" type="search" name="type" value="{{ type_query }}" placeholder="Тип документа">
+                <select class="select" name="status" style="max-width:190px;">
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Фильтровать</button>
+                <a class="btn" href="{% url 'portal:client_documents' %}"><i data-lucide="rotate-ccw"></i>Сбросить</a>
             </div>
         </form>
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Клиент</th>
-                        <th>Контакты</th>
-                        <th>Дата</th>
-                        <th>Документы</th>
-                        <th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                {% for client in clients %}
-                    <tr>
-                        <td>
-                            <a class="strong" href="{% url 'portal:client_documents_detail' client.id %}">{{ client.full_name }}</a>
-                            {% if client.mobile_app_source %}<div class="small"><span class="pill ok">mobile app</span></div>{% endif %}
-                        </td>
-                        <td>{{ client.phone|default:"-" }}<div class="muted small">{{ client.email|default:"" }}</div></td>
-                        <td>{{ client.created_at|date:"d.m.Y" }}</td>
-                        <td>
-                            <span class="pill">Загружено: {{ client.uploaded_documents }}</span>
-                            <span class="pill ok">Принято: {{ client.approved_documents }}</span>
-                            <span class="pill warn">На проверке: {{ client.pending_documents }}</span>
-                            <span class="pill danger">Не принято: {{ client.rejected_documents }}</span>
-                        </td>
-                        <td><a class="pill" href="{% url 'portal:client_documents_detail' client.id %}">Открыть</a></td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="5"><div class="empty">Пока нет клиентов с документами.</div></td></tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% if clients_page_obj.paginator.num_pages > 1 %}
-            <div class="toolbar" style="margin-top:14px;">
-                <div class="muted small">Страница {{ clients_page_obj.number }} из {{ clients_page_obj.paginator.num_pages }}</div>
-                <div class="filters">
-                    {% if clients_page_obj.has_previous %}
-                        <a class="btn" href="?{% if clients_page_query %}{{ clients_page_query }}&{% endif %}page={{ clients_page_obj.previous_page_number }}"><i data-lucide="chevron-left"></i>Назад</a>
+
+        <div class="card-grid">
+            {% for document in documents %}
+                <article class="item-card">
+                    <div class="item-card-top">
+                        <div style="min-width:0;">
+                            <div class="item-card-title">{{ document.title }}</div>
+                            <div class="item-card-meta">
+                                <span>{{ document.client.full_name }}</span>
+                                <span>{{ document.client.phone|default:"-" }}{% if document.client.email %} · {{ document.client.email }}{% endif %}</span>
+                                <span>Загружен: {{ document.created_at|date:"d.m.Y H:i" }}</span>
+                            </div>
+                        </div>
+                        {% if document.status == "approved" %}
+                            <span class="pill ok">Принят</span>
+                        {% elif document.status == "rejected" %}
+                            <span class="pill danger">Не подходит</span>
+                        {% else %}
+                            <span class="pill warn">На проверке</span>
+                        {% endif %}
+                    </div>
+
+                    {% if document.review_comment %}
+                        <div class="empty" style="padding:10px; text-align:left;">Комментарий: {{ document.review_comment }}</div>
                     {% endif %}
-                    {% if clients_page_obj.has_next %}
-                        <a class="btn" href="?{% if clients_page_query %}{{ clients_page_query }}&{% endif %}page={{ clients_page_obj.next_page_number }}">Дальше<i data-lucide="chevron-right"></i></a>
+
+                    <div class="contact-actions">
+                        {% if document.external_file_url %}
+                            <a class="btn secondary" href="{{ document.external_file_url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Файл</a>
+                        {% elif document.file %}
+                            <a class="btn secondary" href="{{ document.file.url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Файл</a>
+                        {% else %}
+                            <span class="pill warn">Файл не прикреплен</span>
+                        {% endif %}
+                        <a class="btn primary" href="{% url 'portal:client_document_review' document.id %}"><i data-lucide="check-square"></i>Проверить</a>
+                        <a class="btn" href="{% url 'portal:client_detail' document.client.id %}"><i data-lucide="user-round"></i>Клиент</a>
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty">Загруженных документов пока нет.</div>
+            {% endfor %}
+        </div>
+
+        {% if documents_page_obj.paginator.num_pages > 1 %}
+            <div class="toolbar" style="margin-top:14px;">
+                <div class="muted small">Страница {{ documents_page_obj.number }} из {{ documents_page_obj.paginator.num_pages }}</div>
+                <div class="filters">
+                    {% if documents_page_obj.has_previous %}
+                        <a class="btn" href="?{% if documents_page_query %}{{ documents_page_query }}&{% endif %}page={{ documents_page_obj.previous_page_number }}"><i data-lucide="chevron-left"></i>Назад</a>
+                    {% endif %}
+                    {% if documents_page_obj.has_next %}
+                        <a class="btn" href="?{% if documents_page_query %}{{ documents_page_query }}&{% endif %}page={{ documents_page_obj.next_page_number }}">Дальше<i data-lucide="chevron-right"></i></a>
                     {% endif %}
                 </div>
             </div>
-        {% endif %}
-    </div>
-</section>
-
-<section class="panel">
-    <div class="panel-header">
-        <h2 class="panel-title">{% if selected_client %}Документы: {{ selected_client.full_name }}{% else %}Карточка документов{% endif %}</h2>
-        {% if selected_client %}<a class="pill" href="{% url 'portal:client_detail' selected_client.id %}">Карточка клиента</a>{% endif %}
-    </div>
-    <div class="panel-body">
-        {% if selected_client %}
-            {% for document in client_documents %}
-                <div class="list-row" style="align-items:flex-start; margin-bottom:12px;">
-                    <div style="min-width:0;">
-                        <div class="strong">{{ document.title }}</div>
-                        <div class="muted small">
-                            {% if document.has_translation %}Есть перевод{% else %}Без отметки о переводе{% endif %}
-                            · обновлено {{ document.updated_at|date:"d.m.Y H:i" }}
-                            {% if document.reviewed_at %} · проверено {{ document.reviewed_at|date:"d.m.Y H:i" }}{% endif %}
-                        </div>
-                        {% if document.external_file_url %}
-                            <a class="pill ok" href="{{ document.external_file_url }}" target="_blank" rel="noopener">Открыть файл</a>
-                        {% elif document.file %}
-                            <a class="pill ok" href="{{ document.file.url }}" target="_blank" rel="noopener">Открыть файл</a>
-                        {% else %}
-                            <span class="pill warn">Файл не прикреплён</span>
-                        {% endif %}
-                        {% if document.review_comment %}
-                            <div class="empty" style="margin-top:10px;">Комментарий: {{ document.review_comment }}</div>
-                        {% endif %}
-                    </div>
-                    <form method="post" action="{% url 'portal:client_document_review' selected_client.id document.id %}" class="grid" style="width:min(420px, 100%);">
-                        {% csrf_token %}
-                        <label><span class="muted small">Статус</span>
-                            <select class="select" name="status">
-                                <option value="pending" {% if document.status == "pending" %}selected{% endif %}>Отправлен на проверку</option>
-                                <option value="approved" {% if document.status == "approved" %}selected{% endif %}>Принят</option>
-                                <option value="rejected" {% if document.status == "rejected" %}selected{% endif %}>Не подходит</option>
-                            </select>
-                        </label>
-                        <label><span class="muted small">Комментарий для клиента</span>
-                            <textarea class="textarea" name="review_comment" rows="3">{{ document.review_comment }}</textarea>
-                        </label>
-                        <button class="btn primary" type="submit"><i data-lucide="save"></i>Сохранить проверку</button>
-                    </form>
-                </div>
-            {% empty %}
-                <div class="empty">У выбранного клиента пока нет документов из мобильного приложения.</div>
-            {% endfor %}
-        {% else %}
-            <div class="empty">Выберите клиента, чтобы проверить документы.</div>
         {% endif %}
     </div>
 </section>
