@@ -1842,14 +1842,49 @@ class ClientDetailView(PortalContextMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         client = self.get_client()
+        exams_ok, exams, exams_error = get_client_exams_from_students_life(client)
         context.update({
             'client': client,
             'applications': application_queryset(self.request.user).filter(client=client).order_by('-created_at'),
             'deals': deal_queryset(self.request.user).filter(client=client).order_by('-created_at'),
             'documents': document_queryset(self.request.user).filter(client=client).order_by('-created_at'),
             'questionnaire': getattr(client, 'questionnaire', None),
+            'mobile_exams': exams,
+            'mobile_exams_ok': exams_ok,
+            'mobile_exams_error': exams_error,
+            'mobile_user_id': client_mobile_user_id(client),
         })
         return context
+
+
+class ClientExamPortalView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request, pk):
+        client = get_object_or_404(client_queryset(request.user), pk=pk)
+        mobile_user_id = client_mobile_user_id(client)
+        if not mobile_user_id:
+            messages.error(request, 'У клиента нет mobile user id, экзамен нельзя отправить в приложение.')
+            return redirect('portal:client_detail', pk=client.pk)
+
+        payload = {
+            'subject': request.POST.get('subject', '').strip(),
+            'exam_date': request.POST.get('exam_date', '').strip(),
+            'exam_time': request.POST.get('exam_time', '').strip(),
+            'timezone': request.POST.get('timezone', '').strip() or 'Europe/Moscow',
+            'comment': request.POST.get('comment', '').strip(),
+            'repeat_until_acknowledged': request.POST.get('repeat_until_acknowledged') == 'on',
+        }
+        ok, response = students_life_api_request(
+            f'notifications/clients/{mobile_user_id}/exams/',
+            payload=payload,
+            method='POST',
+        )
+        if ok:
+            messages.success(request, 'Экзамен назначен, уведомление отправлено клиенту.')
+        else:
+            messages.error(request, response.get('detail') or str(response))
+        return redirect('portal:client_detail', pk=client.pk)
 
 
 class ClientDocumentCreateView(PortalContextMixin, TemplateView):
@@ -2000,6 +2035,28 @@ def students_life_api_request(path, payload=None, method='POST'):
             return False, {'detail': raw or exc.reason}
     except (urlerror.URLError, TimeoutError, ValueError) as exc:
         return False, {'detail': str(exc)}
+
+
+def client_mobile_user_id(client):
+    value = getattr(client, 'mobile_app_user_id', None)
+    if value:
+        return value
+    data = client.custom_data or {}
+    return data.get('mobile_user_id') or data.get('external_mobile_user_id') or data.get('user_id')
+
+
+def get_client_exams_from_students_life(client):
+    mobile_user_id = client_mobile_user_id(client)
+    if not mobile_user_id:
+        return False, [], 'У клиента нет mobile user id.'
+    ok, payload = students_life_api_request(
+        f'notifications/clients/{mobile_user_id}/exams/',
+        payload=None,
+        method='GET',
+    )
+    if not ok:
+        return False, [], payload.get('detail') or 'Не удалось получить экзамены из Student Life API.'
+    return True, payload if isinstance(payload, list) else [], ''
 
 
 def document_credit_period_for(employee):

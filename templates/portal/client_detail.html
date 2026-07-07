@@ -47,6 +47,53 @@
     </div>
 </section>
 
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Экзамены клиента</h2>
+        {% if mobile_user_id %}
+            <span class="pill">Mobile user ID: {{ mobile_user_id }}</span>
+        {% else %}
+            <span class="pill warn">Нет mobile user id</span>
+        {% endif %}
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="post" action="{% url 'portal:client_exam_create' client.id %}">
+            {% csrf_token %}
+            <div class="filters">
+                <input class="input" name="subject" placeholder="Предмет экзамена" required>
+                <input class="input" name="exam_date" type="date" required>
+                <input class="input" name="exam_time" type="time" required>
+                <input class="input" name="timezone" value="Europe/Moscow" placeholder="Timezone">
+                <input class="input" name="comment" placeholder="Комментарий менеджера">
+                <label class="pill"><input type="checkbox" name="repeat_until_acknowledged" checked> повторять до подтверждения</label>
+                <button class="btn primary" type="submit"><i data-lucide="calendar-plus"></i>Назначить экзамен</button>
+            </div>
+        </form>
+        {% if mobile_exams_error %}
+            <div class="empty" style="text-align:left; margin-top:12px;">{{ mobile_exams_error }}</div>
+        {% endif %}
+        {% if mobile_exams %}
+            <div class="list" style="margin-top:12px;">
+                {% for exam in mobile_exams %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ exam.subject }}</div>
+                            <div class="muted small">{{ exam.exam_date }} {{ exam.exam_time }} · {{ exam.comment|default:"Без комментария" }}</div>
+                        </div>
+                        {% if exam.acknowledged_by_user %}
+                            <span class="pill ok">Увидел {{ exam.acknowledged_at|default:"" }}</span>
+                        {% else %}
+                            <span class="pill warn">Ожидает подтверждения</span>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty" style="margin-top:12px;">Экзамены пока не назначены.</div>
+        {% endif %}
+    </div>
+</section>
+
 <section class="grid cols-3">
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Заявки</h2></div>
