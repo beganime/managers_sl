@@ -7,6 +7,10 @@
         <div class="contact-actions">
             <a class="pill" href="{% url 'portal:client_detail' questionnaire.client.id %}">Карточка клиента</a>
             <a class="pill ok" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}">Скачать анкету</a>
+            <form method="post" action="{% url 'portal:client_questionnaire_regenerate' questionnaire.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button class="pill warn" type="submit">Перегенерировать через API</button>
+            </form>
         </div>
     </div>
     <div class="panel-body">
@@ -14,6 +18,9 @@
             <div><div class="muted small">Телефон</div><strong>{{ questionnaire.phone|default:questionnaire.client.phone|default:"-" }}</strong></div>
             <div><div class="muted small">Email</div><strong>{{ questionnaire.email|default:questionnaire.client.email|default:"-" }}</strong></div>
             <div><div class="muted small">Гражданство</div><strong>{{ questionnaire.citizenship|default:"-" }}</strong></div>
+            <div><div class="muted small">Тип заявки</div><strong>{% if data.form_type == "school_student" or data.application_type == "school_student" %}Школьник / предварительная заявка{% else %}Абитуриент / полная анкета{% endif %}</strong></div>
+            <div><div class="muted small">Текущий статус образования</div><strong>{{ data.education_status|default:"-" }}</strong></div>
+            <div><div class="muted small">Класс</div><strong>{{ data.school_class|default:"-" }}</strong></div>
             <div><div class="muted small">Желаемая страна</div><strong>{{ questionnaire.desired_country|default:"-" }}</strong></div>
             <div><div class="muted small">Желаемый город</div><strong>{{ questionnaire.desired_city|default:"-" }}</strong></div>
             <div><div class="muted small">Программа / Вуз</div><strong>{{ questionnaire.desired_program|default:"-" }}</strong></div>

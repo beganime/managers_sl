@@ -430,11 +430,15 @@ class ClientQuestionnaire(TimeStampedModel):
     STATUS_DRAFT = 'draft'
     STATUS_COMPLETED = 'completed'
     STATUS_SUBMITTED = 'submitted'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
     STATUS_UPDATED = 'updated'
     STATUS_CHOICES = (
         (STATUS_DRAFT, 'Не заполнена'),
         (STATUS_COMPLETED, 'Заполнена'),
-        (STATUS_SUBMITTED, 'Заполнена'),
+        (STATUS_SUBMITTED, 'Отправлена на проверку'),
+        (STATUS_APPROVED, 'Принята'),
+        (STATUS_REJECTED, 'Отклонена'),
         (STATUS_UPDATED, 'Обновлена'),
     )
 
@@ -477,7 +481,9 @@ class ClientQuestionnaire(TimeStampedModel):
         document = Document()
         title = document.add_paragraph()
         title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        run = title.add_run("Student's Life\nАнкета абитуриента")
+        form_type = (self.data or {}).get('form_type') or (self.data or {}).get('application_type') or 'applicant'
+        document_title = 'Предварительная заявка школьника' if form_type == 'school_student' else 'Анкета абитуриента'
+        run = title.add_run(f"Student's Life\n{document_title}")
         run.bold = True
         run.font.size = Pt(18)
         document.add_paragraph(f'Дата формирования: {timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M")}')

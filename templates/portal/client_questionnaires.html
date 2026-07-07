@@ -29,13 +29,21 @@
                             <div class="item-card-meta">
                                 <span>{{ questionnaire.phone|default:questionnaire.client.phone }}{% if questionnaire.email %} · {{ questionnaire.email }}{% endif %}</span>
                                 <span>{{ questionnaire.citizenship|default:"Гражданство не указано" }}</span>
+                                <span>{% if questionnaire.data.form_type == "school_student" or questionnaire.data.application_type == "school_student" %}Школьник / предварительная заявка{% else %}Абитуриент / полная анкета{% endif %}</span>
+                                {% if questionnaire.data.school_class %}<span>Класс: {{ questionnaire.data.school_class }}</span>{% endif %}
                                 <span>{{ questionnaire.desired_program|default:"Программа не указана" }}</span>
                                 <span>Обновлена: {{ questionnaire.updated_at|date:"d.m.Y H:i" }}</span>
                             </div>
                         </div>
-                        {% if questionnaire.status == "updated" %}
+                        {% if questionnaire.status == "approved" %}
+                            <span class="pill ok">Принята</span>
+                        {% elif questionnaire.status == "rejected" %}
+                            <span class="pill danger">Отклонена</span>
+                        {% elif questionnaire.status == "updated" %}
                             <span class="pill warn">Обновлена</span>
                         {% elif questionnaire.status == "submitted" %}
+                            <span class="pill ok">Отправлена</span>
+                        {% elif questionnaire.status == "completed" %}
                             <span class="pill ok">Заполнена</span>
                         {% else %}
                             <span class="pill">Не заполнена</span>

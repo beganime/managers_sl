@@ -1966,6 +1966,42 @@ def notify_mobile_document_review(document):
         return False, f'Статус сохранён в Manager SL, но не отправлен в мобильное приложение: {exc}'
 
 
+def students_life_api_url(path):
+    base_url = str(getattr(settings, 'STUDENTS_LIFE_API_BASE_URL', '') or '').rstrip('/')
+    if not base_url:
+        return ''
+    url = urljoin(base_url.rstrip('/') + '/', path.lstrip('/'))
+    if '/api/v1/' not in url:
+        url = urljoin(base_url.rstrip('/') + '/', f'api/v1/{path.lstrip("/")}')
+    return url
+
+
+def students_life_api_request(path, payload=None, method='POST'):
+    api_key = getattr(settings, 'STUDENTS_LIFE_API_KEY', '') or getattr(settings, 'LEADS_API_KEY', '')
+    url = students_life_api_url(path)
+    if not url or not api_key:
+        return False, {'detail': 'STUDENTS_LIFE_API_BASE_URL или STUDENTS_LIFE_API_KEY не настроены.'}
+
+    body = json.dumps(payload or {}).encode('utf-8') if payload is not None else None
+    request = urlrequest.Request(
+        url,
+        data=body,
+        headers={'Content-Type': 'application/json', 'Accept': 'application/json', 'X-API-KEY': api_key},
+        method=method.upper(),
+    )
+    try:
+        raw = urlrequest.urlopen(request, timeout=10).read().decode('utf-8')
+        return True, json.loads(raw) if raw else {}
+    except urlerror.HTTPError as exc:
+        raw = exc.read().decode('utf-8', errors='replace')
+        try:
+            return False, json.loads(raw) if raw else {'detail': exc.reason}
+        except json.JSONDecodeError:
+            return False, {'detail': raw or exc.reason}
+    except (urlerror.URLError, TimeoutError, ValueError) as exc:
+        return False, {'detail': str(exc)}
+
+
 def document_credit_period_for(employee):
     today = timezone.localdate()
     plan = (
@@ -2104,26 +2140,33 @@ class ClientDocumentReviewPortalView(PortalContextMixin, View):
         action = request.POST.get('action') or request.POST.get('status')
         comment = request.POST.get('review_comment', '').strip()
         if action in {'approve', ClientFile.STATUS_APPROVED}:
-            document.status = ClientFile.STATUS_APPROVED
-            document.review_comment = ''
+            api_path = f'documents/{document.external_mobile_document_id}/approve/'
+            api_payload = {}
         elif action in {'reject', ClientFile.STATUS_REJECTED}:
             if not comment:
                 messages.error(request, 'Укажите причину отказа для клиента.')
                 return redirect(reverse('portal:client_document_review', args=[document.id]))
-            document.status = ClientFile.STATUS_REJECTED
-            document.review_comment = comment
+            api_path = f'documents/{document.external_mobile_document_id}/reject/'
+            api_payload = {'comment': comment}
         else:
             messages.error(request, 'Некорректное действие проверки.')
             return redirect(reverse('portal:client_document_review', args=[document.id]))
 
+        if not document.external_mobile_document_id:
+            messages.error(request, 'У документа нет mobile document id, статус нельзя изменить через API клиентского приложения.')
+            return redirect(reverse('portal:client_document_review', args=[document.id]))
+
+        ok, payload = students_life_api_request(api_path, payload=api_payload, method='POST')
+        if not ok:
+            messages.error(request, payload.get('detail') or payload.get('comment') or payload.get('status') or 'Клиентский API не принял изменение статуса.')
+            return redirect(reverse('portal:client_document_review', args=[document.id]))
+
+        document.status = payload.get('status') or (ClientFile.STATUS_APPROVED if action in {'approve', ClientFile.STATUS_APPROVED} else ClientFile.STATUS_REJECTED)
+        document.review_comment = payload.get('admin_comment') or ''
         document.reviewed_by = request.user
-        document.reviewed_at = timezone.now()
+        document.reviewed_at = timezone.now() if document.status in {ClientFile.STATUS_APPROVED, ClientFile.STATUS_REJECTED} else None
         document.save(update_fields=['status', 'review_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
-        synced, sync_message = notify_mobile_document_review(document)
-        if synced:
-            messages.success(request, 'Статус документа сохранён и отправлен клиенту.')
-        else:
-            messages.warning(request, sync_message)
+        messages.success(request, 'Статус документа изменён через API клиентского приложения.')
         return redirect(reverse('portal:client_document_review', args=[document.id]))
 
 
@@ -2238,7 +2281,14 @@ class ClientQuestionnairesView(PortalContextMixin, TemplateView):
                 | Q(desired_program__icontains=query)
             )
         status_value = self.request.GET.get('status') or ''
-        if status_value in {ClientQuestionnaire.STATUS_DRAFT, ClientQuestionnaire.STATUS_SUBMITTED, ClientQuestionnaire.STATUS_UPDATED}:
+        if status_value in {
+            ClientQuestionnaire.STATUS_DRAFT,
+            ClientQuestionnaire.STATUS_COMPLETED,
+            ClientQuestionnaire.STATUS_SUBMITTED,
+            ClientQuestionnaire.STATUS_APPROVED,
+            ClientQuestionnaire.STATUS_REJECTED,
+            ClientQuestionnaire.STATUS_UPDATED,
+        }:
             qs = qs.filter(status=status_value)
         return qs.order_by('-updated_at')
 
@@ -2254,7 +2304,10 @@ class ClientQuestionnairesView(PortalContextMixin, TemplateView):
             'status_choices': (
                 ('', 'Все'),
                 (ClientQuestionnaire.STATUS_DRAFT, 'Не заполнена'),
-                (ClientQuestionnaire.STATUS_SUBMITTED, 'Заполнена'),
+                (ClientQuestionnaire.STATUS_COMPLETED, 'Заполнена'),
+                (ClientQuestionnaire.STATUS_SUBMITTED, 'Отправлена'),
+                (ClientQuestionnaire.STATUS_APPROVED, 'Принята'),
+                (ClientQuestionnaire.STATUS_REJECTED, 'Отклонена'),
                 (ClientQuestionnaire.STATUS_UPDATED, 'Обновлена'),
             ),
         })
@@ -2293,6 +2346,39 @@ class ClientQuestionnaireDownloadView(PortalContextMixin, View):
         if not questionnaire.generated_file:
             raise Http404('Questionnaire document is not generated.')
         return FileResponse(questionnaire.generated_file.open('rb'), as_attachment=True, filename=f'anketa-{questionnaire.client_id}.docx')
+
+
+class ClientQuestionnaireRegenerateView(PortalContextMixin, View):
+    active_page = 'client_questionnaires'
+
+    def post(self, request, pk):
+        questionnaire = get_object_or_404(
+            ClientQuestionnaire.objects.select_related('client').filter(client_id__in=client_queryset(request.user).values('id')),
+            pk=pk,
+        )
+        if not questionnaire.mobile_questionnaire_id:
+            messages.error(request, 'У анкеты нет mobile questionnaire id, перегенерация через клиентский API невозможна.')
+            return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+
+        ok, payload = students_life_api_request(
+            f'questionnaire/application-forms/{questionnaire.mobile_questionnaire_id}/regenerate-document/',
+            payload={},
+            method='POST',
+        )
+        if not ok:
+            messages.error(request, payload.get('detail') or 'Клиентский API не смог перегенерировать документ анкеты.')
+            return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+
+        data = dict(questionnaire.data or {})
+        data.update(payload)
+        questionnaire.data = data
+        questionnaire.status = payload.get('status') or questionnaire.status
+        questionnaire.last_synced_at = timezone.now()
+        questionnaire.generate_file()
+        questionnaire.save(update_fields=['data', 'status', 'generated_file', 'last_synced_at', 'updated_at'])
+        messages.success(request, 'Документ анкеты перегенерирован через API клиентского приложения.')
+        return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+
 
 class ApplicationsView(ListPageMixin):
     active_page = 'applications'

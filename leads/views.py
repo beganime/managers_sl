@@ -238,7 +238,14 @@ class MobileClientQuestionnaireSyncAPIView(APIView):
         submitted_at = parse_datetime(request.data.get('submitted_at') or '')
         data = dict(request.data)
         questionnaire_status = request.data.get('status') or CrmClientQuestionnaire.STATUS_COMPLETED
-        if questionnaire_status == 'submitted':
+        if questionnaire_status not in {
+            CrmClientQuestionnaire.STATUS_DRAFT,
+            CrmClientQuestionnaire.STATUS_COMPLETED,
+            CrmClientQuestionnaire.STATUS_SUBMITTED,
+            CrmClientQuestionnaire.STATUS_APPROVED,
+            CrmClientQuestionnaire.STATUS_REJECTED,
+            CrmClientQuestionnaire.STATUS_UPDATED,
+        }:
             questionnaire_status = CrmClientQuestionnaire.STATUS_COMPLETED
         questionnaire, _ = CrmClientQuestionnaire.objects.update_or_create(
             client=client,
