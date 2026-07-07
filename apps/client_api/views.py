@@ -1,4 +1,6 @@
-from django.db.models import Count, Prefetch, Q
+from decimal import Decimal, InvalidOperation
+
+from django.db.models import Count, DateField, DecimalField, OuterRef, Prefetch, Q, Subquery
 from rest_framework.response import Response
 from rest_framework import permissions, viewsets
 
@@ -25,6 +27,16 @@ def filter_id_or_name(qs, value, id_field, name_field):
     if str(value).isdigit():
         return qs.filter(**{id_field: value})
     return qs.filter(**{f'{name_field}__icontains': value})
+
+
+def decimal_param(params, name):
+    value = params.get(name)
+    if value in (None, ''):
+        return None
+    try:
+        return Decimal(str(value).replace(',', '.'))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
 
 
 class ClientReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
@@ -131,31 +143,56 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
     cache_namespace = 'programs'
 
     def get_queryset(self):
+        first_fee = ProgramFee.objects.filter(program=OuterRef('pk')).order_by('-created_at', '-id')
+        first_intake = Intake.objects.filter(program=OuterRef('pk'), is_active=True).order_by('application_deadline', 'start_date', 'id')
         qs = Program.objects.select_related('university', 'university__country', 'university__city').prefetch_related(
             Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')),
-            Prefetch('intakes', queryset=Intake.objects.filter(is_active=True).order_by('start_date')),
+            Prefetch('intakes', queryset=Intake.objects.filter(is_active=True).order_by('application_deadline', 'start_date')),
             Prefetch('required_documents', queryset=RequiredDocument.objects.filter(is_active=True).order_by('sort_order', 'title')),
-        ).filter(is_active=True, is_archived=False, university__is_active=True, university__country__is_active=True)
+        ).filter(is_active=True, is_archived=False, university__is_active=True, university__country__is_active=True).annotate(
+            first_tuition_fee=Subquery(first_fee.values('tuition_fee')[:1], output_field=DecimalField(max_digits=14, decimal_places=2)),
+            first_deadline=Subquery(first_intake.values('application_deadline')[:1], output_field=DateField()),
+        )
         params = self.request.query_params
         qs = filter_id_or_name(qs, params.get('country'), 'university__country_id', 'university__country__name')
         qs = filter_id_or_name(qs, params.get('city'), 'university__city_id', 'university__city__name')
         qs = filter_id_or_name(qs, params.get('university'), 'university_id', 'university__name')
-        if params.get('degree'):
-            qs = qs.filter(degree=params['degree'])
+        degree = params.get('degree') or params.get('level')
+        if degree:
+            qs = qs.filter(Q(degree__iexact=degree) | Q(degree__icontains=degree))
         if params.get('language'):
             qs = qs.filter(language__icontains=params['language'])
+        price_min = decimal_param(params, 'price_min')
+        price_max = decimal_param(params, 'price_max')
+        if price_min is not None:
+            qs = qs.filter(first_tuition_fee__gte=price_min)
+        if price_max is not None:
+            qs = qs.filter(first_tuition_fee__lte=price_max)
         search = params.get('search') or params.get('q')
         if search:
             qs = qs.filter(
                 Q(name__icontains=search)
                 | Q(faculty__icontains=search)
                 | Q(language__icontains=search)
+                | Q(description__icontains=search)
+                | Q(admission_requirements__icontains=search)
                 | Q(university__name__icontains=search)
                 | Q(university__country__name__icontains=search)
+                | Q(university__city__name__icontains=search)
             )
         if false_requested(params.get('is_active')):
             return qs.none()
-        return qs.distinct().order_by('university__name', 'degree', 'name')
+        ordering = params.get('ordering') or ''
+        ordering_map = {
+            'price': ('first_tuition_fee', 'name'),
+            'price_asc': ('first_tuition_fee', 'name'),
+            'price_desc': ('-first_tuition_fee', 'name'),
+            'title_asc': ('name', 'university__name'),
+            'country_asc': ('university__country__name', 'university__city__name', 'name'),
+            'city_asc': ('university__city__name', 'university__country__name', 'name'),
+            'deadline_asc': ('first_deadline', 'name'),
+        }
+        return qs.distinct().order_by(*ordering_map.get(ordering, ('university__name', 'degree', 'name')))
 
 
 class ClientServiceViewSet(ClientReadOnlyViewSet):

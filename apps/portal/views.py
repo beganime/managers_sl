@@ -28,12 +28,12 @@ from django.views.generic import TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
 from apps.core.permissions import get_employee_profile, is_erp_admin
-from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource
+from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
 from apps.education.cache import education_cache_get, education_cache_set, make_education_cache_key
 from apps.education.models import City, Country, Currency, Program, ProgramFee, University
 from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
 from apps.erp_notifications.models import Notification, NotificationBatch, NotificationTemplate
-from apps.employees.models import EmployeeProfile
+from apps.employees.models import EmployeeProfile, EmployeeRating
 from apps.erp_services.models import Service, ServiceCategory
 from apps.finance.models import Cashbox, Deal, EmployeeCommission, Expense, ExpenseCategory, FinancialPeriod, Income, Payment, Transaction
 from apps.knowledge.models import KnowledgeArticle, KnowledgeCategory, KnowledgeTestAttempt
@@ -1959,6 +1959,56 @@ def notify_mobile_document_review(document):
         pass
 
 
+def document_credit_period_for(employee):
+    today = timezone.localdate()
+    plan = (
+        ManagerDocumentPlan.objects
+        .filter(employee=employee, is_active=True, start_date__lte=today, end_date__gte=today)
+        .order_by('-start_date', '-created_at')
+        .first()
+    )
+    if plan:
+        return plan, plan.start_date, plan.end_date
+    _, last_day = calendar.monthrange(today.year, today.month)
+    return None, today.replace(day=1), today.replace(day=last_day)
+
+
+def mark_client_documents_loaded(request, client, comment=''):
+    employee = getattr(request.user, 'employee_profile', None)
+    if not employee:
+        return False, 'У пользователя нет профиля сотрудника, зачёт не выполнен.'
+    plan, period_start, period_end = document_credit_period_for(employee)
+    credit, created = ManagerDocumentCredit.objects.get_or_create(
+        employee=employee,
+        client=client,
+        event_type=ManagerDocumentCredit.EVENT_UPLOADED_CLIENT_DOCUMENTS,
+        period_start=period_start,
+        period_end=period_end,
+        defaults={
+            'plan': plan,
+            'credited_by': request.user,
+            'comment': comment,
+        },
+    )
+    if not created:
+        return False, 'Этот клиент уже засчитан менеджеру в текущем периоде.'
+
+    EmployeeRating.objects.create(
+        employee=employee,
+        date=timezone.localdate(),
+        score=Decimal('1.00'),
+        source=ManagerDocumentCredit.EVENT_UPLOADED_CLIENT_DOCUMENTS,
+        comment=f'Загружены документы клиента: {client.full_name}',
+    )
+    data = dict(client.custom_data or {})
+    data['documents_status'] = 'documents_loaded'
+    data['documents_loaded_at'] = timezone.now().isoformat()
+    data['documents_loaded_by_user_id'] = request.user.id
+    client.custom_data = data
+    client.save(update_fields=['custom_data', 'updated_at'])
+    return True, 'Клиент засчитан как загруженный в рейтинге менеджера.'
+
+
 class ClientDocumentsView(PortalContextMixin, TemplateView):
     template_name = 'portal/client_documents.html'
     active_page = 'client_documents'
@@ -2065,6 +2115,24 @@ class ClientDocumentReviewPortalView(PortalContextMixin, View):
         notify_mobile_document_review(document)
         messages.success(request, 'Статус документа сохранён.')
         return redirect(reverse('portal:client_document_review', args=[document.id]))
+
+
+class ClientDocumentsLoadedPortalView(PortalContextMixin, View):
+    active_page = 'client_documents'
+
+    def post(self, request, client_id):
+        client = get_object_or_404(client_queryset(request.user), pk=client_id)
+        created, message = mark_client_documents_loaded(
+            request,
+            client,
+            comment=request.POST.get('comment', '').strip(),
+        )
+        if created:
+            messages.success(request, message)
+        else:
+            messages.info(request, message)
+        next_url = request.POST.get('next') or reverse('portal:client_detail', args=[client.id])
+        return redirect(next_url)
 
 
 class ClientQuestionnairesView(PortalContextMixin, TemplateView):
@@ -3510,6 +3578,21 @@ class RatingView(PortalContextMixin, TemplateView):
             leads_count = Lead.objects.filter(manager=user, created_at__date__gte=period_start).count()
             clients_count = Client.objects.filter(manager=user).exclude(status__in=['archive', 'rejected']).count()
             applications_count = Application.objects.filter(manager=user, created_at__date__gte=period_start).count()
+            document_credits = ManagerDocumentCredit.objects.filter(
+                employee=profile,
+                event_type=ManagerDocumentCredit.EVENT_UPLOADED_CLIENT_DOCUMENTS,
+                credited_at__date__gte=period_start,
+            )
+            document_uploaded_clients = document_credits.values('client_id').distinct().count()
+            active_document_plan = (
+                ManagerDocumentPlan.objects
+                .filter(employee=profile, is_active=True, start_date__lte=today, end_date__gte=today)
+                .order_by('-start_date', '-created_at')
+                .first()
+            )
+            document_plan_target = active_document_plan.target_clients if active_document_plan else 0
+            document_plan_remaining = max(document_plan_target - document_uploaded_clients, 0) if document_plan_target else 0
+            document_plan_percent = round((document_uploaded_clients / document_plan_target) * 100) if document_plan_target else 0
             payments_usd = Payment.objects.filter(manager=user, is_confirmed=True, payment_date__gte=period_start).aggregate(total=Sum('amount_usd'))['total'] or 0
             income_usd = Income.objects.filter(employee=user, is_confirmed=True, date__gte=period_start).aggregate(total=Sum('amount_usd'))['total'] or 0
             commission_usd = EmployeeCommission.objects.filter(employee=user).exclude(status='cancelled').aggregate(total=Sum('amount_usd'))['total'] or 0
@@ -3530,6 +3613,7 @@ class RatingView(PortalContextMixin, TemplateView):
                 + clients_count * 3
                 + applications_count * 4
                 + int((payments_usd or 0) + (income_usd or 0)) // 100
+                + document_uploaded_clients
                 + tasks_done * 3
                 + started_days
                 + closed_days * 2
@@ -3546,6 +3630,10 @@ class RatingView(PortalContextMixin, TemplateView):
                 'leads_count': leads_count,
                 'clients_count': clients_count,
                 'applications_count': applications_count,
+                'document_uploaded_clients': document_uploaded_clients,
+                'document_plan_target': document_plan_target,
+                'document_plan_remaining': document_plan_remaining,
+                'document_plan_percent': document_plan_percent,
                 'payments_usd': payments_usd,
                 'income_usd': income_usd,
                 'commission_usd': commission_usd,

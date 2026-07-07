@@ -7,6 +7,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import ActiveModel, TimeStampedModel
+from apps.employees.models import EmployeeProfile
 from apps.organizations.models import Company, Office
 
 
@@ -359,12 +360,80 @@ class ClientFile(TimeStampedModel):
     reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Reviewed by', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_crm_files')
 
 
+class ManagerDocumentPlan(TimeStampedModel, ActiveModel):
+    PERIOD_DAY = 'day'
+    PERIOD_WEEK = 'week'
+    PERIOD_MONTH = 'month'
+    PERIOD_CUSTOM = 'custom'
+    PERIOD_CHOICES = (
+        (PERIOD_DAY, 'День'),
+        (PERIOD_WEEK, 'Неделя'),
+        (PERIOD_MONTH, 'Месяц'),
+        (PERIOD_CUSTOM, 'Произвольный период'),
+    )
+
+    employee = models.ForeignKey(EmployeeProfile, verbose_name='Менеджер', on_delete=models.CASCADE, related_name='document_plans')
+    period_type = models.CharField('Период', max_length=16, choices=PERIOD_CHOICES, default=PERIOD_MONTH)
+    start_date = models.DateField('Дата начала', db_index=True)
+    end_date = models.DateField('Дата окончания', db_index=True)
+    target_clients = models.PositiveIntegerField('План по загруженным клиентам', default=0)
+    admin_comment = models.TextField('Комментарий администратора', blank=True)
+
+    class Meta:
+        verbose_name = 'План менеджера по документам'
+        verbose_name_plural = 'Планы менеджеров по документам'
+        ordering = ['-start_date', 'employee__user__first_name']
+        indexes = [
+            models.Index(fields=['employee', 'start_date', 'end_date', 'is_active'], name='crm_mdocplan_emp_period_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.employee} — {self.start_date:%d.%m.%Y}-{self.end_date:%d.%m.%Y}'
+
+
+class ManagerDocumentCredit(TimeStampedModel):
+    EVENT_UPLOADED_CLIENT_DOCUMENTS = 'uploaded_client_documents'
+    EVENT_CHOICES = (
+        (EVENT_UPLOADED_CLIENT_DOCUMENTS, 'Документы клиента загружены'),
+    )
+
+    employee = models.ForeignKey(EmployeeProfile, verbose_name='Менеджер', on_delete=models.CASCADE, related_name='document_credits')
+    client = models.ForeignKey(Client, verbose_name='Клиент', on_delete=models.CASCADE, related_name='document_manager_credits')
+    plan = models.ForeignKey(ManagerDocumentPlan, verbose_name='План', on_delete=models.SET_NULL, null=True, blank=True, related_name='credits')
+    event_type = models.CharField('Тип события', max_length=64, choices=EVENT_CHOICES, default=EVENT_UPLOADED_CLIENT_DOCUMENTS, db_index=True)
+    period_start = models.DateField('Начало периода', db_index=True)
+    period_end = models.DateField('Конец периода', db_index=True)
+    credited_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Кто засчитал', on_delete=models.SET_NULL, null=True, blank=True, related_name='document_credits_created')
+    credited_at = models.DateTimeField('Дата зачёта', default=timezone.now, db_index=True)
+    comment = models.TextField('Комментарий', blank=True)
+
+    class Meta:
+        verbose_name = 'Зачёт загруженного клиента'
+        verbose_name_plural = 'Зачёты загруженных клиентов'
+        ordering = ['-credited_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['employee', 'client', 'event_type', 'period_start', 'period_end'],
+                name='uniq_manager_client_document_credit_period',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['employee', 'period_start', 'period_end'], name='crm_mdoccredit_emp_period_idx'),
+            models.Index(fields=['client', 'event_type'], name='crm_mdoccredit_client_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.employee} +1 {self.client} ({self.period_start:%d.%m.%Y})'
+
+
 class ClientQuestionnaire(TimeStampedModel):
     STATUS_DRAFT = 'draft'
+    STATUS_COMPLETED = 'completed'
     STATUS_SUBMITTED = 'submitted'
     STATUS_UPDATED = 'updated'
     STATUS_CHOICES = (
         (STATUS_DRAFT, 'Не заполнена'),
+        (STATUS_COMPLETED, 'Заполнена'),
         (STATUS_SUBMITTED, 'Заполнена'),
         (STATUS_UPDATED, 'Обновлена'),
     )

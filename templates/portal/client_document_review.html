@@ -57,6 +57,21 @@
     </section>
 </div>
 
+<section class="panel" style="margin-top:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Р РµР№С‚РёРЅРі РјРµРЅРµРґР¶РµСЂР°</h2>
+        <span class="pill">+1 Р·Р°РіСЂСѓР¶РµРЅРЅС‹Р№ РєР»РёРµРЅС‚</span>
+    </div>
+    <div class="panel-body">
+        <form method="post" action="{% url 'portal:client_documents_loaded' document.client.id %}" data-disable-on-submit>
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.get_full_path }}">
+            <input type="hidden" name="comment" value="Р—Р°С‡С‘С‚ СЃРѕ СЃС‚СЂР°РЅРёС†С‹ РїСЂРѕРІРµСЂРєРё РґРѕРєСѓРјРµРЅС‚Р° #{{ document.id }}">
+            <button class="btn secondary" type="submit"><i data-lucide="badge-plus"></i>РћС‚РјРµС‚РёС‚СЊ РґРѕРєСѓРјРµРЅС‚С‹ РєР»РёРµРЅС‚Р° РєР°Рє Р·Р°РіСЂСѓР¶РµРЅРЅС‹Рµ</button>
+        </form>
+    </div>
+</section>
+
 <section class="panel" style="margin-top:16px;" x-data="{ rejectOpen: false }">
     <div class="panel-header">
         <h2 class="panel-title">Результат проверки</h2>

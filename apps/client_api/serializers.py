@@ -1,6 +1,8 @@
+from decimal import Decimal, InvalidOperation
+
 from rest_framework import serializers
 
-from apps.education.models import City, Country, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
+from apps.education.models import City, Country, Currency, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
 from apps.erp_services.models import Service
 
 
@@ -103,10 +105,22 @@ class ClientUniversityContactSerializer(serializers.ModelSerializer):
 
 
 class ClientProgramShortSerializer(serializers.ModelSerializer):
+    program_id = serializers.IntegerField(source='id', read_only=True)
+    program_title = serializers.CharField(source='name', read_only=True)
+    university_id = serializers.IntegerField(source='university_id', read_only=True)
     university_name = serializers.CharField(source='university.name', read_only=True)
     country = serializers.CharField(source='university.country.name', read_only=True)
+    country_name = serializers.CharField(source='university.country.name', read_only=True)
     city = serializers.CharField(source='university.city.name', read_only=True, default='')
+    city_name = serializers.CharField(source='university.city.name', read_only=True, default='')
+    level = serializers.CharField(source='get_degree_display', read_only=True)
     degree_display = serializers.CharField(source='get_degree_display', read_only=True)
+    tuition_fee = serializers.SerializerMethodField()
+    currency = serializers.SerializerMethodField()
+    currency_symbol = serializers.SerializerMethodField()
+    converted_tuition_fee = serializers.SerializerMethodField()
+    selected_currency = serializers.SerializerMethodField()
+    application_deadline = serializers.SerializerMethodField()
     fees = ClientProgramFeeSerializer(many=True, read_only=True)
     intakes = ClientIntakeSerializer(many=True, read_only=True)
     required_documents = ClientRequiredDocumentSerializer(many=True, read_only=True)
@@ -115,22 +129,91 @@ class ClientProgramShortSerializer(serializers.ModelSerializer):
         model = Program
         fields = (
             'id',
+            'program_id',
+            'program_title',
             'university',
+            'university_id',
             'university_name',
             'country',
+            'country_name',
             'city',
+            'city_name',
             'name',
             'degree',
+            'level',
             'degree_display',
             'faculty',
             'language',
             'duration',
             'description',
             'admission_requirements',
+            'tuition_fee',
+            'currency',
+            'currency_symbol',
+            'converted_tuition_fee',
+            'selected_currency',
+            'application_deadline',
             'fees',
             'intakes',
             'required_documents',
         )
+
+    def _first_fee(self, obj):
+        fees_manager = getattr(obj, 'fees', None)
+        fees = list(fees_manager.all()) if hasattr(fees_manager, 'all') else []
+        return fees[0] if fees else None
+
+    def _first_intake(self, obj):
+        intakes_manager = getattr(obj, 'intakes', None)
+        intakes = list(intakes_manager.all()) if hasattr(intakes_manager, 'all') else []
+        return intakes[0] if intakes else None
+
+    def _target_currency(self):
+        request = self.context.get('request')
+        code = (request.query_params.get('currency') if request else '') or ''
+        code = code.strip().upper()
+        if not code:
+            return None
+        cache = getattr(self, '_target_currency_cache', {})
+        if code not in cache:
+            cache[code] = Currency.objects.filter(code__iexact=code).first()
+            self._target_currency_cache = cache
+        return cache[code]
+
+    def get_tuition_fee(self, obj):
+        fee = self._first_fee(obj)
+        return fee.tuition_fee if fee else None
+
+    def get_currency(self, obj):
+        fee = self._first_fee(obj)
+        return fee.currency.code if fee and fee.currency_id else ''
+
+    def get_currency_symbol(self, obj):
+        fee = self._first_fee(obj)
+        return fee.currency.symbol if fee and fee.currency_id else ''
+
+    def get_selected_currency(self, obj):
+        target = self._target_currency()
+        return target.code if target else ''
+
+    def get_converted_tuition_fee(self, obj):
+        fee = self._first_fee(obj)
+        target = self._target_currency()
+        if not fee or not fee.currency_id or not target:
+            return None
+        try:
+            source_rate = Decimal(fee.currency.rate_to_usd)
+            target_rate = Decimal(target.rate_to_usd)
+            if source_rate <= 0 or target_rate <= 0:
+                return None
+            value = (Decimal(fee.tuition_fee) * source_rate) / target_rate
+            return value.quantize(Decimal('0.01'))
+        except (InvalidOperation, ArithmeticError, TypeError):
+            return None
+
+    def get_application_deadline(self, obj):
+        intake = self._first_intake(obj)
+        return intake.application_deadline if intake else None
 
 
 class ClientUniversitySerializer(serializers.ModelSerializer):

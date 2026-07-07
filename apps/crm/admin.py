@@ -10,6 +10,8 @@ from .models import (
     ClientQuestionnaire,
     Lead,
     LeadSource,
+    ManagerDocumentCredit,
+    ManagerDocumentPlan,
 )
 
 
@@ -182,3 +184,23 @@ class ClientQuestionnaireAdmin(ModelAdmin):
     search_fields = ('client__full_name', 'client__phone', 'full_name', 'phone', 'email', 'desired_program', 'desired_country')
     autocomplete_fields = ('client',)
     readonly_fields = ('created_at', 'updated_at', 'last_synced_at')
+
+
+@admin.register(ManagerDocumentPlan)
+class ManagerDocumentPlanAdmin(ModelAdmin):
+    list_display = ('employee', 'period_type', 'start_date', 'end_date', 'target_clients', 'is_active')
+    list_filter = ('period_type', 'is_active', 'start_date', 'end_date')
+    search_fields = ('employee__user__first_name', 'employee__user__last_name', 'employee__user__email', 'admin_comment')
+    autocomplete_fields = ('employee',)
+    readonly_fields = ('created_at', 'updated_at')
+    date_hierarchy = 'start_date'
+
+
+@admin.register(ManagerDocumentCredit)
+class ManagerDocumentCreditAdmin(ModelAdmin):
+    list_display = ('employee', 'client', 'event_type', 'period_start', 'period_end', 'credited_by', 'credited_at')
+    list_filter = ('event_type', 'period_start', 'period_end', 'credited_at')
+    search_fields = ('employee__user__first_name', 'employee__user__last_name', 'employee__user__email', 'client__full_name', 'client__phone', 'comment')
+    autocomplete_fields = ('employee', 'client', 'plan', 'credited_by')
+    readonly_fields = ('created_at', 'updated_at', 'credited_at')
+    date_hierarchy = 'credited_at'

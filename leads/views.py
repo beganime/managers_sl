@@ -235,13 +235,16 @@ class MobileClientQuestionnaireSyncAPIView(APIView):
         mobile_questionnaire_id = request.data.get('mobile_questionnaire_id') or request.data.get('questionnaire_id')
         submitted_at = parse_datetime(request.data.get('submitted_at') or '')
         data = dict(request.data)
+        questionnaire_status = request.data.get('status') or CrmClientQuestionnaire.STATUS_COMPLETED
+        if questionnaire_status == 'submitted':
+            questionnaire_status = CrmClientQuestionnaire.STATUS_COMPLETED
         questionnaire, _ = CrmClientQuestionnaire.objects.update_or_create(
             client=client,
             defaults={
                 'mobile_questionnaire_id': mobile_questionnaire_id or None,
                 'external_mobile_user_id': request.data.get('mobile_user_id') or getattr(client, 'mobile_app_user_id', None),
                 'source': request.data.get('source') or 'students_life_mobile_app',
-                'status': request.data.get('status') or CrmClientQuestionnaire.STATUS_SUBMITTED,
+                'status': questionnaire_status,
                 'full_name': clean_header(request.data.get('full_name') or client.full_name, 255),
                 'phone': clean_header(request.data.get('phone') or client.phone, 80),
                 'email': clean_header(request.data.get('email') or client.email, 255) or None,

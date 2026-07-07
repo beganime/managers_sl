@@ -71,6 +71,8 @@
                     <th>Баллы</th>
                     <th>Лиды</th>
                     <th>Клиенты</th>
+                    <th>Док. клиенты</th>
+                    <th>План док.</th>
                     <th>Заявки</th>
                     <th>Подтв. доход</th>
                     <th>Комиссия</th>
@@ -139,6 +141,15 @@
                         <td><span class="pill ok">{{ row.score }}</span></td>
                         <td>{{ row.leads_count }}</td>
                         <td>{{ row.clients_count }}</td>
+                        <td><span class="pill ok">{{ row.document_uploaded_clients }}</span></td>
+                        <td>
+                            {% if row.document_plan_target %}
+                                {{ row.document_uploaded_clients }}/{{ row.document_plan_target }}
+                                <div class="muted small">осталось {{ row.document_plan_remaining }} · {{ row.document_plan_percent }}%</div>
+                            {% else %}
+                                <span class="muted small">план не задан</span>
+                            {% endif %}
+                        </td>
                         <td>{{ row.applications_count }}</td>
                         <td>${{ row.income_usd|floatformat:2 }}</td>
                         <td>${{ row.commission_usd|floatformat:2 }}</td>
@@ -148,7 +159,7 @@
                         <td>{% if row.missed_days %}<span class="pill danger">{{ row.missed_days }}</span>{% else %}<span class="pill ok">0</span>{% endif %}</td>
                     </tr>
                 {% empty %}
-                    <tr><td colspan="13"><div class="empty">Нет сотрудников в доступной области.</div></td></tr>
+                    <tr><td colspan="15"><div class="empty">Нет сотрудников в доступной области.</div></td></tr>
                 {% endfor %}
             </tbody>
         </table>
