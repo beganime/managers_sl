@@ -11,7 +11,10 @@
 <section class="panel">
     <div class="panel-header">
         <h2 class="panel-title">Документы клиентов</h2>
-        <span class="pill">{{ documents_page_obj.paginator.count }} файлов</span>
+        <div class="contact-actions">
+            <a class="btn" href="{% url 'portal:document_upload_rating' %}"><i data-lucide="trophy"></i>Рейтинг загрузок</a>
+            <span class="pill">{{ documents_page_obj.paginator.count }} файлов</span>
+        </div>
     </div>
     <div class="panel-body">
         <form class="toolbar" method="get">

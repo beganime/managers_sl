@@ -5,6 +5,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from urllib import error as urlerror
 from urllib import request as urlrequest
+from urllib.parse import urljoin
 
 from django.conf import settings
 from django.contrib import messages
@@ -89,6 +90,7 @@ NAV_GROUPS = (
             {'name': 'incoming_leads', 'label': 'Потенциальные клиенты', 'icon': 'inbox'},
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
+            {'name': 'document_upload_rating', 'label': 'Рейтинг загрузок', 'icon': 'badge-plus'},
             {'name': 'client_questionnaires', 'label': 'Анкеты клиентов', 'icon': 'clipboard-list'},
             {'name': 'applications', 'label': 'Заявки', 'icon': 'file-check-2'},
             {'name': 'tasks', 'label': 'Задачи', 'icon': 'check-square'},
@@ -1940,7 +1942,11 @@ def notify_mobile_document_review(document):
     base_url = str(getattr(settings, 'STUDENTS_LIFE_API_BASE_URL', '') or '').rstrip('/')
     api_key = getattr(settings, 'STUDENTS_LIFE_API_KEY', '') or getattr(settings, 'LEADS_API_KEY', '')
     if not base_url or not api_key or not document.external_mobile_document_id:
-        return
+        return False, 'STUDENTS_LIFE_API_BASE_URL, STUDENTS_LIFE_API_KEY или mobile document id не настроены.'
+
+    callback_url = urljoin(base_url.rstrip('/') + '/', 'documents/external-review/')
+    if '/api/v1/' not in callback_url:
+        callback_url = urljoin(base_url.rstrip('/') + '/', 'api/v1/documents/external-review/')
 
     payload = json.dumps({
         'document_id': document.external_mobile_document_id,
@@ -1948,15 +1954,16 @@ def notify_mobile_document_review(document):
         'admin_comment': document.review_comment,
     }).encode('utf-8')
     request = urlrequest.Request(
-        f'{base_url}/api/v1/documents/external-review/',
+        callback_url,
         data=payload,
         headers={'Content-Type': 'application/json', 'Accept': 'application/json', 'X-API-KEY': api_key},
         method='POST',
     )
     try:
         urlrequest.urlopen(request, timeout=8).read()
-    except (urlerror.URLError, TimeoutError, ValueError):
-        pass
+        return True, 'Статус отправлен в мобильное приложение.'
+    except (urlerror.URLError, TimeoutError, ValueError) as exc:
+        return False, f'Статус сохранён в Manager SL, но не отправлен в мобильное приложение: {exc}'
 
 
 def document_credit_period_for(employee):
@@ -2112,8 +2119,11 @@ class ClientDocumentReviewPortalView(PortalContextMixin, View):
         document.reviewed_by = request.user
         document.reviewed_at = timezone.now()
         document.save(update_fields=['status', 'review_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
-        notify_mobile_document_review(document)
-        messages.success(request, 'Статус документа сохранён.')
+        synced, sync_message = notify_mobile_document_review(document)
+        if synced:
+            messages.success(request, 'Статус документа сохранён и отправлен клиенту.')
+        else:
+            messages.warning(request, sync_message)
         return redirect(reverse('portal:client_document_review', args=[document.id]))
 
 
@@ -2133,6 +2143,82 @@ class ClientDocumentsLoadedPortalView(PortalContextMixin, View):
             messages.info(request, message)
         next_url = request.POST.get('next') or reverse('portal:client_detail', args=[client.id])
         return redirect(next_url)
+
+
+class DocumentUploadRatingView(PortalContextMixin, TemplateView):
+    template_name = 'portal/document_upload_rating.html'
+    active_page = 'document_upload_rating'
+    page_title = 'Рейтинг загрузок документов'
+
+    def get_period(self):
+        today = timezone.localdate()
+        period = self.request.GET.get('period') or 'month'
+        if period == 'week':
+            return period, today - timedelta(days=7), today
+        if period == 'quarter':
+            return period, today - timedelta(days=90), today
+        return 'month', today.replace(day=1), today
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        period, period_start, period_end = self.get_period()
+        office_id = self.request.GET.get('office') or ''
+        profiles = employee_queryset(self.request.user).filter(is_active=True)
+        if office_id:
+            profiles = profiles.filter(office_id=office_id)
+
+        rows = []
+        for profile in profiles:
+            credits = (
+                ManagerDocumentCredit.objects
+                .filter(
+                    employee=profile,
+                    event_type=ManagerDocumentCredit.EVENT_UPLOADED_CLIENT_DOCUMENTS,
+                    credited_at__date__gte=period_start,
+                    credited_at__date__lte=period_end,
+                )
+                .select_related('client', 'credited_by', 'plan')
+                .order_by('-credited_at')
+            )
+            uploaded_clients = credits.values('client_id').distinct().count()
+            plan = (
+                ManagerDocumentPlan.objects
+                .filter(employee=profile, is_active=True, start_date__lte=period_end, end_date__gte=period_start)
+                .order_by('-start_date', '-created_at')
+                .first()
+            )
+            target = plan.target_clients if plan else 0
+            remaining = max(target - uploaded_clients, 0) if target else 0
+            percent = round((uploaded_clients / target) * 100) if target else 0
+            active_clients = Client.objects.filter(manager=profile.user).exclude(status__in=['archive', 'rejected'])
+            documents_qs = ClientFile.objects.filter(client__manager=profile.user, source='students_life_mobile_app')
+            rows.append({
+                'profile': profile,
+                'uploaded_clients': uploaded_clients,
+                'target': target,
+                'remaining': remaining,
+                'percent': percent,
+                'active_clients': active_clients.count(),
+                'complete_clients': active_clients.filter(custom_data__documents_status='documents_loaded').count(),
+                'pending_documents': documents_qs.filter(status=ClientFile.STATUS_PENDING).count(),
+                'approved_documents': documents_qs.filter(status=ClientFile.STATUS_APPROVED).count(),
+                'rejected_documents': documents_qs.filter(status=ClientFile.STATUS_REJECTED).count(),
+                'credits': credits[:8],
+            })
+        rows.sort(key=lambda row: (row['uploaded_clients'], row['percent']), reverse=True)
+
+        context.update({
+            'rating_rows': rows,
+            'office_options': office_queryset(self.request.user).order_by('name'),
+            'current_office': office_id,
+            'current_period': period,
+            'period_start': period_start,
+            'period_end': period_end,
+            'team_target': sum(row['target'] for row in rows),
+            'team_uploaded': sum(row['uploaded_clients'] for row in rows),
+            'team_remaining': max(sum(row['target'] for row in rows) - sum(row['uploaded_clients'] for row in rows), 0),
+        })
+        return context
 
 
 class ClientQuestionnairesView(PortalContextMixin, TemplateView):

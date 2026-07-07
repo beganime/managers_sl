@@ -202,6 +202,7 @@ class MobileClientDocumentSyncAPIView(APIView):
         document_status = request.data.get('status') or CrmClientFile.STATUS_PENDING
         if document_status not in {CrmClientFile.STATUS_PENDING, CrmClientFile.STATUS_APPROVED, CrmClientFile.STATUS_REJECTED}:
             return Response({'status': 'Invalid document status.'}, status=status.HTTP_400_BAD_REQUEST)
+        reviewed_at = timezone.now() if document_status in {CrmClientFile.STATUS_APPROVED, CrmClientFile.STATUS_REJECTED} else None
         document, _ = CrmClientFile.objects.update_or_create(
             external_mobile_document_id=mobile_document_id,
             defaults={
@@ -214,6 +215,7 @@ class MobileClientDocumentSyncAPIView(APIView):
                 'source': 'students_life_mobile_app',
                 'status': document_status,
                 'review_comment': request.data.get('admin_comment') or '',
+                'reviewed_at': reviewed_at,
                 'comment': request.data.get('description') or '',
             },
         )

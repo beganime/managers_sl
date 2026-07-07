@@ -1,0 +1,102 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Рейтинг загрузок документов</h2>
+        <span class="pill">{{ period_start|date:"d.m.Y" }} - {{ period_end|date:"d.m.Y" }}</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <select class="select" name="period" style="width:180px;">
+                    <option value="week" {% if current_period == "week" %}selected{% endif %}>7 дней</option>
+                    <option value="month" {% if current_period == "month" %}selected{% endif %}>Месяц</option>
+                    <option value="quarter" {% if current_period == "quarter" %}selected{% endif %}>90 дней</option>
+                </select>
+                <select class="select" name="office" style="width:220px;">
+                    <option value="">Все доступные офисы</option>
+                    {% for office in office_options %}
+                        <option value="{{ office.id }}" {% if current_office == office.id|stringformat:"s" %}selected{% endif %}>{{ office.name }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn primary" type="submit"><i data-lucide="filter"></i>Показать</button>
+                <a class="btn" href="{% url 'portal:document_upload_rating' %}"><i data-lucide="rotate-ccw"></i>Сбросить</a>
+            </div>
+        </form>
+    </div>
+</section>
+
+<div class="metric-grid">
+    <div class="metric"><div class="metric-top"><span>План команды</span><i data-lucide="target"></i></div><div class="metric-value">{{ team_target }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Загружено клиентов</span><i data-lucide="badge-check"></i></div><div class="metric-value">{{ team_uploaded }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Осталось</span><i data-lucide="hourglass"></i></div><div class="metric-value">{{ team_remaining }}</div></div>
+    <div class="metric"><div class="metric-top"><span>Сотрудников</span><i data-lucide="users"></i></div><div class="metric-value">{{ rating_rows|length }}</div></div>
+</div>
+
+<section class="panel">
+    <div class="panel-header">
+        <h2 class="panel-title">Таблица загрузок</h2>
+        <span class="pill">+1 засчитывается один раз за клиента в периоде</span>
+    </div>
+    <div class="panel-body table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Сотрудник</th>
+                    <th>Офис</th>
+                    <th>Загружено</th>
+                    <th>План</th>
+                    <th>Осталось</th>
+                    <th>Выполнение</th>
+                    <th>Клиентов в работе</th>
+                    <th>Комплект загружен</th>
+                    <th>Документы</th>
+                    <th>Последние зачёты</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in rating_rows %}
+                    <tr>
+                        <td>{{ forloop.counter }}</td>
+                        <td>
+                            <span class="strong">{{ row.profile.user.get_full_name|default:row.profile.user.email }}</span>
+                            <div class="muted small">{{ row.profile.position.name|default:row.profile.role.name }}</div>
+                        </td>
+                        <td>{{ row.profile.office.name|default:"-" }}</td>
+                        <td><span class="pill ok">{{ row.uploaded_clients }}</span></td>
+                        <td>{{ row.target|default:"-" }}</td>
+                        <td>{{ row.remaining }}</td>
+                        <td>
+                            {% if row.target %}
+                                <span class="pill {% if row.percent >= 100 %}ok{% elif row.percent >= 60 %}warn{% else %}danger{% endif %}">{{ row.percent }}%</span>
+                            {% else %}
+                                <span class="muted small">план не задан</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ row.active_clients }}</td>
+                        <td>{{ row.complete_clients }}</td>
+                        <td>
+                            <div class="muted small">На проверке: {{ row.pending_documents }}</div>
+                            <div class="muted small">Принято: {{ row.approved_documents }}</div>
+                            <div class="muted small">Отклонено: {{ row.rejected_documents }}</div>
+                        </td>
+                        <td>
+                            {% for credit in row.credits %}
+                                <div class="muted small">
+                                    {{ credit.client.full_name }} · {{ credit.credited_at|date:"d.m H:i" }}
+                                </div>
+                            {% empty %}
+                                <span class="muted small">Нет зачётов</span>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr><td colspan="11"><div class="empty">Нет сотрудников для рейтинга загрузок.</div></td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endblock %}

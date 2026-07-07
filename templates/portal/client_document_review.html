@@ -59,16 +59,18 @@
 
 <section class="panel" style="margin-top:16px;">
     <div class="panel-header">
-        <h2 class="panel-title">Р РµР№С‚РёРЅРі РјРµРЅРµРґР¶РµСЂР°</h2>
-        <span class="pill">+1 Р·Р°РіСЂСѓР¶РµРЅРЅС‹Р№ РєР»РёРµРЅС‚</span>
+        <h2 class="panel-title">Рейтинг загрузок</h2>
+        <span class="pill">+1 загруженный клиент</span>
     </div>
     <div class="panel-body">
         <form method="post" action="{% url 'portal:client_documents_loaded' document.client.id %}" data-disable-on-submit>
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ request.get_full_path }}">
-            <input type="hidden" name="comment" value="Р—Р°С‡С‘С‚ СЃРѕ СЃС‚СЂР°РЅРёС†С‹ РїСЂРѕРІРµСЂРєРё РґРѕРєСѓРјРµРЅС‚Р° #{{ document.id }}">
-            <button class="btn secondary" type="submit"><i data-lucide="badge-plus"></i>РћС‚РјРµС‚РёС‚СЊ РґРѕРєСѓРјРµРЅС‚С‹ РєР»РёРµРЅС‚Р° РєР°Рє Р·Р°РіСЂСѓР¶РµРЅРЅС‹Рµ</button>
+            <input type="hidden" name="comment" value="Зачёт со страницы проверки документа #{{ document.id }}">
+            <button class="btn secondary" type="submit"><i data-lucide="badge-plus"></i>Отметить документы клиента как загруженные</button>
+            <a class="btn" href="{% url 'portal:document_upload_rating' %}"><i data-lucide="trophy"></i>Открыть рейтинг загрузок</a>
         </form>
+        <div class="muted small" style="margin-top:10px;">Повторное нажатие по тому же клиенту в текущем периоде не добавит дубль.</div>
     </div>
 </section>
 
