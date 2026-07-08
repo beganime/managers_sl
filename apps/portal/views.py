@@ -68,6 +68,148 @@ from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAt
 PAGE_SIZE = 25
 User = get_user_model()
 
+QUESTIONNAIRE_FIELD_LABELS = {
+    'form_type': 'Тип заявки',
+    'application_type': 'Тип заявки',
+    'status': 'Статус анкеты',
+    'full_name': 'Полное ФИО',
+    'birth_date': 'Дата рождения',
+    'gender': 'Пол',
+    'citizenship': 'Гражданство',
+    'marital_status': 'Семейное положение',
+    'face_photo_url': 'Фотография лица',
+    'residence_country': 'Страна проживания',
+    'residence_region': 'Область / регион',
+    'residence_city': 'Город / населенный пункт',
+    'residence_street': 'Улица',
+    'residence_house': 'Дом / квартира',
+    'residence_postal_code': 'Почтовый индекс',
+    'passport_number': 'Паспорт серия и номер',
+    'passport_issued_by': 'Где оформлен паспорт',
+    'passport_issue_date': 'Дата начала действия паспорта',
+    'passport_expiry_date': 'Дата окончания действия паспорта',
+    'phone': 'Основной номер телефона',
+    'email': 'Email',
+    'extra_phone': 'Дополнительный номер телефона',
+    'imo': 'Imo',
+    'telegram': 'Telegram',
+    'preferred_contact_method': 'Предпочтительный способ связи',
+    'parent_full_name': 'ФИО родителя',
+    'parent_relation': 'Кем является родитель',
+    'parent_contacts': 'Контакты родителя',
+    'parent_workplace': 'Кем и где работает родитель',
+    'family_members': 'Состав семьи',
+    'education_level': 'Уровень образования',
+    'school_class': 'Класс',
+    'school_name': 'Учебное заведение',
+    'school_country': 'Страна учебного заведения',
+    'school_city': 'Город учебного заведения',
+    'graduation_year': 'Год окончания',
+    'education_status': 'Текущий статус образования',
+    'achievements': 'Достижения',
+    'languages': 'Языки',
+    'desired_program': 'Желаемая программа / вуз',
+    'admission_goal': 'Цель поступления',
+    'desired_city': 'Желаемый город поступления',
+    'desired_country': 'Желаемая страна поступления',
+    'desired_language': 'Желаемый язык обучения',
+    'desired_education_level': 'Желаемый уровень обучения',
+    'admission_urgency': 'Срочность поступления',
+    'help_needed': 'Нужна помощь с',
+    'has_visa': 'Виза имеется или нет',
+    'visa_country': 'Страна оформления визы',
+    'visa_city': 'Город оформления визы',
+    'visa_valid_until': 'Срок действия визы',
+    'has_international_passport': 'Есть действующий загранпаспорт',
+    'hobbies': 'Любимые хобби',
+    'applicant_comment': 'Дополнительный комментарий',
+    'referral_source': 'Откуда узнали о Student’s Life',
+    'data_processing_consent': 'Согласие на обработку персональных данных',
+    'submitted_at': 'Дата отправки анкеты',
+    'generated_document_url': 'Документ анкеты',
+    'generated_document_at': 'Дата формирования документа',
+}
+
+QUESTIONNAIRE_SECTIONS = (
+    ('Личные данные', ('full_name', 'birth_date', 'gender', 'citizenship', 'marital_status')),
+    ('Адрес проживания', ('residence_country', 'residence_region', 'residence_city', 'residence_street', 'residence_house', 'residence_postal_code')),
+    ('Паспортные данные', ('passport_number', 'passport_issued_by', 'passport_issue_date', 'passport_expiry_date', 'has_international_passport')),
+    ('Контакты', ('phone', 'email', 'extra_phone', 'imo', 'telegram', 'preferred_contact_method')),
+    ('Родители / представители', ('parent_full_name', 'parent_relation', 'parent_contacts', 'parent_workplace', 'family_members')),
+    ('Образование', ('education_status', 'education_level', 'school_class', 'school_name', 'school_country', 'school_city', 'graduation_year')),
+    ('Достижения и языки', ('achievements', 'languages')),
+    ('Поступление', ('desired_program', 'admission_goal', 'desired_country', 'desired_city', 'desired_language', 'desired_education_level', 'admission_urgency', 'help_needed')),
+    ('Виза', ('has_visa', 'visa_country', 'visa_city', 'visa_valid_until')),
+    ('Дополнительно', ('hobbies', 'applicant_comment', 'referral_source', 'data_processing_consent')),
+)
+
+
+def questionnaire_value_display(value):
+    if value in (None, '', [], {}):
+        return '-'
+    if isinstance(value, bool):
+        return 'Да' if value else 'Нет'
+    if isinstance(value, list):
+        lines = []
+        for item in value:
+            if isinstance(item, dict):
+                language = item.get('language') or item.get('name') or item.get('title')
+                level = item.get('level')
+                if language and level:
+                    lines.append(f'{language} — {level}')
+                elif language:
+                    lines.append(str(language))
+                else:
+                    lines.append(', '.join(f'{QUESTIONNAIRE_FIELD_LABELS.get(str(key), key)}: {questionnaire_value_display(val)}' for key, val in item.items()))
+            else:
+                lines.append(str(item))
+        return '\n'.join(lines) if lines else '-'
+    if isinstance(value, dict):
+        return '\n'.join(f'{QUESTIONNAIRE_FIELD_LABELS.get(str(key), key)}: {questionnaire_value_display(val)}' for key, val in value.items())
+    return str(value)
+
+
+def build_questionnaire_sections(data):
+    data = data or {}
+    used_fields = set()
+    sections = []
+    for title, fields in QUESTIONNAIRE_SECTIONS:
+        rows = []
+        for field in fields:
+            if field not in data:
+                continue
+            used_fields.add(field)
+            rows.append({
+                'label': QUESTIONNAIRE_FIELD_LABELS.get(field, field),
+                'value': questionnaire_value_display(data.get(field)),
+                'filled': data.get(field) not in (None, '', [], {}),
+            })
+        if rows:
+            sections.append({'title': title, 'rows': rows})
+
+    ignored_fields = {
+        'id',
+        'document_file',
+        'generated_document_url',
+        'generated_document_at',
+        'missing_required_fields',
+        'missing_required_field_labels',
+        'updated_at',
+        'attachments',
+    }
+    extra_rows = []
+    for key, value in sorted(data.items()):
+        if key in used_fields or key in ignored_fields:
+            continue
+        extra_rows.append({
+            'label': QUESTIONNAIRE_FIELD_LABELS.get(key, key),
+            'value': questionnaire_value_display(value),
+            'filled': value not in (None, '', [], {}),
+        })
+    if extra_rows:
+        sections.append({'title': 'Дополнительные синхронизированные поля', 'rows': extra_rows})
+    return sections
+
 
 NAV_GROUPS = (
     {
@@ -2387,6 +2529,7 @@ class ClientQuestionnaireDetailView(PortalContextMixin, TemplateView):
         questionnaire = self.get_questionnaire()
         context['questionnaire'] = questionnaire
         context['data'] = questionnaire.data or {}
+        context['questionnaire_sections'] = build_questionnaire_sections(context['data'])
         return context
 
 

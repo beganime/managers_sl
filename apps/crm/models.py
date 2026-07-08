@@ -1,4 +1,5 @@
 import io
+import os
 from uuid import uuid4
 
 from django.conf import settings
@@ -476,9 +477,20 @@ class ClientQuestionnaire(TimeStampedModel):
     def generate_file(self):
         from docx import Document
         from docx.enum.text import WD_ALIGN_PARAGRAPH
-        from docx.shared import Pt
+        from docx.shared import Inches, Pt
 
-        document = Document()
+        template_path = os.path.join(os.path.dirname(__file__), 'document_templates', 'anketa_students_life_template_v2.docx')
+        document = Document(template_path) if os.path.exists(template_path) else Document()
+        body = document._element.body
+        for child in list(body):
+            if child.tag.endswith('sectPr'):
+                continue
+            body.remove(child)
+        section = document.sections[0]
+        section.top_margin = Inches(0.55)
+        section.bottom_margin = Inches(0.55)
+        section.left_margin = Inches(0.6)
+        section.right_margin = Inches(0.6)
         title = document.add_paragraph()
         title.alignment = WD_ALIGN_PARAGRAPH.CENTER
         form_type = (self.data or {}).get('form_type') or (self.data or {}).get('application_type') or 'applicant'
@@ -495,11 +507,13 @@ class ClientQuestionnaire(TimeStampedModel):
             ('Контакты', ('phone', 'email', 'extra_phone', 'imo', 'telegram', 'preferred_contact_method')),
             ('Родители / представители', ('parent_full_name', 'parent_relation', 'parent_contacts', 'parent_workplace', 'family_members')),
             ('Образование', ('education_level', 'school_class', 'school_name', 'school_country', 'school_city', 'graduation_year', 'education_status')),
+            ('Достижения и языки', ('achievements', 'languages')),
             ('Поступление', ('desired_program', 'admission_goal', 'desired_city', 'desired_country', 'desired_language', 'desired_education_level', 'admission_urgency')),
             ('Виза', ('has_visa', 'visa_country', 'visa_city', 'visa_valid_until')),
-            ('Дополнительно', ('hobbies', 'applicant_comment', 'referral_source')),
+            ('Дополнительно', ('hobbies', 'applicant_comment', 'referral_source', 'data_processing_consent')),
         ]
         labels = {
+            'form_type': 'Тип заявки',
             'full_name': 'ФИО',
             'birth_date': 'Дата рождения',
             'gender': 'Пол',
@@ -534,6 +548,8 @@ class ClientQuestionnaire(TimeStampedModel):
             'school_city': 'Город учебы',
             'graduation_year': 'Год окончания',
             'education_status': 'Статус',
+            'achievements': 'Достижения',
+            'languages': 'Языки',
             'desired_program': 'Программа / Вуз',
             'admission_goal': 'Цель',
             'desired_city': 'Город',
@@ -541,6 +557,7 @@ class ClientQuestionnaire(TimeStampedModel):
             'desired_language': 'Язык обучения',
             'desired_education_level': 'Уровень обучения',
             'admission_urgency': 'Срочность',
+            'help_needed': 'Нужна помощь с',
             'has_visa': 'Виза',
             'visa_country': 'Страна визы',
             'visa_city': 'Город визы',
@@ -548,7 +565,27 @@ class ClientQuestionnaire(TimeStampedModel):
             'hobbies': 'Хобби',
             'applicant_comment': 'Комментарий',
             'referral_source': 'Источник',
+            'data_processing_consent': 'Согласие на обработку данных',
         }
+
+        def render_value(value):
+            if value in (None, '', [], {}):
+                return 'Не указано'
+            if isinstance(value, bool):
+                return 'Да' if value else 'Нет'
+            if isinstance(value, list):
+                lines = []
+                for item in value:
+                    if isinstance(item, dict):
+                        language = item.get('language') or item.get('name') or item.get('title')
+                        level = item.get('level')
+                        lines.append(f'{language} — {level}' if language and level else str(language or item))
+                    else:
+                        lines.append(str(item))
+                return '\n'.join(lines) if lines else 'Не указано'
+            if isinstance(value, dict):
+                return '\n'.join(f'{labels.get(str(key), key)}: {render_value(val)}' for key, val in value.items())
+            return str(value)
 
         for section_title, fields in sections:
             document.add_heading(section_title, level=2)
@@ -556,22 +593,13 @@ class ClientQuestionnaire(TimeStampedModel):
             table.style = 'Table Grid'
             for field in fields:
                 value = self.data.get(field)
-                if value in (None, '', []):
-                    continue
                 row = table.add_row().cells
                 row[0].text = labels.get(field, field)
-                row[1].text = str(value)
+                row[1].text = render_value(value)
 
-        for list_title, field in (('Достижения', 'achievements'), ('Языки', 'languages'), ('Нужна помощь с', 'help_needed')):
-            value = self.data.get(field) or []
-            if not value:
-                continue
-            document.add_heading(list_title, level=2)
-            if isinstance(value, list):
-                for item in value:
-                    document.add_paragraph(str(item), style='List Bullet')
-            else:
-                document.add_paragraph(str(value))
+        if self.data.get('help_needed'):
+            document.add_heading('Нужна помощь с', level=2)
+            document.add_paragraph(render_value(self.data.get('help_needed')))
 
         buffer = io.BytesIO()
         document.save(buffer)

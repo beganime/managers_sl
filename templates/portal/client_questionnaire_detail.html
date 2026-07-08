@@ -38,28 +38,61 @@
 
 <section class="panel">
     <div class="panel-header">
-        <h2 class="panel-title">Все данные анкеты</h2>
+        <h2 class="panel-title">Данные анкеты по разделам</h2>
+        <span class="pill">Поля с понятными названиями</span>
     </div>
     <div class="panel-body">
-        <div class="table-wrap">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Поле</th>
-                        <th>Значение</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for key,value in data.items %}
-                        <tr>
-                            <td class="strong">{{ key }}</td>
-                            <td style="white-space:pre-wrap;">{{ value }}</td>
-                        </tr>
-                    {% empty %}
-                        <tr><td colspan="2"><div class="empty">Данные анкеты пока не синхронизированы.</div></td></tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+        {% if questionnaire_sections %}
+            <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));">
+                {% for section in questionnaire_sections %}
+                    <article class="item-card" style="gap:14px;">
+                        <div class="item-card-top">
+                            <div class="item-card-title">{{ section.title }}</div>
+                            <span class="pill">{{ section.rows|length }} полей</span>
+                        </div>
+                        <div class="table-wrap">
+                            <table>
+                                <tbody>
+                                    {% for row in section.rows %}
+                                        <tr>
+                                            <td class="strong" style="width:42%;">{{ row.label }}</td>
+                                            <td style="white-space:pre-wrap;">
+                                                {% if row.filled %}
+                                                    {{ row.value }}
+                                                {% else %}
+                                                    <span class="muted">Не указано</span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </article>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">Данные анкеты пока не синхронизированы.</div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel" style="margin-top:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Документ анкеты</h2>
+    </div>
+    <div class="panel-body">
+        <div class="grid cols-3">
+            <div><div class="muted small">Файл в Manager SL</div><strong>{% if questionnaire.generated_file %}Сформирован{% else %}Не сформирован{% endif %}</strong></div>
+            <div><div class="muted small">Mobile questionnaire ID</div><strong>{{ questionnaire.mobile_questionnaire_id|default:"-" }}</strong></div>
+            <div><div class="muted small">Последняя синхронизация</div><strong>{{ questionnaire.last_synced_at|date:"d.m.Y H:i"|default:"-" }}</strong></div>
+        </div>
+        <div class="contact-actions" style="margin-top:14px;">
+            <a class="btn primary" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}"><i data-lucide="download"></i>Скачать DOCX</a>
+            <form method="post" action="{% url 'portal:client_questionnaire_regenerate' questionnaire.id %}" style="display:inline;">
+                {% csrf_token %}
+                <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Перегенерировать через API</button>
+            </form>
         </div>
     </div>
 </section>
