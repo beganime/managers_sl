@@ -1,38 +1,197 @@
 {% extends "portal/base.html" %}
 
 {% block content %}
-<section class="panel" style="margin-bottom:16px;">
-    <div class="panel-header">
-        <h2 class="panel-title">{{ questionnaire.full_name|default:questionnaire.client.full_name }}</h2>
-        <div class="contact-actions">
-            <a class="pill" href="{% url 'portal:client_detail' questionnaire.client.id %}">Карточка клиента</a>
-            <a class="pill ok" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}">Скачать анкету</a>
-            <form method="post" action="{% url 'portal:client_questionnaire_regenerate' questionnaire.id %}" style="display:inline;">
-                {% csrf_token %}
-                <button class="pill warn" type="submit">Перегенерировать через API</button>
-            </form>
+<style>
+    .questionnaire-hero {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 280px;
+        gap: 18px;
+        align-items: stretch;
+    }
+    .questionnaire-profile {
+        min-height: 220px;
+        border-radius: 20px;
+        padding: 22px;
+        color: #fff;
+        background: linear-gradient(135deg, #0D416D 0%, #173a55 46%, #B8201A 100%);
+        box-shadow: 0 18px 44px rgba(13, 65, 109, 0.22);
+        position: relative;
+        overflow: hidden;
+    }
+    .questionnaire-profile::after {
+        content: "";
+        position: absolute;
+        right: -70px;
+        top: -70px;
+        width: 190px;
+        height: 190px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+    }
+    .questionnaire-profile h2 {
+        margin: 10px 0 8px;
+        font-size: clamp(26px, 3vw, 38px);
+        line-height: 1.05;
+        max-width: 740px;
+    }
+    .questionnaire-profile p {
+        margin: 0;
+        max-width: 760px;
+        color: rgba(255,255,255,0.84);
+        font-weight: 700;
+    }
+    .q-kicker {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.14);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+        text-transform: uppercase;
+        letter-spacing: .04em;
+    }
+    .q-actions-card {
+        border: 1px solid rgba(13,65,109,0.12);
+        border-radius: 18px;
+        padding: 18px;
+        background: #fff;
+        box-shadow: 0 14px 36px rgba(15,23,42,.08);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .q-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0,1fr));
+        gap: 10px;
+        margin-top: 16px;
+    }
+    .q-meta-card {
+        border: 1px solid rgba(13,65,109,0.10);
+        border-radius: 14px;
+        background: #fff;
+        padding: 12px;
+        min-height: 82px;
+    }
+    .q-meta-card .label,
+    .q-field-label {
+        color: #64748b;
+        font-size: 12px;
+        font-weight: 800;
+        margin-bottom: 5px;
+    }
+    .q-meta-card .value,
+    .q-field-value {
+        color: #0f172a;
+        font-weight: 900;
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+    }
+    .q-section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+        gap: 14px;
+    }
+    .q-section-card {
+        border: 1px solid rgba(13,65,109,0.12);
+        border-radius: 18px;
+        background: #fff;
+        box-shadow: 0 10px 30px rgba(15,23,42,.06);
+        overflow: hidden;
+    }
+    .q-section-head {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 16px;
+        background: linear-gradient(90deg, rgba(13,65,109,.08), rgba(184,32,26,.07));
+        border-bottom: 1px solid rgba(13,65,109,.08);
+    }
+    .q-section-title {
+        color: #0D416D;
+        font-size: 16px;
+        font-weight: 950;
+    }
+    .q-field-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0,1fr));
+        gap: 10px;
+        padding: 14px;
+    }
+    .q-field {
+        border: 1px solid rgba(15,23,42,.08);
+        border-radius: 12px;
+        background: #fbfdff;
+        padding: 11px 12px;
+        min-height: 76px;
+    }
+    .q-field.empty {
+        background: #f8fafc;
+    }
+    .q-field.empty .q-field-value {
+        color: #94a3b8;
+        font-weight: 800;
+    }
+    @media (max-width: 960px) {
+        .questionnaire-hero,
+        .q-meta-grid {
+            grid-template-columns: 1fr;
+        }
+        .q-field-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<section class="questionnaire-hero" style="margin-bottom:16px;">
+    <div class="questionnaire-profile">
+        <span class="q-kicker"><i data-lucide="clipboard-list"></i>{% if data.form_type == "school_student" or data.application_type == "school_student" %}Предварительная заявка{% else %}Полная анкета{% endif %}</span>
+        <h2>{{ questionnaire.full_name|default:questionnaire.client.full_name }}</h2>
+        <p>{{ questionnaire.desired_program|default:"Программа не указана" }}{% if questionnaire.desired_country %} · {{ questionnaire.desired_country }}{% endif %}{% if questionnaire.desired_city %}, {{ questionnaire.desired_city }}{% endif %}</p>
+        <div class="contact-actions" style="margin-top:18px;">
+            {% if questionnaire.status == "approved" %}
+                <span class="pill ok">Принята</span>
+            {% elif questionnaire.status == "rejected" %}
+                <span class="pill danger">Отклонена</span>
+            {% elif questionnaire.status == "updated" %}
+                <span class="pill warn">Обновлена</span>
+            {% elif questionnaire.status == "submitted" %}
+                <span class="pill ok">Отправлена</span>
+            {% else %}
+                <span class="pill">Черновик / не заполнена</span>
+            {% endif %}
+            {% if questionnaire.face_photo_url %}
+                <a class="pill" href="{{ questionnaire.face_photo_url }}" target="_blank" rel="noopener">Фото абитуриента</a>
+            {% endif %}
         </div>
     </div>
-    <div class="panel-body">
-        <div class="grid cols-3">
-            <div><div class="muted small">Телефон</div><strong>{{ questionnaire.phone|default:questionnaire.client.phone|default:"-" }}</strong></div>
-            <div><div class="muted small">Email</div><strong>{{ questionnaire.email|default:questionnaire.client.email|default:"-" }}</strong></div>
-            <div><div class="muted small">Гражданство</div><strong>{{ questionnaire.citizenship|default:"-" }}</strong></div>
-            <div><div class="muted small">Тип заявки</div><strong>{% if data.form_type == "school_student" or data.application_type == "school_student" %}Школьник / предварительная заявка{% else %}Абитуриент / полная анкета{% endif %}</strong></div>
-            <div><div class="muted small">Текущий статус образования</div><strong>{{ data.education_status|default:"-" }}</strong></div>
-            <div><div class="muted small">Класс</div><strong>{{ data.school_class|default:"-" }}</strong></div>
-            <div><div class="muted small">Желаемая страна</div><strong>{{ questionnaire.desired_country|default:"-" }}</strong></div>
-            <div><div class="muted small">Желаемый город</div><strong>{{ questionnaire.desired_city|default:"-" }}</strong></div>
-            <div><div class="muted small">Программа / Вуз</div><strong>{{ questionnaire.desired_program|default:"-" }}</strong></div>
-            <div><div class="muted small">Дата заполнения</div><strong>{{ questionnaire.submitted_at|date:"d.m.Y H:i"|default:"-" }}</strong></div>
-            <div><div class="muted small">Последнее обновление</div><strong>{{ questionnaire.updated_at|date:"d.m.Y H:i" }}</strong></div>
-            <div><div class="muted small">Статус</div><strong>{{ questionnaire.get_status_display }}</strong></div>
+    <aside class="q-actions-card">
+        <div>
+            <div class="muted small">Действия</div>
+            <strong>Документ анкеты</strong>
         </div>
-        {% if questionnaire.face_photo_url %}
-            <div style="margin-top:14px;">
-                <a class="btn secondary" href="{{ questionnaire.face_photo_url }}" target="_blank" rel="noopener"><i data-lucide="image"></i>Фото абитуриента</a>
-            </div>
-        {% endif %}
+        <a class="btn primary" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}"><i data-lucide="download"></i>Скачать DOCX</a>
+        <form method="post" action="{% url 'portal:client_questionnaire_regenerate' questionnaire.id %}">
+            {% csrf_token %}
+            <button class="btn" type="submit" style="width:100%;"><i data-lucide="refresh-cw"></i>Перегенерировать через API</button>
+        </form>
+        <a class="btn secondary" href="{% url 'portal:client_detail' questionnaire.client.id %}"><i data-lucide="user-round"></i>Карточка клиента</a>
+        <div class="muted small">Mobile ID: {{ questionnaire.mobile_questionnaire_id|default:"-" }}</div>
+    </aside>
+</section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-body">
+        <div class="q-meta-grid">
+            <div class="q-meta-card"><div class="label">Телефон</div><div class="value">{{ questionnaire.phone|default:questionnaire.client.phone|default:"-" }}</div></div>
+            <div class="q-meta-card"><div class="label">Email</div><div class="value">{{ questionnaire.email|default:questionnaire.client.email|default:"-" }}</div></div>
+            <div class="q-meta-card"><div class="label">Гражданство</div><div class="value">{{ questionnaire.citizenship|default:"-" }}</div></div>
+            <div class="q-meta-card"><div class="label">Обновлена</div><div class="value">{{ questionnaire.updated_at|date:"d.m.Y H:i" }}</div></div>
+        </div>
     </div>
 </section>
 
@@ -43,30 +202,20 @@
     </div>
     <div class="panel-body">
         {% if questionnaire_sections %}
-            <div class="card-grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));">
+            <div class="q-section-grid">
                 {% for section in questionnaire_sections %}
-                    <article class="item-card" style="gap:14px;">
-                        <div class="item-card-top">
-                            <div class="item-card-title">{{ section.title }}</div>
+                    <article class="q-section-card">
+                        <div class="q-section-head">
+                            <div class="q-section-title">{{ section.title }}</div>
                             <span class="pill">{{ section.rows|length }} полей</span>
                         </div>
-                        <div class="table-wrap">
-                            <table>
-                                <tbody>
-                                    {% for row in section.rows %}
-                                        <tr>
-                                            <td class="strong" style="width:42%;">{{ row.label }}</td>
-                                            <td style="white-space:pre-wrap;">
-                                                {% if row.filled %}
-                                                    {{ row.value }}
-                                                {% else %}
-                                                    <span class="muted">Не указано</span>
-                                                {% endif %}
-                                            </td>
-                                        </tr>
-                                    {% endfor %}
-                                </tbody>
-                            </table>
+                        <div class="q-field-grid">
+                            {% for row in section.rows %}
+                                <div class="q-field {% if not row.filled %}empty{% endif %}">
+                                    <div class="q-field-label">{{ row.label }}</div>
+                                    <div class="q-field-value">{% if row.filled %}{{ row.value }}{% else %}Не указано{% endif %}</div>
+                                </div>
+                            {% endfor %}
                         </div>
                     </article>
                 {% endfor %}

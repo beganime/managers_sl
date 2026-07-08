@@ -476,130 +476,203 @@ class ClientQuestionnaire(TimeStampedModel):
 
     def generate_file(self):
         from docx import Document
-        from docx.enum.text import WD_ALIGN_PARAGRAPH
         from docx.shared import Inches, Pt
 
         template_path = os.path.join(os.path.dirname(__file__), 'document_templates', 'anketa_students_life_template_v2.docx')
         document = Document(template_path) if os.path.exists(template_path) else Document()
-        body = document._element.body
-        for child in list(body):
-            if child.tag.endswith('sectPr'):
-                continue
-            body.remove(child)
-        section = document.sections[0]
-        section.top_margin = Inches(0.55)
-        section.bottom_margin = Inches(0.55)
-        section.left_margin = Inches(0.6)
-        section.right_margin = Inches(0.6)
-        title = document.add_paragraph()
-        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
-        form_type = (self.data or {}).get('form_type') or (self.data or {}).get('application_type') or 'applicant'
-        document_title = 'Предварительная заявка школьника' if form_type == 'school_student' else 'Анкета абитуриента'
-        run = title.add_run(f"Student's Life\n{document_title}")
-        run.bold = True
-        run.font.size = Pt(18)
-        document.add_paragraph(f'Дата формирования: {timezone.localtime(timezone.now()).strftime("%d.%m.%Y %H:%M")}')
+        data = self.data or {}
 
-        sections = [
-            ('Личные данные', ('full_name', 'birth_date', 'gender', 'citizenship', 'marital_status')),
-            ('Адрес проживания', ('residence_country', 'residence_region', 'residence_city', 'residence_street', 'residence_house', 'residence_postal_code')),
-            ('Паспортные данные', ('passport_number', 'passport_issued_by', 'passport_issue_date', 'passport_expiry_date', 'has_international_passport')),
-            ('Контакты', ('phone', 'email', 'extra_phone', 'imo', 'telegram', 'preferred_contact_method')),
-            ('Родители / представители', ('parent_full_name', 'parent_relation', 'parent_contacts', 'parent_workplace', 'family_members')),
-            ('Образование', ('education_level', 'school_class', 'school_name', 'school_country', 'school_city', 'graduation_year', 'education_status')),
-            ('Достижения и языки', ('achievements', 'languages')),
-            ('Поступление', ('desired_program', 'admission_goal', 'desired_city', 'desired_country', 'desired_language', 'desired_education_level', 'admission_urgency')),
-            ('Виза', ('has_visa', 'visa_country', 'visa_city', 'visa_valid_until')),
-            ('Дополнительно', ('hobbies', 'applicant_comment', 'referral_source', 'data_processing_consent')),
-        ]
+        value_labels = {
+            'male': '???????',
+            'female': '???????',
+            'school_student': '???????? / ??????????????? ??????',
+            'applicant': '?????????? / ?????? ??????',
+            True: '??',
+            False: '???',
+        }
         labels = {
-            'form_type': 'Тип заявки',
-            'full_name': 'ФИО',
-            'birth_date': 'Дата рождения',
-            'gender': 'Пол',
-            'citizenship': 'Гражданство',
-            'marital_status': 'Семейное положение',
-            'residence_country': 'Страна',
-            'residence_region': 'Регион',
-            'residence_city': 'Город',
-            'residence_street': 'Улица',
-            'residence_house': 'Дом / квартира',
-            'residence_postal_code': 'Почтовый индекс',
-            'passport_number': 'Паспорт',
-            'passport_issued_by': 'Где оформлен',
-            'passport_issue_date': 'Дата начала действия',
-            'passport_expiry_date': 'Дата окончания действия',
-            'has_international_passport': 'Загранпаспорт',
-            'phone': 'Телефон',
+            'full_name': '???',
+            'birth_date': '???? ????????',
+            'gender': '???',
+            'citizenship': '???????????',
+            'marital_status': '???????? ?????????',
+            'residence_country': '??????',
+            'residence_region': '??????',
+            'residence_city': '?????',
+            'residence_street': '?????',
+            'residence_house': '??? / ????????',
+            'residence_postal_code': '???????? ??????',
+            'passport_number': '???????',
+            'passport_issued_by': '??? ????????',
+            'passport_issue_date': '???? ?????? ????????',
+            'passport_expiry_date': '???? ????????? ????????',
+            'has_international_passport': '?????????????',
+            'phone': '???????',
             'email': 'Email',
-            'extra_phone': 'Доп. телефон',
+            'extra_phone': '???. ???????',
             'imo': 'Imo',
             'telegram': 'Telegram',
-            'preferred_contact_method': 'Способ связи',
-            'parent_full_name': 'ФИО родителя',
-            'parent_relation': 'Кем является',
-            'parent_contacts': 'Контакты родителя',
-            'parent_workplace': 'Работа родителя',
-            'family_members': 'Семья',
-            'education_level': 'Уровень образования',
-            'school_class': 'Класс',
-            'school_name': 'Учебное заведение',
-            'school_country': 'Страна учебы',
-            'school_city': 'Город учебы',
-            'graduation_year': 'Год окончания',
-            'education_status': 'Статус',
-            'achievements': 'Достижения',
-            'languages': 'Языки',
-            'desired_program': 'Программа / Вуз',
-            'admission_goal': 'Цель',
-            'desired_city': 'Город',
-            'desired_country': 'Страна',
-            'desired_language': 'Язык обучения',
-            'desired_education_level': 'Уровень обучения',
-            'admission_urgency': 'Срочность',
-            'help_needed': 'Нужна помощь с',
-            'has_visa': 'Виза',
-            'visa_country': 'Страна визы',
-            'visa_city': 'Город визы',
-            'visa_valid_until': 'Срок визы',
-            'hobbies': 'Хобби',
-            'applicant_comment': 'Комментарий',
-            'referral_source': 'Источник',
-            'data_processing_consent': 'Согласие на обработку данных',
+            'preferred_contact_method': '?????? ?????',
+            'parent_full_name': '??? ????????',
+            'parent_relation': '??? ????????',
+            'parent_contacts': '???????? ????????',
+            'parent_workplace': '?????? ????????',
+            'family_members': '?????',
+            'education_level': '??????? ???????????',
+            'school_class': '?????',
+            'school_name': '??????? ?????????',
+            'school_country': '?????? ?????',
+            'school_city': '????? ?????',
+            'graduation_year': '??? ?????????',
+            'education_status': '??????',
+            'desired_program': '????????? / ???',
+            'admission_goal': '????',
+            'desired_city': '?????',
+            'desired_country': '??????',
+            'desired_language': '???? ????????',
+            'desired_education_level': '??????? ????????',
+            'admission_urgency': '?????????',
+            'has_visa': '????',
+            'visa_country': '?????? ????',
+            'visa_city': '????? ????',
+            'visa_valid_until': '???? ????',
+            'hobbies': '?????',
+            'applicant_comment': '???????????',
+            'referral_source': '????????',
+            'data_processing_consent': '???????? ?? ????????? ??????',
+            'status': '?????? ??????',
+            'generated_document_at': '???? ????????????',
         }
 
+        from .questionnaire_labels import QUESTIONNAIRE_DOCUMENT_LABELS, QUESTIONNAIRE_VALUE_LABELS
+
+        labels = QUESTIONNAIRE_DOCUMENT_LABELS
+        value_labels = QUESTIONNAIRE_VALUE_LABELS
+
         def render_value(value):
+            try:
+                if value in value_labels:
+                    return value_labels[value]
+            except TypeError:
+                pass
             if value in (None, '', [], {}):
-                return 'Не указано'
-            if isinstance(value, bool):
-                return 'Да' if value else 'Нет'
+                return '-'
+            if hasattr(value, 'strftime'):
+                return timezone.localtime(value).strftime('%d.%m.%Y %H:%M') if hasattr(value, 'tzinfo') and value.tzinfo else value.strftime('%d.%m.%Y')
             if isinstance(value, list):
-                lines = []
+                items = []
                 for item in value:
                     if isinstance(item, dict):
                         language = item.get('language') or item.get('name') or item.get('title')
                         level = item.get('level')
-                        lines.append(f'{language} — {level}' if language and level else str(language or item))
+                        items.append(f'{language} - {level}' if language and level else str(language or item))
                     else:
-                        lines.append(str(item))
-                return '\n'.join(lines) if lines else 'Не указано'
+                        items.append(str(item))
+                return '\n'.join(f'- {item}' for item in items) if items else '-' 
             if isinstance(value, dict):
                 return '\n'.join(f'{labels.get(str(key), key)}: {render_value(val)}' for key, val in value.items())
             return str(value)
 
-        for section_title, fields in sections:
-            document.add_heading(section_title, level=2)
+        def clear_cell(cell):
+            for paragraph in cell.paragraphs:
+                paragraph.clear()
+
+        def set_cell(cell, value, bold=False, size=8):
+            clear_cell(cell)
+            run = cell.paragraphs[0].add_run(str(value or ''))
+            run.bold = bold
+            run.font.size = Pt(size)
+
+        def set_pair(table, row_index, field_one, value_one, field_two=None, value_two=None):
+            cells = table.rows[row_index].cells
+            set_cell(cells[0], labels.get(field_one, field_one), bold=True)
+            set_cell(cells[3], render_value(value_one))
+            if field_two and len(cells) > 6:
+                set_cell(cells[5], labels.get(field_two, field_two), bold=True)
+                set_cell(cells[6], render_value(value_two))
+            elif len(cells) > 6:
+                set_cell(cells[5], '')
+                set_cell(cells[6], '')
+
+        def append_pair(table, field_one, value_one, field_two=None, value_two=None):
+            cells = table.add_row().cells
+            if len(cells) >= 7:
+                set_cell(cells[0], labels.get(field_one, field_one), bold=True)
+                set_cell(cells[3], render_value(value_one))
+                if field_two:
+                    set_cell(cells[5], labels.get(field_two, field_two), bold=True)
+                    set_cell(cells[6], render_value(value_two))
+
+        if len(document.tables) >= 14:
+            tables = document.tables
+            form_type = data.get('form_type') or data.get('application_type') or 'applicant'
+            title = 'ПРЕДВАРИТЕЛЬНАЯ ЗАЯВКА ШКОЛЬНИКА' if form_type == 'school_student' else 'АНКЕТА АБИТУРИЕНТА'
+            set_cell(
+                tables[0].cell(0, 0),
+                f'{title}\nПерсональная карточка для поступления и сопровождения\nДата формирования: {timezone.localtime(timezone.now()):%d.%m.%Y %H:%M}',
+                bold=True,
+                size=12,
+            )
+            set_cell(tables[0].cell(0, 1), 'ФОТО\n3 × 4 см\nФото см. по ссылке в карточке', bold=True)
+
+            set_pair(tables[1], 1, 'full_name', data.get('full_name') or self.full_name, 'birth_date', data.get('birth_date'))
+            set_pair(tables[1], 2, 'gender', data.get('gender'), 'citizenship', data.get('citizenship') or self.citizenship)
+            set_pair(tables[1], 3, 'marital_status', data.get('marital_status'))
+            set_pair(tables[2], 1, 'residence_country', data.get('residence_country'), 'residence_region', data.get('residence_region'))
+            set_pair(tables[2], 2, 'residence_city', data.get('residence_city'), 'residence_street', data.get('residence_street'))
+            set_pair(tables[2], 3, 'residence_house', data.get('residence_house'), 'residence_postal_code', data.get('residence_postal_code'))
+            set_pair(tables[3], 1, 'passport_number', data.get('passport_number'), 'passport_issued_by', data.get('passport_issued_by'))
+            set_pair(tables[3], 2, 'passport_issue_date', data.get('passport_issue_date'), 'passport_expiry_date', data.get('passport_expiry_date'))
+            set_pair(tables[3], 3, 'has_international_passport', data.get('has_international_passport'))
+            set_pair(tables[4], 1, 'phone', data.get('phone') or self.phone, 'email', data.get('email') or self.email)
+            set_pair(tables[4], 2, 'extra_phone', data.get('extra_phone'), 'imo', data.get('imo'))
+            set_pair(tables[4], 3, 'telegram', data.get('telegram'), 'preferred_contact_method', data.get('preferred_contact_method'))
+            set_pair(tables[5], 1, 'parent_full_name', data.get('parent_full_name'), 'parent_relation', data.get('parent_relation'))
+            set_pair(tables[5], 2, 'parent_contacts', data.get('parent_contacts'), 'parent_workplace', data.get('parent_workplace'))
+            set_pair(tables[5], 3, 'family_members', data.get('family_members'))
+            set_pair(tables[6], 1, 'education_level', data.get('education_level'), 'school_name', data.get('school_name'))
+            set_pair(tables[6], 2, 'school_country', data.get('school_country'), 'school_city', data.get('school_city'))
+            set_pair(tables[6], 3, 'graduation_year', data.get('graduation_year'), 'education_status', data.get('education_status'))
+            if data.get('school_class'):
+                append_pair(tables[6], 'school_class', data.get('school_class'))
+            set_pair(tables[7], 1, 'desired_program', data.get('desired_program') or self.desired_program, 'admission_goal', data.get('admission_goal'))
+            set_pair(tables[7], 2, 'desired_city', data.get('desired_city') or self.desired_city, 'desired_country', data.get('desired_country') or self.desired_country)
+            set_pair(tables[7], 3, 'desired_language', data.get('desired_language'), 'desired_education_level', data.get('desired_education_level'))
+            set_pair(tables[7], 4, 'admission_urgency', data.get('admission_urgency'))
+            set_pair(tables[8], 1, 'has_visa', data.get('has_visa'))
+            if data.get('visa_country') or data.get('visa_city'):
+                append_pair(tables[8], 'visa_country', data.get('visa_country'), 'visa_city', data.get('visa_city'))
+            if data.get('visa_valid_until'):
+                append_pair(tables[8], 'visa_valid_until', data.get('visa_valid_until'))
+            set_pair(tables[9], 1, 'referral_source', data.get('referral_source'))
+            if data.get('hobbies'):
+                append_pair(tables[9], 'hobbies', data.get('hobbies'))
+            if data.get('applicant_comment'):
+                append_pair(tables[9], 'applicant_comment', data.get('applicant_comment'))
+            append_pair(tables[9], 'data_processing_consent', data.get('data_processing_consent'))
+            languages = data.get('languages') or [{'language': labels.get('languages', 'Languages'), 'level': '-'}]
+            for index, item in enumerate(languages):
+                cells = tables[10].rows[index + 1].cells if index + 1 < len(tables[10].rows) else tables[10].add_row().cells
+                language = item.get('language') if isinstance(item, dict) else str(item)
+                level = item.get('level') if isinstance(item, dict) else '-'
+                set_cell(cells[0], language, bold=True)
+                set_cell(cells[3], render_value(level))
+            set_cell(tables[11].rows[1].cells[0], render_value(data.get('achievements')))
+            set_cell(tables[12].rows[1].cells[0], render_value(data.get('help_needed')))
+            set_pair(tables[13], 1, 'status', self.get_status_display())
+            set_pair(tables[13], 2, 'generated_document_at', timezone.now())
+        else:
+            section = document.sections[0]
+            section.top_margin = Inches(0.47)
+            section.bottom_margin = Inches(0.5)
+            section.left_margin = Inches(0.5)
+            section.right_margin = Inches(0.5)
             table = document.add_table(rows=0, cols=2)
             table.style = 'Table Grid'
-            for field in fields:
-                value = self.data.get(field)
+            for field in ('full_name', 'phone', 'email', 'citizenship', 'desired_program', 'desired_country', 'desired_city'):
                 row = table.add_row().cells
-                row[0].text = labels.get(field, field)
-                row[1].text = render_value(value)
-
-        if self.data.get('help_needed'):
-            document.add_heading('Нужна помощь с', level=2)
-            document.add_paragraph(render_value(self.data.get('help_needed')))
+                set_cell(row[0], labels.get(field, field), bold=True)
+                set_cell(row[1], render_value(data.get(field) or getattr(self, field, '')))
 
         buffer = io.BytesIO()
         document.save(buffer)
