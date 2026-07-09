@@ -174,10 +174,10 @@
             <div class="muted small">Действия</div>
             <strong>Документ анкеты</strong>
         </div>
-        <a class="btn primary" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}"><i data-lucide="download"></i>Скачать DOCX</a>
+        <a class="btn primary" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}"><i data-lucide="download"></i>Скачать документ</a>
         <form method="post" action="{% url 'portal:client_questionnaire_regenerate' questionnaire.id %}">
             {% csrf_token %}
-            <button class="btn" type="submit" style="width:100%;"><i data-lucide="refresh-cw"></i>Перегенерировать через API</button>
+            <button class="btn" type="submit" style="width:100%;"><i data-lucide="refresh-cw"></i>Перегенерировать в Student’s Life</button>
         </form>
         <a class="btn secondary" href="{% url 'portal:client_detail' questionnaire.client.id %}"><i data-lucide="user-round"></i>Карточка клиента</a>
         <div class="muted small">Mobile ID: {{ questionnaire.mobile_questionnaire_id|default:"-" }}</div>
@@ -232,15 +232,15 @@
     </div>
     <div class="panel-body">
         <div class="grid cols-3">
-            <div><div class="muted small">Файл в Manager SL</div><strong>{% if questionnaire.generated_file %}Сформирован{% else %}Не сформирован{% endif %}</strong></div>
+            <div><div class="muted small">Файл Student’s Life</div><strong>{% if student_life_document_url %}Готов к скачиванию{% elif questionnaire.generated_file %}Локальная копия{% else %}Не сформирован{% endif %}</strong></div>
             <div><div class="muted small">Mobile questionnaire ID</div><strong>{{ questionnaire.mobile_questionnaire_id|default:"-" }}</strong></div>
             <div><div class="muted small">Последняя синхронизация</div><strong>{{ questionnaire.last_synced_at|date:"d.m.Y H:i"|default:"-" }}</strong></div>
         </div>
         <div class="contact-actions" style="margin-top:14px;">
-            <a class="btn primary" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}"><i data-lucide="download"></i>Скачать DOCX</a>
+            <a class="btn primary" href="{% url 'portal:client_questionnaire_download' questionnaire.id %}"><i data-lucide="download"></i>Скачать документ</a>
             <form method="post" action="{% url 'portal:client_questionnaire_regenerate' questionnaire.id %}" style="display:inline;">
                 {% csrf_token %}
-                <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Перегенерировать через API</button>
+                <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Перегенерировать в Student’s Life</button>
             </form>
         </div>
     </div>

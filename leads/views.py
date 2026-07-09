@@ -267,10 +267,7 @@ class MobileClientQuestionnaireSyncAPIView(APIView):
                 'last_synced_at': timezone.now(),
             },
         )
-        questionnaire.generate_file()
-        generated_url = ''
-        if questionnaire.generated_file:
-            generated_url = request.build_absolute_uri(questionnaire.generated_file.url)
+        generated_url = request.data.get('generated_document_url') or request.data.get('document_file') or ''
         return Response({
             'id': questionnaire.id,
             'client_id': client.id,

@@ -211,6 +211,16 @@ def build_questionnaire_sections(data):
     return sections
 
 
+def questionnaire_generated_document_url(questionnaire):
+    data = questionnaire.data or {}
+    return (
+        data.get('generated_document_url')
+        or data.get('document_file')
+        or data.get('generated_document')
+        or ''
+    )
+
+
 NAV_GROUPS = (
     {
         'key': 'dashboard',
@@ -2530,6 +2540,7 @@ class ClientQuestionnaireDetailView(PortalContextMixin, TemplateView):
         context['questionnaire'] = questionnaire
         context['data'] = questionnaire.data or {}
         context['questionnaire_sections'] = build_questionnaire_sections(context['data'])
+        context['student_life_document_url'] = questionnaire_generated_document_url(questionnaire)
         return context
 
 
@@ -2541,6 +2552,9 @@ class ClientQuestionnaireDownloadView(PortalContextMixin, View):
             ClientQuestionnaire.objects.select_related('client').filter(client_id__in=client_queryset(request.user).values('id')),
             pk=pk,
         )
+        student_life_url = questionnaire_generated_document_url(questionnaire)
+        if student_life_url:
+            return redirect(student_life_url)
         if not questionnaire.generated_file:
             questionnaire.generate_file()
         if not questionnaire.generated_file:
@@ -2574,8 +2588,7 @@ class ClientQuestionnaireRegenerateView(PortalContextMixin, View):
         questionnaire.data = data
         questionnaire.status = payload.get('status') or questionnaire.status
         questionnaire.last_synced_at = timezone.now()
-        questionnaire.generate_file()
-        questionnaire.save(update_fields=['data', 'status', 'generated_file', 'last_synced_at', 'updated_at'])
+        questionnaire.save(update_fields=['data', 'status', 'last_synced_at', 'updated_at'])
         messages.success(request, 'Документ анкеты перегенерирован через API клиентского приложения.')
         return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
 
