@@ -9,11 +9,15 @@ from apps.education.models import City, Country, Intake, Program, ProgramFee, Re
 from apps.erp_services.models import Service
 
 from .serializers import (
+    ClientIntakeSerializer,
     ClientCitySerializer,
     ClientCountrySerializer,
+    ClientProgramFeeSerializer,
     ClientProgramSerializer,
     ClientServiceSerializer,
     ClientUniversitySerializer,
+    absolute_file_url,
+    decimal_to_string,
 )
 
 
@@ -141,6 +145,117 @@ class ClientUniversityViewSet(ClientReadOnlyViewSet):
 class ClientProgramViewSet(ClientReadOnlyViewSet):
     serializer_class = ClientProgramSerializer
     cache_namespace = 'programs'
+
+    def list(self, request, *args, **kwargs):
+        try:
+            return super().list(request, *args, **kwargs)
+        except Exception:
+            return self._fallback_list_from_universities(request)
+
+    def _fallback_list_from_universities(self, request):
+        params = request.query_params
+        universities = University.objects.select_related('country', 'city').prefetch_related(
+            Prefetch(
+                'programs',
+                queryset=Program.objects.filter(is_active=True, is_archived=False).prefetch_related(
+                    Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')),
+                    Prefetch('intakes', queryset=Intake.objects.filter(is_active=True).order_by('application_deadline', 'start_date')),
+                ).order_by('name'),
+            )
+        ).filter(is_active=True, country__is_active=True)
+        universities = filter_id_or_name(universities, params.get('country'), 'country_id', 'country__name')
+        universities = filter_id_or_name(universities, params.get('city'), 'city_id', 'city__name')
+        universities = filter_id_or_name(universities, params.get('university'), 'id', 'name')
+
+        search = (params.get('search') or params.get('q') or '').strip().lower()
+        level = (params.get('degree') or params.get('level') or '').strip().lower()
+        language = (params.get('language') or '').strip().lower()
+        price_min = decimal_param(params, 'price_min')
+        price_max = decimal_param(params, 'price_max')
+        rows = []
+
+        for university in universities:
+            for program in university.programs.all():
+                fee = next(iter(program.fees.all()), None)
+                intake = next(iter(program.intakes.all()), None)
+                tuition_fee = fee.tuition_fee if fee else None
+                text = ' '.join(
+                    str(value or '').lower()
+                    for value in (
+                        program.name,
+                        program.faculty,
+                        program.language,
+                        program.description,
+                        program.admission_requirements,
+                        university.name,
+                        university.country.name if university.country_id else '',
+                        university.city.name if university.city_id else '',
+                    )
+                )
+                if search and search not in text:
+                    continue
+                if level and level not in str(program.degree or '').lower() and level not in str(program.get_degree_display()).lower():
+                    continue
+                if language and language not in str(program.language or '').lower():
+                    continue
+                if price_min is not None and tuition_fee is not None and tuition_fee < price_min:
+                    continue
+                if price_max is not None and tuition_fee is not None and tuition_fee > price_max:
+                    continue
+
+                rows.append({
+                    'id': program.id,
+                    'program_id': program.id,
+                    'program_title': program.name,
+                    'university': university.id,
+                    'university_id': university.id,
+                    'university_name': university.name,
+                    'country': university.country_id,
+                    'country_id': university.country_id,
+                    'country_name': university.country.name if university.country_id else '',
+                    'city': university.city_id,
+                    'city_id': university.city_id,
+                    'city_name': university.city.name if university.city_id else '',
+                    'name': program.name,
+                    'degree': program.degree,
+                    'level': program.get_degree_display(),
+                    'degree_display': program.get_degree_display(),
+                    'faculty': program.faculty,
+                    'language': program.language,
+                    'duration': program.duration,
+                    'description': program.description,
+                    'admission_requirements': program.admission_requirements,
+                    'tuition_fee': decimal_to_string(tuition_fee),
+                    'currency': fee.currency.code if fee and fee.currency_id else '',
+                    'currency_symbol': fee.currency.symbol if fee and fee.currency_id else '',
+                    'converted_tuition_fee': None,
+                    'selected_currency': '',
+                    'application_deadline': intake.application_deadline if intake else None,
+                    'fees': ClientProgramFeeSerializer([fee], many=True, context={'request': request}).data if fee else [],
+                    'intakes': ClientIntakeSerializer([intake], many=True, context={'request': request}).data if intake else [],
+                    'required_documents': [],
+                    'university_logo': absolute_file_url(request, university.logo),
+                    'university_cover': absolute_file_url(request, university.cover_image),
+                })
+
+        ordering = params.get('ordering') or ''
+        if ordering == 'price_desc':
+            rows.sort(key=lambda item: Decimal(item['tuition_fee'] or '0'), reverse=True)
+        elif ordering in {'title_asc', 'name'}:
+            rows.sort(key=lambda item: item['program_title'])
+        elif ordering == 'country_asc':
+            rows.sort(key=lambda item: (item['country_name'], item['city_name'], item['program_title']))
+        elif ordering == 'city_asc':
+            rows.sort(key=lambda item: (item['city_name'], item['country_name'], item['program_title']))
+        elif ordering == 'deadline_asc':
+            rows.sort(key=lambda item: (item['application_deadline'] is None, item['application_deadline'] or '9999-12-31'))
+        else:
+            rows.sort(key=lambda item: Decimal(item['tuition_fee'] or '0'))
+
+        page = self.paginate_queryset(rows)
+        if page is not None:
+            return self.get_paginated_response(page)
+        return Response(rows)
 
     def get_queryset(self):
         first_fee = ProgramFee.objects.filter(program=OuterRef('pk')).order_by('-created_at', '-id')
