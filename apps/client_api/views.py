@@ -167,6 +167,67 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
         except Exception:
             return self._fallback_list_from_universities(request)
 
+    def retrieve(self, request, *args, **kwargs):
+        try:
+            return super().retrieve(request, *args, **kwargs)
+        except Exception:
+            return self._fallback_retrieve(request, kwargs.get(self.lookup_field, kwargs.get('pk')))
+
+    def _program_payload(self, request, program):
+        university = program.university
+        fee = next(iter(program.fees.all()), None)
+        intake = next(iter(program.intakes.all()), None)
+        tuition_fee = fee.tuition_fee if fee else None
+        return {
+            'id': program.id,
+            'program_id': program.id,
+            'program_title': program.name,
+            'university': university.id,
+            'university_id': university.id,
+            'university_name': university.name,
+            'country': university.country_id,
+            'country_id': university.country_id,
+            'country_name': university.country.name if university.country_id else '',
+            'city': university.city_id,
+            'city_id': university.city_id,
+            'city_name': university.city.name if university.city_id else '',
+            'name': program.name,
+            'degree': program.degree,
+            'level': program.get_degree_display(),
+            'degree_display': program.get_degree_display(),
+            'faculty': program.faculty,
+            'language': program.language,
+            'duration': program.duration,
+            'description': program.description,
+            'admission_requirements': program.admission_requirements,
+            'tuition_fee': decimal_to_string(tuition_fee),
+            'currency': fee.currency.code if fee and fee.currency_id else '',
+            'currency_symbol': fee.currency.symbol if fee and fee.currency_id else '',
+            'converted_tuition_fee': None,
+            'selected_currency': '',
+            'application_deadline': intake.application_deadline if intake else None,
+            'fees': ClientProgramFeeSerializer([fee], many=True, context={'request': request}).data if fee else [],
+            'intakes': ClientIntakeSerializer([intake], many=True, context={'request': request}).data if intake else [],
+            'required_documents': [],
+            'university_logo': absolute_file_url(request, university.logo),
+            'university_cover': absolute_file_url(request, university.cover_image),
+        }
+
+    def _fallback_retrieve(self, request, pk):
+        program = (
+            Program.objects
+            .select_related('university', 'university__country', 'university__city')
+            .prefetch_related(
+                Prefetch('fees', queryset=self.fee_queryset()),
+                Prefetch('intakes', queryset=Intake.objects.filter(is_active=True).order_by('application_deadline', 'start_date')),
+            )
+            .filter(pk=pk, is_active=True, is_archived=False, university__is_active=True, university__country__is_active=True)
+            .first()
+        )
+        if not program:
+            return Response({'detail': 'Program not found.'}, status=404)
+        return Response(self._program_payload(request, program))
+
     def _fallback_list_from_universities(self, request):
         params = request.query_params
         universities = University.objects.select_related('country', 'city').prefetch_related(
@@ -224,40 +285,7 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
                 if price_max is not None and tuition_fee is not None and tuition_fee > price_max:
                     continue
 
-                rows.append({
-                    'id': program.id,
-                    'program_id': program.id,
-                    'program_title': program.name,
-                    'university': university.id,
-                    'university_id': university.id,
-                    'university_name': university.name,
-                    'country': university.country_id,
-                    'country_id': university.country_id,
-                    'country_name': university.country.name if university.country_id else '',
-                    'city': university.city_id,
-                    'city_id': university.city_id,
-                    'city_name': university.city.name if university.city_id else '',
-                    'name': program.name,
-                    'degree': program.degree,
-                    'level': program.get_degree_display(),
-                    'degree_display': program.get_degree_display(),
-                    'faculty': program.faculty,
-                    'language': program.language,
-                    'duration': program.duration,
-                    'description': program.description,
-                    'admission_requirements': program.admission_requirements,
-                    'tuition_fee': decimal_to_string(tuition_fee),
-                    'currency': fee.currency.code if fee and fee.currency_id else '',
-                    'currency_symbol': fee.currency.symbol if fee and fee.currency_id else '',
-                    'converted_tuition_fee': None,
-                    'selected_currency': '',
-                    'application_deadline': intake.application_deadline if intake else None,
-                    'fees': ClientProgramFeeSerializer([fee], many=True, context={'request': request}).data if fee else [],
-                    'intakes': ClientIntakeSerializer([intake], many=True, context={'request': request}).data if intake else [],
-                    'required_documents': [],
-                    'university_logo': absolute_file_url(request, university.logo),
-                    'university_cover': absolute_file_url(request, university.cover_image),
-                })
+                rows.append(self._program_payload(request, program))
 
         ordering = params.get('ordering') or ''
         if ordering == 'price_desc':
