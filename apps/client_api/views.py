@@ -43,6 +43,14 @@ def decimal_param(params, name):
         return None
 
 
+def text_param(params, *names):
+    for name in names:
+        value = str(params.get(name) or '').strip()
+        if value:
+            return value
+    return ''
+
+
 class ClientReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [permissions.AllowAny]
 
@@ -146,6 +154,13 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
     serializer_class = ClientProgramSerializer
     cache_namespace = 'programs'
 
+    def fee_queryset(self):
+        qs = ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')
+        currency = text_param(self.request.query_params, 'currency', 'fee_currency').upper()
+        if currency:
+            qs = qs.filter(currency__code__iexact=currency)
+        return qs
+
     def list(self, request, *args, **kwargs):
         try:
             return super().list(request, *args, **kwargs)
@@ -158,7 +173,7 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
             Prefetch(
                 'programs',
                 queryset=Program.objects.filter(is_active=True, is_archived=False).prefetch_related(
-                    Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')),
+                    Prefetch('fees', queryset=self.fee_queryset()),
                     Prefetch('intakes', queryset=Intake.objects.filter(is_active=True).order_by('application_deadline', 'start_date')),
                 ).order_by('name'),
             )
@@ -166,10 +181,14 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
         universities = filter_id_or_name(universities, params.get('country'), 'country_id', 'country__name')
         universities = filter_id_or_name(universities, params.get('city'), 'city_id', 'city__name')
         universities = filter_id_or_name(universities, params.get('university'), 'id', 'name')
+        university_name = text_param(params, 'university_name', 'university_search', 'university_q')
+        if university_name:
+            universities = universities.filter(Q(name__icontains=university_name) | Q(legal_name__icontains=university_name))
 
         search = (params.get('search') or params.get('q') or '').strip().lower()
         level = (params.get('degree') or params.get('level') or '').strip().lower()
         language = (params.get('language') or '').strip().lower()
+        currency = text_param(params, 'currency', 'fee_currency').upper()
         price_min = decimal_param(params, 'price_min')
         price_max = decimal_param(params, 'price_max')
         rows = []
@@ -178,6 +197,8 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
             for program in university.programs.all():
                 fee = next(iter(program.fees.all()), None)
                 intake = next(iter(program.intakes.all()), None)
+                if currency and not fee:
+                    continue
                 tuition_fee = fee.tuition_fee if fee else None
                 text = ' '.join(
                     str(value or '').lower()
@@ -258,20 +279,28 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
         return Response(rows)
 
     def get_queryset(self):
+        params = self.request.query_params
+        currency = text_param(params, 'currency', 'fee_currency').upper()
         first_fee = ProgramFee.objects.filter(program=OuterRef('pk')).order_by('-created_at', '-id')
+        if currency:
+            first_fee = first_fee.filter(currency__code__iexact=currency)
         first_intake = Intake.objects.filter(program=OuterRef('pk'), is_active=True).order_by('application_deadline', 'start_date', 'id')
         qs = Program.objects.select_related('university', 'university__country', 'university__city').prefetch_related(
-            Prefetch('fees', queryset=ProgramFee.objects.select_related('currency').order_by('-created_at', '-id')),
+            Prefetch('fees', queryset=self.fee_queryset()),
             Prefetch('intakes', queryset=Intake.objects.filter(is_active=True).order_by('application_deadline', 'start_date')),
             Prefetch('required_documents', queryset=RequiredDocument.objects.filter(is_active=True).order_by('sort_order', 'title')),
         ).filter(is_active=True, is_archived=False, university__is_active=True, university__country__is_active=True).annotate(
             first_tuition_fee=Subquery(first_fee.values('tuition_fee')[:1], output_field=DecimalField(max_digits=14, decimal_places=2)),
             first_deadline=Subquery(first_intake.values('application_deadline')[:1], output_field=DateField()),
         )
-        params = self.request.query_params
+        if currency:
+            qs = qs.filter(first_tuition_fee__isnull=False)
         qs = filter_id_or_name(qs, params.get('country'), 'university__country_id', 'university__country__name')
         qs = filter_id_or_name(qs, params.get('city'), 'university__city_id', 'university__city__name')
         qs = filter_id_or_name(qs, params.get('university'), 'university_id', 'university__name')
+        university_name = text_param(params, 'university_name', 'university_search', 'university_q')
+        if university_name:
+            qs = qs.filter(Q(university__name__icontains=university_name) | Q(university__legal_name__icontains=university_name))
         degree = params.get('degree') or params.get('level')
         if degree:
             qs = qs.filter(Q(degree__iexact=degree) | Q(degree__icontains=degree))
