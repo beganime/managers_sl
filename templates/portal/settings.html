@@ -35,4 +35,38 @@
         </div>
     </div>
 </section>
+
+{% if can_access_admin %}
+<section class="panel" style="margin-top:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Сервер Student’s Life API</h2>
+        <span class="pill">Документы и анкеты клиентов</span>
+    </div>
+    <div class="panel-body">
+        <div class="list" style="margin-bottom:14px;">
+            <div class="list-row"><span class="muted">Текущий сервер</span><strong>{{ current_students_life_api_url }}</strong></div>
+            <div class="list-row"><span class="muted">Service API key</span><span class="pill {% if students_life_api_key_configured %}ok{% else %}danger{% endif %}">{% if students_life_api_key_configured %}Настроен{% else %}Не настроен{% endif %}</span></div>
+        </div>
+        <form method="post" class="grid">
+            {% csrf_token %}
+            <label>
+                <span class="muted small">Куда подключаться</span>
+                <select class="select" name="students_life_api_mode">
+                    <option value="proxy">Proxy: {{ students_life_proxy_url }}</option>
+                    <option value="original">Оригинальный домен: {{ students_life_original_url }}</option>
+                    <option value="custom">Свой URL</option>
+                </select>
+            </label>
+            <label>
+                <span class="muted small">Свой proxy/base URL, если выбран “Свой URL”</span>
+                <input class="input" type="url" name="students_life_api_custom_url" value="{{ current_students_life_api_url }}" placeholder="https://students-life.ru/api2/api/v1/">
+            </label>
+            <button class="btn primary" type="submit"><i data-lucide="server-cog"></i>Сохранить сервер API</button>
+        </form>
+        <div class="empty" style="margin-top:12px; text-align:left;">
+            Manager SL использует этот URL для проверки документов клиентов и анкет. По умолчанию используется proxy <strong>{{ students_life_proxy_url }}</strong>. Старый домен можно вернуть выбором “Оригинальный домен”.
+        </div>
+    </div>
+</section>
+{% endif %}
 {% endblock %}

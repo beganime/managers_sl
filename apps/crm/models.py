@@ -359,6 +359,27 @@ class ClientFile(TimeStampedModel):
     review_comment = models.TextField('Review comment', blank=True)
     reviewed_at = models.DateTimeField('Reviewed at', null=True, blank=True)
     reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, verbose_name='Reviewed by', on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_crm_files')
+    external_review_data = models.JSONField('Ответ проверки Student’s Life', default=dict, blank=True)
+
+    @property
+    def external_reviewed_by_name(self):
+        data = self.external_review_data or {}
+        return data.get('reviewed_by_name') or ''
+
+    @property
+    def external_reviewed_by_email(self):
+        data = self.external_review_data or {}
+        return data.get('reviewed_by_email') or ''
+
+    @property
+    def reviewed_by_display(self):
+        data = self.external_review_data or {}
+        external_display = data.get('reviewed_by_display') or data.get('reviewed_by_name') or data.get('reviewed_by_email')
+        if external_display:
+            return external_display
+        if self.reviewed_by_id:
+            return self.reviewed_by.get_full_name() or self.reviewed_by.email
+        return ''
 
 
 class ManagerDocumentPlan(TimeStampedModel, ActiveModel):
@@ -461,6 +482,27 @@ class ClientQuestionnaire(TimeStampedModel):
     generated_file = models.FileField('Сгенерированный документ', upload_to=client_questionnaire_document_upload_to, blank=True, null=True)
     submitted_at = models.DateTimeField('Дата заполнения', null=True, blank=True)
     last_synced_at = models.DateTimeField('Последняя синхронизация', null=True, blank=True)
+
+    @property
+    def reviewed_at_external(self):
+        return (self.data or {}).get('reviewed_at') or ''
+
+    @property
+    def reviewed_by_display(self):
+        data = self.data or {}
+        return data.get('reviewed_by_display') or data.get('reviewed_by_name') or data.get('reviewed_by_email') or ''
+
+    @property
+    def reviewed_by_name(self):
+        return (self.data or {}).get('reviewed_by_name') or ''
+
+    @property
+    def reviewed_by_email(self):
+        return (self.data or {}).get('reviewed_by_email') or ''
+
+    @property
+    def review_comment(self):
+        return (self.data or {}).get('review_comment') or (self.data or {}).get('comment') or ''
 
     class Meta:
         verbose_name = 'Анкета клиента'

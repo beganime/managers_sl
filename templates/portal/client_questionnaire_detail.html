@@ -191,7 +191,12 @@
             <div class="q-meta-card"><div class="label">Email</div><div class="value">{{ questionnaire.email|default:questionnaire.client.email|default:"-" }}</div></div>
             <div class="q-meta-card"><div class="label">Гражданство</div><div class="value">{{ questionnaire.citizenship|default:"-" }}</div></div>
             <div class="q-meta-card"><div class="label">Обновлена</div><div class="value">{{ questionnaire.updated_at|date:"d.m.Y H:i" }}</div></div>
+            <div class="q-meta-card"><div class="label">Проверил</div><div class="value">{{ questionnaire.reviewed_by_display|default:"-" }}</div></div>
+            <div class="q-meta-card"><div class="label">Проверена</div><div class="value">{{ questionnaire.reviewed_at_external|default:"-" }}</div></div>
         </div>
+        {% if questionnaire.review_comment %}
+            <div class="empty" style="text-align:left; margin-top:12px;">Комментарий проверки: {{ questionnaire.review_comment }}</div>
+        {% endif %}
     </div>
 </section>
 
@@ -243,6 +248,33 @@
                 <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Перегенерировать в Student’s Life</button>
             </form>
         </div>
+    </div>
+</section>
+
+<section class="panel" style="margin-top:16px;" x-data="{ rejectOpen: false }">
+    <div class="panel-header">
+        <h2 class="panel-title">Проверка анкеты</h2>
+        <span class="pill">Student’s Life API</span>
+    </div>
+    <div class="panel-body">
+        <div class="contact-actions">
+            <form method="post" action="{% url 'portal:client_questionnaire_review' questionnaire.id %}" data-disable-on-submit>
+                {% csrf_token %}
+                <input type="hidden" name="action" value="approve">
+                <button class="btn primary" type="submit"><i data-lucide="check"></i>Одобрить анкету</button>
+            </form>
+            <button class="btn danger" type="button" @click="rejectOpen = !rejectOpen"><i data-lucide="x"></i>Отклонить</button>
+        </div>
+
+        <form x-show="rejectOpen" x-cloak method="post" action="{% url 'portal:client_questionnaire_review' questionnaire.id %}" style="margin-top:16px;" data-disable-on-submit>
+            {% csrf_token %}
+            <input type="hidden" name="action" value="reject">
+            <label>
+                <span class="muted small">Причина отклонения для клиента</span>
+                <textarea class="textarea" name="review_comment" rows="4" required>{{ questionnaire.review_comment }}</textarea>
+            </label>
+            <button class="btn danger" type="submit" style="margin-top:10px;"><i data-lucide="save"></i>Отправить отказ</button>
+        </form>
     </div>
 </section>
 {% endblock %}

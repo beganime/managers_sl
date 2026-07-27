@@ -27,3 +27,17 @@ class OrderedModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class SystemSetting(TimeStampedModel):
+    key = models.CharField('Ключ', max_length=120, unique=True, db_index=True)
+    value = models.TextField('Значение', blank=True)
+    description = models.CharField('Описание', max_length=255, blank=True)
+
+    class Meta:
+        verbose_name = 'Системная настройка'
+        verbose_name_plural = 'Системные настройки'
+        ordering = ['key']
+
+    def __str__(self):
+        return self.key

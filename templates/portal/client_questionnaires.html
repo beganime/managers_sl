@@ -33,6 +33,12 @@
                                 {% if questionnaire.data.school_class %}<span>Класс: {{ questionnaire.data.school_class }}</span>{% endif %}
                                 <span>{{ questionnaire.desired_program|default:"Программа не указана" }}</span>
                                 <span>Обновлена: {{ questionnaire.updated_at|date:"d.m.Y H:i" }}</span>
+                                {% if questionnaire.reviewed_by_display %}
+                                    <span>Проверил: {{ questionnaire.reviewed_by_display }}{% if questionnaire.reviewed_at_external %} · {{ questionnaire.reviewed_at_external }}{% endif %}</span>
+                                {% endif %}
+                                {% if questionnaire.review_comment %}
+                                    <span>Комментарий: {{ questionnaire.review_comment|truncatechars:80 }}</span>
+                                {% endif %}
                             </div>
                         </div>
                         {% if questionnaire.status == "approved" %}

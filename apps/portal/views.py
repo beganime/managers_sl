@@ -5,7 +5,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from urllib import error as urlerror
 from urllib import request as urlrequest
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlsplit
 
 from django.conf import settings
 from django.contrib import messages
@@ -19,7 +19,7 @@ from django.http import FileResponse, Http404
 from django.db.models import Case, Count, IntegerField, Prefetch, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import NoReverseMatch, reverse, reverse_lazy
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 from django.utils import timezone
 from django.utils.text import slugify
 from django.utils.decorators import method_decorator
@@ -28,6 +28,7 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
+from apps.core.models import SystemSetting
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
 from apps.education.cache import education_cache_get, education_cache_set, make_education_cache_key
@@ -1300,11 +1301,42 @@ class SettingsView(PortalContextMixin, TemplateView):
     active_page = 'settings'
     page_title = 'Настройки'
 
+    def post(self, request, *args, **kwargs):
+        if not (request.user.is_staff or request.user.is_superuser):
+            messages.error(request, 'Менять сервер Student’s Life может только администратор.')
+            return redirect('portal:settings')
+
+        mode = request.POST.get('students_life_api_mode') or 'proxy'
+        proxy_url = getattr(settings, 'STUDENTS_LIFE_DEFAULT_API_BASE_URL', 'https://students-life.ru/api2/api/v1/')
+        original_url = getattr(settings, 'STUDENTS_LIFE_ORIGINAL_API_BASE_URL', 'https://stud-life.com/api/v1/')
+        if mode == 'original':
+            value = original_url
+        elif mode == 'custom':
+            value = request.POST.get('students_life_api_custom_url', '').strip()
+        else:
+            value = proxy_url
+
+        parsed = urlsplit(value)
+        if parsed.scheme not in {'http', 'https'} or not parsed.netloc:
+            messages.error(request, 'Укажите корректный URL сервера, например https://students-life.ru/api2/api/v1/')
+            return redirect('portal:settings')
+
+        set_students_life_api_base_url(value)
+        messages.success(request, f'Сервер Student’s Life API обновлён: {value.rstrip("/")}/')
+        return redirect('portal:settings')
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         employee = context.get('employee_profile')
+        proxy_url = getattr(settings, 'STUDENTS_LIFE_DEFAULT_API_BASE_URL', 'https://students-life.ru/api2/api/v1/')
+        original_url = getattr(settings, 'STUDENTS_LIFE_ORIGINAL_API_BASE_URL', 'https://stud-life.com/api/v1/')
+        current_students_life_api_url = get_students_life_api_base_url().rstrip('/') + '/'
         context.update({
             'access': getattr(employee, 'access', None) if employee else None,
+            'students_life_proxy_url': proxy_url,
+            'students_life_original_url': original_url,
+            'current_students_life_api_url': current_students_life_api_url,
+            'students_life_api_key_configured': bool(getattr(settings, 'STUDENTS_LIFE_API_KEY', '') or getattr(settings, 'LEADS_API_KEY', '')),
             'api_links': [
                 {'label': 'CRM API', 'url': '/api/v1/crm/'},
                 {'label': 'Education API', 'url': '/api/v1/education/'},
@@ -2125,8 +2157,133 @@ class ClientDocumentCreateView(PortalContextMixin, TemplateView):
         return self.render_to_response(context)
 
 
-def notify_mobile_document_review(document):
-    base_url = str(getattr(settings, 'STUDENTS_LIFE_API_BASE_URL', '') or '').rstrip('/')
+STUDENTS_LIFE_API_BASE_SETTING_KEY = 'students_life_api_base_url'
+
+
+def get_students_life_api_base_url():
+    configured = ''
+    try:
+        configured = (
+            SystemSetting.objects
+            .filter(key=STUDENTS_LIFE_API_BASE_SETTING_KEY)
+            .values_list('value', flat=True)
+            .first()
+        ) or ''
+    except Exception:
+        configured = ''
+    return str(
+        configured
+        or getattr(settings, 'STUDENTS_LIFE_API_BASE_URL', '')
+        or getattr(settings, 'STUDENTS_LIFE_DEFAULT_API_BASE_URL', '')
+    ).strip().rstrip('/')
+
+
+def set_students_life_api_base_url(value):
+    value = str(value or '').strip().rstrip('/')
+    SystemSetting.objects.update_or_create(
+        key=STUDENTS_LIFE_API_BASE_SETTING_KEY,
+        defaults={
+            'value': value,
+            'description': 'Base URL API Student’s Life для проверки документов и анкет.',
+        },
+    )
+    return value
+
+
+def portal_user_review_payload(user):
+    display_name = full_name(user)
+    return {
+        'reviewed_by_name': display_name or getattr(user, 'email', '') or str(user),
+        'reviewed_by_email': getattr(user, 'email', '') or '',
+    }
+
+
+def parse_api_datetime(value):
+    if not value:
+        return None
+    parsed = parse_datetime(str(value))
+    if parsed and timezone.is_naive(parsed):
+        parsed = timezone.make_aware(parsed, timezone.get_current_timezone())
+    return parsed
+
+
+def normalize_students_life_payload(payload):
+    if isinstance(payload, dict):
+        for key in ('document', 'application_form', 'questionnaire', 'data', 'result'):
+            nested = payload.get(key)
+            if isinstance(nested, dict):
+                merged = dict(nested)
+                for exposed_key in (
+                    'document_id', 'id', 'status', 'admin_comment', 'comment', 'review_comment',
+                    'reviewed_at', 'reviewed_by_id', 'reviewed_by_name', 'reviewed_by_email',
+                    'reviewed_by_display', 'generated_document_url', 'document_file',
+                ):
+                    if exposed_key in payload and exposed_key not in merged:
+                        merged[exposed_key] = payload[exposed_key]
+                return merged
+        return payload
+    return {}
+
+
+def update_client_document_from_students_life(document, payload):
+    data = normalize_students_life_payload(payload)
+    if not data:
+        return document
+    status_value = data.get('status')
+    if status_value in {ClientFile.STATUS_PENDING, ClientFile.STATUS_APPROVED, ClientFile.STATUS_REJECTED}:
+        document.status = status_value
+    document.review_comment = data.get('admin_comment') or data.get('comment') or data.get('review_comment') or ''
+    reviewed_at = parse_api_datetime(data.get('reviewed_at'))
+    if reviewed_at:
+        document.reviewed_at = reviewed_at
+    elif document.status in {ClientFile.STATUS_APPROVED, ClientFile.STATUS_REJECTED} and not document.reviewed_at:
+        document.reviewed_at = timezone.now()
+    if data.get('title'):
+        document.title = data.get('title')
+    file_url = data.get('file_url') or data.get('document_file') or data.get('url')
+    if file_url:
+        document.external_file_url = file_url
+    if data.get('document_id'):
+        document.external_mobile_document_id = data.get('document_id')
+    document.external_review_data = data
+    document.save(update_fields=[
+        'status',
+        'review_comment',
+        'reviewed_at',
+        'title',
+        'external_file_url',
+        'external_mobile_document_id',
+        'external_review_data',
+        'updated_at',
+    ])
+    return document
+
+
+def update_questionnaire_from_students_life(questionnaire, payload):
+    data = normalize_students_life_payload(payload)
+    if not data:
+        return questionnaire
+    stored = dict(questionnaire.data or {})
+    stored.update(data)
+    questionnaire.data = stored
+    if data.get('status') in {
+        ClientQuestionnaire.STATUS_DRAFT,
+        ClientQuestionnaire.STATUS_COMPLETED,
+        ClientQuestionnaire.STATUS_SUBMITTED,
+        ClientQuestionnaire.STATUS_APPROVED,
+        ClientQuestionnaire.STATUS_REJECTED,
+        ClientQuestionnaire.STATUS_UPDATED,
+    }:
+        questionnaire.status = data.get('status')
+    questionnaire.full_name = data.get('full_name') or questionnaire.full_name
+    questionnaire.submitted_at = parse_api_datetime(data.get('submitted_at')) or questionnaire.submitted_at
+    questionnaire.last_synced_at = timezone.now()
+    questionnaire.save(update_fields=['data', 'status', 'full_name', 'submitted_at', 'last_synced_at', 'updated_at'])
+    return questionnaire
+
+
+def notify_mobile_document_review(document, user=None):
+    base_url = get_students_life_api_base_url()
     api_key = getattr(settings, 'STUDENTS_LIFE_API_KEY', '') or getattr(settings, 'LEADS_API_KEY', '')
     if not base_url or not api_key or not document.external_mobile_document_id:
         return False, 'STUDENTS_LIFE_API_BASE_URL, STUDENTS_LIFE_API_KEY или mobile document id не настроены.'
@@ -2135,11 +2292,13 @@ def notify_mobile_document_review(document):
     if '/api/v1/' not in callback_url:
         callback_url = urljoin(base_url.rstrip('/') + '/', 'api/v1/documents/external-review/')
 
-    payload = json.dumps({
+    payload_data = {
         'document_id': document.external_mobile_document_id,
         'status': document.status,
-        'admin_comment': document.review_comment,
-    }).encode('utf-8')
+        'comment': document.review_comment,
+        **(portal_user_review_payload(user) if user else {}),
+    }
+    payload = json.dumps(payload_data).encode('utf-8')
     request = urlrequest.Request(
         callback_url,
         data=payload,
@@ -2154,7 +2313,7 @@ def notify_mobile_document_review(document):
 
 
 def students_life_api_url(path):
-    base_url = str(getattr(settings, 'STUDENTS_LIFE_API_BASE_URL', '') or '').rstrip('/')
+    base_url = get_students_life_api_base_url()
     if not base_url:
         return ''
     url = urljoin(base_url.rstrip('/') + '/', path.lstrip('/'))
@@ -2347,16 +2506,17 @@ class ClientDocumentReviewPortalView(PortalContextMixin, View):
             pk=document_id,
         )
         action = request.POST.get('action') or request.POST.get('status')
+        reviewer = portal_user_review_payload(request.user)
         comment = request.POST.get('review_comment', '').strip()
         if action in {'approve', ClientFile.STATUS_APPROVED}:
             api_path = f'documents/{document.external_mobile_document_id}/approve/'
-            api_payload = {}
+            api_payload = {**reviewer}
         elif action in {'reject', ClientFile.STATUS_REJECTED}:
             if not comment:
                 messages.error(request, 'Укажите причину отказа для клиента.')
                 return redirect(reverse('portal:client_document_review', args=[document.id]))
             api_path = f'documents/{document.external_mobile_document_id}/reject/'
-            api_payload = {'comment': comment}
+            api_payload = {'comment': comment, **reviewer}
         else:
             messages.error(request, 'Некорректное действие проверки.')
             return redirect(reverse('portal:client_document_review', args=[document.id]))
@@ -2370,11 +2530,16 @@ class ClientDocumentReviewPortalView(PortalContextMixin, View):
             messages.error(request, payload.get('detail') or payload.get('comment') or payload.get('status') or 'Клиентский API не принял изменение статуса.')
             return redirect(reverse('portal:client_document_review', args=[document.id]))
 
-        document.status = payload.get('status') or (ClientFile.STATUS_APPROVED if action in {'approve', ClientFile.STATUS_APPROVED} else ClientFile.STATUS_REJECTED)
-        document.review_comment = payload.get('admin_comment') or ''
-        document.reviewed_by = request.user
-        document.reviewed_at = timezone.now() if document.status in {ClientFile.STATUS_APPROVED, ClientFile.STATUS_REJECTED} else None
-        document.save(update_fields=['status', 'review_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
+        if isinstance(payload, dict) and 'status' not in normalize_students_life_payload(payload):
+            payload = {
+                **payload,
+                'status': ClientFile.STATUS_APPROVED if action in {'approve', ClientFile.STATUS_APPROVED} else ClientFile.STATUS_REJECTED,
+                'comment': comment,
+                **reviewer,
+                'reviewed_by_display': reviewer['reviewed_by_name'],
+                'reviewed_at': timezone.now().isoformat(),
+            }
+        update_client_document_from_students_life(document, payload)
         messages.success(request, 'Статус документа изменён через API клиентского приложения.')
         return redirect(reverse('portal:client_document_review', args=[document.id]))
 
@@ -2576,20 +2741,71 @@ class ClientQuestionnaireRegenerateView(PortalContextMixin, View):
 
         ok, payload = students_life_api_request(
             f'questionnaire/application-forms/{questionnaire.mobile_questionnaire_id}/regenerate-document/',
-            payload={},
+            payload=portal_user_review_payload(request.user),
             method='POST',
         )
         if not ok:
             messages.error(request, payload.get('detail') or 'Клиентский API не смог перегенерировать документ анкеты.')
             return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
 
-        data = dict(questionnaire.data or {})
-        data.update(payload)
-        questionnaire.data = data
-        questionnaire.status = payload.get('status') or questionnaire.status
-        questionnaire.last_synced_at = timezone.now()
-        questionnaire.save(update_fields=['data', 'status', 'last_synced_at', 'updated_at'])
+        update_questionnaire_from_students_life(questionnaire, payload)
         messages.success(request, 'Документ анкеты перегенерирован через API клиентского приложения.')
+        return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+
+
+class ClientQuestionnaireReviewView(PortalContextMixin, View):
+    active_page = 'client_questionnaires'
+
+    def post(self, request, pk):
+        questionnaire = get_object_or_404(
+            ClientQuestionnaire.objects.select_related('client').filter(client_id__in=client_queryset(request.user).values('id')),
+            pk=pk,
+        )
+        if not questionnaire.mobile_questionnaire_id:
+            messages.error(request, 'У анкеты нет mobile questionnaire id, статус нельзя изменить через Student’s Life API.')
+            return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+
+        action = request.POST.get('action') or request.POST.get('status')
+        comment = request.POST.get('review_comment', '').strip()
+        reviewer = portal_user_review_payload(request.user)
+
+        if action in {'approve', ClientQuestionnaire.STATUS_APPROVED}:
+            api_path = f'questionnaire/application-forms/{questionnaire.mobile_questionnaire_id}/approve/'
+            api_payload = {**reviewer}
+        elif action in {'reject', ClientQuestionnaire.STATUS_REJECTED}:
+            if not comment:
+                messages.error(request, 'Укажите причину отклонения анкеты.')
+                return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+            api_path = f'questionnaire/application-forms/{questionnaire.mobile_questionnaire_id}/reject/'
+            api_payload = {'comment': comment, **reviewer}
+        elif action in {ClientQuestionnaire.STATUS_DRAFT, ClientQuestionnaire.STATUS_SUBMITTED, ClientQuestionnaire.STATUS_APPROVED, ClientQuestionnaire.STATUS_REJECTED}:
+            if action == ClientQuestionnaire.STATUS_REJECTED and not comment:
+                messages.error(request, 'Укажите причину отклонения анкеты.')
+                return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+            api_path = f'questionnaire/application-forms/{questionnaire.mobile_questionnaire_id}/status/'
+            api_payload = {'status': action, 'comment': comment, **reviewer}
+        else:
+            messages.error(request, 'Некорректное действие проверки анкеты.')
+            return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+
+        ok, payload = students_life_api_request(api_path, payload=api_payload, method='PATCH' if api_path.endswith('/status/') else 'POST')
+        if not ok:
+            messages.error(request, payload.get('detail') or payload.get('comment') or payload.get('status') or 'Student’s Life API не принял изменение статуса анкеты.')
+            return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
+
+        if isinstance(payload, dict) and 'status' not in normalize_students_life_payload(payload):
+            payload = {
+                **payload,
+                'status': action if action not in {'approve', 'reject'} else (
+                    ClientQuestionnaire.STATUS_APPROVED if action == 'approve' else ClientQuestionnaire.STATUS_REJECTED
+                ),
+                'review_comment': comment,
+                **reviewer,
+                'reviewed_by_display': reviewer['reviewed_by_name'],
+                'reviewed_at': timezone.now().isoformat(),
+            }
+        update_questionnaire_from_students_life(questionnaire, payload)
+        messages.success(request, 'Статус анкеты обновлён через Student’s Life API.')
         return redirect(reverse('portal:client_questionnaire_detail', args=[questionnaire.id]))
 
 

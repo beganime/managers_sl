@@ -41,6 +41,9 @@
                                 <span>{{ document.client.full_name }}</span>
                                 <span>{{ document.client.phone|default:"-" }}{% if document.client.email %} · {{ document.client.email }}{% endif %}</span>
                                 <span>Загружен: {{ document.created_at|date:"d.m.Y H:i" }}</span>
+                                {% if document.reviewed_by_display %}
+                                    <span>Проверил: {{ document.reviewed_by_display }}{% if document.reviewed_at %} · {{ document.reviewed_at|date:"d.m.Y H:i" }}{% endif %}</span>
+                                {% endif %}
                             </div>
                         </div>
                         {% if document.status == "approved" %}

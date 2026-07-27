@@ -34,13 +34,16 @@
                 <div class="list-row"><span class="muted">Название</span><strong>{{ document.title }}</strong></div>
                 <div class="list-row"><span class="muted">Загружен</span><strong>{{ document.created_at|date:"d.m.Y H:i" }}</strong></div>
                 <div class="list-row"><span class="muted">Проверен</span><strong>{{ document.reviewed_at|date:"d.m.Y H:i"|default:"-" }}</strong></div>
-                <div class="list-row"><span class="muted">Проверил</span><strong>{{ document.reviewed_by.get_full_name|default:"-" }}</strong></div>
+                <div class="list-row"><span class="muted">Проверил</span><strong>{{ document.reviewed_by_display|default:"-" }}</strong></div>
+                {% if document.external_reviewed_by_email %}
+                    <div class="list-row"><span class="muted">Email проверившего</span><strong>{{ document.external_reviewed_by_email }}</strong></div>
+                {% endif %}
             </div>
             {% if document.comment %}
                 <div class="empty" style="text-align:left; margin-top:12px;">Описание: {{ document.comment }}</div>
             {% endif %}
             {% if document.review_comment %}
-                <div class="empty" style="text-align:left; margin-top:12px;">Комментарий отказа: {{ document.review_comment }}</div>
+                <div class="empty" style="text-align:left; margin-top:12px;">Комментарий проверки: {{ document.review_comment }}</div>
             {% endif %}
             <div class="contact-actions" style="margin-top:14px;">
                 {% if document.external_file_url %}
