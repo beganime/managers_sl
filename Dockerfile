@@ -8,6 +8,7 @@ ENV MALLOC_ARENA_MAX=2
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     libpq-dev \
+    postgresql-client \
     curl \
     ca-certificates \
     netcat-openbsd \
