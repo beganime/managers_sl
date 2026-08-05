@@ -216,6 +216,8 @@ class Client(TimeStampedModel):
     partner_name = models.CharField('Партнёр', max_length=255, blank=True)
     comments = models.TextField('Комментарии', blank=True)
     custom_data = models.JSONField('Дополнительные данные', default=dict, blank=True)
+    sl_id = models.CharField('SL-ID', max_length=32, unique=True, null=True, blank=True, db_index=True)
+    academic_year = models.PositiveSmallIntegerField('Год поступления', null=True, blank=True, db_index=True)
 
     class Meta:
         verbose_name = 'Клиент CRM'
