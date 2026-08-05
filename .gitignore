@@ -8,3 +8,6 @@ db.sqlite3
 media/
 staticfiles/
 *firebase-adminsdk*.json
+*google-service-account*.json
+*google_service_account*.json
+secrets/

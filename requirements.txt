@@ -19,7 +19,8 @@ djangorestframework==3.16.1
 docxtpl==0.20.2
 et_xmlfile==2.0.0
 frozenlist==1.8.0
-g4f==7.1.2
+google-api-python-client==2.195.0
+google-auth==2.50.0
 gunicorn==25.1.0
 idna==3.11
 Jinja2==3.1.6
