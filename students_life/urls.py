@@ -82,6 +82,8 @@ urlpatterns = [
     path('api/v1/customfields/', include('apps.customfields.urls')),
     path('api/v1/notifications/', include('apps.erp_notifications.urls')),
     path('api/client/v1/', include('apps.client_api.urls')),
+    path('api/client/v1/onboarding/', include('apps.client_onboarding.public_urls')),
+    path('api/v1/onboarding/', include('apps.client_onboarding.manager_urls')),
 ]
 
 if settings.DEBUG:

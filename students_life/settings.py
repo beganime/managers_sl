@@ -145,6 +145,7 @@ INSTALLED_APPS = [
     'apps.erp_notifications.apps.ErpNotificationsConfig',
     'apps.portal.apps.PortalConfig',
     'apps.client_api.apps.ClientApiConfig',
+    'apps.client_onboarding.apps.ClientOnboardingConfig',
 ]
 
 MIDDLEWARE = [
