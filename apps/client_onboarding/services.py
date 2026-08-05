@@ -30,7 +30,7 @@ def allocate_sl_id(academic_year, kind):
     sequence_year = (
         timezone.localdate().year
         if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT
-        else academic_year
+        else 0
     )
     sequence, _ = AcademicYearSequence.objects.select_for_update().get_or_create(
         academic_year=sequence_year,
@@ -41,7 +41,7 @@ def allocate_sl_id(academic_year, kind):
     sequence.save(update_fields=['last_number'])
     if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT:
         return f'SL-SCHOOL-{sequence_year}-{sequence.last_number:03d}'
-    return f'SL-{academic_year}-{sequence.last_number:03d}'
+    return f'SL-{sequence.last_number:03d}'
 
 
 @transaction.atomic
@@ -129,4 +129,11 @@ def approve_submission(submission, reviewer, company_id=None):
     submission.reviewed_at = timezone.now()
     submission.review_comment = ''
     submission.save(update_fields=['client', 'status', 'reviewed_by', 'reviewed_at', 'review_comment', 'updated_at'])
+    transaction.on_commit(lambda: _enqueue_submission_sync(submission.pk))
     return submission
+
+
+def _enqueue_submission_sync(submission_id):
+    from apps.sheets_sync.services import enqueue_submission_sync
+
+    enqueue_submission_sync(submission_id)

@@ -146,6 +146,7 @@ INSTALLED_APPS = [
     'apps.portal.apps.PortalConfig',
     'apps.client_api.apps.ClientApiConfig',
     'apps.client_onboarding.apps.ClientOnboardingConfig',
+    'apps.sheets_sync.apps.SheetsSyncConfig',
 ]
 
 MIDDLEWARE = [
@@ -215,6 +216,14 @@ STUDENTS_LIFE_DEFAULT_API_BASE_URL = 'https://students-life.ru/api2/api/v1/'
 STUDENTS_LIFE_ORIGINAL_API_BASE_URL = 'https://stud-life.com/api/v1/'
 STUDENTS_LIFE_API_BASE_URL = os.environ.get('STUDENTS_LIFE_API_BASE_URL', STUDENTS_LIFE_DEFAULT_API_BASE_URL)
 STUDENTS_LIFE_API_KEY = os.environ.get('STUDENTS_LIFE_API_KEY', LEADS_API_KEY)
+
+GOOGLE_SHEETS_ENABLED = env_bool('GOOGLE_SHEETS_ENABLED', False)
+GOOGLE_SHEETS_SPREADSHEET_ID = os.environ.get('GOOGLE_SHEETS_SPREADSHEET_ID', '')
+GOOGLE_SHEETS_CREDENTIALS_FILE = os.environ.get('GOOGLE_SHEETS_CREDENTIALS_FILE', '')
+GOOGLE_SHEETS_GENERAL_SHEET = os.environ.get('GOOGLE_SHEETS_GENERAL_SHEET', 'Общее')
+GOOGLE_SHEETS_FINANCE_SHEET = os.environ.get('GOOGLE_SHEETS_FINANCE_SHEET', 'Финансы')
+GOOGLE_SHEETS_REFERENCE_SHEET = os.environ.get('GOOGLE_SHEETS_REFERENCE_SHEET', 'Справочники')
+GOOGLE_SHEETS_EXAMS_SHEET = os.environ.get('GOOGLE_SHEETS_EXAMS_SHEET', 'Экзамены')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

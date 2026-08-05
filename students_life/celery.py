@@ -55,4 +55,12 @@ app.conf.beat_schedule = {
         'task': 'erp_notifications.send_birthday_reminders',
         'schedule': crontab(minute=0, hour=8),
     },
+    'sheets-sync-pending-submissions': {
+        'task': 'sheets_sync.sync_pending_submissions',
+        'schedule': crontab(minute='*/1'),
+    },
+    'sheets-sync-reference-data': {
+        'task': 'sheets_sync.sync_reference_data',
+        'schedule': crontab(minute='*/5'),
+    },
 }

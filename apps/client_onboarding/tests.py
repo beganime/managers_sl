@@ -99,7 +99,7 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(response.status_code, 200, response.data)
         submission.refresh_from_db()
         self.assertEqual(submission.status, 'approved')
-        self.assertEqual(submission.client.sl_id, 'SL-2027-001')
+        self.assertEqual(submission.client.sl_id, 'SL-001')
         self.assertEqual(Client.objects.count(), 1)
         self.assertEqual(Application.objects.filter(client=submission.client).count(), 3)
         self.assertEqual(submission.client.questionnaire.status, 'approved')
