@@ -1,5 +1,4 @@
 from django.urls import reverse
-from django.utils import timezone
 from rest_framework.test import APITestCase
 
 from apps.crm.models import Application, Client
@@ -44,6 +43,7 @@ class OnboardingApiTests(APITestCase):
             'full_name': 'Иван Иванов',
             'phone': '+99360000000',
             'email': 'ivan@example.com',
+            'date_of_birth': '2008-01-01',
             'citizenship': 'Туркменистан',
             'payload': {'passport_number': 'TEST-001'},
             'fcm_token': 'test-fcm-token',
@@ -99,7 +99,9 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(response.status_code, 200, response.data)
         submission.refresh_from_db()
         self.assertEqual(submission.status, 'approved')
-        self.assertEqual(submission.client.sl_id, 'SL-001')
+        self.assertEqual(submission.client.sl_id, 'SL-2027-001')
+        self.assertEqual(submission.client.custom_data['mobile_password'], 'Ivan_0710')
+        self.assertEqual(submission.client.custom_data['tmmail_email'], 'ivan.ivanov2008@tmmail.ru')
         self.assertEqual(Client.objects.count(), 1)
         self.assertEqual(Application.objects.filter(client=submission.client).count(), 3)
         self.assertEqual(submission.client.questionnaire.status, 'approved')
@@ -158,4 +160,4 @@ class OnboardingApiTests(APITestCase):
 
         self.assertEqual(approved.status_code, 200, approved.data)
         submission.refresh_from_db()
-        self.assertEqual(submission.client.sl_id, f'SL-SCHOOL-{timezone.localdate().year}-001')
+        self.assertEqual(submission.client.sl_id, 'SL-SCHOOL-2027-001')

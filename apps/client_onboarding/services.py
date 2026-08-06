@@ -1,3 +1,6 @@
+import re
+import secrets
+
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.utils import timezone
@@ -6,6 +9,35 @@ from apps.crm.models import Application, Client, ClientQuestionnaire
 from apps.organizations.models import Company
 
 from .models import AcademicYearSequence, OnboardingSubmission
+
+
+CYRILLIC_TO_LATIN = str.maketrans({
+    'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
+    'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+    'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+    'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+    'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+    'ä': 'a', 'ç': 'c', 'ň': 'n', 'ö': 'o', 'ş': 's', 'ü': 'u', 'ý': 'y',
+})
+
+
+def latin_name(value, fallback='student'):
+    normalized = str(value or '').strip().casefold().translate(CYRILLIC_TO_LATIN)
+    normalized = re.sub(r'[^a-z0-9]+', '', normalized)
+    return normalized or fallback
+
+
+def build_service_credentials(submission, sl_id):
+    name_parts = submission.full_name.split()
+    first_name = latin_name(name_parts[0] if name_parts else '', 'student')
+    last_name = latin_name(name_parts[-1] if len(name_parts) > 1 else '', 'client')
+    suffix = str(submission.date_of_birth.year) if submission.date_of_birth else sl_id.rsplit('-', 1)[-1]
+    return {
+        'mobile_login': sl_id,
+        'mobile_password': f'{first_name.capitalize()}_0710',
+        'tmmail_email': f'{first_name}.{last_name}{suffix}@tmmail.ru',
+        'tmmail_password': secrets.token_urlsafe(18),
+    }
 
 
 def resolve_review_company(reviewer, company_id=None):
@@ -27,11 +59,7 @@ def resolve_review_company(reviewer, company_id=None):
 
 
 def allocate_sl_id(academic_year, kind):
-    sequence_year = (
-        timezone.localdate().year
-        if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT
-        else 0
-    )
+    sequence_year = int(academic_year)
     sequence, _ = AcademicYearSequence.objects.select_for_update().get_or_create(
         academic_year=sequence_year,
         kind=kind,
@@ -41,7 +69,7 @@ def allocate_sl_id(academic_year, kind):
     sequence.save(update_fields=['last_number'])
     if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT:
         return f'SL-SCHOOL-{sequence_year}-{sequence.last_number:03d}'
-    return f'SL-{sequence.last_number:03d}'
+    return f'SL-{sequence_year}-{sequence.last_number:03d}'
 
 
 @transaction.atomic
@@ -62,6 +90,7 @@ def approve_submission(submission, reviewer, company_id=None):
     )
     first_choice = choices[0] if choices else None
     sl_id = allocate_sl_id(submission.academic_year, submission.kind)
+    credentials = build_service_credentials(submission, sl_id)
     client = Client.objects.create(
         company=company,
         office=office,
@@ -80,6 +109,7 @@ def approve_submission(submission, reviewer, company_id=None):
         custom_data={
             'onboarding_public_id': str(submission.public_id),
             'onboarding_kind': submission.kind,
+            **credentials,
         },
     )
 
@@ -130,6 +160,7 @@ def approve_submission(submission, reviewer, company_id=None):
     submission.review_comment = ''
     submission.save(update_fields=['client', 'status', 'reviewed_by', 'reviewed_at', 'review_comment', 'updated_at'])
     transaction.on_commit(lambda: _enqueue_submission_sync(submission.pk))
+    transaction.on_commit(lambda: _enqueue_service_provisioning(client.pk, str(submission.public_id)))
     return submission
 
 
@@ -137,3 +168,9 @@ def _enqueue_submission_sync(submission_id):
     from apps.sheets_sync.services import enqueue_submission_sync
 
     enqueue_submission_sync(submission_id)
+
+
+def _enqueue_service_provisioning(client_id, event_id):
+    from .tasks import provision_client_services
+
+    provision_client_services.delay(client_id, event_id)

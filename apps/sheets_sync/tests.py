@@ -122,16 +122,16 @@ class SheetsSyncServiceTests(TestCase):
         first = sync_submission(submission.pk, gateway=gateway)
         second = sync_submission(submission.pk, gateway=gateway)
 
-        self.assertEqual(submission.client.sl_id, 'SL-001')
+        self.assertEqual(submission.client.sl_id, 'SL-2027-001')
         self.assertEqual(first['processed'], 4)
         self.assertEqual(second['processed'], 4)
-        self.assertEqual(gateway.rows['Общее']['SL-001']['ФИО абитуриента'], 'Иван Иванов')
+        self.assertEqual(gateway.rows['Общее']['SL-2027-001']['ФИО абитуриента'], 'Иван Иванов')
         self.assertEqual(len(gateway.rows['Общее']), 1)
-        self.assertEqual(SheetRowBinding.objects.filter(sl_id='SL-001').count(), 4)
+        self.assertEqual(SheetRowBinding.objects.filter(sl_id='SL-2027-001').count(), 4)
 
-        gateway.rows['Общее']['SL-001']['Статус сейчас'] = 'Ручной статус'
+        gateway.rows['Общее']['SL-2027-001']['Статус сейчас'] = 'Ручной статус'
         sync_submission(submission.pk, gateway=gateway)
-        self.assertEqual(gateway.rows['Общее']['SL-001']['Статус сейчас'], 'Ручной статус')
+        self.assertEqual(gateway.rows['Общее']['SL-2027-001']['Статус сейчас'], 'Ручной статус')
 
     def test_reference_sync_reads_existing_catalogs_without_modifying_them(self):
         gateway = FakeSheetsGateway()
