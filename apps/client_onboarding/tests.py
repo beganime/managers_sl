@@ -7,6 +7,7 @@ from apps.organizations.models import Company
 from users.models import User
 
 from .models import OnboardingSubmission
+from .tasks import provision_client_services
 
 
 class OnboardingApiTests(APITestCase):
@@ -102,6 +103,12 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(submission.client.sl_id, 'SL-2027-001')
         self.assertEqual(submission.client.custom_data['mobile_password'], 'Ivan_0710')
         self.assertEqual(submission.client.custom_data['tmmail_email'], 'ivan.ivanov2008@tmmail.ru')
+        provisioning = provision_client_services.run(
+            submission.client_id,
+            str(submission.public_id),
+        )
+        self.assertEqual(provisioning['mobile'], 'disabled')
+        self.assertEqual(provisioning['tmmail'], 'disabled')
         self.assertEqual(Client.objects.count(), 1)
         self.assertEqual(Application.objects.filter(client=submission.client).count(), 3)
         self.assertEqual(submission.client.questionnaire.status, 'approved')
