@@ -42,7 +42,7 @@ class City(TimeStampedModel, ActiveModel, OrderedModel):
 
 
 class Currency(TimeStampedModel):
-    code = models.CharField('Код валюты', max_length=3, unique=True)
+    code = models.CharField('Код валюты', max_length=8, unique=True)
     name = models.CharField('Название валюты', max_length=80)
     symbol = models.CharField('Символ', max_length=8, default='$')
     rate_to_usd = models.DecimalField('Курс к USD', max_digits=14, decimal_places=6, default=Decimal('1.000000'))
