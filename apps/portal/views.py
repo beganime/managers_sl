@@ -1237,6 +1237,12 @@ class DashboardView(PortalContextMixin, TemplateView):
             'recent_documents': limit(documents.order_by('-created_at'), 6),
             'notifications': limit(notifications.order_by('-created_at'), 8),
             'birthday_people': employee_profiles.filter(user__dob__month=today.month).order_by('user__dob__day')[:8],
+            'is_current_user_birthday': bool(
+                user.dob
+                and user.dob.month == today.month
+                and user.dob.day == today.day
+            ),
+            'birthday_first_name': user.first_name.strip() if user.first_name else full_name(user),
             'calendar_events': build_calendar_events(user, limit_count=8),
             'knowledge_items': limit(knowledge_queryset(user).order_by('-is_featured', '-published_at', '-updated_at'), 5),
             'today': today,

@@ -177,6 +177,57 @@
         }
         .dropdown a:hover, .dropdown button:hover { background: var(--panel-soft); }
         .main { padding: 24px 28px 46px; }
+        .birthday-celebration {
+            position: relative;
+            overflow: hidden;
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr);
+            gap: 18px;
+            align-items: center;
+            margin-bottom: 18px;
+            padding: 22px 24px;
+            border: 1px solid #c9d9d2;
+            border-radius: 12px;
+            background:
+                radial-gradient(circle at 92% 14%, rgba(23, 107, 83, .13) 0 4px, transparent 5px),
+                radial-gradient(circle at 86% 76%, rgba(14, 79, 138, .12) 0 3px, transparent 4px),
+                linear-gradient(135deg, #ffffff 0%, #f2f8f5 100%);
+            box-shadow: 0 8px 24px rgba(16, 35, 29, .08);
+        }
+        .birthday-celebration::after {
+            content: "";
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            right: -54px;
+            top: -70px;
+            border: 24px solid rgba(23, 107, 83, .07);
+            border-radius: 50%;
+        }
+        .birthday-celebration-icon {
+            width: 54px;
+            height: 54px;
+            border-radius: 14px;
+            display: grid;
+            place-items: center;
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 8px 18px rgba(23, 107, 83, .2);
+        }
+        .birthday-celebration-icon svg { width: 27px; height: 27px; }
+        .birthday-celebration-title {
+            margin: 0 0 5px;
+            font-size: 22px;
+            line-height: 1.25;
+            font-weight: 790;
+            color: #123b30;
+        }
+        .birthday-celebration-message {
+            max-width: 760px;
+            color: #52645d;
+            font-size: 14px;
+            line-height: 1.55;
+        }
         .mobile-menu { display: none; }
         .mobile-panel {
             display: none;
@@ -364,6 +415,7 @@
             .bottom-nav { display: grid; }
             .dropdown { right: -4px; width: min(280px, calc(100vw - 28px)); }
             .mobile-links { grid-template-columns: 1fr; }
+            .birthday-celebration { grid-template-columns: 1fr; padding: 20px; }
         }
     </style>
 </head>
