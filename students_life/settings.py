@@ -189,6 +189,16 @@ if USE_SQLITE:
         }
     }
 else:
+    database_options = {
+        'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10')),
+    }
+    database_sslmode = os.environ.get('DB_SSLMODE', '').strip()
+    database_sslrootcert = os.environ.get('DB_SSLROOTCERT', '').strip()
+    if database_sslmode:
+        database_options['sslmode'] = database_sslmode
+    if database_sslrootcert:
+        database_options['sslrootcert'] = database_sslrootcert
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -198,7 +208,7 @@ else:
             'HOST': os.environ.get('DB_HOST', 'db'),
             'PORT': os.environ.get('DB_PORT', '5432'),
             'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '60')),
-            'OPTIONS': {'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10'))},
+            'OPTIONS': database_options,
         }
     }
 
