@@ -4,7 +4,7 @@ from rest_framework import serializers
 
 from apps.education.models import Program, University
 
-from .models import OnboardingSubmission, OnboardingUniversityChoice
+from .models import OnboardingReviewEvent, OnboardingSubmission, OnboardingUniversityChoice
 
 
 class UniversityChoiceInputSerializer(serializers.Serializer):
@@ -108,6 +108,7 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Изменять можно только анкету, возвращённую менеджером.')
         for field, value in validated_data.items():
             setattr(instance, field, value)
+        previous_status = instance.status
         instance.status = OnboardingSubmission.STATUS_SUBMITTED
         instance.review_comment = ''
         instance.reviewed_by = None
@@ -115,6 +116,12 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
         instance.submitted_at = timezone.now()
         instance.save()
         self._replace_choices(instance, choices)
+        OnboardingReviewEvent.objects.create(
+            submission=instance,
+            decision=OnboardingReviewEvent.DECISION_RESUBMIT,
+            from_status=previous_status,
+            to_status=OnboardingSubmission.STATUS_SUBMITTED,
+        )
         return instance
 
 
@@ -139,18 +146,38 @@ class PublicOnboardingStatusSerializer(serializers.ModelSerializer):
         fields = ('public_id', 'status', 'review_comment', 'sl_id', 'submitted_at', 'reviewed_at')
 
 
+class OnboardingReviewEventSerializer(serializers.ModelSerializer):
+    actor_name = serializers.CharField(source='actor.get_full_name', read_only=True)
+
+    class Meta:
+        model = OnboardingReviewEvent
+        fields = ('decision', 'from_status', 'to_status', 'actor', 'actor_name', 'comment', 'created_at')
+
+
 class ManagerOnboardingSubmissionSerializer(serializers.ModelSerializer):
     university_choices = UniversityChoiceReadSerializer(many=True, read_only=True)
     sl_id = serializers.CharField(source='client.sl_id', read_only=True)
     reviewed_by_name = serializers.CharField(source='reviewed_by.get_full_name', read_only=True)
+    review_events = OnboardingReviewEventSerializer(many=True, read_only=True)
+    service_credentials = serializers.SerializerMethodField()
 
     class Meta:
         model = OnboardingSubmission
         fields = '__all__'
 
+    def get_service_credentials(self, obj):
+        identity = getattr(obj, 'service_identity', None)
+        if not identity:
+            return None
+        return {
+            'mobile_login': identity.mobile_login,
+            'shared_password': identity.shared_password,
+            'tmmail_email': identity.tmmail_email,
+        }
+
 
 class ReviewDecisionSerializer(serializers.Serializer):
-    decision = serializers.ChoiceField(choices=('approve', 'request_changes', 'reject'))
+    decision = serializers.ChoiceField(choices=('start_review', 'approve', 'request_changes', 'reject'))
     comment = serializers.CharField(required=False, allow_blank=True, max_length=4000)
     company_id = serializers.IntegerField(required=False, min_value=1)
 

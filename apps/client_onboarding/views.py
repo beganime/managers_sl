@@ -1,4 +1,5 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import transaction
 from django.utils import timezone
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
@@ -6,7 +7,8 @@ from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import OnboardingSubmission
+from .models import OnboardingReviewEvent, OnboardingSubmission
+from .permissions import CanReviewOnboarding
 from .serializers import (
     ManagerOnboardingSubmissionSerializer,
     OnboardingSubmissionWriteSerializer,
@@ -60,11 +62,15 @@ class ManagerOnboardingSubmissionViewSet(
     mixins.RetrieveModelMixin,
     viewsets.GenericViewSet,
 ):
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [CanReviewOnboarding]
     serializer_class = ManagerOnboardingSubmissionSerializer
     queryset = (
-        OnboardingSubmission.objects.select_related('client', 'reviewed_by')
-        .prefetch_related('university_choices__university', 'university_choices__programs')
+        OnboardingSubmission.objects.select_related('client', 'reviewed_by', 'service_identity')
+        .prefetch_related(
+            'university_choices__university',
+            'university_choices__programs',
+            'review_events__actor',
+        )
     )
 
     def get_queryset(self):
@@ -75,8 +81,9 @@ class ManagerOnboardingSubmissionViewSet(
         return queryset
 
     @action(detail=True, methods=['post'])
+    @transaction.atomic
     def review(self, request, pk=None):
-        submission = self.get_object()
+        submission = OnboardingSubmission.objects.select_for_update().get(pk=self.get_object().pk)
         serializer = ReviewDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         decision = serializer.validated_data['decision']
@@ -84,9 +91,38 @@ class ManagerOnboardingSubmissionViewSet(
 
         if submission.status == OnboardingSubmission.STATUS_APPROVED and decision == 'approve':
             return Response(self.get_serializer(submission).data)
-        if submission.status != OnboardingSubmission.STATUS_SUBMITTED:
+
+        if decision == 'start_review':
+            if (
+                submission.status == OnboardingSubmission.STATUS_IN_REVIEW
+                and submission.reviewed_by_id == request.user.id
+            ):
+                return Response(self.get_serializer(submission).data)
+            if submission.status != OnboardingSubmission.STATUS_SUBMITTED:
+                return Response(
+                    {'detail': 'Взять на проверку можно только отправленную анкету.'},
+                    status=status.HTTP_409_CONFLICT,
+                )
+            previous_status = submission.status
+            submission.status = OnboardingSubmission.STATUS_IN_REVIEW
+            submission.reviewed_by = request.user
+            submission.review_comment = ''
+            submission.save(update_fields=['status', 'reviewed_by', 'review_comment', 'updated_at'])
+            OnboardingReviewEvent.objects.create(
+                submission=submission,
+                decision=OnboardingReviewEvent.DECISION_START_REVIEW,
+                from_status=previous_status,
+                to_status=OnboardingSubmission.STATUS_IN_REVIEW,
+                actor=request.user,
+            )
+            return Response(self.get_serializer(submission).data)
+
+        if submission.status not in {
+            OnboardingSubmission.STATUS_SUBMITTED,
+            OnboardingSubmission.STATUS_IN_REVIEW,
+        }:
             return Response(
-                {'detail': 'Решение можно принять только по отправленной анкете.'},
+                {'detail': 'Решение можно принять только по отправленной анкете или анкете на проверке.'},
                 status=status.HTTP_409_CONFLICT,
             )
 
@@ -100,6 +136,7 @@ class ManagerOnboardingSubmissionViewSet(
             except DjangoValidationError as exc:
                 return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
         else:
+            previous_status = submission.status
             submission.status = (
                 OnboardingSubmission.STATUS_CHANGES_REQUESTED
                 if decision == 'request_changes'
@@ -109,5 +146,13 @@ class ManagerOnboardingSubmissionViewSet(
             submission.reviewed_by = request.user
             submission.reviewed_at = timezone.now()
             submission.save(update_fields=['status', 'review_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
+            OnboardingReviewEvent.objects.create(
+                submission=submission,
+                decision=decision,
+                from_status=previous_status,
+                to_status=submission.status,
+                actor=request.user,
+                comment=comment,
+            )
 
         return Response(self.get_serializer(submission).data)

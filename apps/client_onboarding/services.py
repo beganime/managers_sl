@@ -1,5 +1,4 @@
 import re
-import secrets
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
@@ -8,7 +7,12 @@ from django.utils import timezone
 from apps.crm.models import Application, Client, ClientQuestionnaire
 from apps.organizations.models import Company
 
-from .models import AcademicYearSequence, OnboardingSubmission
+from .models import (
+    AcademicYearSequence,
+    ClientServiceIdentity,
+    OnboardingReviewEvent,
+    OnboardingSubmission,
+)
 
 
 CYRILLIC_TO_LATIN = str.maketrans({
@@ -27,16 +31,52 @@ def latin_name(value, fallback='student'):
     return normalized or fallback
 
 
-def build_service_credentials(submission, sl_id):
+def _used_tmmail_addresses():
+    reserved = set(
+        ClientServiceIdentity.objects.exclude(tmmail_email__isnull=True)
+        .values_list('tmmail_email', flat=True)
+    )
+    for custom_data in Client.objects.values_list('custom_data', flat=True):
+        address = (custom_data or {}).get('tmmail_email')
+        if address:
+            reserved.add(str(address).casefold())
+    return {address.casefold() for address in reserved}
+
+
+def allocate_tmmail_address(submission, sl_id):
     name_parts = submission.full_name.split()
     first_name = latin_name(name_parts[0] if name_parts else '', 'student')
     last_name = latin_name(name_parts[-1] if len(name_parts) > 1 else '', 'client')
-    suffix = str(submission.date_of_birth.year) if submission.date_of_birth else sl_id.rsplit('-', 1)[-1]
+    local_part = f'{first_name}.{last_name}'
+    candidates = [f'{local_part}@tmmail.ru']
+    if submission.date_of_birth:
+        candidates.append(f'{local_part}{submission.date_of_birth.year}@tmmail.ru')
+    candidates.append(f'{local_part}{sl_id.rsplit("-", 1)[-1]}@tmmail.ru')
+    used = _used_tmmail_addresses()
+    for candidate in candidates:
+        if candidate.casefold() not in used:
+            return candidate
+    counter = 2
+    while True:
+        candidate = f'{local_part}{sl_id.rsplit("-", 1)[-1]}-{counter}@tmmail.ru'
+        if candidate.casefold() not in used:
+            return candidate
+        counter += 1
+
+
+def build_service_credentials(submission, sl_id):
+    name_parts = submission.full_name.split()
+    first_name = latin_name(name_parts[0] if name_parts else '', 'student')
+    shared_password = f'{first_name.capitalize()}_0710'
     return {
         'mobile_login': sl_id,
-        'mobile_password': f'{first_name.capitalize()}_0710',
-        'tmmail_email': f'{first_name}.{last_name}{suffix}@tmmail.ru',
-        'tmmail_password': secrets.token_urlsafe(18),
+        'mobile_password': shared_password,
+        'tmmail_email': (
+            allocate_tmmail_address(submission, sl_id)
+            if submission.kind == OnboardingSubmission.KIND_APPLICANT
+            else None
+        ),
+        'tmmail_password': shared_password,
     }
 
 
@@ -59,17 +99,23 @@ def resolve_review_company(reviewer, company_id=None):
 
 
 def allocate_sl_id(academic_year, kind):
-    sequence_year = int(academic_year)
+    # Applicant IDs are permanent and never reset. School IDs remain scoped to
+    # the admission year because they are temporary consultation identities.
+    sequence_year = int(academic_year) if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT else 0
     sequence, _ = AcademicYearSequence.objects.select_for_update().get_or_create(
         academic_year=sequence_year,
         kind=kind,
         defaults={'last_number': 0},
     )
-    sequence.last_number += 1
-    sequence.save(update_fields=['last_number'])
-    if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT:
-        return f'SL-SCHOOL-{sequence_year}-{sequence.last_number:03d}'
-    return f'SL-{sequence_year}-{sequence.last_number:03d}'
+    while True:
+        sequence.last_number += 1
+        if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT:
+            candidate = f'SL-SCHOOL-{int(academic_year)}-{sequence.last_number:03d}'
+        else:
+            candidate = f'SL-{sequence.last_number:03d}'
+        if not Client.objects.filter(sl_id=candidate).exists():
+            sequence.save(update_fields=['last_number'])
+            return candidate
 
 
 @transaction.atomic
@@ -81,8 +127,11 @@ def approve_submission(submission, reviewer, company_id=None):
     )
     if submission.status == OnboardingSubmission.STATUS_APPROVED:
         return submission
-    if submission.status != OnboardingSubmission.STATUS_SUBMITTED:
-        raise ValidationError('Одобрить можно только отправленную анкету.')
+    if submission.status not in {
+        OnboardingSubmission.STATUS_SUBMITTED,
+        OnboardingSubmission.STATUS_IN_REVIEW,
+    }:
+        raise ValidationError('Одобрить можно только отправленную анкету или анкету на проверке.')
 
     company, office = resolve_review_company(reviewer, company_id)
     choices = list(
@@ -153,12 +202,28 @@ def approve_submission(submission, reviewer, company_id=None):
             },
         )
 
+    ClientServiceIdentity.objects.create(
+        submission=submission,
+        client=client,
+        mobile_login=credentials['mobile_login'],
+        shared_password=credentials['mobile_password'],
+        tmmail_email=credentials['tmmail_email'],
+    )
+
+    previous_status = submission.status
     submission.client = client
     submission.status = OnboardingSubmission.STATUS_APPROVED
     submission.reviewed_by = reviewer
     submission.reviewed_at = timezone.now()
     submission.review_comment = ''
     submission.save(update_fields=['client', 'status', 'reviewed_by', 'reviewed_at', 'review_comment', 'updated_at'])
+    OnboardingReviewEvent.objects.create(
+        submission=submission,
+        decision=OnboardingReviewEvent.DECISION_APPROVE,
+        from_status=previous_status,
+        to_status=OnboardingSubmission.STATUS_APPROVED,
+        actor=reviewer,
+    )
     transaction.on_commit(lambda: _enqueue_submission_sync(submission.pk))
     transaction.on_commit(lambda: _enqueue_service_provisioning(client.pk, str(submission.public_id)))
     return submission

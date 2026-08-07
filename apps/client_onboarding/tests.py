@@ -6,7 +6,7 @@ from apps.education.models import City, Country, Program, University
 from apps.organizations.models import Company
 from users.models import User
 
-from .models import OnboardingSubmission
+from .models import ClientServiceIdentity, OnboardingReviewEvent, OnboardingSubmission
 from .tasks import provision_client_services
 
 
@@ -100,9 +100,12 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(response.status_code, 200, response.data)
         submission.refresh_from_db()
         self.assertEqual(submission.status, 'approved')
-        self.assertEqual(submission.client.sl_id, 'SL-2027-001')
+        self.assertEqual(submission.client.sl_id, 'SL-001')
         self.assertEqual(submission.client.custom_data['mobile_password'], 'Ivan_0710')
-        self.assertEqual(submission.client.custom_data['tmmail_email'], 'ivan.ivanov2008@tmmail.ru')
+        self.assertEqual(submission.client.custom_data['tmmail_email'], 'ivan.ivanov@tmmail.ru')
+        self.assertEqual(submission.client.custom_data['tmmail_password'], 'Ivan_0710')
+        self.assertEqual(submission.service_identity.shared_password, 'Ivan_0710')
+        self.assertEqual(OnboardingReviewEvent.objects.filter(submission=submission, decision='approve').count(), 1)
         provisioning = provision_client_services.run(
             submission.client_id,
             str(submission.public_id),
@@ -110,6 +113,7 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(provisioning['mobile'], 'disabled')
         self.assertEqual(provisioning['tmmail'], 'disabled')
         self.assertEqual(Client.objects.count(), 1)
+        self.assertEqual(ClientServiceIdentity.objects.count(), 1)
         self.assertEqual(Application.objects.filter(client=submission.client).count(), 3)
         self.assertEqual(submission.client.questionnaire.status, 'approved')
 
@@ -147,6 +151,58 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(submission.status, 'submitted')
         self.assertEqual(submission.payload['passport_number'], 'TEST-002')
         self.assertEqual(submission.review_comment, '')
+        self.assertEqual(
+            list(submission.review_events.values_list('decision', flat=True)),
+            ['request_changes', 'resubmit'],
+        )
+
+    def test_manager_can_take_submission_into_review_before_approval(self):
+        created = self.create_submission()
+        submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
+        self.client.force_authenticate(self.manager)
+
+        started = self.client.post(
+            reverse('manager-onboarding-submission-review', kwargs={'pk': submission.pk}),
+            {'decision': 'start_review'},
+            format='json',
+        )
+        approved = self.client.post(
+            reverse('manager-onboarding-submission-review', kwargs={'pk': submission.pk}),
+            {'decision': 'approve'},
+            format='json',
+        )
+
+        self.assertEqual(started.status_code, 200, started.data)
+        self.assertEqual(started.data['status'], 'in_review')
+        self.assertEqual(approved.status_code, 200, approved.data)
+        self.assertEqual(approved.data['status'], 'approved')
+        self.assertEqual(
+            list(submission.review_events.values_list('decision', flat=True)),
+            ['start_review', 'approve'],
+        )
+
+    def test_sl_id_is_global_and_mail_uses_birth_year_only_on_name_collision(self):
+        first = self.create_submission()
+        second_payload = self.applicant_payload()
+        second_payload['academic_year'] = 2028
+        second_payload['phone'] = '+99360000001'
+        second_payload['email'] = 'ivan-2@example.com'
+        second = self.create_submission(second_payload)
+        self.client.force_authenticate(self.manager)
+
+        for created in (first, second):
+            submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
+            response = self.client.post(
+                reverse('manager-onboarding-submission-review', kwargs={'pk': submission.pk}),
+                {'decision': 'approve'},
+                format='json',
+            )
+            self.assertEqual(response.status_code, 200, response.data)
+
+        clients = list(Client.objects.order_by('sl_id'))
+        self.assertEqual([client.sl_id for client in clients], ['SL-001', 'SL-002'])
+        self.assertEqual(clients[0].custom_data['tmmail_email'], 'ivan.ivanov@tmmail.ru')
+        self.assertEqual(clients[1].custom_data['tmmail_email'], 'ivan.ivanov2008@tmmail.ru')
 
     def test_school_submission_does_not_require_university_choices(self):
         response = self.create_submission({
