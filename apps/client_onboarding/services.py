@@ -121,11 +121,9 @@ def allocate_sl_id(academic_year, kind):
 
 @transaction.atomic
 def approve_submission(submission, reviewer, company_id=None):
-    submission = (
-        OnboardingSubmission.objects.select_for_update()
-        .select_related('client')
-        .get(pk=submission.pk)
-    )
+    # Lock only the submission row. Joining the nullable client relation here
+    # makes PostgreSQL reject SELECT FOR UPDATE before a client exists.
+    submission = OnboardingSubmission.objects.select_for_update().get(pk=submission.pk)
     if submission.status == OnboardingSubmission.STATUS_APPROVED:
         return submission
     if submission.status not in {
