@@ -370,6 +370,7 @@ def sync_onboarding_submission(
     *,
     force_status=False,
     processing_result=None,
+    prepare_sheet=True,
 ):
     run = SheetSyncRun.objects.create(
         kind=SheetSyncRun.KIND_ONBOARDING_INBOX,
@@ -390,12 +391,13 @@ def sync_onboarding_submission(
         )
         gateway = gateway or GoogleSheetsGateway()
         sheet_name = settings.GOOGLE_SHEETS_ONBOARDING_SHEET
-        gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
-        gateway.set_dropdown_validation(
-            sheet_name,
-            'Статус',
-            ONBOARDING_STATUS_OPTIONS,
-        )
+        if prepare_sheet:
+            gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
+            gateway.set_dropdown_validation(
+                sheet_name,
+                'Статус',
+                ONBOARDING_STATUS_OPTIONS,
+            )
 
         values = submission_onboarding_values(submission)
         create_only_values = {
@@ -437,14 +439,31 @@ def sync_onboarding_inbox(limit=1000, gateway=None):
 
     try:
         gateway = gateway or GoogleSheetsGateway()
+        sheet_name = settings.GOOGLE_SHEETS_ONBOARDING_SHEET
+        gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
+        gateway.set_dropdown_validation(
+            sheet_name,
+            'Статус',
+            ONBOARDING_STATUS_OPTIONS,
+        )
+        existing_ids = {
+            str(row['values'].get('Внутренний ID', '') or '').strip()
+            for row in gateway.read_rows(sheet_name)
+        }
         submissions = list(
             OnboardingSubmission.objects.order_by('-updated_at')[:max(int(limit), 1)]
         )
         processed = 0
         failed = 0
         for submission in submissions:
+            if str(submission.public_id) in existing_ids:
+                continue
             try:
-                sync_onboarding_submission(submission.pk, gateway=gateway)
+                sync_onboarding_submission(
+                    submission.pk,
+                    gateway=gateway,
+                    prepare_sheet=False,
+                )
                 processed += 1
             except Exception:
                 failed += 1
@@ -541,6 +560,7 @@ def import_onboarding_decisions(limit=1000, gateway=None):
                     gateway=gateway,
                     force_status=True,
                     processing_result=message,
+                    prepare_sheet=False,
                 )
             except Exception as exc:
                 failed += 1

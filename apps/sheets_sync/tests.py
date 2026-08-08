@@ -15,6 +15,7 @@ from .schema import EXAM_HEADERS, safe_sheet_title, university_acronym
 from .services import (
     import_onboarding_decisions,
     import_public_client_statuses,
+    sync_onboarding_inbox,
     sync_onboarding_submission,
     sync_reference_data,
     sync_submission,
@@ -168,6 +169,18 @@ class SheetsSyncServiceTests(TestCase):
         repeated = import_onboarding_decisions(gateway=gateway)
         self.assertEqual(repeated, {'status': 'success', 'processed': 0, 'failed': 0})
         self.assertEqual(OnboardingSubmission.objects.filter(client__isnull=False).count(), 1)
+
+    def test_inbox_recovery_does_not_overwrite_manager_status(self):
+        submission = self.create_submitted_submission()
+        gateway = FakeSheetsGateway()
+        sync_onboarding_submission(submission.pk, gateway=gateway)
+        inbox_row = gateway.rows['Заявки из анкеты'][str(submission.public_id)]
+        inbox_row['Статус'] = 'Подтвержден'
+
+        result = sync_onboarding_inbox(gateway=gateway)
+
+        self.assertEqual(result, {'status': 'success', 'processed': 0, 'failed': 0})
+        self.assertEqual(inbox_row['Статус'], 'Подтвержден')
 
     def test_approved_submission_is_upserted_without_duplicate_rows(self):
         submission = self.create_approved_submission()
