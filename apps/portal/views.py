@@ -13,6 +13,7 @@ from django.contrib.auth import get_user_model, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
+from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.http import FileResponse, Http404
@@ -28,6 +29,9 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
+from apps.client_onboarding.models import OnboardingSubmission
+from apps.client_onboarding.permissions import can_review_onboarding
+from apps.client_onboarding.services import review_submission
 from apps.core.models import SystemSetting
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
@@ -244,6 +248,12 @@ NAV_GROUPS = (
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
             {'name': 'document_upload_rating', 'label': 'Рейтинг загрузок', 'icon': 'badge-plus'},
+            {
+                'name': 'onboarding_submissions',
+                'label': 'Входящие анкеты',
+                'icon': 'inbox',
+                'onboarding_only': True,
+            },
             {'name': 'client_questionnaires', 'label': 'Анкеты клиентов', 'icon': 'clipboard-list'},
             {'name': 'applications', 'label': 'Заявки', 'icon': 'file-check-2'},
             {'name': 'tasks', 'label': 'Задачи', 'icon': 'check-square'},
@@ -437,6 +447,8 @@ def build_nav_groups(user, active_page):
         is_group_active = False
         for item in group['items']:
             if item.get('staff_only') and not (user.is_staff or user.is_superuser):
+                continue
+            if item.get('onboarding_only') and not can_review_onboarding(user):
                 continue
             resolved = {**item, 'url': resolve_nav_url(item)}
             resolved['is_active'] = item['name'] == active_page
@@ -2642,6 +2654,127 @@ class DocumentUploadRatingView(PortalContextMixin, TemplateView):
             'team_remaining': max(sum(row['target'] for row in rows) - sum(row['uploaded_clients'] for row in rows), 0),
         })
         return context
+
+
+class OnboardingPortalAccessMixin(PortalContextMixin):
+    active_page = 'onboarding_submissions'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not can_review_onboarding(request.user):
+            messages.error(request, 'У вас нет права проверять входящие анкеты.')
+            return redirect('portal:dashboard')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class OnboardingSubmissionsView(OnboardingPortalAccessMixin, TemplateView):
+    template_name = 'portal/onboarding_submissions.html'
+    page_title = 'Входящие анкеты'
+
+    def get_queryset(self):
+        queryset = (
+            OnboardingSubmission.objects.select_related('reviewed_by', 'client')
+            .prefetch_related('university_choices__university', 'university_choices__programs')
+        )
+        query = (self.request.GET.get('q') or '').strip()
+        if query:
+            queryset = queryset.filter(
+                Q(full_name__icontains=query)
+                | Q(phone__icontains=query)
+                | Q(email__icontains=query)
+                | Q(client__sl_id__icontains=query)
+            )
+
+        status_value = self.request.GET.get('status', 'active')
+        valid_statuses = {value for value, _ in OnboardingSubmission.STATUS_CHOICES}
+        if status_value == 'active':
+            queryset = queryset.filter(
+                status__in=[
+                    OnboardingSubmission.STATUS_SUBMITTED,
+                    OnboardingSubmission.STATUS_IN_REVIEW,
+                    OnboardingSubmission.STATUS_CHANGES_REQUESTED,
+                ]
+            )
+        elif status_value in valid_statuses:
+            queryset = queryset.filter(status=status_value)
+
+        kind_value = self.request.GET.get('kind', '')
+        if kind_value in {value for value, _ in OnboardingSubmission.KIND_CHOICES}:
+            queryset = queryset.filter(kind=kind_value)
+        return queryset.order_by('-submitted_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        page_obj, query = paginate_queryset(self.request, self.get_queryset(), 24)
+        context.update({
+            'submissions': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': query,
+            'query': self.request.GET.get('q', ''),
+            'status_filter': self.request.GET.get('status', 'active'),
+            'kind_filter': self.request.GET.get('kind', ''),
+            'status_choices': (
+                ('active', 'Требуют внимания'),
+                ('', 'Все'),
+                *OnboardingSubmission.STATUS_CHOICES,
+            ),
+            'kind_choices': (('', 'Все типы'), *OnboardingSubmission.KIND_CHOICES),
+        })
+        return context
+
+
+class OnboardingSubmissionDetailView(OnboardingPortalAccessMixin, TemplateView):
+    template_name = 'portal/onboarding_submission_detail.html'
+    page_title = 'Проверка входящей анкеты'
+
+    def get_submission(self):
+        return get_object_or_404(
+            OnboardingSubmission.objects.select_related(
+                'reviewed_by', 'client', 'service_identity'
+            ).prefetch_related(
+                'university_choices__university',
+                'university_choices__programs',
+                'review_events__actor',
+            ),
+            pk=self.kwargs['pk'],
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        submission = self.get_submission()
+        context.update({
+            'submission': submission,
+            'payload_sections': build_questionnaire_sections(submission.payload or {}),
+            'can_decide': submission.status in {
+                OnboardingSubmission.STATUS_SUBMITTED,
+                OnboardingSubmission.STATUS_IN_REVIEW,
+            },
+        })
+        return context
+
+
+class OnboardingSubmissionReviewView(OnboardingPortalAccessMixin, View):
+    def post(self, request, pk):
+        submission = get_object_or_404(OnboardingSubmission, pk=pk)
+        decision = request.POST.get('decision', '')
+        comment = request.POST.get('comment', '')
+        labels = {
+            'start_review': 'Анкета взята на проверку.',
+            'approve': 'Анкета одобрена. Клиент и заявки созданы.',
+            'request_changes': 'Клиенту отправлен запрос на исправление анкеты.',
+            'reject': 'Анкета отклонена.',
+        }
+        try:
+            submission = review_submission(
+                submission,
+                request.user,
+                decision,
+                comment=comment,
+            )
+        except ValidationError as exc:
+            messages.error(request, ' '.join(exc.messages))
+        else:
+            messages.success(request, labels.get(decision, 'Решение сохранено.'))
+        return redirect('portal:onboarding_submission_detail', pk=submission.pk)
 
 
 class ClientQuestionnairesView(PortalContextMixin, TemplateView):

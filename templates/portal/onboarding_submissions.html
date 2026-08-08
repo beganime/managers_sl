@@ -1,0 +1,79 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Входящие анкеты</h2>
+            <div class="muted small">Анкеты из приложения до создания карточки клиента</div>
+        </div>
+        <span class="pill">{{ page_obj.paginator.count }}</span>
+    </div>
+    <div class="panel-body">
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="ФИО, телефон, email или SL-ID">
+                <select class="select" name="status" style="max-width:210px;">
+                    {% for value,label in status_choices %}
+                        <option value="{{ value }}" {% if value == status_filter %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <select class="select" name="kind" style="max-width:190px;">
+                    {% for value,label in kind_choices %}
+                        <option value="{{ value }}" {% if value == kind_filter %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Показать</button>
+                <a class="btn" href="{% url 'portal:onboarding_submissions' %}"><i data-lucide="rotate-ccw"></i>Сбросить</a>
+            </div>
+        </form>
+
+        <div class="card-grid">
+            {% for submission in submissions %}
+                <article class="item-card">
+                    <div class="item-card-top">
+                        <div style="min-width:0;">
+                            <div class="item-card-title">{{ submission.full_name }}</div>
+                            <div class="item-card-meta">
+                                <span>{{ submission.get_kind_display }} · поступление {{ submission.academic_year }}</span>
+                                <span>{{ submission.phone }}{% if submission.email %} · {{ submission.email }}{% endif %}</span>
+                                <span>Отправлена {{ submission.submitted_at|date:"d.m.Y H:i" }}</span>
+                                {% if submission.reviewed_by %}<span>Менеджер: {{ submission.reviewed_by.get_full_name|default:submission.reviewed_by.email }}</span>{% endif %}
+                            </div>
+                        </div>
+                        {% if submission.status == "approved" %}
+                            <span class="pill ok">Одобрена</span>
+                        {% elif submission.status == "rejected" %}
+                            <span class="pill danger">Отклонена</span>
+                        {% elif submission.status == "changes_requested" %}
+                            <span class="pill warn">На исправлении</span>
+                        {% elif submission.status == "in_review" %}
+                            <span class="pill warn">На проверке</span>
+                        {% else %}
+                            <span class="pill">Новая</span>
+                        {% endif %}
+                    </div>
+                    <div class="contact-actions">
+                        <a class="btn primary" href="{% url 'portal:onboarding_submission_detail' submission.id %}"><i data-lucide="clipboard-check"></i>Открыть</a>
+                        {% if submission.client %}
+                            <a class="btn" href="{% url 'portal:client_detail' submission.client.id %}"><i data-lucide="user-round"></i>{{ submission.client.sl_id }}</a>
+                        {% endif %}
+                    </div>
+                </article>
+            {% empty %}
+                <div class="empty">По выбранным условиям анкет нет.</div>
+            {% endfor %}
+        </div>
+
+        {% if page_obj.paginator.num_pages > 1 %}
+            <div class="toolbar" style="margin-top:14px;">
+                <div class="muted small">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</div>
+                <div class="filters">
+                    {% if page_obj.has_previous %}<a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Назад</a>{% endif %}
+                    {% if page_obj.has_next %}<a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.next_page_number }}">Дальше</a>{% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</section>
+{% endblock %}

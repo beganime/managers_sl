@@ -229,6 +229,61 @@ def approve_submission(submission, reviewer, company_id=None):
     return submission
 
 
+@transaction.atomic
+def review_submission(submission, reviewer, decision, comment='', company_id=None):
+    submission = OnboardingSubmission.objects.select_for_update().get(pk=submission.pk)
+    comment = str(comment or '').strip()
+
+    if decision == OnboardingReviewEvent.DECISION_APPROVE:
+        return approve_submission(submission, reviewer, company_id=company_id)
+
+    if decision == OnboardingReviewEvent.DECISION_START_REVIEW:
+        if (
+            submission.status == OnboardingSubmission.STATUS_IN_REVIEW
+            and submission.reviewed_by_id == reviewer.id
+        ):
+            return submission
+        if submission.status != OnboardingSubmission.STATUS_SUBMITTED:
+            raise ValidationError('Взять на проверку можно только отправленную анкету.')
+        target_status = OnboardingSubmission.STATUS_IN_REVIEW
+    elif decision == OnboardingReviewEvent.DECISION_REQUEST_CHANGES:
+        if not comment:
+            raise ValidationError('Укажите, что клиенту нужно исправить.')
+        target_status = OnboardingSubmission.STATUS_CHANGES_REQUESTED
+    elif decision == OnboardingReviewEvent.DECISION_REJECT:
+        if not comment:
+            raise ValidationError('Укажите причину отклонения.')
+        target_status = OnboardingSubmission.STATUS_REJECTED
+    else:
+        raise ValidationError('Неизвестное решение по анкете.')
+
+    if submission.status not in {
+        OnboardingSubmission.STATUS_SUBMITTED,
+        OnboardingSubmission.STATUS_IN_REVIEW,
+    }:
+        raise ValidationError('Решение можно принять только по отправленной анкете или анкете на проверке.')
+
+    previous_status = submission.status
+    submission.status = target_status
+    submission.review_comment = comment
+    submission.reviewed_by = reviewer
+    submission.reviewed_at = (
+        None if decision == OnboardingReviewEvent.DECISION_START_REVIEW else timezone.now()
+    )
+    submission.save(
+        update_fields=['status', 'review_comment', 'reviewed_by', 'reviewed_at', 'updated_at']
+    )
+    OnboardingReviewEvent.objects.create(
+        submission=submission,
+        decision=decision,
+        from_status=previous_status,
+        to_status=target_status,
+        actor=reviewer,
+        comment=comment,
+    )
+    return submission
+
+
 def _enqueue_submission_sync(submission_id):
     from apps.sheets_sync.services import enqueue_submission_sync
 

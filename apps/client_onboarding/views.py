@@ -1,13 +1,11 @@
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import transaction
-from django.utils import timezone
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import OnboardingReviewEvent, OnboardingSubmission
+from .models import OnboardingSubmission
 from .permissions import CanReviewOnboarding
 from .serializers import (
     ManagerOnboardingSubmissionSerializer,
@@ -15,7 +13,7 @@ from .serializers import (
     PublicOnboardingStatusSerializer,
     ReviewDecisionSerializer,
 )
-from .services import approve_submission
+from .services import review_submission
 
 
 class PublicOnboardingSubmissionCreateView(APIView):
@@ -81,78 +79,31 @@ class ManagerOnboardingSubmissionViewSet(
         return queryset
 
     @action(detail=True, methods=['post'])
-    @transaction.atomic
     def review(self, request, pk=None):
-        submission = OnboardingSubmission.objects.select_for_update().get(pk=self.get_object().pk)
+        submission = self.get_object()
         serializer = ReviewDecisionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         decision = serializer.validated_data['decision']
         comment = serializer.validated_data.get('comment', '').strip()
 
-        if submission.status == OnboardingSubmission.STATUS_APPROVED and decision == 'approve':
-            return Response(self.get_serializer(submission).data)
-
-        if decision == 'start_review':
-            if (
-                submission.status == OnboardingSubmission.STATUS_IN_REVIEW
-                and submission.reviewed_by_id == request.user.id
-            ):
-                return Response(self.get_serializer(submission).data)
-            if submission.status != OnboardingSubmission.STATUS_SUBMITTED:
-                return Response(
-                    {'detail': 'Взять на проверку можно только отправленную анкету.'},
-                    status=status.HTTP_409_CONFLICT,
-                )
-            previous_status = submission.status
-            submission.status = OnboardingSubmission.STATUS_IN_REVIEW
-            submission.reviewed_by = request.user
-            submission.review_comment = ''
-            submission.save(update_fields=['status', 'reviewed_by', 'review_comment', 'updated_at'])
-            OnboardingReviewEvent.objects.create(
-                submission=submission,
-                decision=OnboardingReviewEvent.DECISION_START_REVIEW,
-                from_status=previous_status,
-                to_status=OnboardingSubmission.STATUS_IN_REVIEW,
-                actor=request.user,
-            )
-            return Response(self.get_serializer(submission).data)
-
-        if submission.status not in {
-            OnboardingSubmission.STATUS_SUBMITTED,
-            OnboardingSubmission.STATUS_IN_REVIEW,
-        }:
-            return Response(
-                {'detail': 'Решение можно принять только по отправленной анкете или анкете на проверке.'},
-                status=status.HTTP_409_CONFLICT,
-            )
-
-        if decision == 'approve':
-            try:
-                submission = approve_submission(
-                    submission,
-                    request.user,
-                    company_id=serializer.validated_data.get('company_id'),
-                )
-            except DjangoValidationError as exc:
-                return Response({'detail': exc.messages}, status=status.HTTP_400_BAD_REQUEST)
-        else:
-            previous_status = submission.status
-            submission.status = (
-                OnboardingSubmission.STATUS_CHANGES_REQUESTED
-                if decision == 'request_changes'
-                else OnboardingSubmission.STATUS_REJECTED
-            )
-            submission.review_comment = comment
-            submission.reviewed_by = request.user
-            submission.reviewed_at = timezone.now()
-            submission.save(update_fields=['status', 'review_comment', 'reviewed_by', 'reviewed_at', 'updated_at'])
-            OnboardingReviewEvent.objects.create(
-                submission=submission,
-                decision=decision,
-                from_status=previous_status,
-                to_status=submission.status,
-                actor=request.user,
+        try:
+            submission = review_submission(
+                submission,
+                request.user,
+                decision,
                 comment=comment,
+                company_id=serializer.validated_data.get('company_id'),
             )
+        except DjangoValidationError as exc:
+            conflict_messages = {
+                'Взять на проверку можно только отправленную анкету.',
+                'Решение можно принять только по отправленной анкете или анкете на проверке.',
+            }
+            response_status = (
+                status.HTTP_409_CONFLICT
+                if any(message in conflict_messages for message in exc.messages)
+                else status.HTTP_400_BAD_REQUEST
+            )
+            return Response({'detail': exc.messages}, status=response_status)
 
         return Response(self.get_serializer(submission).data)
