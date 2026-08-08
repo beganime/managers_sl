@@ -544,6 +544,7 @@ def import_onboarding_decisions(limit=1000, gateway=None):
                         reviewer,
                         decision,
                         comment=comment,
+                        enqueue_sync=False,
                     )
                     if decision == 'approve':
                         sync_submission(submission.pk, gateway=gateway)

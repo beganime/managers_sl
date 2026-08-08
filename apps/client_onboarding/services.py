@@ -120,7 +120,7 @@ def allocate_sl_id(academic_year, kind):
 
 
 @transaction.atomic
-def approve_submission(submission, reviewer, company_id=None):
+def approve_submission(submission, reviewer, company_id=None, *, enqueue_sync=True):
     # Lock only the submission row. Joining the nullable client relation here
     # makes PostgreSQL reject SELECT FOR UPDATE before a client exists.
     submission = OnboardingSubmission.objects.select_for_update().get(pk=submission.pk)
@@ -242,19 +242,33 @@ def approve_submission(submission, reviewer, company_id=None):
         to_status=OnboardingSubmission.STATUS_APPROVED,
         actor=reviewer,
     )
-    transaction.on_commit(lambda: _enqueue_submission_sync(submission.pk))
+    if enqueue_sync:
+        transaction.on_commit(lambda: _enqueue_submission_sync(submission.pk))
     transaction.on_commit(lambda: _enqueue_service_provisioning(client.pk, str(submission.public_id)))
     transaction.on_commit(lambda: _enqueue_onboarding_notification(submission.pk))
     return submission
 
 
 @transaction.atomic
-def review_submission(submission, reviewer, decision, comment='', company_id=None):
+def review_submission(
+    submission,
+    reviewer,
+    decision,
+    comment='',
+    company_id=None,
+    *,
+    enqueue_sync=True,
+):
     submission = OnboardingSubmission.objects.select_for_update().get(pk=submission.pk)
     comment = str(comment or '').strip()
 
     if decision == OnboardingReviewEvent.DECISION_APPROVE:
-        return approve_submission(submission, reviewer, company_id=company_id)
+        return approve_submission(
+            submission,
+            reviewer,
+            company_id=company_id,
+            enqueue_sync=enqueue_sync,
+        )
 
     if decision == OnboardingReviewEvent.DECISION_START_REVIEW:
         if (
