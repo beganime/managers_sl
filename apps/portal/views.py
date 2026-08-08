@@ -71,6 +71,7 @@ from apps.portal.models import CalendarEvent
 from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAttachment, TaskChecklist, TaskChecklistItem, TaskComment
 from apps.sheets_sync.models import SheetSyncRun
 from apps.sheets_sync.services import enqueue_submission_sync
+from apps.portal.akylchat import AkylChatClient, AkylChatError
 
 
 PAGE_SIZE = 25
@@ -251,6 +252,7 @@ NAV_GROUPS = (
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
             {'name': 'document_upload_rating', 'label': 'Рейтинг загрузок', 'icon': 'badge-plus'},
+            {'name': 'client_chats', 'label': 'Чаты клиентов', 'icon': 'messages-square'},
             {
                 'name': 'onboarding_submissions',
                 'label': 'Входящие анкеты',
@@ -1148,6 +1150,66 @@ class PortalContextMixin(LoginRequiredMixin):
             'can_access_admin': can_access_admin,
             'admin_quick_actions': build_admin_quick_actions() if can_access_admin else [],
             'is_htmx': self.request.headers.get('HX-Request') == 'true',
+        })
+        return context
+
+
+class ClientChatsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/client_chats.html'
+    active_page = 'client_chats'
+    page_title = 'Чаты клиентов'
+
+    def post(self, request, *args, **kwargs):
+        sl_id = str(request.POST.get('sl_id') or '').strip().upper()
+        text = str(request.POST.get('text') or '').strip()
+        upload = request.FILES.get('file')
+        if not sl_id:
+            messages.error(request, 'Выберите клиента.')
+            return redirect('portal:client_chats')
+        target = f'{reverse("portal:client_chats")}?sl_id={sl_id}'
+        if not text and not upload:
+            messages.error(request, 'Введите сообщение или выберите файл.')
+            return redirect(target)
+        if upload and upload.size > 50 * 1024 * 1024:
+            messages.error(request, 'Размер файла не должен превышать 50 МБ.')
+            return redirect(target)
+        try:
+            AkylChatClient().send_message(
+                sl_id,
+                text=text,
+                upload=upload,
+                manager_name=full_name(request.user),
+            )
+        except AkylChatError as exc:
+            messages.error(request, str(exc))
+        return redirect(target)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        client = AkylChatClient()
+        rooms = []
+        chat_messages = []
+        selected_sl_id = str(self.request.GET.get('sl_id') or '').strip().upper()
+        integration_error = ''
+        try:
+            rooms = client.rooms().get('results', [])
+            if not selected_sl_id and rooms:
+                selected_sl_id = str(rooms[0].get('sl_id') or '').strip().upper()
+            if selected_sl_id:
+                chat_messages = client.messages(selected_sl_id).get('results', [])
+                client.mark_read(selected_sl_id)
+        except AkylChatError as exc:
+            integration_error = str(exc)
+        context.update({
+            'chat_rooms': rooms,
+            'chat_messages': chat_messages,
+            'selected_sl_id': selected_sl_id,
+            'selected_room': next(
+                (room for room in rooms if str(room.get('sl_id') or '').upper() == selected_sl_id),
+                None,
+            ),
+            'integration_error': integration_error,
+            'max_upload_mb': 50,
         })
         return context
 

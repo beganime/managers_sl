@@ -1,5 +1,6 @@
 from datetime import timedelta
 from unittest.mock import patch
+from unittest.mock import Mock
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -9,6 +10,55 @@ from django.utils import timezone
 from apps.client_onboarding.models import OnboardingReviewEvent, OnboardingSubmission
 from apps.client_onboarding.services import review_submission
 from apps.organizations.models import Company
+
+
+class PortalClientChatTests(TestCase):
+    def setUp(self):
+        self.manager = get_user_model().objects.create_user(
+            email='chat-manager@example.com',
+            password='test-password',
+            first_name='Мария',
+            is_staff=True,
+        )
+        self.client.force_login(self.manager)
+
+    @patch('apps.portal.views.AkylChatClient')
+    def test_manager_can_open_client_chat(self, client_class):
+        service = Mock()
+        service.rooms.return_value = {
+            'results': [{'id': 'room-1', 'sl_id': 'SL-001', 'user_name': 'Иван Иванов', 'unread_count': 1}]
+        }
+        service.messages.return_value = {
+            'results': [{'id': 'message-1', 'text': 'Здравствуйте', 'is_mine': False}]
+        }
+        client_class.return_value = service
+
+        response = self.client.get(reverse('portal:client_chats'), {'sl_id': 'SL-001'}, secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Иван Иванов')
+        self.assertContains(response, 'Здравствуйте')
+        service.mark_read.assert_called_once_with('SL-001')
+
+    @patch('apps.portal.views.AkylChatClient')
+    def test_manager_can_send_text_message(self, client_class):
+        service = Mock()
+        client_class.return_value = service
+
+        response = self.client.post(
+            reverse('portal:client_chats'),
+            {'sl_id': 'SL-001', 'text': 'Проверка связи'},
+            secure=True,
+        )
+
+        self.assertRedirects(
+            response,
+            f'{reverse("portal:client_chats")}?sl_id=SL-001',
+            fetch_redirect_response=False,
+        )
+        service.send_message.assert_called_once_with(
+            'SL-001', text='Проверка связи', upload=None, manager_name='Мария'
+        )
 
 
 class DashboardBirthdayGreetingTests(TestCase):
