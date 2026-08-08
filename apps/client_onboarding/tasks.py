@@ -5,6 +5,9 @@ from django.conf import settings
 from django.utils import timezone
 
 from apps.crm.models import Client
+from apps.erp_notifications.push import send_push_to_token
+
+from .models import OnboardingSubmission
 
 
 def post_service(url, token, payload):
@@ -62,3 +65,38 @@ def provision_client_services(self, client_id, event_id):
     }
     Client.objects.filter(pk=client.pk).update(custom_data=data)
     return data['service_provisioning']
+
+
+@shared_task(bind=True, max_retries=5, retry_backoff=True, retry_jitter=True)
+def notify_onboarding_status(self, submission_id):
+    submission = OnboardingSubmission.objects.select_related('client').get(pk=submission_id)
+    if not submission.fcm_token:
+        return {'status': 'skipped', 'reason': 'missing_token'}
+
+    if submission.status == OnboardingSubmission.STATUS_APPROVED:
+        title = 'Аккаунт одобрен'
+        body = f'Ваш идентификатор — {submission.client.sl_id}. Получите пароль у менеджера.'
+    elif submission.status == OnboardingSubmission.STATUS_CHANGES_REQUESTED:
+        title = 'Нужно исправить анкету'
+        body = submission.review_comment or 'Менеджер оставил комментарий к вашей анкете.'
+    elif submission.status == OnboardingSubmission.STATUS_REJECTED:
+        title = 'Решение по анкете'
+        body = submission.review_comment or 'Анкета отклонена. Обратитесь к менеджеру.'
+    else:
+        return {'status': 'skipped', 'reason': 'status_not_notifiable'}
+
+    try:
+        sent = send_push_to_token(
+            submission.fcm_token,
+            title,
+            body,
+            data={
+                'type': 'onboarding_status',
+                'public_id': str(submission.public_id),
+                'status': submission.status,
+                'sl_id': submission.client.sl_id if submission.client_id else '',
+            },
+        )
+    except Exception as exc:
+        raise self.retry(exc=exc)
+    return {'status': 'sent' if sent else 'disabled'}

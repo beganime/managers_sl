@@ -226,6 +226,7 @@ def approve_submission(submission, reviewer, company_id=None):
     )
     transaction.on_commit(lambda: _enqueue_submission_sync(submission.pk))
     transaction.on_commit(lambda: _enqueue_service_provisioning(client.pk, str(submission.public_id)))
+    transaction.on_commit(lambda: _enqueue_onboarding_notification(submission.pk))
     return submission
 
 
@@ -281,6 +282,11 @@ def review_submission(submission, reviewer, decision, comment='', company_id=Non
         actor=reviewer,
         comment=comment,
     )
+    if decision in {
+        OnboardingReviewEvent.DECISION_REQUEST_CHANGES,
+        OnboardingReviewEvent.DECISION_REJECT,
+    }:
+        transaction.on_commit(lambda: _enqueue_onboarding_notification(submission.pk))
     return submission
 
 
@@ -294,3 +300,9 @@ def _enqueue_service_provisioning(client_id, event_id):
     from .tasks import provision_client_services
 
     provision_client_services.delay(client_id, event_id)
+
+
+def _enqueue_onboarding_notification(submission_id):
+    from .tasks import notify_onboarding_status
+
+    notify_onboarding_status.delay(submission_id)

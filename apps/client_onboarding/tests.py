@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
@@ -7,7 +9,7 @@ from apps.organizations.models import Company
 from users.models import User
 
 from .models import ClientServiceIdentity, OnboardingReviewEvent, OnboardingSubmission
-from .tasks import provision_client_services
+from .tasks import notify_onboarding_status, provision_client_services
 
 
 class OnboardingApiTests(APITestCase):
@@ -224,3 +226,22 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(approved.status_code, 200, approved.data)
         submission.refresh_from_db()
         self.assertEqual(submission.client.sl_id, 'SL-SCHOOL-2027-001')
+
+    @patch('apps.client_onboarding.tasks.send_push_to_token', return_value=True)
+    def test_approved_submission_can_notify_anonymous_device(self, send_push_mock):
+        created = self.create_submission()
+        submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
+        self.client.force_authenticate(self.manager)
+        approved = self.client.post(
+            reverse('manager-onboarding-submission-review', kwargs={'pk': submission.pk}),
+            {'decision': 'approve'},
+            format='json',
+        )
+        self.assertEqual(approved.status_code, 200, approved.data)
+
+        result = notify_onboarding_status.run(submission.pk)
+
+        self.assertEqual(result['status'], 'sent')
+        send_push_mock.assert_called_once()
+        self.assertEqual(send_push_mock.call_args.args[0], 'test-fcm-token')
+        self.assertIn('SL-001', send_push_mock.call_args.args[2])
