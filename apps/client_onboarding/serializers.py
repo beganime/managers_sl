@@ -100,6 +100,7 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
         submission = OnboardingSubmission.objects.create(access_token_hash=token_hash, **validated_data)
         self._replace_choices(submission, choices)
         submission._raw_access_token = raw_token
+        transaction.on_commit(lambda: _enqueue_onboarding_sheet_sync(submission.pk))
         return submission
 
     @transaction.atomic
@@ -123,7 +124,14 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
             from_status=previous_status,
             to_status=OnboardingSubmission.STATUS_SUBMITTED,
         )
+        transaction.on_commit(lambda: _enqueue_onboarding_sheet_sync(instance.pk))
         return instance
+
+
+def _enqueue_onboarding_sheet_sync(submission_id):
+    from apps.sheets_sync.services import enqueue_onboarding_inbox_sync
+
+    enqueue_onboarding_inbox_sync(submission_id)
 
 
 class UniversityChoiceReadSerializer(serializers.ModelSerializer):

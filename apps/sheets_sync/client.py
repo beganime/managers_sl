@@ -70,6 +70,13 @@ class GoogleSheetsGateway:
     def sheet_titles(self):
         return set(self.health_check()['sheets'])
 
+    def sheet_id(self, sheet_name):
+        for item in self.metadata().get('sheets', []):
+            properties = item.get('properties', {})
+            if properties.get('title') == sheet_name:
+                return properties.get('sheetId')
+        raise SheetsSyncError(f'Лист {sheet_name} не найден.')
+
     def headers(self, sheet_name):
         result = self.service.spreadsheets().values().get(
             spreadsheetId=self.spreadsheet_id,
@@ -149,6 +156,40 @@ class GoogleSheetsGateway:
                 body={'values': rows},
             ).execute()
         return len(rows)
+
+    def set_dropdown_validation(self, sheet_name, header, values, start_row=2, end_row=2000):
+        headers = self.headers(sheet_name)
+        if header not in headers:
+            raise HeaderMismatchError(f'В листе {sheet_name} нет столбца {header}.')
+        column_index = headers.index(header)
+        self.service.spreadsheets().batchUpdate(
+            spreadsheetId=self.spreadsheet_id,
+            body={
+                'requests': [{
+                    'setDataValidation': {
+                        'range': {
+                            'sheetId': self.sheet_id(sheet_name),
+                            'startRowIndex': max(int(start_row) - 1, 1),
+                            'endRowIndex': max(int(end_row), int(start_row)),
+                            'startColumnIndex': column_index,
+                            'endColumnIndex': column_index + 1,
+                        },
+                        'rule': {
+                            'condition': {
+                                'type': 'ONE_OF_LIST',
+                                'values': [
+                                    {'userEnteredValue': str(value)}
+                                    for value in values
+                                ],
+                            },
+                            'strict': True,
+                            'showCustomUi': True,
+                            'inputMessage': 'Выберите статус обработки анкеты.',
+                        },
+                    }
+                }],
+            },
+        ).execute()
 
     def find_row(self, sheet_name, identity_header, identity_value):
         headers = self.headers(sheet_name)

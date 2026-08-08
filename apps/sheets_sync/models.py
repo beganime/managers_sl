@@ -59,11 +59,15 @@ class SheetSyncRun(TimeStampedModel):
     KIND_SUBMISSION = 'submission'
     KIND_PENDING = 'pending'
     KIND_PUBLIC_STATUS = 'public_status'
+    KIND_ONBOARDING_INBOX = 'onboarding_inbox'
+    KIND_ONBOARDING_DECISIONS = 'onboarding_decisions'
     KIND_CHOICES = (
         (KIND_REFERENCES, 'Справочники'),
         (KIND_SUBMISSION, 'Анкета'),
         (KIND_PENDING, 'Очередь анкет'),
         (KIND_PUBLIC_STATUS, 'Статусы клиентов'),
+        (KIND_ONBOARDING_INBOX, 'Входящие анкеты'),
+        (KIND_ONBOARDING_DECISIONS, 'Решения по анкетам'),
     )
 
     STATUS_RUNNING = 'running'

@@ -12,7 +12,13 @@ from users.models import User
 from .client import column_letter, quote_sheet
 from .models import ClientAdmissionSnapshot, SheetRowBinding
 from .schema import EXAM_HEADERS, safe_sheet_title, university_acronym
-from .services import import_public_client_statuses, sync_reference_data, sync_submission
+from .services import (
+    import_onboarding_decisions,
+    import_public_client_statuses,
+    sync_onboarding_submission,
+    sync_reference_data,
+    sync_submission,
+)
 
 
 class FakeSheetsGateway:
@@ -48,6 +54,9 @@ class FakeSheetsGateway:
     def replace_reference_column(self, sheet_name, column, header, values):
         self.reference_columns[column] = (header, list(values))
         return len(values)
+
+    def set_dropdown_validation(self, sheet_name, header, values, start_row=2, end_row=2000):
+        return None
 
     def read_rows(self, sheet_name, start_row=2):
         return [
@@ -108,6 +117,10 @@ class SheetsSyncServiceTests(TestCase):
             self.choices.append((university, program))
 
     def create_approved_submission(self):
+        submission = self.create_submitted_submission()
+        return approve_submission(submission, self.manager)
+
+    def create_submitted_submission(self):
         submission = OnboardingSubmission.objects.create(
             access_token_hash='test',
             kind=OnboardingSubmission.KIND_APPLICANT,
@@ -126,7 +139,35 @@ class SheetsSyncServiceTests(TestCase):
                 rank=rank,
             )
             choice.programs.add(program)
-        return approve_submission(submission, self.manager)
+        return submission
+
+    def test_google_sheet_status_approves_submission_and_writes_general_row(self):
+        submission = self.create_submitted_submission()
+        gateway = FakeSheetsGateway()
+
+        initial = sync_onboarding_submission(submission.pk, gateway=gateway)
+        inbox_row = gateway.rows['Заявки из анкеты'][str(submission.public_id)]
+        self.assertTrue(initial['created'])
+        self.assertEqual(inbox_row['Статус'], 'Ожидание')
+
+        inbox_row['Статус'] = 'Подтвержден'
+        result = import_onboarding_decisions(gateway=gateway)
+
+        submission.refresh_from_db()
+        self.assertEqual(result, {'status': 'success', 'processed': 1, 'failed': 0})
+        self.assertEqual(submission.status, OnboardingSubmission.STATUS_APPROVED)
+        self.assertIsNotNone(submission.client_id)
+        self.assertEqual(inbox_row['Статус'], 'Подтвержден')
+        self.assertEqual(inbox_row['SL-ID'], submission.client.sl_id)
+        self.assertIn('Обработано', inbox_row['Результат обработки'])
+        self.assertEqual(
+            gateway.rows['Общее'][submission.client.sl_id]['ФИО абитуриента'],
+            'Иван Иванов',
+        )
+
+        repeated = import_onboarding_decisions(gateway=gateway)
+        self.assertEqual(repeated, {'status': 'success', 'processed': 0, 'failed': 0})
+        self.assertEqual(OnboardingSubmission.objects.filter(client__isnull=False).count(), 1)
 
     def test_approved_submission_is_upserted_without_duplicate_rows(self):
         submission = self.create_approved_submission()

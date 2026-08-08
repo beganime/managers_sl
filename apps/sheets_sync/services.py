@@ -4,10 +4,12 @@ import logging
 from decimal import Decimal
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils import timezone
 
 from apps.client_onboarding.models import OnboardingSubmission
+from apps.client_onboarding.services import review_submission
 from apps.crm.models import Client
 from apps.education.models import City, Program, University
 from users.models import User
@@ -16,6 +18,8 @@ from .client import GoogleSheetsGateway
 from .models import ClientAdmissionSnapshot, SheetRowBinding, SheetSyncRun
 from .schema import (
     GENERAL_HEADERS,
+    ONBOARDING_HEADERS,
+    ONBOARDING_STATUS_OPTIONS,
     OFFICE_CODES,
     REFERENCE_COLUMNS,
     UNIVERSITY_HEADERS,
@@ -25,6 +29,27 @@ from .schema import (
 
 
 logger = logging.getLogger(__name__)
+
+ONBOARDING_INTERNAL_STATUS_LABELS = {
+    OnboardingSubmission.STATUS_SUBMITTED: 'Ожидание',
+    OnboardingSubmission.STATUS_IN_REVIEW: 'Ожидание',
+    OnboardingSubmission.STATUS_CHANGES_REQUESTED: 'Требуются изменения',
+    OnboardingSubmission.STATUS_APPROVED: 'Подтвержден',
+    OnboardingSubmission.STATUS_REJECTED: 'Отклонен',
+}
+
+ONBOARDING_SHEET_DECISIONS = {
+    'подтвержден': 'approve',
+    'подтверждено': 'approve',
+    'одобрен': 'approve',
+    'одобрена': 'approve',
+    'approved': 'approve',
+    'требуются изменения': 'request_changes',
+    'вернуть на исправление': 'request_changes',
+    'отклонен': 'reject',
+    'отклонена': 'reject',
+    'rejected': 'reject',
+}
 
 GENERAL_CREATE_ONLY_HEADERS = {
     'Имеется договор',
@@ -198,6 +223,63 @@ def submission_general_values(submission):
     }
 
 
+def submission_onboarding_values(submission):
+    choices = []
+    for choice in submission.university_choices.all():
+        program_names = ', '.join(program.name for program in choice.programs.all())
+        choices.append(
+            f'{choice.rank}. {choice.university.name}: {program_names}'
+            if program_names
+            else f'{choice.rank}. {choice.university.name}'
+        )
+    return {
+        'Внутренний ID': str(submission.public_id),
+        'Тип анкеты': submission.get_kind_display(),
+        'Год поступления': submission.academic_year,
+        'ФИО абитуриента': submission.full_name,
+        'Телефон': submission.phone,
+        'Email': submission.email,
+        'Дата рождения': serialize_value(submission.date_of_birth),
+        'Гражданство': submission.citizenship,
+        'Вузы и программы': '\n'.join(choices),
+        'Ответственный': display_user(submission.reviewed_by),
+        'Комментарий менеджера': submission.review_comment,
+        'SL-ID': submission.client.sl_id if submission.client_id else '',
+        'Отправлено': serialize_value(submission.submitted_at),
+        'Обновлено': serialize_value(submission.updated_at),
+    }
+
+
+def normalize_sheet_status(value):
+    return str(value or '').strip().casefold().replace('ё', 'е')
+
+
+def resolve_sheet_reviewer(values):
+    requested = str(values.get('Ответственный', '') or '').strip().casefold()
+    reviewers = list(
+        User.objects.filter(is_active=True)
+        .filter(Q(role='manager') | Q(role='admin') | Q(is_superuser=True))
+        .select_related('employee_profile')
+        .order_by('-is_superuser', 'first_name', 'last_name', 'email')
+    )
+    if requested:
+        for reviewer in reviewers:
+            if requested in {
+                reviewer.email.casefold(),
+                display_user(reviewer).casefold(),
+            }:
+                return reviewer
+        raise ValidationError(
+            'Ответственный из Google Sheets не найден среди активных менеджеров.'
+        )
+    for reviewer in reviewers:
+        if hasattr(reviewer, 'employee_profile'):
+            return reviewer
+    if reviewers:
+        return reviewers[0]
+    raise ValidationError('Нет активного менеджера для подтверждения анкеты.')
+
+
 def university_row_values(submission, choice):
     client = submission.client
     programs = list(choice.programs.all())
@@ -277,6 +359,207 @@ def sync_reference_data(gateway=None):
             )
         _finish_run(run, status=SheetSyncRun.STATUS_SUCCESS, processed=processed)
         return {'status': 'success', 'processed': processed}
+    except Exception as exc:
+        _finish_run(run, status=SheetSyncRun.STATUS_FAILED, failed=1, error=exc)
+        raise
+
+
+def sync_onboarding_submission(
+    submission_id,
+    gateway=None,
+    *,
+    force_status=False,
+    processing_result=None,
+):
+    run = SheetSyncRun.objects.create(
+        kind=SheetSyncRun.KIND_ONBOARDING_INBOX,
+        object_ref=str(submission_id),
+    )
+    if not sheets_sync_enabled() and gateway is None:
+        _finish_run(run, status=SheetSyncRun.STATUS_SKIPPED, error='Google Sheets отключён.')
+        return {'status': 'skipped', 'processed': 0}
+
+    try:
+        submission = (
+            OnboardingSubmission.objects.select_related('client', 'reviewed_by')
+            .prefetch_related(
+                'university_choices__university',
+                'university_choices__programs',
+            )
+            .get(pk=submission_id)
+        )
+        gateway = gateway or GoogleSheetsGateway()
+        sheet_name = settings.GOOGLE_SHEETS_ONBOARDING_SHEET
+        gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
+        gateway.set_dropdown_validation(
+            sheet_name,
+            'Статус',
+            ONBOARDING_STATUS_OPTIONS,
+        )
+
+        values = submission_onboarding_values(submission)
+        create_only_values = {
+            'Статус': ONBOARDING_INTERNAL_STATUS_LABELS[submission.status],
+            'Результат обработки': '',
+        }
+        if force_status or submission.status not in {
+            OnboardingSubmission.STATUS_SUBMITTED,
+            OnboardingSubmission.STATUS_IN_REVIEW,
+        }:
+            values['Статус'] = ONBOARDING_INTERNAL_STATUS_LABELS[submission.status]
+        if processing_result is not None:
+            values['Результат обработки'] = str(processing_result)
+
+        row_number, created = gateway.upsert_row(
+            sheet_name,
+            'Внутренний ID',
+            str(submission.public_id),
+            values,
+            create_only_values=create_only_values,
+        )
+        _finish_run(run, status=SheetSyncRun.STATUS_SUCCESS, processed=1)
+        return {
+            'status': 'success',
+            'processed': 1,
+            'row_number': row_number,
+            'created': created,
+        }
+    except Exception as exc:
+        _finish_run(run, status=SheetSyncRun.STATUS_FAILED, failed=1, error=exc)
+        raise
+
+
+def sync_onboarding_inbox(limit=1000, gateway=None):
+    run = SheetSyncRun.objects.create(kind=SheetSyncRun.KIND_ONBOARDING_INBOX)
+    if not sheets_sync_enabled() and gateway is None:
+        _finish_run(run, status=SheetSyncRun.STATUS_SKIPPED, error='Google Sheets отключён.')
+        return {'status': 'skipped', 'processed': 0, 'failed': 0}
+
+    try:
+        gateway = gateway or GoogleSheetsGateway()
+        submissions = list(
+            OnboardingSubmission.objects.order_by('-updated_at')[:max(int(limit), 1)]
+        )
+        processed = 0
+        failed = 0
+        for submission in submissions:
+            try:
+                sync_onboarding_submission(submission.pk, gateway=gateway)
+                processed += 1
+            except Exception:
+                failed += 1
+                logger.exception(
+                    'Не удалось записать входящую анкету %s в Google Sheets.',
+                    submission.pk,
+                )
+        result_status = SheetSyncRun.STATUS_SUCCESS if not failed else SheetSyncRun.STATUS_FAILED
+        _finish_run(run, status=result_status, processed=processed, failed=failed)
+        return {
+            'status': 'success' if not failed else 'partial',
+            'processed': processed,
+            'failed': failed,
+        }
+    except Exception as exc:
+        _finish_run(run, status=SheetSyncRun.STATUS_FAILED, failed=1, error=exc)
+        raise
+
+
+def import_onboarding_decisions(limit=1000, gateway=None):
+    run = SheetSyncRun.objects.create(kind=SheetSyncRun.KIND_ONBOARDING_DECISIONS)
+    if not sheets_sync_enabled() and gateway is None:
+        _finish_run(run, status=SheetSyncRun.STATUS_SKIPPED, error='Google Sheets отключён.')
+        return {'status': 'skipped', 'processed': 0, 'failed': 0}
+
+    try:
+        gateway = gateway or GoogleSheetsGateway()
+        sheet_name = settings.GOOGLE_SHEETS_ONBOARDING_SHEET
+        gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
+        gateway.set_dropdown_validation(
+            sheet_name,
+            'Статус',
+            ONBOARDING_STATUS_OPTIONS,
+        )
+        rows = gateway.read_rows(sheet_name)[:max(int(limit), 1)]
+        processed = 0
+        failed = 0
+        for row in rows:
+            values = row['values']
+            public_id = str(values.get('Внутренний ID', '') or '').strip()
+            normalized_status = normalize_sheet_status(values.get('Статус'))
+            if not public_id or normalized_status in {'', 'ожидание', 'на проверке'}:
+                continue
+            decision = ONBOARDING_SHEET_DECISIONS.get(normalized_status)
+            if not decision:
+                failed += 1
+                gateway.upsert_row(
+                    sheet_name,
+                    'Внутренний ID',
+                    public_id,
+                    {'Результат обработки': 'Неизвестный статус. Выберите значение из списка.'},
+                )
+                continue
+
+            try:
+                submission = OnboardingSubmission.objects.get(public_id=public_id)
+                target_statuses = {
+                    'approve': OnboardingSubmission.STATUS_APPROVED,
+                    'request_changes': OnboardingSubmission.STATUS_CHANGES_REQUESTED,
+                    'reject': OnboardingSubmission.STATUS_REJECTED,
+                }
+                target_status = target_statuses[decision]
+                changed = submission.status != target_status
+                if changed:
+                    if submission.status not in {
+                        OnboardingSubmission.STATUS_SUBMITTED,
+                        OnboardingSubmission.STATUS_IN_REVIEW,
+                    }:
+                        raise ValidationError(
+                            f'Анкета уже имеет статус «{submission.get_status_display()}».'
+                        )
+                    comment = str(values.get('Комментарий менеджера', '') or '').strip()
+                    if decision in {'request_changes', 'reject'} and not comment:
+                        raise ValidationError('Для этого статуса заполните комментарий менеджера.')
+                    reviewer = resolve_sheet_reviewer(values)
+                    submission = review_submission(
+                        submission,
+                        reviewer,
+                        decision,
+                        comment=comment,
+                    )
+                    if decision == 'approve':
+                        sync_submission(submission.pk, gateway=gateway)
+                    processed += 1
+
+                timestamp = timezone.localtime().strftime('%d.%m.%Y %H:%M')
+                message = (
+                    f'Обработано {timestamp}'
+                    if changed
+                    else f'Уже обработано ранее · проверено {timestamp}'
+                )
+                sync_onboarding_submission(
+                    submission.pk,
+                    gateway=gateway,
+                    force_status=True,
+                    processing_result=message,
+                )
+            except Exception as exc:
+                failed += 1
+                logger.exception('Не удалось обработать решение по анкете %s.', public_id)
+                message = '; '.join(getattr(exc, 'messages', [])) or str(exc)
+                gateway.upsert_row(
+                    sheet_name,
+                    'Внутренний ID',
+                    public_id,
+                    {'Результат обработки': f'Ошибка: {message}'[:1000]},
+                )
+
+        result_status = SheetSyncRun.STATUS_SUCCESS if not failed else SheetSyncRun.STATUS_FAILED
+        _finish_run(run, status=result_status, processed=processed, failed=failed)
+        return {
+            'status': 'success' if not failed else 'partial',
+            'processed': processed,
+            'failed': failed,
+        }
     except Exception as exc:
         _finish_run(run, status=SheetSyncRun.STATUS_FAILED, failed=1, error=exc)
         raise
@@ -518,4 +801,20 @@ def enqueue_submission_sync(submission_id):
         return True
     except Exception:
         logger.exception('Не удалось поставить синхронизацию анкеты %s в очередь.', submission_id)
+        return False
+
+
+def enqueue_onboarding_inbox_sync(submission_id):
+    if not sheets_sync_enabled():
+        return False
+    try:
+        from .tasks import sync_onboarding_submission_task
+
+        sync_onboarding_submission_task.delay(submission_id)
+        return True
+    except Exception:
+        logger.exception(
+            'Не удалось поставить запись входящей анкеты %s в очередь.',
+            submission_id,
+        )
         return False

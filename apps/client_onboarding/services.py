@@ -307,13 +307,24 @@ def review_submission(submission, reviewer, decision, comment='', company_id=Non
         OnboardingReviewEvent.DECISION_REJECT,
     }:
         transaction.on_commit(lambda: _enqueue_onboarding_notification(submission.pk))
+    transaction.on_commit(lambda: _enqueue_onboarding_sheet_sync(submission.pk))
     return submission
 
 
 def _enqueue_submission_sync(submission_id):
-    from apps.sheets_sync.services import enqueue_submission_sync
+    from apps.sheets_sync.services import (
+        enqueue_onboarding_inbox_sync,
+        enqueue_submission_sync,
+    )
 
     enqueue_submission_sync(submission_id)
+    enqueue_onboarding_inbox_sync(submission_id)
+
+
+def _enqueue_onboarding_sheet_sync(submission_id):
+    from apps.sheets_sync.services import enqueue_onboarding_inbox_sync
+
+    enqueue_onboarding_inbox_sync(submission_id)
 
 
 def _enqueue_service_provisioning(client_id, event_id):
