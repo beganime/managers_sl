@@ -165,6 +165,66 @@ class ClientServiceIdentity(TimeStampedModel):
         return self.mobile_login
 
 
+class ClientProvisioningStep(TimeStampedModel):
+    STEP_MOBILE_ACCOUNT = 'mobile_account'
+    STEP_TMMAIL = 'tmmail'
+    STEP_CHOICES = (
+        (STEP_MOBILE_ACCOUNT, 'Аккаунт Students Life'),
+        (STEP_TMMAIL, 'Почтовый ящик TMmail'),
+    )
+
+    STATUS_PENDING = 'pending'
+    STATUS_RUNNING = 'running'
+    STATUS_SUCCESS = 'success'
+    STATUS_FAILED = 'failed'
+    STATUS_DISABLED = 'disabled'
+    STATUS_NOT_REQUIRED = 'not_required'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Ожидает запуска'),
+        (STATUS_RUNNING, 'Выполняется'),
+        (STATUS_SUCCESS, 'Готово'),
+        (STATUS_FAILED, 'Ошибка'),
+        (STATUS_DISABLED, 'Сервис не настроен'),
+        (STATUS_NOT_REQUIRED, 'Не требуется'),
+    )
+
+    submission = models.ForeignKey(
+        OnboardingSubmission,
+        verbose_name='Анкета',
+        on_delete=models.CASCADE,
+        related_name='provisioning_steps',
+    )
+    client = models.ForeignKey(
+        Client,
+        verbose_name='Клиент',
+        on_delete=models.CASCADE,
+        related_name='provisioning_steps',
+    )
+    step = models.CharField('Шаг', max_length=32, choices=STEP_CHOICES)
+    status = models.CharField('Статус', max_length=24, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    event_id = models.CharField('Ключ идемпотентности', max_length=120, unique=True)
+    attempt_count = models.PositiveIntegerField('Количество попыток', default=0)
+    started_at = models.DateTimeField('Начало попытки', null=True, blank=True)
+    finished_at = models.DateTimeField('Окончание попытки', null=True, blank=True)
+    last_error = models.TextField('Последняя ошибка', blank=True)
+    response_data = models.JSONField('Ответ сервиса', default=dict, blank=True)
+
+    class Meta:
+        verbose_name = 'Шаг подключения сервиса'
+        verbose_name_plural = 'Шаги подключения сервисов'
+        ordering = ['submission_id', 'step']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['submission', 'step'],
+                name='uniq_client_provisioning_submission_step',
+            ),
+        ]
+        indexes = [models.Index(fields=['status', 'updated_at'])]
+
+    def __str__(self):
+        return f'{self.client.sl_id}: {self.get_step_display()}'
+
+
 class OnboardingReviewEvent(TimeStampedModel):
     DECISION_START_REVIEW = 'start_review'
     DECISION_APPROVE = 'approve'

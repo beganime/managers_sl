@@ -9,6 +9,7 @@ from apps.organizations.models import Company
 
 from .models import (
     AcademicYearSequence,
+    ClientProvisioningStep,
     ClientServiceIdentity,
     OnboardingReviewEvent,
     OnboardingSubmission,
@@ -209,6 +210,25 @@ def approve_submission(submission, reviewer, company_id=None):
         shared_password=credentials['mobile_password'],
         tmmail_email=credentials['tmmail_email'],
     )
+    ClientProvisioningStep.objects.bulk_create([
+        ClientProvisioningStep(
+            submission=submission,
+            client=client,
+            step=ClientProvisioningStep.STEP_MOBILE_ACCOUNT,
+            event_id=f'{submission.public_id}:mobile-account',
+        ),
+        ClientProvisioningStep(
+            submission=submission,
+            client=client,
+            step=ClientProvisioningStep.STEP_TMMAIL,
+            status=(
+                ClientProvisioningStep.STATUS_NOT_REQUIRED
+                if submission.kind == OnboardingSubmission.KIND_SCHOOL_STUDENT
+                else ClientProvisioningStep.STATUS_PENDING
+            ),
+            event_id=f'{submission.public_id}:tmmail',
+        ),
+    ])
 
     previous_status = submission.status
     submission.client = client

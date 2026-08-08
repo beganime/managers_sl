@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -6,6 +7,8 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.client_onboarding.models import OnboardingReviewEvent, OnboardingSubmission
+from apps.client_onboarding.services import review_submission
+from apps.organizations.models import Company
 
 
 class DashboardBirthdayGreetingTests(TestCase):
@@ -42,6 +45,7 @@ class DashboardBirthdayGreetingTests(TestCase):
 
 class PortalOnboardingWorkflowTests(TestCase):
     def setUp(self):
+        self.company = Company.objects.create(name='Students Life', country='Туркменистан')
         self.manager = get_user_model().objects.create_user(
             email='onboarding-manager@example.com',
             password='test-password',
@@ -92,3 +96,38 @@ class PortalOnboardingWorkflowTests(TestCase):
                 decision=OnboardingReviewEvent.DECISION_START_REVIEW,
             ).exists()
         )
+
+    @patch('apps.portal.views.enqueue_submission_sync', return_value=True)
+    @patch('apps.portal.views.provision_client_services.delay')
+    def test_approved_submission_shows_steps_and_retry_is_queued_once(
+        self,
+        provision_delay,
+        enqueue_sheets,
+    ):
+        review_submission(
+            self.submission,
+            self.manager,
+            OnboardingReviewEvent.DECISION_APPROVE,
+        )
+        self.submission.refresh_from_db()
+
+        detail = self.client.get(
+            reverse('portal:onboarding_submission_detail', args=[self.submission.pk]),
+            secure=True,
+        )
+        retried = self.client.post(
+            reverse('portal:onboarding_provisioning_retry', args=[self.submission.pk]),
+            {'target': 'all'},
+            secure=True,
+        )
+
+        self.assertEqual(detail.status_code, 200)
+        self.assertContains(detail, 'Подключение системы')
+        self.assertContains(detail, 'Аккаунт Students Life')
+        self.assertRedirects(
+            retried,
+            reverse('portal:onboarding_submission_detail', args=[self.submission.pk]),
+            fetch_redirect_response=False,
+        )
+        provision_delay.assert_called_once()
+        enqueue_sheets.assert_called_once_with(self.submission.pk)

@@ -86,6 +86,63 @@
         </div>
     </div>
 </section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Подключение системы</h2>
+            <div class="muted small">Повторный запуск использует тот же ключ и не создаёт второй аккаунт или ящик.</div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Шаг</th><th>Статус</th><th>Попытки</th><th>Последний запуск</th><th>Ошибка</th></tr></thead>
+                <tbody>
+                    {% for step in submission.provisioning_steps.all %}
+                        <tr>
+                            <td><strong>{{ step.get_step_display }}</strong></td>
+                            <td>
+                                {% if step.status == "success" %}<span class="pill ok">Готово</span>
+                                {% elif step.status == "failed" %}<span class="pill danger">Ошибка</span>
+                                {% elif step.status == "running" %}<span class="pill warn">Выполняется</span>
+                                {% elif step.status == "disabled" %}<span class="pill warn">Не настроено</span>
+                                {% elif step.status == "not_required" %}<span class="pill">Не требуется</span>
+                                {% else %}<span class="pill">Ожидает</span>{% endif %}
+                            </td>
+                            <td>{{ step.attempt_count }}</td>
+                            <td>{% if step.finished_at %}{{ step.finished_at|date:"d.m.Y H:i" }}{% elif step.started_at %}{{ step.started_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+                            <td>{{ step.last_error|truncatechars:120|default:"—" }}</td>
+                        </tr>
+                    {% empty %}<tr><td colspan="5" class="muted">Шаги ещё не созданы.</td></tr>{% endfor %}
+                    <tr>
+                        <td><strong>Google Sheets</strong></td>
+                        <td>
+                            {% if latest_sheet_sync.status == "success" %}<span class="pill ok">Готово</span>
+                            {% elif latest_sheet_sync.status == "failed" %}<span class="pill danger">Ошибка</span>
+                            {% elif latest_sheet_sync.status == "running" %}<span class="pill warn">Выполняется</span>
+                            {% elif latest_sheet_sync.status == "skipped" %}<span class="pill warn">Отключено</span>
+                            {% else %}<span class="pill">Ожидает</span>{% endif %}
+                        </td>
+                        <td>—</td>
+                        <td>{% if latest_sheet_sync.finished_at %}{{ latest_sheet_sync.finished_at|date:"d.m.Y H:i" }}{% elif latest_sheet_sync.created_at %}{{ latest_sheet_sync.created_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+                        <td>{{ latest_sheet_sync.error|truncatechars:120|default:"—" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="contact-actions" style="margin-top:14px;">
+            <form method="post" action="{% url 'portal:onboarding_provisioning_retry' submission.id %}" data-disable-on-submit>
+                {% csrf_token %}<input type="hidden" name="target" value="services">
+                <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Повторить аккаунт и почту</button>
+            </form>
+            <form method="post" action="{% url 'portal:onboarding_provisioning_retry' submission.id %}" data-disable-on-submit>
+                {% csrf_token %}<input type="hidden" name="target" value="sheets">
+                <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Повторить Google Sheets</button>
+            </form>
+        </div>
+    </div>
+</section>
 {% endif %}
 
 {% if can_decide %}

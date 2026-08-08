@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
@@ -8,7 +9,12 @@ from apps.education.models import City, Country, Program, University
 from apps.organizations.models import Company
 from users.models import User
 
-from .models import ClientServiceIdentity, OnboardingReviewEvent, OnboardingSubmission
+from .models import (
+    ClientProvisioningStep,
+    ClientServiceIdentity,
+    OnboardingReviewEvent,
+    OnboardingSubmission,
+)
 from .tasks import notify_onboarding_status, provision_client_services
 
 
@@ -114,6 +120,13 @@ class OnboardingApiTests(APITestCase):
         )
         self.assertEqual(provisioning['mobile'], 'disabled')
         self.assertEqual(provisioning['tmmail'], 'disabled')
+        self.assertEqual(
+            ClientProvisioningStep.objects.filter(
+                submission=submission,
+                status=ClientProvisioningStep.STATUS_DISABLED,
+            ).count(),
+            2,
+        )
         self.assertEqual(Client.objects.count(), 1)
         self.assertEqual(ClientServiceIdentity.objects.count(), 1)
         self.assertEqual(Application.objects.filter(client=submission.client).count(), 3)
@@ -205,6 +218,40 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual([client.sl_id for client in clients], ['SL-001', 'SL-002'])
         self.assertEqual(clients[0].custom_data['tmmail_email'], 'ivan.ivanov@tmmail.ru')
         self.assertEqual(clients[1].custom_data['tmmail_email'], 'ivan.ivanov2008@tmmail.ru')
+
+    @override_settings(
+        STUDENTS_LIFE_PROVISION_API_URL='https://student.test/provision',
+        STUDENTS_LIFE_PROVISION_TOKEN='student-token',
+        SMTP_SL_API_BASE_URL='https://smtp.test',
+        SMTP_SL_SERVICE_TOKEN='smtp-token',
+    )
+    @patch('apps.client_onboarding.tasks.post_service', return_value={'status': 'created'})
+    def test_successful_service_provisioning_is_not_repeated(self, post_service_mock):
+        created = self.create_submission()
+        submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
+        self.client.force_authenticate(self.manager)
+        approved = self.client.post(
+            reverse('manager-onboarding-submission-review', kwargs={'pk': submission.pk}),
+            {'decision': 'approve'},
+            format='json',
+        )
+        self.assertEqual(approved.status_code, 200, approved.data)
+        submission.refresh_from_db()
+
+        first = provision_client_services.run(submission.client_id, str(submission.public_id))
+        second = provision_client_services.run(submission.client_id, str(submission.public_id))
+
+        self.assertEqual(first, {'mobile': 'success', 'tmmail': 'success', 'updated_at': first['updated_at']})
+        self.assertEqual(second['mobile'], 'success')
+        self.assertEqual(second['tmmail'], 'success')
+        self.assertEqual(post_service_mock.call_count, 2)
+        self.assertEqual(
+            list(
+                submission.provisioning_steps.order_by('step')
+                .values_list('attempt_count', flat=True)
+            ),
+            [1, 1],
+        )
 
     def test_school_submission_does_not_require_university_choices(self):
         response = self.create_submission({

@@ -3,6 +3,7 @@ from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
     AcademicYearSequence,
+    ClientProvisioningStep,
     ClientServiceIdentity,
     OnboardingReviewEvent,
     OnboardingSubmission,
@@ -24,13 +25,23 @@ class OnboardingReviewEventInline(TabularInline):
     readonly_fields = ('decision', 'from_status', 'to_status', 'actor', 'comment', 'created_at', 'updated_at')
 
 
+class ClientProvisioningStepInline(TabularInline):
+    model = ClientProvisioningStep
+    extra = 0
+    can_delete = False
+    readonly_fields = (
+        'step', 'status', 'event_id', 'attempt_count', 'started_at',
+        'finished_at', 'last_error', 'response_data', 'created_at', 'updated_at',
+    )
+
+
 @admin.register(OnboardingSubmission)
 class OnboardingSubmissionAdmin(ModelAdmin):
     list_display = ('full_name', 'kind', 'academic_year', 'status', 'client', 'reviewed_by', 'submitted_at')
     list_filter = ('status', 'kind', 'academic_year', 'submitted_at')
     search_fields = ('full_name', 'phone', 'email', 'client__sl_id', 'public_id')
     readonly_fields = ('public_id', 'access_token_hash', 'submitted_at', 'reviewed_at', 'created_at', 'updated_at')
-    inlines = (OnboardingUniversityChoiceInline, OnboardingReviewEventInline)
+    inlines = (OnboardingUniversityChoiceInline, ClientProvisioningStepInline, OnboardingReviewEventInline)
 
 
 @admin.register(OnboardingUniversityChoice)
@@ -53,6 +64,15 @@ class ClientServiceIdentityAdmin(ModelAdmin):
     search_fields = ('mobile_login', 'tmmail_email', 'client__full_name', 'client__sl_id')
     autocomplete_fields = ('submission', 'client')
     readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(ClientProvisioningStep)
+class ClientProvisioningStepAdmin(ModelAdmin):
+    list_display = ('client', 'step', 'status', 'attempt_count', 'finished_at')
+    list_filter = ('step', 'status')
+    search_fields = ('client__sl_id', 'client__full_name', 'event_id', 'last_error')
+    autocomplete_fields = ('submission', 'client')
+    readonly_fields = ('event_id', 'attempt_count', 'started_at', 'finished_at', 'response_data', 'created_at', 'updated_at')
 
 
 @admin.register(OnboardingReviewEvent)

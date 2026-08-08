@@ -32,6 +32,7 @@ from apps.attendance.models import DailyReport, WorkDay
 from apps.client_onboarding.models import OnboardingSubmission
 from apps.client_onboarding.permissions import can_review_onboarding
 from apps.client_onboarding.services import review_submission
+from apps.client_onboarding.tasks import provision_client_services
 from apps.core.models import SystemSetting
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
@@ -68,6 +69,8 @@ from apps.portal.forms import (
 )
 from apps.portal.models import CalendarEvent
 from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAttachment, TaskChecklist, TaskChecklistItem, TaskComment
+from apps.sheets_sync.models import SheetSyncRun
+from apps.sheets_sync.services import enqueue_submission_sync
 
 
 PAGE_SIZE = 25
@@ -2733,6 +2736,7 @@ class OnboardingSubmissionDetailView(OnboardingPortalAccessMixin, TemplateView):
             ).prefetch_related(
                 'university_choices__university',
                 'university_choices__programs',
+                'provisioning_steps',
                 'review_events__actor',
             ),
             pk=self.kwargs['pk'],
@@ -2744,6 +2748,10 @@ class OnboardingSubmissionDetailView(OnboardingPortalAccessMixin, TemplateView):
         context.update({
             'submission': submission,
             'payload_sections': build_questionnaire_sections(submission.payload or {}),
+            'latest_sheet_sync': SheetSyncRun.objects.filter(
+                kind=SheetSyncRun.KIND_SUBMISSION,
+                object_ref=str(submission.pk),
+            ).first(),
             'can_decide': submission.status in {
                 OnboardingSubmission.STATUS_SUBMITTED,
                 OnboardingSubmission.STATUS_IN_REVIEW,
@@ -2774,6 +2782,39 @@ class OnboardingSubmissionReviewView(OnboardingPortalAccessMixin, View):
             messages.error(request, ' '.join(exc.messages))
         else:
             messages.success(request, labels.get(decision, 'Решение сохранено.'))
+        return redirect('portal:onboarding_submission_detail', pk=submission.pk)
+
+
+class OnboardingProvisioningRetryView(OnboardingPortalAccessMixin, View):
+    def post(self, request, pk):
+        submission = get_object_or_404(
+            OnboardingSubmission.objects.select_related('client'),
+            pk=pk,
+            status=OnboardingSubmission.STATUS_APPROVED,
+            client__isnull=False,
+        )
+        target = request.POST.get('target', 'all')
+        queued = []
+        try:
+            if target in {'services', 'all'}:
+                provision_client_services.delay(submission.client_id, str(submission.public_id))
+                queued.append('аккаунт и почта')
+            if target in {'sheets', 'all'}:
+                latest = SheetSyncRun.objects.filter(
+                    kind=SheetSyncRun.KIND_SUBMISSION,
+                    object_ref=str(submission.pk),
+                    status=SheetSyncRun.STATUS_RUNNING,
+                    created_at__gte=timezone.now() - timedelta(minutes=5),
+                ).exists()
+                if not latest and enqueue_submission_sync(submission.pk):
+                    queued.append('Google Sheets')
+        except Exception as exc:
+            messages.error(request, f'Не удалось поставить повтор в очередь: {exc}')
+        else:
+            if queued:
+                messages.success(request, f'Повтор запущен: {", ".join(queued)}.')
+            else:
+                messages.warning(request, 'Повтор уже выполняется или интеграция пока отключена.')
         return redirect('portal:onboarding_submission_detail', pk=submission.pk)
 
 
