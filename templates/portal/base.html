@@ -418,6 +418,7 @@
             .birthday-celebration { grid-template-columns: 1fr; padding: 20px; }
         }
     </style>
+    {% block extra_head %}{% endblock %}
 </head>
 <body x-data="{ mobilePanelOpen: false, profileOpen: false, notificationsOpen: false }" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <div class="shell">

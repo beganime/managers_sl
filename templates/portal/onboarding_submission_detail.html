@@ -1,6 +1,11 @@
 {% extends "portal/base.html" %}
 
+{% block extra_head %}
+{% include "portal/partials/onboarding_monochrome_styles.html" %}
+{% endblock %}
+
 {% block content %}
+<div class="onboarding-page">
 <div class="toolbar">
     <div class="filters">
         <a class="btn" href="{% url 'portal:onboarding_submissions' %}"><i data-lucide="arrow-left"></i>К списку</a>
@@ -189,4 +194,5 @@
     </div>
 </section>
 {% endif %}
+</div>
 {% endblock %}

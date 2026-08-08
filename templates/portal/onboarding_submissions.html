@@ -1,6 +1,11 @@
 {% extends "portal/base.html" %}
 
+{% block extra_head %}
+{% include "portal/partials/onboarding_monochrome_styles.html" %}
+{% endblock %}
+
 {% block content %}
+<div class="onboarding-page">
 <section class="panel">
     <div class="panel-header">
         <div>
@@ -76,4 +81,5 @@
         {% endif %}
     </div>
 </section>
+</div>
 {% endblock %}
