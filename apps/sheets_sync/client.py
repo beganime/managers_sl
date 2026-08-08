@@ -171,6 +171,30 @@ class GoogleSheetsGateway:
             )
         return matches[0] if matches else None
 
+    def read_rows(self, sheet_name, start_row=2):
+        """Read a sheet once and return rows mapped by their header names."""
+        headers = self.headers(sheet_name)
+        if not headers:
+            return []
+        result = self.service.spreadsheets().values().get(
+            spreadsheetId=self.spreadsheet_id,
+            range=(
+                f'{quote_sheet(sheet_name)}!A{start_row}:'
+                f'{column_letter(len(headers) - 1)}'
+            ),
+        ).execute()
+        rows = []
+        for row_number, source_values in enumerate(
+            result.get('values', []),
+            start=start_row,
+        ):
+            padded = list(source_values) + [''] * (len(headers) - len(source_values))
+            rows.append({
+                'row_number': row_number,
+                'values': dict(zip(headers, padded[:len(headers)])),
+            })
+        return rows
+
     def upsert_row(
         self,
         sheet_name,

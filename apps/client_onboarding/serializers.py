@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
 from rest_framework import serializers
 
@@ -140,10 +141,37 @@ class UniversityChoiceReadSerializer(serializers.ModelSerializer):
 
 class PublicOnboardingStatusSerializer(serializers.ModelSerializer):
     sl_id = serializers.CharField(source='client.sl_id', read_only=True)
+    university_choices = UniversityChoiceReadSerializer(many=True, read_only=True)
+    admission_status = serializers.SerializerMethodField()
+
+    def get_admission_status(self, obj):
+        client = getattr(obj, 'client', None)
+        if not client:
+            return None
+        try:
+            snapshot = client.admission_snapshot
+        except ObjectDoesNotExist:
+            return None
+        return {
+            'current_status': snapshot.current_status,
+            'invitation_city': snapshot.invitation_city,
+            'meeting': snapshot.meeting,
+            'current_location': snapshot.current_location,
+            'updated_at': snapshot.last_imported_at,
+        }
 
     class Meta:
         model = OnboardingSubmission
-        fields = ('public_id', 'status', 'review_comment', 'sl_id', 'submitted_at', 'reviewed_at')
+        fields = (
+            'public_id',
+            'status',
+            'review_comment',
+            'sl_id',
+            'university_choices',
+            'admission_status',
+            'submitted_at',
+            'reviewed_at',
+        )
 
 
 class OnboardingReviewEventSerializer(serializers.ModelSerializer):

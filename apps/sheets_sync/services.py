@@ -8,11 +8,12 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.client_onboarding.models import OnboardingSubmission
+from apps.crm.models import Client
 from apps.education.models import City, Program, University
 from users.models import User
 
 from .client import GoogleSheetsGateway
-from .models import SheetRowBinding, SheetSyncRun
+from .models import ClientAdmissionSnapshot, SheetRowBinding, SheetSyncRun
 from .schema import (
     GENERAL_HEADERS,
     OFFICE_CODES,
@@ -37,6 +38,15 @@ GENERAL_CREATE_ONLY_HEADERS = {
     'Замечание',
     'Комментарий',
     'Отказник',
+}
+
+# This is deliberately narrower than the columns used by managers. Passport,
+# finance, credentials and internal comments must never cross this boundary.
+GENERAL_PUBLIC_STATUS_FIELDS = {
+    'current_status': 'Статус сейчас',
+    'invitation_city': 'В какой город приглашение',
+    'meeting': 'Встреча',
+    'current_location': 'Где находится сейчас',
 }
 
 
@@ -397,6 +407,95 @@ def sync_pending_submissions(limit=100, gateway=None):
             except Exception:
                 failed += 1
                 logger.exception('Не удалось синхронизировать анкету %s.', submission.pk)
+        status = SheetSyncRun.STATUS_SUCCESS if not failed else SheetSyncRun.STATUS_FAILED
+        _finish_run(run, status=status, processed=processed, failed=failed)
+        return {
+            'status': 'success' if not failed else 'partial',
+            'processed': processed,
+            'failed': failed,
+        }
+    except Exception as exc:
+        _finish_run(run, status=SheetSyncRun.STATUS_FAILED, failed=1, error=exc)
+        raise
+
+
+def import_public_client_statuses(limit=1000, gateway=None):
+    """Import only client-safe operational fields from the general sheet."""
+    run = SheetSyncRun.objects.create(kind=SheetSyncRun.KIND_PUBLIC_STATUS)
+    if not sheets_sync_enabled() and gateway is None:
+        _finish_run(run, status=SheetSyncRun.STATUS_SKIPPED, error='Google Sheets отключён.')
+        return {'status': 'skipped', 'processed': 0, 'failed': 0}
+
+    try:
+        gateway = gateway or GoogleSheetsGateway()
+        sheet_name = settings.GOOGLE_SHEETS_GENERAL_SHEET
+        rows = gateway.read_rows(sheet_name)
+        rows = [
+            row for row in rows
+            if str(row['values'].get('Айди', '')).strip()
+        ][:max(int(limit), 1)]
+        sl_ids = [str(row['values']['Айди']).strip() for row in rows]
+        clients = {
+            client.sl_id: client
+            for client in Client.objects.filter(sl_id__in=sl_ids)
+        }
+
+        processed = 0
+        failed = 0
+        now = timezone.now()
+        for row in rows:
+            try:
+                values = row['values']
+                sl_id = str(values.get('Айди', '')).strip()
+                client = clients.get(sl_id)
+                if not client:
+                    continue
+                safe_values = {
+                    field: str(values.get(header, '') or '').strip()
+                    for field, header in GENERAL_PUBLIC_STATUS_FIELDS.items()
+                }
+                source_hash = values_hash(safe_values)
+                snapshot, created = ClientAdmissionSnapshot.objects.get_or_create(
+                    client=client,
+                    defaults={
+                        **safe_values,
+                        'spreadsheet_id': gateway.spreadsheet_id,
+                        'sheet_name': sheet_name,
+                        'row_number': row['row_number'],
+                        'source_hash': source_hash,
+                        'source_updated_value': str(values.get('Обновлено', '') or '').strip(),
+                        'last_imported_at': now,
+                    },
+                )
+                changed = created or snapshot.source_hash != source_hash
+                if not created:
+                    for field, value in safe_values.items():
+                        setattr(snapshot, field, value)
+                    snapshot.spreadsheet_id = gateway.spreadsheet_id
+                    snapshot.sheet_name = sheet_name
+                    snapshot.row_number = row['row_number']
+                    snapshot.source_hash = source_hash
+                    snapshot.source_updated_value = str(values.get('Обновлено', '') or '').strip()
+                    snapshot.last_imported_at = now
+                    snapshot.save()
+
+                SheetRowBinding.objects.update_or_create(
+                    spreadsheet_id=gateway.spreadsheet_id,
+                    sheet_name=sheet_name,
+                    entity_type=SheetRowBinding.ENTITY_CLIENT,
+                    object_ref=str(client.pk),
+                    defaults={
+                        'sl_id': sl_id,
+                        'row_number': row['row_number'],
+                        'last_synced_at': now,
+                    },
+                )
+                if changed:
+                    processed += 1
+            except Exception:
+                failed += 1
+                logger.exception('Не удалось импортировать публичный статус строки %s.', row['row_number'])
+
         status = SheetSyncRun.STATUS_SUCCESS if not failed else SheetSyncRun.STATUS_FAILED
         _finish_run(run, status=status, processed=processed, failed=failed)
         return {

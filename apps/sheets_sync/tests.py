@@ -3,15 +3,16 @@ from datetime import date
 from django.test import TestCase
 
 from apps.client_onboarding.models import OnboardingSubmission, OnboardingUniversityChoice
+from apps.client_onboarding.serializers import PublicOnboardingStatusSerializer
 from apps.client_onboarding.services import approve_submission
 from apps.education.models import City, Country, Program, University
 from apps.organizations.models import Company
 from users.models import User
 
 from .client import column_letter, quote_sheet
-from .models import SheetRowBinding
+from .models import ClientAdmissionSnapshot, SheetRowBinding
 from .schema import EXAM_HEADERS, safe_sheet_title, university_acronym
-from .services import sync_reference_data, sync_submission
+from .services import import_public_client_statuses, sync_reference_data, sync_submission
 
 
 class FakeSheetsGateway:
@@ -47,6 +48,18 @@ class FakeSheetsGateway:
     def replace_reference_column(self, sheet_name, column, header, values):
         self.reference_columns[column] = (header, list(values))
         return len(values)
+
+    def read_rows(self, sheet_name, start_row=2):
+        return [
+            {
+                'row_number': index,
+                'values': {'Айди': sl_id, **values},
+            }
+            for index, (sl_id, values) in enumerate(
+                self.rows.get(sheet_name, {}).items(),
+                start=start_row,
+            )
+        ]
 
 
 class SchemaTests(TestCase):
@@ -143,3 +156,34 @@ class SheetsSyncServiceTests(TestCase):
         self.assertIn('Казань', gateway.reference_columns['B'][1])
         self.assertEqual(len(gateway.reference_columns['K'][1]), 3)
         self.assertEqual(len(gateway.reference_columns['L'][1]), 3)
+
+    def test_only_public_operational_fields_are_imported_for_client(self):
+        submission = self.create_approved_submission()
+        gateway = FakeSheetsGateway()
+        sync_submission(submission.pk, gateway=gateway)
+        row = gateway.rows['Общее']['SL-001']
+        row.update({
+            'Статус сейчас': 'Приглашение готово',
+            'В какой город приглашение': 'Казань',
+            'Встреча': 'Да',
+            'Где находится сейчас': 'Ашгабад',
+            'Номер паспорта': 'MUST-NOT-BE-IMPORTED',
+            'Пароль': 'MUST-NOT-BE-IMPORTED',
+            'Сколько оплатил': '2500',
+            'Комментарий': 'Внутренняя заметка менеджера',
+        })
+
+        first = import_public_client_statuses(gateway=gateway)
+        second = import_public_client_statuses(gateway=gateway)
+
+        snapshot = ClientAdmissionSnapshot.objects.get(client=submission.client)
+        self.assertEqual(first, {'status': 'success', 'processed': 1, 'failed': 0})
+        self.assertEqual(second, {'status': 'success', 'processed': 0, 'failed': 0})
+        self.assertEqual(snapshot.current_status, 'Приглашение готово')
+        self.assertEqual(snapshot.invitation_city, 'Казань')
+        self.assertEqual(snapshot.meeting, 'Да')
+        self.assertEqual(snapshot.current_location, 'Ашгабад')
+        serialized = PublicOnboardingStatusSerializer(submission).data
+        self.assertEqual(serialized['admission_status']['current_status'], 'Приглашение готово')
+        self.assertNotIn('passport', str(serialized).casefold())
+        self.assertNotIn('MUST-NOT-BE-IMPORTED', str(serialized))

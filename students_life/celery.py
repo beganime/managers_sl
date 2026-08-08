@@ -63,4 +63,8 @@ app.conf.beat_schedule = {
         'task': 'sheets_sync.sync_reference_data',
         'schedule': crontab(minute='*/5'),
     },
+    'sheets-import-public-client-statuses': {
+        'task': 'sheets_sync.import_public_client_statuses',
+        'schedule': crontab(minute='*/1'),
+    },
 }
