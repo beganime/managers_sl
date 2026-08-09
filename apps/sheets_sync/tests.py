@@ -191,11 +191,11 @@ class SheetsSyncServiceTests(TestCase):
         second = sync_submission(submission.pk, gateway=gateway)
 
         self.assertEqual(submission.client.sl_id, 'SL-001')
-        self.assertEqual(first['processed'], 4)
-        self.assertEqual(second['processed'], 4)
+        self.assertEqual(first['processed'], 1)
+        self.assertEqual(second['processed'], 1)
         self.assertEqual(gateway.rows['Общее']['SL-001']['ФИО абитуриента'], 'Иван Иванов')
         self.assertEqual(len(gateway.rows['Общее']), 1)
-        self.assertEqual(SheetRowBinding.objects.filter(sl_id='SL-001').count(), 4)
+        self.assertEqual(SheetRowBinding.objects.filter(sl_id='SL-001').count(), 1)
 
         gateway.rows['Общее']['SL-001']['Статус сейчас'] = 'Ручной статус'
         sync_submission(submission.pk, gateway=gateway)

@@ -22,8 +22,6 @@ from .schema import (
     ONBOARDING_STATUS_OPTIONS,
     OFFICE_CODES,
     REFERENCE_COLUMNS,
-    UNIVERSITY_HEADERS,
-    safe_sheet_title,
     university_acronym,
 )
 
@@ -285,38 +283,6 @@ def resolve_sheet_reviewer(values):
     if reviewers:
         return reviewers[0]
     raise ValidationError('Нет активного менеджера для подтверждения анкеты.')
-
-
-def university_row_values(submission, choice):
-    client = submission.client
-    programs = list(choice.programs.all())
-    degree_names = []
-    for program in programs:
-        degree = program.get_degree_display()
-        if degree not in degree_names:
-            degree_names.append(degree)
-    return {
-        'Айди': client.sl_id,
-        'Внутренний ID': str(submission.public_id),
-        'Ответственный': display_user(client.manager),
-        'ФИО': submission.full_name,
-        'Уровень образования': ', '.join(degree_names),
-        'Направления': ', '.join(program.name for program in programs),
-        'Статус подачи в вуз': 'Черновик',
-        'Обновлено': timezone.localtime(submission.updated_at).strftime('%d.%m.%Y %H:%M'),
-        'Версия': 1,
-    }
-
-
-def resolve_university_sheet_name(gateway, university):
-    custom_data = university.custom_data or {}
-    explicit = str(custom_data.get('google_sheet_name') or '').strip()
-    titles = gateway.sheet_titles()
-    candidates = [explicit, university_acronym(university.name), university.name]
-    for candidate in candidates:
-        if candidate and candidate in titles:
-            return candidate
-    return safe_sheet_title(explicit or university.name)
 
 
 def _finish_run(run, *, status, processed=0, failed=0, error=''):
@@ -649,37 +615,6 @@ def sync_submission(submission_id, gateway=None):
         )
 
         processed = 1
-        applications = {
-            str(item.custom_data.get('onboarding_choice_id')): item
-            for item in submission.client.applications.all()
-            if item.custom_data.get('onboarding_choice_id')
-        }
-        for choice in submission.university_choices.all():
-            sheet_name = resolve_university_sheet_name(gateway, choice.university)
-            gateway.ensure_sheet(sheet_name, UNIVERSITY_HEADERS)
-            row_values = university_row_values(submission, choice)
-            row_number, _ = gateway.upsert_row(
-                sheet_name,
-                'Айди',
-                submission.client.sl_id,
-                row_values,
-            )
-            application = applications.get(str(choice.id))
-            object_ref = str(application.pk if application else choice.pk)
-            SheetRowBinding.objects.update_or_create(
-                spreadsheet_id=gateway.spreadsheet_id,
-                sheet_name=sheet_name,
-                entity_type=SheetRowBinding.ENTITY_APPLICATION,
-                object_ref=object_ref,
-                defaults={
-                    'sl_id': submission.client.sl_id,
-                    'row_number': row_number,
-                    'row_hash': values_hash(row_values),
-                    'last_synced_at': timezone.now(),
-                },
-            )
-            processed += 1
-
         _finish_run(run, status=SheetSyncRun.STATUS_SUCCESS, processed=processed)
         return {'status': 'success', 'processed': processed}
     except Exception as exc:
