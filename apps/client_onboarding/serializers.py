@@ -264,7 +264,6 @@ class PublicOnboardingStatusSerializer(serializers.ModelSerializer):
             'admission_status',
             'service_credentials',
             'can_fill_full_questionnaire',
-            'payload',
             'full_name',
             'phone',
             'email',
