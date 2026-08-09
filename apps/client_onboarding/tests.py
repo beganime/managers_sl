@@ -345,8 +345,8 @@ class OnboardingApiTests(APITestCase):
         submission.refresh_from_db()
         self.assertEqual(submission.client.sl_id, 'SL-SCHOOL-2027-001')
 
-    @patch('apps.client_onboarding.tasks.send_push_to_token', return_value=True)
-    def test_approved_submission_can_notify_anonymous_device(self, send_push_mock):
+    @patch('apps.client_onboarding.tasks.post_service', return_value={'status': 'sent', 'active_tokens': 1})
+    def test_approved_submission_notifies_through_students_life_account(self, post_service_mock):
         created = self.create_submission()
         submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
         self.client.force_authenticate(self.manager)
@@ -360,6 +360,5 @@ class OnboardingApiTests(APITestCase):
         result = notify_onboarding_status.run(submission.pk)
 
         self.assertEqual(result['status'], 'sent')
-        send_push_mock.assert_called_once()
-        self.assertEqual(send_push_mock.call_args.args[0], 'test-fcm-token')
-        self.assertIn('SL-001', send_push_mock.call_args.args[2])
+        post_service_mock.assert_called_once()
+        self.assertEqual(post_service_mock.call_args.args[2]['sl_id'], 'SL-001')
