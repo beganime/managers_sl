@@ -44,6 +44,8 @@ GENERAL_HEADERS = (
 ONBOARDING_HEADERS = (
     'Внутренний ID',
     'Статус',
+    'Этап',
+    'Раздел',
     'Тип анкеты',
     'Год поступления',
     'ФИО абитуриента',
@@ -51,6 +53,8 @@ ONBOARDING_HEADERS = (
     'Email',
     'Дата рождения',
     'Гражданство',
+    'Нужные услуги',
+    'Что хочет клиент',
     'Вузы и программы',
     'Ответственный',
     'Комментарий менеджера',
@@ -151,7 +155,11 @@ def safe_sheet_title(value):
 
 
 def university_acronym(name):
-    words = re.findall(r'[A-Za-zА-Яа-яЁё0-9]+', str(name or ''))
+    name = str(name or '').strip()
+    explicit = re.match(r'^([A-ZА-ЯЁ0-9][A-ZА-ЯЁ0-9.\-]{1,14})\s*\(', name)
+    if explicit:
+        return explicit.group(1).replace('.', '')
+    words = re.findall(r'[A-Za-zА-Яа-яЁё0-9]+', name)
     ignored = {'имени', 'им'}
     letters = [word[0].upper() for word in words if word.lower() not in ignored]
     return ''.join(letters)

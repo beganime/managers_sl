@@ -89,6 +89,7 @@ class SchemaTests(TestCase):
         self.assertEqual(quote_sheet("КФУ 'Тест'"), "'КФУ ''Тест'''" )
         self.assertEqual(safe_sheet_title('КФУ/тест'), 'КФУ тест')
         self.assertEqual(university_acronym('Казанский федеральный университет'), 'КФУ')
+        self.assertEqual(university_acronym('БГУ (Белорусский государственный университет)'), 'БГУ')
 
 
 class SheetsSyncServiceTests(TestCase):

@@ -162,8 +162,9 @@ def submission_general_values(submission):
     for choice in choices:
         programs = list(choice.programs.all())
         program_names = ', '.join(program.name for program in programs)
+        university_name = university_acronym(choice.university.name)
         admission_parts.append(
-            f'{choice.university.name}: {program_names}' if program_names else choice.university.name
+            f'{university_name}: {program_names}' if program_names else university_name
         )
         city = getattr(choice.university, 'city', None)
         if city and city.name not in destination_cities:
@@ -203,7 +204,7 @@ def submission_general_values(submission):
         'Город рождения': payload_value(payload, 'birth_city', 'passport_birth_place', 'birth_place'),
         'Где проживает сейчас': payload_value(payload, 'current_residence', 'current_city', 'address'),
         'Загружены документы': as_yes_no(payload_value(payload, 'documents_uploaded', 'cloud_uploaded', default='')),
-        'Гос/б/к': normalize_funding(payload_value(payload, 'funding_type', 'admission_type', 'gos_b_k')),
+        'Гос/б/к': client.get_funding_type_display() if client.funding_type else normalize_funding(payload_value(payload, 'funding_type', 'admission_type', 'gos_b_k')),
         'В каком офисе оформили': office_code(client.office),
         'Контакты студента': ', '.join(str(item) for item in student_contacts if item),
         'Контакты родителя': ', '.join(parent_parts),
@@ -227,13 +228,17 @@ def submission_onboarding_values(submission):
     choices = []
     for choice in submission.university_choices.all():
         program_names = ', '.join(program.name for program in choice.programs.all())
+        university_name = university_acronym(choice.university.name)
         choices.append(
-            f'{choice.rank}. {choice.university.name}: {program_names}'
+            f'{choice.rank}. {university_name}: {program_names}'
             if program_names
-            else f'{choice.rank}. {choice.university.name}'
+            else f'{choice.rank}. {university_name}'
         )
+    payload = submission.payload or {}
     return {
         'Внутренний ID': str(submission.public_id),
+        'Этап': submission.get_stage_display(),
+        'Раздел': 'Школьники' if submission.kind == OnboardingSubmission.KIND_SCHOOL_STUDENT else 'Поступление',
         'Тип анкеты': submission.get_kind_display(),
         'Год поступления': submission.academic_year,
         'ФИО абитуриента': submission.full_name,
@@ -241,6 +246,8 @@ def submission_onboarding_values(submission):
         'Email': submission.email,
         'Дата рождения': serialize_value(submission.date_of_birth),
         'Гражданство': submission.citizenship,
+        'Нужные услуги': serialize_value(payload.get('requested_services', [])),
+        'Что хочет клиент': payload.get('request_text', ''),
         'Вузы и программы': '\n'.join(choices),
         'Ответственный': display_user(submission.reviewed_by),
         'Комментарий менеджера': submission.review_comment,
@@ -546,7 +553,7 @@ def import_onboarding_decisions(limit=1000, gateway=None):
                         comment=comment,
                         enqueue_sync=False,
                     )
-                    if decision == 'approve':
+                    if decision == 'approve' and submission.client_id:
                         sync_submission(submission.pk, gateway=gateway)
                     processed += 1
 
@@ -825,13 +832,13 @@ def enqueue_submission_sync(submission_id):
         return False
 
 
-def enqueue_onboarding_inbox_sync(submission_id):
+def enqueue_onboarding_inbox_sync(submission_id, force_status=False):
     if not sheets_sync_enabled():
         return False
     try:
         from .tasks import sync_onboarding_submission_task
 
-        sync_onboarding_submission_task.delay(submission_id)
+        sync_onboarding_submission_task.delay(submission_id, force_status=force_status)
         return True
     except Exception:
         logger.exception(

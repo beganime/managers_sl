@@ -74,6 +74,51 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(response.status_code, 201, response.data)
         return response
 
+    def express_payload(self, kind='applicant'):
+        return {
+            'kind': kind,
+            'stage': 'express',
+            'academic_year': 2027,
+            'full_name': 'Иван Иванов' if kind == 'applicant' else 'Анна Школьница',
+            'phone': '+99360000000',
+            'email': 'client@example.com',
+            'payload': {
+                'requested_services': ['Консультация', 'Поступление под ключ'],
+                'request_text': 'Хочу подобрать университет и подготовить документы.',
+            },
+        }
+
+    def test_express_application_approval_unlocks_full_form_without_creating_client(self):
+        created = self.create_submission(self.express_payload())
+        submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
+        self.client.force_authenticate(self.manager)
+        approved = self.client.post(
+            reverse('manager-onboarding-submission-review', kwargs={'pk': submission.pk}),
+            {'decision': 'approve'},
+            format='json',
+        )
+        self.assertEqual(approved.status_code, 200, approved.data)
+        submission.refresh_from_db()
+        self.assertEqual(submission.stage, 'express')
+        self.assertEqual(submission.status, 'approved')
+        self.assertIsNone(submission.client_id)
+        self.assertEqual(Client.objects.count(), 0)
+
+        self.client.force_authenticate(user=None)
+        full_payload = self.applicant_payload()
+        full_payload['stage'] = 'full'
+        promoted = self.client.put(
+            reverse('client-onboarding-detail', kwargs={'public_id': submission.public_id}),
+            full_payload,
+            format='json',
+            HTTP_X_ONBOARDING_TOKEN=created.data['access_token'],
+        )
+        self.assertEqual(promoted.status_code, 200, promoted.data)
+        submission.refresh_from_db()
+        self.assertEqual(submission.stage, 'full')
+        self.assertEqual(submission.status, 'submitted')
+
+
     def test_anonymous_applicant_submission_requires_three_universities(self):
         payload = self.applicant_payload()
         payload['university_choices'] = payload['university_choices'][:2]
@@ -256,10 +301,15 @@ class OnboardingApiTests(APITestCase):
     def test_school_submission_does_not_require_university_choices(self):
         response = self.create_submission({
             'kind': 'school_student',
+            'stage': 'express',
             'academic_year': 2027,
             'full_name': 'Анна Школьница',
             'phone': '+99361111111',
-            'payload': {'school': 'Школа 1'},
+            'payload': {
+                'school': 'Школа 1',
+                'requested_services': ['Консультация'],
+                'request_text': 'Хочу подготовиться к поступлению заранее.',
+            },
         })
 
         submission = OnboardingSubmission.objects.get(public_id=response.data['public_id'])

@@ -22,7 +22,7 @@
     <div class="panel-header">
         <div>
             <h2 class="panel-title">{{ submission.full_name }}</h2>
-            <div class="muted small">{{ submission.get_kind_display }} · учебный год {{ submission.academic_year }}</div>
+            <div class="muted small">{{ submission.get_stage_display }} · {{ submission.get_kind_display }} · учебный год {{ submission.academic_year }}</div>
         </div>
         {% if submission.client %}<a class="btn primary" href="{% url 'portal:client_detail' submission.client.id %}">{{ submission.client.sl_id }} · карточка клиента</a>{% endif %}
     </div>
@@ -41,7 +41,7 @@
     </div>
 </section>
 
-{% if submission.kind == "applicant" %}
+{% if submission.kind == "applicant" and submission.stage == "full" %}
 <section class="panel" style="margin-bottom:16px;">
     <div class="panel-header"><h2 class="panel-title">Выбранные вузы и программы</h2><span class="pill">{{ submission.university_choices.count }} вузов</span></div>
     <div class="panel-body table-wrap">
@@ -163,7 +163,7 @@
             {% endif %}
             <form method="post" action="{% url 'portal:onboarding_submission_review' submission.id %}" data-disable-on-submit>
                 {% csrf_token %}<input type="hidden" name="decision" value="approve">
-                <button class="btn primary" type="submit"><i data-lucide="check"></i>Одобрить и создать клиента</button>
+                <button class="btn primary" type="submit"><i data-lucide="check"></i>{% if submission.stage == "express" and submission.kind == "applicant" %}Разрешить полную анкету{% else %}Одобрить и создать клиента{% endif %}</button>
             </form>
             <button class="btn" type="button" @click="correction = !correction; rejection = false"><i data-lucide="undo-2"></i>Вернуть на исправление</button>
             <button class="btn danger" type="button" @click="rejection = !rejection; correction = false"><i data-lucide="x"></i>Отклонить</button>

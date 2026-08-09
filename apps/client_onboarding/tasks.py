@@ -153,8 +153,12 @@ def notify_onboarding_status(self, submission_id):
         return {'status': 'skipped', 'reason': 'missing_token'}
 
     if submission.status == OnboardingSubmission.STATUS_APPROVED:
-        title = 'Аккаунт одобрен'
-        body = f'Ваш идентификатор — {submission.client.sl_id}. Получите пароль у менеджера.'
+        if submission.client_id:
+            title = 'Аккаунт одобрен'
+            body = f'Ваш идентификатор — {submission.client.sl_id}. Данные для входа доступны в приложении.'
+        else:
+            title = 'Экспресс-заявка одобрена'
+            body = 'Теперь можно заполнить полную анкету абитуриента.'
     elif submission.status == OnboardingSubmission.STATUS_CHANGES_REQUESTED:
         title = 'Нужно исправить анкету'
         body = submission.review_comment or 'Менеджер оставил комментарий к вашей анкете.'

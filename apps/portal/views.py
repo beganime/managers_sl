@@ -2090,6 +2090,9 @@ class ClientsView(ListPageMixin):
                 item.manager = request.user
             item.save()
             form.save_m2m()
+            onboarding = OnboardingSubmission.objects.filter(client=item).first()
+            if onboarding:
+                enqueue_submission_sync(onboarding.pk)
             messages.success(request, 'Клиент сохранён.')
             return redirect('portal:clients')
         context = self.get_context_data()
@@ -3758,7 +3761,7 @@ class ClientFormView(PortalFormPageMixin, ClientsView):
     submit_label = 'Сохранить клиента'
 
     def get_form_groups(self, form):
-        base_fields = ['full_name', 'phone', 'email', 'direction', 'status', 'lead_source', 'comments']
+        base_fields = ['full_name', 'phone', 'email', 'direction', 'status', 'funding_type', 'lead_source', 'comments']
         if is_erp_admin(self.request.user) or self.request.user.is_staff:
             base_fields.extend(['manager', 'office'])
         return [

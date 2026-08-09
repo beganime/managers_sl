@@ -36,8 +36,8 @@ def import_onboarding_decisions_task(limit=1000):
 
 
 @shared_task(name='sheets_sync.sync_onboarding_submission', **SHEETS_TASK_OPTIONS)
-def sync_onboarding_submission_task(submission_id):
-    return sync_onboarding_submission(submission_id)
+def sync_onboarding_submission_task(submission_id, force_status=False):
+    return sync_onboarding_submission(submission_id, force_status=force_status)
 
 
 @shared_task(name='sheets_sync.sync_pending_submissions', **SHEETS_TASK_OPTIONS)

@@ -12,6 +12,12 @@ from apps.education.models import Program, University
 
 
 class OnboardingSubmission(TimeStampedModel):
+    STAGE_EXPRESS = 'express'
+    STAGE_FULL = 'full'
+    STAGE_CHOICES = (
+        (STAGE_EXPRESS, 'Экспресс-заявка'),
+        (STAGE_FULL, 'Полная анкета'),
+    )
     KIND_APPLICANT = 'applicant'
     KIND_SCHOOL_STUDENT = 'school_student'
     KIND_CHOICES = (
@@ -35,6 +41,13 @@ class OnboardingSubmission(TimeStampedModel):
     public_id = models.UUIDField('Публичный ID', default=uuid.uuid4, unique=True, editable=False, db_index=True)
     access_token_hash = models.CharField('Хеш токена анкеты', max_length=64, editable=False)
     kind = models.CharField('Тип анкеты', max_length=24, choices=KIND_CHOICES)
+    stage = models.CharField(
+        'Этап заявки',
+        max_length=16,
+        choices=STAGE_CHOICES,
+        default=STAGE_FULL,
+        db_index=True,
+    )
     academic_year = models.PositiveSmallIntegerField('Год поступления', db_index=True)
     status = models.CharField('Статус', max_length=24, choices=STATUS_CHOICES, default=STATUS_SUBMITTED, db_index=True)
 

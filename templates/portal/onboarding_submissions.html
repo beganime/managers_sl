@@ -40,7 +40,7 @@
                         <div style="min-width:0;">
                             <div class="item-card-title">{{ submission.full_name }}</div>
                             <div class="item-card-meta">
-                                <span>{{ submission.get_kind_display }} · поступление {{ submission.academic_year }}</span>
+                                <span>{{ submission.get_stage_display }} · {{ submission.get_kind_display }} · поступление {{ submission.academic_year }}</span>
                                 <span>{{ submission.phone }}{% if submission.email %} · {{ submission.email }}{% endif %}</span>
                                 <span>Отправлена {{ submission.submitted_at|date:"d.m.Y H:i" }}</span>
                                 {% if submission.reviewed_by %}<span>Менеджер: {{ submission.reviewed_by.get_full_name|default:submission.reviewed_by.email }}</span>{% endif %}

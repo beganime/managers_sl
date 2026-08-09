@@ -18,11 +18,13 @@ class UniversityChoiceInputSerializer(serializers.Serializer):
 
 class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
     university_choices = UniversityChoiceInputSerializer(many=True, required=False)
+    stage = serializers.ChoiceField(choices=OnboardingSubmission.STAGE_CHOICES, required=False)
 
     class Meta:
         model = OnboardingSubmission
         fields = (
             'kind',
+            'stage',
             'academic_year',
             'full_name',
             'phone',
@@ -43,6 +45,27 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
     def validate(self, attrs):
         choices = attrs.get('university_choices', [])
         kind = attrs.get('kind', getattr(self.instance, 'kind', None))
+        stage = attrs.get('stage', getattr(self.instance, 'stage', OnboardingSubmission.STAGE_FULL))
+        if not self.instance and kind == OnboardingSubmission.KIND_SCHOOL_STUDENT and 'stage' not in self.initial_data:
+            stage = OnboardingSubmission.STAGE_EXPRESS
+            attrs['stage'] = stage
+
+        if self.instance and kind != self.instance.kind:
+            raise serializers.ValidationError({'kind': 'Тип заявки нельзя изменить после отправки.'})
+
+        if stage == OnboardingSubmission.STAGE_EXPRESS:
+            if choices:
+                raise serializers.ValidationError({'university_choices': 'В экспресс-заявке ВУЗы пока не выбираются.'})
+            payload = attrs.get('payload', getattr(self.instance, 'payload', {})) or {}
+            services = payload.get('requested_services') or []
+            if not isinstance(services, list) or not services:
+                raise serializers.ValidationError({'payload': 'Выберите хотя бы одну нужную услугу.'})
+            if not str(payload.get('request_text') or '').strip():
+                raise serializers.ValidationError({'payload': 'Кратко напишите, что именно вы хотите.'})
+            return attrs
+
+        if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT:
+            raise serializers.ValidationError({'stage': 'Для школьника используется экспресс-заявка.'})
 
         if kind == OnboardingSubmission.KIND_APPLICANT:
             if not 3 <= len(choices) <= 5:
@@ -76,9 +99,6 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
                 if any(programs[program_id].university_id != item['university_id'] for program_id in item['program_ids']):
                     raise serializers.ValidationError({'university_choices': 'Программа должна принадлежать выбранному ВУЗу.'})
 
-        elif choices:
-            raise serializers.ValidationError({'university_choices': 'Для предварительной анкеты школьника ВУЗы пока не выбираются.'})
-
         return attrs
 
     def _replace_choices(self, submission, choices):
@@ -106,7 +126,13 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         choices = validated_data.pop('university_choices', [])
-        if instance.status != OnboardingSubmission.STATUS_CHANGES_REQUESTED:
+        promotes_express = (
+            instance.kind == OnboardingSubmission.KIND_APPLICANT
+            and instance.stage == OnboardingSubmission.STAGE_EXPRESS
+            and instance.status == OnboardingSubmission.STATUS_APPROVED
+            and validated_data.get('stage') == OnboardingSubmission.STAGE_FULL
+        )
+        if instance.status != OnboardingSubmission.STATUS_CHANGES_REQUESTED and not promotes_express:
             raise serializers.ValidationError('Изменять можно только анкету, возвращённую менеджером.')
         for field, value in validated_data.items():
             setattr(instance, field, value)
@@ -124,14 +150,14 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
             from_status=previous_status,
             to_status=OnboardingSubmission.STATUS_SUBMITTED,
         )
-        transaction.on_commit(lambda: _enqueue_onboarding_sheet_sync(instance.pk))
+        transaction.on_commit(lambda: _enqueue_onboarding_sheet_sync(instance.pk, force_status=promotes_express))
         return instance
 
 
-def _enqueue_onboarding_sheet_sync(submission_id):
+def _enqueue_onboarding_sheet_sync(submission_id, force_status=False):
     from apps.sheets_sync.services import enqueue_onboarding_inbox_sync
 
-    enqueue_onboarding_inbox_sync(submission_id)
+    enqueue_onboarding_inbox_sync(submission_id, force_status=force_status)
 
 
 class UniversityChoiceReadSerializer(serializers.ModelSerializer):
@@ -151,6 +177,27 @@ class PublicOnboardingStatusSerializer(serializers.ModelSerializer):
     sl_id = serializers.CharField(source='client.sl_id', read_only=True)
     university_choices = UniversityChoiceReadSerializer(many=True, read_only=True)
     admission_status = serializers.SerializerMethodField()
+    service_credentials = serializers.SerializerMethodField()
+    can_fill_full_questionnaire = serializers.SerializerMethodField()
+
+    def get_service_credentials(self, obj):
+        try:
+            identity = obj.service_identity
+        except ObjectDoesNotExist:
+            identity = None
+        if not identity or obj.status != OnboardingSubmission.STATUS_APPROVED:
+            return None
+        return {
+            'mobile_login': identity.mobile_login,
+            'shared_password': identity.shared_password,
+        }
+
+    def get_can_fill_full_questionnaire(self, obj):
+        return (
+            obj.kind == OnboardingSubmission.KIND_APPLICANT
+            and obj.stage == OnboardingSubmission.STAGE_EXPRESS
+            and obj.status == OnboardingSubmission.STATUS_APPROVED
+        )
 
     def get_admission_status(self, obj):
         client = getattr(obj, 'client', None)
@@ -172,11 +219,15 @@ class PublicOnboardingStatusSerializer(serializers.ModelSerializer):
         model = OnboardingSubmission
         fields = (
             'public_id',
+            'kind',
+            'stage',
             'status',
             'review_comment',
             'sl_id',
             'university_choices',
             'admission_status',
+            'service_credentials',
+            'can_fill_full_questionnaire',
             'submitted_at',
             'reviewed_at',
         )
@@ -202,7 +253,10 @@ class ManagerOnboardingSubmissionSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def get_service_credentials(self, obj):
-        identity = getattr(obj, 'service_identity', None)
+        try:
+            identity = obj.service_identity
+        except ObjectDoesNotExist:
+            identity = None
         if not identity:
             return None
         return {

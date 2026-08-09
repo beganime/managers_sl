@@ -132,6 +132,32 @@ def approve_submission(submission, reviewer, company_id=None, *, enqueue_sync=Tr
     }:
         raise ValidationError('Одобрить можно только отправленную анкету или анкету на проверке.')
 
+    # Одобрение короткой заявки абитуриента только открывает полную анкету.
+    # Клиент, SL-ID и сервисные аккаунты создаются после второго решения.
+    if (
+        submission.stage == OnboardingSubmission.STAGE_EXPRESS
+        and submission.kind == OnboardingSubmission.KIND_APPLICANT
+    ):
+        previous_status = submission.status
+        submission.status = OnboardingSubmission.STATUS_APPROVED
+        submission.reviewed_by = reviewer
+        submission.reviewed_at = timezone.now()
+        submission.review_comment = ''
+        submission.save(
+            update_fields=['status', 'reviewed_by', 'reviewed_at', 'review_comment', 'updated_at']
+        )
+        OnboardingReviewEvent.objects.create(
+            submission=submission,
+            decision=OnboardingReviewEvent.DECISION_APPROVE,
+            from_status=previous_status,
+            to_status=OnboardingSubmission.STATUS_APPROVED,
+            actor=reviewer,
+            comment='Разрешено заполнение полной анкеты.',
+        )
+        transaction.on_commit(lambda: _enqueue_onboarding_sheet_sync(submission.pk))
+        transaction.on_commit(lambda: _enqueue_onboarding_notification(submission.pk))
+        return submission
+
     company, office = resolve_review_company(reviewer, company_id)
     choices = list(
         submission.university_choices.select_related('university', 'university__country').prefetch_related('programs')
@@ -154,6 +180,7 @@ def approve_submission(submission, reviewer, company_id=None, *, enqueue_sync=Tr
         mobile_app_source=True,
         sl_id=sl_id,
         academic_year=submission.academic_year,
+        funding_type=str((submission.payload or {}).get('funding_type') or ''),
         custom_data={
             'onboarding_public_id': str(submission.public_id),
             'onboarding_kind': submission.kind,

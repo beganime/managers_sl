@@ -37,7 +37,7 @@ class ClientProvisioningStepInline(TabularInline):
 
 @admin.register(OnboardingSubmission)
 class OnboardingSubmissionAdmin(ModelAdmin):
-    list_display = ('full_name', 'kind', 'academic_year', 'status', 'client', 'reviewed_by', 'submitted_at')
+    list_display = ('full_name', 'stage', 'kind', 'academic_year', 'status', 'client', 'reviewed_by', 'submitted_at')
     list_filter = ('status', 'kind', 'academic_year', 'submitted_at')
     search_fields = ('full_name', 'phone', 'email', 'client__sl_id', 'public_id')
     readonly_fields = ('public_id', 'access_token_hash', 'submitted_at', 'reviewed_at', 'created_at', 'updated_at')

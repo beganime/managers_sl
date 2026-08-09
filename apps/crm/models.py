@@ -161,6 +161,11 @@ class Lead(TimeStampedModel):
 
 
 class Client(TimeStampedModel):
+    FUNDING_CHOICES = (
+        ('government', 'Государственная линия'),
+        ('budget', 'Бюджет'),
+        ('contract', 'Контракт'),
+    )
     STATUS_CHOICES = (
         ('new', 'Новый'),
         ('consultation', 'Консультация'),
@@ -218,6 +223,7 @@ class Client(TimeStampedModel):
     custom_data = models.JSONField('Дополнительные данные', default=dict, blank=True)
     sl_id = models.CharField('SL-ID', max_length=32, unique=True, null=True, blank=True, db_index=True)
     academic_year = models.PositiveSmallIntegerField('Год поступления', null=True, blank=True, db_index=True)
+    funding_type = models.CharField('Форма поступления', max_length=20, choices=FUNDING_CHOICES, blank=True)
 
     class Meta:
         verbose_name = 'Клиент CRM'

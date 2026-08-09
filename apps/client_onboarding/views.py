@@ -38,7 +38,7 @@ class PublicOnboardingSubmissionDetailView(APIView):
     authentication_classes = []
 
     def get_submission(self, request, public_id):
-        submission = OnboardingSubmission.objects.select_related('client').filter(public_id=public_id).first()
+        submission = OnboardingSubmission.objects.select_related('client', 'service_identity').filter(public_id=public_id).first()
         token = request.headers.get('X-Onboarding-Token', '')
         if not submission or not submission.token_matches(token):
             raise NotFound('Анкета не найдена.')

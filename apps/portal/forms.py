@@ -252,6 +252,7 @@ class PortalClientForm(PortalFormMixin, forms.ModelForm):
             'email',
             'direction',
             'status',
+            'funding_type',
             'manager',
             'office',
             'lead_source',
