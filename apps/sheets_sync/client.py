@@ -117,8 +117,8 @@ class GoogleSheetsGateway:
                         'repeatCell': {
                             'range': {'sheetId': sheet_id, 'startRowIndex': 0, 'endRowIndex': 1, 'startColumnIndex': 0, 'endColumnIndex': len(headers)},
                             'cell': {'userEnteredFormat': {
-                                'backgroundColor': {'red': 0, 'green': 0, 'blue': 0},
-                                'textFormat': {'foregroundColor': {'red': 1, 'green': 1, 'blue': 1}, 'bold': True},
+                                'backgroundColor': {'red': 1, 'green': 1, 'blue': 1},
+                                'textFormat': {'foregroundColor': {'red': 0, 'green': 0, 'blue': 0}, 'bold': True},
                                 'horizontalAlignment': 'CENTER',
                                 'wrapStrategy': 'WRAP',
                             }},
@@ -130,9 +130,38 @@ class GoogleSheetsGateway:
         existing = self.headers(sheet_name)
         missing = [header for header in headers if header not in existing]
         if missing:
-            raise HeaderMismatchError(
-                f'В листе {sheet_name} отсутствуют столбцы: {", ".join(missing)}'
-            )
+            start_column = column_letter(len(existing))
+            self.service.spreadsheets().values().update(
+                spreadsheetId=self.spreadsheet_id,
+                range=f'{quote_sheet(sheet_name)}!{start_column}1',
+                valueInputOption='RAW',
+                body={'values': [missing]},
+            ).execute()
+            sheet_id = self.sheet_id(sheet_name)
+            self.service.spreadsheets().batchUpdate(
+                spreadsheetId=self.spreadsheet_id,
+                body={'requests': [{
+                    'repeatCell': {
+                        'range': {
+                            'sheetId': sheet_id,
+                            'startRowIndex': 0,
+                            'endRowIndex': 1,
+                            'startColumnIndex': len(existing),
+                            'endColumnIndex': len(existing) + len(missing),
+                        },
+                        'cell': {'userEnteredFormat': {
+                            'backgroundColor': {'red': 1, 'green': 1, 'blue': 1},
+                            'textFormat': {
+                                'foregroundColor': {'red': 0, 'green': 0, 'blue': 0},
+                                'bold': True,
+                            },
+                            'horizontalAlignment': 'CENTER',
+                            'wrapStrategy': 'WRAP',
+                        }},
+                        'fields': 'userEnteredFormat(backgroundColor,textFormat,horizontalAlignment,wrapStrategy)',
+                    }
+                }]},
+            ).execute()
 
     def replace_reference_column(self, sheet_name, column, header, values):
         existing_headers = self.headers(sheet_name)
