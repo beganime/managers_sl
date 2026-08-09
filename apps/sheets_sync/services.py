@@ -161,6 +161,10 @@ def values_hash(values):
 def submission_general_values(submission):
     client = submission.client
     payload = submission.payload or {}
+    try:
+        snapshot_location = submission.client.admission_snapshot.current_location
+    except ClientAdmissionSnapshot.DoesNotExist:
+        snapshot_location = ''
     choices = list(submission.university_choices.all())
     admission_parts = []
     destination_cities = []
@@ -220,7 +224,7 @@ def submission_general_values(submission):
         'Валюта услуги': service_currency,
         'Статус сейчас': payload_value(payload, 'current_status', default='Анкета подтверждена'),
         'Встреча': as_yes_no(payload_value(payload, 'meeting_required', 'has_meeting', default='')),
-        'Где находится сейчас': payload_value(payload, 'current_location'),
+        'Где находится сейчас': snapshot_location or payload_value(payload, 'current_location'),
         'Замечание': payload_value(payload, 'note', 'remark'),
         'Комментарий': payload_value(payload, 'comment'),
         'Отказник': 'Нет',

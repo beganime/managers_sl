@@ -20,6 +20,12 @@
             <div style="margin-top:12px;"><a class="btn primary" href="{% url 'portal:notification_create' %}"><i data-lucide="bell-plus"></i>Создать</a></div>
         </div>
     {% endif %}
+    {% if can_notify_clients %}
+        <div class="metric">
+            <div class="metric-top"><span>Клиенты</span><i data-lucide="smartphone"></i></div>
+            <div style="margin-top:12px;"><a class="btn primary" href="{% url 'portal:client_notification_create' %}"><i data-lucide="send"></i>Отправить в приложение</a></div>
+        </div>
+    {% endif %}
 </section>
 
 <section class="panel">

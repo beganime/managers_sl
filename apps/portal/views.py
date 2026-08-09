@@ -32,7 +32,7 @@ from apps.attendance.models import DailyReport, WorkDay
 from apps.client_onboarding.models import OnboardingSubmission
 from apps.client_onboarding.permissions import can_review_onboarding
 from apps.client_onboarding.services import review_submission
-from apps.client_onboarding.tasks import provision_client_services
+from apps.client_onboarding.tasks import post_service, provision_client_services
 from apps.core.models import SystemSetting
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
@@ -47,6 +47,7 @@ from apps.knowledge.models import KnowledgeArticle, KnowledgeCategory, Knowledge
 from apps.organizations.models import Company, Office
 from apps.portal.forms import (
     PortalCalendarEventForm,
+    ClientPushNotificationForm,
     PortalClientForm,
     PortalDealForm,
     PortalDocumentGenerateForm,
@@ -1183,6 +1184,21 @@ class ClientChatsView(PortalContextMixin, TemplateView):
             )
         except AkylChatError as exc:
             messages.error(request, str(exc))
+        else:
+            try:
+                manager = full_name(request.user)
+                post_service(
+                    settings.STUDENTS_LIFE_PROVISION_API_URL.replace('/provision/', '/notify/'),
+                    settings.STUDENTS_LIFE_PROVISION_TOKEN,
+                    {
+                        'sl_id': sl_id,
+                        'title': f'Менеджер {manager} ответил в чате',
+                        'body': text or 'Менеджер отправил вам файл.',
+                        'notification_type': 'chat_message',
+                    },
+                )
+            except Exception:
+                messages.warning(request, 'Сообщение отправлено в чат, но push-уведомление не доставлено.')
         return redirect(target)
 
     def get_context_data(self, **kwargs):
@@ -4624,6 +4640,7 @@ class NotificationsView(PortalContextMixin, TemplateView):
             'unread_count': unread_count,
             'read_count': read_count,
             'can_create_notifications': can_create,
+            'can_notify_clients': can_review_onboarding(self.request.user),
         })
         return context
 
@@ -4765,6 +4782,66 @@ class NotificationCreateView(PortalFormPageMixin, PortalContextMixin, TemplateVi
                         notification.mark_sent()
                 messages.success(request, f'Уведомление создано для {len(recipients)} сотрудник(ов).')
                 return redirect('portal:notification_batch_detail', pk=batch.pk)
+        context = self.get_context_data()
+        context['form'] = form
+        context['form_groups'] = self.get_form_groups(form)
+        return self.render_to_response(context)
+
+
+class ClientPushNotificationCreateView(PortalFormPageMixin, PortalContextMixin, TemplateView):
+    active_page = 'notifications'
+    page_title = 'Уведомление клиентам'
+    cancel_url_name = 'portal:notifications'
+    form_page_title_create = 'Отправить уведомление клиентам'
+    submit_label = 'Отправить'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_review_onboarding(request.user):
+            messages.error(request, 'У вас нет права отправлять уведомления клиентам.')
+            return redirect('portal:notifications')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_edit_object(self):
+        return None
+
+    def get_form(self, data=None, instance=None):
+        clients = client_queryset(self.request.user).filter(
+            sl_id__isnull=False,
+        ).exclude(status__in=['archive', 'rejected']).exclude(sl_id='').order_by('full_name')
+        return ClientPushNotificationForm(data=data, clients=clients)
+
+    def get_form_groups(self, form):
+        return [
+            {'title': 'Сообщение', 'open': True, 'fields': form_fields(form, ('title', 'body'))},
+            {'title': 'Получатели', 'open': True, 'fields': form_fields(form, ('recipient_scope', 'clients'))},
+        ]
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form(data=request.POST)
+        if form.is_valid():
+            target_all = form.cleaned_data['recipient_scope'] == ClientPushNotificationForm.SCOPE_ALL
+            sl_ids = [] if target_all else [client.sl_id for client in form.cleaned_data['clients']]
+            try:
+                response = post_service(
+                    settings.STUDENTS_LIFE_PROVISION_API_URL.replace('/provision/', '/notify-bulk/'),
+                    settings.STUDENTS_LIFE_PROVISION_TOKEN,
+                    {
+                        'title': form.cleaned_data['title'],
+                        'body': form.cleaned_data['body'],
+                        'target_all': target_all,
+                        'sl_ids': sl_ids,
+                    },
+                )
+            except Exception as exc:
+                messages.error(request, f'Не удалось отправить уведомление: {exc}')
+            else:
+                recipients = int(response.get('recipients') or 0)
+                active_tokens = int(response.get('active_tokens') or 0)
+                messages.success(
+                    request,
+                    f'Уведомление сохранено для {recipients} клиент(ов). Активных устройств: {active_tokens}.',
+                )
+                return redirect('portal:notifications')
         context = self.get_context_data()
         context['form'] = form
         context['form_groups'] = self.get_form_groups(form)

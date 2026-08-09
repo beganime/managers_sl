@@ -43,7 +43,7 @@
                 <div style="display:grid; gap:10px; max-height:55vh; overflow:auto; padding:4px; margin-bottom:16px;">
                     {% for item in chat_messages %}
                         <div style="max-width:78%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; {% if item.is_mine %}margin-left:auto; border-color:#9fb8ad;{% endif %}">
-                            <div class="muted small" style="margin-bottom:4px;">{{ item.sender_display_name }} · {{ item.created_at|date:"d.m.Y H:i" }}</div>
+                            <div class="muted small" style="margin-bottom:4px;">{% if item.sender_role == "manager" %}Менеджер {% endif %}{{ item.sender_display_name }} · {{ item.created_at|date:"d.m.Y H:i" }}</div>
                             {% if item.text %}<div style="white-space:pre-wrap;">{{ item.text }}</div>{% endif %}
                             {% for attachment in item.attachments %}
                                 <div style="margin-top:8px;"><a class="btn" href="{{ attachment.url }}" target="_blank" rel="noopener noreferrer"><i data-lucide="paperclip"></i>{{ attachment.name|default:"Открыть файл" }}</a></div>

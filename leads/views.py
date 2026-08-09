@@ -19,6 +19,7 @@ from apps.crm.models import (
     LeadSource as CrmLeadSource,
 )
 from apps.organizations.models import Company
+from apps.sheets_sync.models import ClientAdmissionSnapshot
 
 from .models import Lead
 from .serializers import LeadSerializer, MobileLeadSerializer
@@ -167,6 +168,19 @@ def upsert_mobile_client(data):
     custom_data['mobile_app_profile'] = data
     client.custom_data = custom_data
     client.save()
+    current_location = clean_header(
+        profile.get('current_location') or data.get('current_location'),
+        255,
+    )
+    if current_location:
+        snapshot, _ = ClientAdmissionSnapshot.objects.get_or_create(client=client)
+        snapshot.current_location = current_location
+        snapshot.last_imported_at = timezone.now()
+        snapshot.save(update_fields=['current_location', 'last_imported_at', 'updated_at'])
+        submission = getattr(client, 'onboarding_submission', None)
+        if submission:
+            from apps.sheets_sync.services import enqueue_submission_sync
+            enqueue_submission_sync(submission.pk)
     return client, created
 
 

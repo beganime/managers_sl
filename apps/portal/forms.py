@@ -636,3 +636,34 @@ class PortalNotificationForm(PortalFormMixin, forms.Form):
         if kind == self.TYPE_WARNING:
             return Notification.PRIORITY_NORMAL
         return Notification.PRIORITY_NORMAL
+
+
+class ClientPushNotificationForm(PortalFormMixin, forms.Form):
+    SCOPE_SELECTED = 'selected'
+    SCOPE_ALL = 'all'
+    SCOPE_CHOICES = (
+        (SCOPE_SELECTED, 'Один или несколько клиентов'),
+        (SCOPE_ALL, 'Все активные клиенты с SL-ID'),
+    )
+
+    title = forms.CharField(label='Заголовок', max_length=255)
+    body = forms.CharField(label='Текст уведомления', widget=forms.Textarea(attrs={'rows': 6}))
+    recipient_scope = forms.ChoiceField(label='Получатели', choices=SCOPE_CHOICES, initial=SCOPE_SELECTED)
+    clients = forms.ModelMultipleChoiceField(
+        label='Клиенты',
+        queryset=Client.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'size': 14}),
+        help_text='Для группы удерживайте Ctrl и выберите нескольких клиентов.',
+    )
+
+    def __init__(self, *args, clients=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['clients'].queryset = clients if clients is not None else Client.objects.none()
+        self.style_fields()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('recipient_scope') == self.SCOPE_SELECTED and not cleaned_data.get('clients'):
+            self.add_error('clients', 'Выберите хотя бы одного клиента.')
+        return cleaned_data
