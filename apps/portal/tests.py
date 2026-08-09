@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from apps.client_onboarding.models import OnboardingReviewEvent, OnboardingSubmission
 from apps.client_onboarding.services import review_submission
+from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
 
 
@@ -91,6 +92,30 @@ class DashboardBirthdayGreetingTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'С днём рождения, Анна!')
+
+
+class PortalNotificationsTests(TestCase):
+    def setUp(self):
+        self.user = get_user_model().objects.create_user(
+            email='notifications@example.com',
+            password='test-password',
+            is_staff=True,
+        )
+        self.client.force_login(self.user)
+
+    def test_system_notification_without_sender_is_rendered(self):
+        Notification.objects.create(
+            recipient=self.user,
+            sender=None,
+            title='Системное уведомление',
+            body='Тест',
+        )
+
+        response = self.client.get(reverse('portal:notifications'), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Системное уведомление')
+        self.assertContains(response, 'Система')
 
 
 class PortalOnboardingWorkflowTests(TestCase):

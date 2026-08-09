@@ -68,7 +68,7 @@
                         {% with total=batch.recipient_total read=batch.read_total %}
                             <tr>
                                 <td><div class="strong">{{ batch.title }}</div><div class="muted small">{{ batch.message|truncatechars:120 }}</div></td>
-                                <td>{{ batch.sender.get_full_name|default:batch.sender.email|default:"Система" }}</td>
+                                <td>{% if batch.sender %}{{ batch.sender.get_full_name|default:batch.sender.email }}{% else %}Система{% endif %}</td>
                                 <td>
                                     <span class="pill">{{ batch.get_target_type_display }}</span>
                                     <div class="muted small">
@@ -117,7 +117,7 @@
                         <div class="item-card-top">
                             <div>
                                 <div class="item-card-title">{{ item.title }}</div>
-                                <div class="muted small">{{ item.created_at|date:"d.m.Y H:i" }} · {{ item.sender.get_full_name|default:item.sender.email|default:"Система" }}</div>
+                                <div class="muted small">{{ item.created_at|date:"d.m.Y H:i" }} · {% if item.sender %}{{ item.sender.get_full_name|default:item.sender.email }}{% else %}Система{% endif %}</div>
                             </div>
                             <span class="pill {% if item.is_read %}ok{% else %}warn{% endif %}">{% if item.is_read %}Прочитано{% else %}Новое{% endif %}</span>
                         </div>
