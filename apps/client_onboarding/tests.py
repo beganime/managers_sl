@@ -139,6 +139,12 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(allowed.status_code, 200)
         self.assertEqual(allowed.data['status'], 'submitted')
 
+    @override_settings(
+        STUDENTS_LIFE_PROVISION_API_URL='',
+        STUDENTS_LIFE_PROVISION_TOKEN='',
+        TMMAIL_PROVISION_API_URL='',
+        TMMAIL_PROVISION_TOKEN='',
+    )
     def test_manager_approval_creates_client_questionnaire_and_one_application_per_university(self):
         created = self.create_submission()
         submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
