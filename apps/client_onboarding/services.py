@@ -72,11 +72,8 @@ def build_service_credentials(submission, sl_id):
     return {
         'mobile_login': sl_id,
         'mobile_password': shared_password,
-        'tmmail_email': (
-            allocate_tmmail_address(submission, sl_id)
-            if submission.kind == OnboardingSubmission.KIND_APPLICANT
-            else None
-        ),
+        # TMmail is intentionally deferred to the second rollout wave.
+        'tmmail_email': None,
         'tmmail_password': shared_password,
     }
 
@@ -120,7 +117,14 @@ def allocate_sl_id(academic_year, kind):
 
 
 @transaction.atomic
-def approve_submission(submission, reviewer, company_id=None, *, enqueue_sync=True):
+def approve_submission(
+    submission,
+    reviewer,
+    company_id=None,
+    *,
+    enqueue_sync=True,
+    onboarding_access_token=None,
+):
     # Lock only the submission row. Joining the nullable client relation here
     # makes PostgreSQL reject SELECT FOR UPDATE before a client exists.
     submission = OnboardingSubmission.objects.select_for_update().get(pk=submission.pk)
@@ -132,61 +136,56 @@ def approve_submission(submission, reviewer, company_id=None, *, enqueue_sync=Tr
     }:
         raise ValidationError('Одобрить можно только отправленную анкету или анкету на проверке.')
 
-    # Одобрение короткой заявки абитуриента только открывает полную анкету.
-    # Клиент, SL-ID и сервисные аккаунты создаются после второго решения.
-    if (
-        submission.stage == OnboardingSubmission.STAGE_EXPRESS
-        and submission.kind == OnboardingSubmission.KIND_APPLICANT
-    ):
-        previous_status = submission.status
-        submission.status = OnboardingSubmission.STATUS_APPROVED
-        submission.reviewed_by = reviewer
-        submission.reviewed_at = timezone.now()
-        submission.review_comment = ''
-        submission.save(
-            update_fields=['status', 'reviewed_by', 'reviewed_at', 'review_comment', 'updated_at']
-        )
-        OnboardingReviewEvent.objects.create(
-            submission=submission,
-            decision=OnboardingReviewEvent.DECISION_APPROVE,
-            from_status=previous_status,
-            to_status=OnboardingSubmission.STATUS_APPROVED,
-            actor=reviewer,
-            comment='Разрешено заполнение полной анкеты.',
-        )
-        transaction.on_commit(lambda: _enqueue_onboarding_sheet_sync(submission.pk))
-        transaction.on_commit(lambda: _enqueue_onboarding_notification(submission.pk))
-        return submission
-
     company, office = resolve_review_company(reviewer, company_id)
     choices = list(
         submission.university_choices.select_related('university', 'university__country').prefetch_related('programs')
     )
     first_choice = choices[0] if choices else None
-    sl_id = allocate_sl_id(submission.academic_year, submission.kind)
-    credentials = build_service_credentials(submission, sl_id)
-    client = Client.objects.create(
-        company=company,
-        office=office,
-        manager=reviewer,
-        full_name=submission.full_name,
-        phone=submission.phone,
-        email=submission.email or None,
-        dob=submission.date_of_birth,
-        citizenship=submission.citizenship,
-        interested_country=first_choice.university.country.name if first_choice else '',
-        interested_university=first_choice.university.name if first_choice else '',
-        interested_program=', '.join(program.name for program in first_choice.programs.all()) if first_choice else '',
-        mobile_app_source=True,
-        sl_id=sl_id,
-        academic_year=submission.academic_year,
-        funding_type=str((submission.payload or {}).get('funding_type') or ''),
-        custom_data={
-            'onboarding_public_id': str(submission.public_id),
-            'onboarding_kind': submission.kind,
-            **credentials,
-        },
-    )
+    client = submission.client
+    is_new_client = client is None
+    if is_new_client:
+        sl_id = allocate_sl_id(submission.academic_year, submission.kind)
+        credentials = build_service_credentials(submission, sl_id)
+        client = Client.objects.create(
+            company=company, office=office, manager=reviewer,
+            full_name=submission.full_name, phone=submission.phone,
+            email=submission.email or None, dob=submission.date_of_birth,
+            citizenship=submission.citizenship,
+            interested_country=first_choice.university.country.name if first_choice else '',
+            interested_university=first_choice.university.name if first_choice else '',
+            interested_program=', '.join(program.name for program in first_choice.programs.all()) if first_choice else '',
+            mobile_app_source=True, sl_id=sl_id,
+            academic_year=submission.academic_year,
+            funding_type=str((submission.payload or {}).get('funding_type') or ''),
+            custom_data={
+                'onboarding_public_id': str(submission.public_id),
+                'onboarding_kind': submission.kind,
+                **({'onboarding_access_token': onboarding_access_token} if onboarding_access_token else {}),
+                **credentials,
+            },
+        )
+    else:
+        sl_id = client.sl_id
+        existing_identity = ClientServiceIdentity.objects.filter(submission=submission).first()
+        credentials = (
+            {
+                'mobile_login': existing_identity.mobile_login,
+                'mobile_password': existing_identity.shared_password,
+                'tmmail_email': None,
+                'tmmail_password': existing_identity.shared_password,
+            }
+            if existing_identity
+            else build_service_credentials(submission, sl_id)
+        )
+        client.company, client.office, client.manager = company, office, reviewer
+        client.full_name, client.phone = submission.full_name, submission.phone
+        client.email, client.dob = submission.email or None, submission.date_of_birth
+        client.citizenship = submission.citizenship
+        client.interested_country = first_choice.university.country.name if first_choice else ''
+        client.interested_university = first_choice.university.name if first_choice else ''
+        client.interested_program = ', '.join(program.name for program in first_choice.programs.all()) if first_choice else ''
+        client.funding_type = str((submission.payload or {}).get('funding_type') or '')
+        client.save()
 
     questionnaire_data = dict(submission.payload or {})
     questionnaire_data['university_choices'] = [
@@ -197,20 +196,25 @@ def approve_submission(submission, reviewer, company_id=None, *, enqueue_sync=Tr
         }
         for choice in choices
     ]
-    ClientQuestionnaire.objects.create(
+    is_full = submission.stage == OnboardingSubmission.STAGE_FULL
+    ClientQuestionnaire.objects.update_or_create(
         client=client,
-        status=ClientQuestionnaire.STATUS_APPROVED,
-        full_name=submission.full_name,
-        phone=submission.phone,
-        email=submission.email or None,
-        citizenship=submission.citizenship,
-        desired_program=client.interested_program,
-        desired_country=client.interested_country,
-        data=questionnaire_data,
-        submitted_at=submission.submitted_at,
-        last_synced_at=timezone.now(),
+        defaults={
+            'status': ClientQuestionnaire.STATUS_APPROVED if is_full else ClientQuestionnaire.STATUS_DRAFT,
+            'full_name': submission.full_name,
+            'phone': submission.phone,
+            'email': submission.email or None,
+            'citizenship': submission.citizenship,
+            'desired_program': client.interested_program,
+            'desired_country': client.interested_country,
+            'data': questionnaire_data,
+            'submitted_at': submission.submitted_at if is_full else None,
+            'last_synced_at': timezone.now(),
+        },
     )
 
+    if not is_new_client:
+        client.applications.filter(custom_data__has_key='onboarding_choice_id').delete()
     for choice in choices:
         programs = list(choice.programs.all())
         Application.objects.create(
@@ -228,32 +232,29 @@ def approve_submission(submission, reviewer, company_id=None, *, enqueue_sync=Tr
             },
         )
 
-    ClientServiceIdentity.objects.create(
+    ClientServiceIdentity.objects.update_or_create(
         submission=submission,
-        client=client,
-        mobile_login=credentials['mobile_login'],
-        shared_password=credentials['mobile_password'],
-        tmmail_email=credentials['tmmail_email'],
+        defaults={
+            'client': client,
+            'mobile_login': credentials['mobile_login'],
+            'shared_password': credentials['mobile_password'],
+            'tmmail_email': None,
+        },
     )
-    ClientProvisioningStep.objects.bulk_create([
-        ClientProvisioningStep(
-            submission=submission,
-            client=client,
-            step=ClientProvisioningStep.STEP_MOBILE_ACCOUNT,
-            event_id=f'{submission.public_id}:mobile-account',
-        ),
-        ClientProvisioningStep(
-            submission=submission,
-            client=client,
-            step=ClientProvisioningStep.STEP_TMMAIL,
-            status=(
-                ClientProvisioningStep.STATUS_NOT_REQUIRED
-                if submission.kind == OnboardingSubmission.KIND_SCHOOL_STUDENT
-                else ClientProvisioningStep.STATUS_PENDING
-            ),
-            event_id=f'{submission.public_id}:tmmail',
-        ),
-    ])
+    ClientProvisioningStep.objects.get_or_create(
+        submission=submission,
+        step=ClientProvisioningStep.STEP_MOBILE_ACCOUNT,
+        defaults={'client': client, 'event_id': f'{submission.public_id}:mobile-account'},
+    )
+    ClientProvisioningStep.objects.update_or_create(
+        submission=submission,
+        step=ClientProvisioningStep.STEP_TMMAIL,
+        defaults={
+            'client': client,
+            'status': ClientProvisioningStep.STATUS_NOT_REQUIRED,
+            'event_id': f'{submission.public_id}:tmmail',
+        },
+    )
 
     previous_status = submission.status
     submission.client = client

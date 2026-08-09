@@ -26,7 +26,7 @@ from django.utils.text import slugify
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.generic import TemplateView
+from django.views.generic import FormView, TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
 from apps.client_onboarding.models import OnboardingSubmission
@@ -68,6 +68,7 @@ from apps.portal.forms import (
     PortalUniversityForm,
 )
 from apps.portal.models import CalendarEvent
+from apps.portal.questionnaire_forms import PortalClientQuestionnaireForm
 from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAttachment, TaskChecklist, TaskChecklistItem, TaskComment
 from apps.sheets_sync.models import SheetSyncRun
 from apps.sheets_sync.services import enqueue_submission_sync
@@ -2952,6 +2953,66 @@ class ClientQuestionnaireDetailView(PortalContextMixin, TemplateView):
         context['questionnaire_sections'] = build_questionnaire_sections(context['data'])
         context['student_life_document_url'] = questionnaire_generated_document_url(questionnaire)
         return context
+
+
+class ClientQuestionnaireEditView(PortalContextMixin, FormView):
+    template_name = 'portal/client_questionnaire_form.html'
+    form_class = PortalClientQuestionnaireForm
+    active_page = 'client_questionnaires'
+    page_title = 'Заполнение анкеты клиента'
+
+    def get_questionnaire(self):
+        return get_object_or_404(
+            ClientQuestionnaire.objects.select_related('client').filter(
+                client_id__in=client_queryset(self.request.user).values('id')
+            ),
+            pk=self.kwargs['pk'],
+        )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['questionnaire'] = self.get_questionnaire()
+        return kwargs
+
+    def form_valid(self, form):
+        questionnaire = self.get_questionnaire()
+        cleaned = dict(form.cleaned_data)
+        for key, value in list(cleaned.items()):
+            if hasattr(value, 'isoformat'):
+                cleaned[key] = value.isoformat()
+        data = dict(questionnaire.data or {})
+        data.update(cleaned)
+        questionnaire.data = data
+        for name in ('full_name', 'phone', 'email', 'citizenship', 'desired_country', 'desired_city', 'desired_program'):
+            setattr(questionnaire, name, form.cleaned_data.get(name) or '')
+        questionnaire.status = ClientQuestionnaire.STATUS_UPDATED
+        questionnaire.submitted_at = timezone.now()
+        questionnaire.last_synced_at = timezone.now()
+        questionnaire.source = 'manager_sl'
+        questionnaire.save()
+
+        client = questionnaire.client
+        client.full_name = questionnaire.full_name
+        client.phone = questionnaire.phone
+        client.email = questionnaire.email or None
+        client.citizenship = questionnaire.citizenship
+        client.dob = form.cleaned_data.get('birth_date')
+        client.interested_country = questionnaire.desired_country
+        client.interested_program = questionnaire.desired_program
+        client.save()
+
+        submission = OnboardingSubmission.objects.filter(client=client).first()
+        if submission:
+            submission.payload = data
+            submission.full_name = questionnaire.full_name
+            submission.phone = questionnaire.phone
+            submission.email = questionnaire.email or ''
+            submission.date_of_birth = form.cleaned_data.get('birth_date')
+            submission.citizenship = questionnaire.citizenship
+            submission.stage = OnboardingSubmission.STAGE_FULL
+            submission.save()
+        messages.success(self.request, 'Анкета клиента сохранена.')
+        return redirect('portal:client_questionnaire_detail', pk=questionnaire.pk)
 
 
 class ClientQuestionnaireDownloadView(PortalContextMixin, View):

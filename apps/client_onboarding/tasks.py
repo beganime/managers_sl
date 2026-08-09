@@ -94,6 +94,10 @@ def execute_service_step(submission, step_name):
                     'full_name': client.full_name,
                     'email': client.email or '',
                     'phone': client.phone,
+                    'fcm_token': submission.fcm_token or '',
+                    'onboarding_public_id': str(submission.public_id),
+                    'onboarding_access_token': data.get('onboarding_access_token', ''),
+                    'onboarding_kind': data.get('onboarding_kind', OnboardingSubmission.KIND_APPLICANT),
                 },
             )
         elif step_name == ClientProvisioningStep.STEP_TMMAIL:
@@ -149,8 +153,6 @@ def provision_client_services(client_id, event_id=''):
 @shared_task(bind=True, max_retries=5, retry_backoff=True, retry_jitter=True)
 def notify_onboarding_status(self, submission_id):
     submission = OnboardingSubmission.objects.select_related('client').get(pk=submission_id)
-    if not submission.fcm_token:
-        return {'status': 'skipped', 'reason': 'missing_token'}
 
     if submission.status == OnboardingSubmission.STATUS_APPROVED:
         if submission.client_id:
@@ -169,16 +171,25 @@ def notify_onboarding_status(self, submission_id):
         return {'status': 'skipped', 'reason': 'status_not_notifiable'}
 
     try:
+        if submission.client_id:
+            response = post_service(
+                settings.STUDENTS_LIFE_PROVISION_API_URL.replace('/provision/', '/notify/'),
+                settings.STUDENTS_LIFE_PROVISION_TOKEN,
+                {
+                    'sl_id': submission.client.sl_id,
+                    'title': title,
+                    'body': body,
+                    'notification_type': 'onboarding_status',
+                    'public_id': str(submission.public_id),
+                    'status': submission.status,
+                },
+            )
+            return response
+        if not submission.fcm_token:
+            return {'status': 'skipped', 'reason': 'missing_token'}
         sent = send_push_to_token(
-            submission.fcm_token,
-            title,
-            body,
-            data={
-                'type': 'onboarding_status',
-                'public_id': str(submission.public_id),
-                'status': submission.status,
-                'sl_id': submission.client.sl_id if submission.client_id else '',
-            },
+            submission.fcm_token, title, body,
+            data={'type': 'onboarding_status', 'public_id': str(submission.public_id), 'status': submission.status},
         )
     except Exception as exc:
         raise self.retry(exc=exc)

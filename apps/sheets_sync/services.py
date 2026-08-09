@@ -72,6 +72,13 @@ GENERAL_PUBLIC_STATUS_FIELDS = {
     'current_location': 'Где находится сейчас',
 }
 
+MANUAL_CLIENT_SHEET = 'Новые клиенты'
+MANUAL_CLIENT_HEADERS = (
+    'Статус', 'ФИО', 'Телефон', 'Email', 'Год поступления', 'Тип клиента',
+    'Ответственный', 'Нужные услуги', 'Комментарий', 'Внутренний ID',
+    'SL-ID', 'Логин', 'Пароль', 'Результат обработки', 'Добавлено',
+)
+
 
 def sheets_sync_enabled():
     return bool(
@@ -464,6 +471,7 @@ def import_onboarding_decisions(limit=1000, gateway=None):
 
     try:
         gateway = gateway or GoogleSheetsGateway()
+        manual_result = import_manual_clients(gateway=gateway, limit=limit)
         sheet_name = settings.GOOGLE_SHEETS_ONBOARDING_SHEET
         gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
         gateway.set_dropdown_validation(
@@ -472,8 +480,8 @@ def import_onboarding_decisions(limit=1000, gateway=None):
             ONBOARDING_STATUS_OPTIONS,
         )
         rows = gateway.read_rows(sheet_name)[:max(int(limit), 1)]
-        processed = 0
-        failed = 0
+        processed = manual_result['processed']
+        failed = manual_result['failed']
         for row in rows:
             values = row['values']
             public_id = str(values.get('Внутренний ID', '') or '').strip()
@@ -557,6 +565,73 @@ def import_onboarding_decisions(limit=1000, gateway=None):
     except Exception as exc:
         _finish_run(run, status=SheetSyncRun.STATUS_FAILED, failed=1, error=exc)
         raise
+
+
+def import_manual_clients(*, gateway, limit=1000):
+    gateway.ensure_sheet(MANUAL_CLIENT_SHEET, MANUAL_CLIENT_HEADERS)
+    gateway.set_dropdown_validation(MANUAL_CLIENT_SHEET, 'Статус', ('Новый', 'Создан', 'Ошибка'))
+    processed = 0
+    failed = 0
+    for row in gateway.read_rows(MANUAL_CLIENT_SHEET)[:max(int(limit), 1)]:
+        values = row['values']
+        if normalize_sheet_status(values.get('Статус')) != 'новый' or values.get('Внутренний ID'):
+            continue
+        try:
+            full_name = str(values.get('ФИО') or '').strip()
+            phone = str(values.get('Телефон') or '').strip()
+            if not full_name or not phone:
+                raise ValidationError('Заполните ФИО и телефон.')
+            academic_year = int(values.get('Год поступления') or timezone.localdate().year + 1)
+            kind = (
+                OnboardingSubmission.KIND_SCHOOL_STUDENT
+                if normalize_sheet_status(values.get('Тип клиента')) == 'школьник'
+                else OnboardingSubmission.KIND_APPLICANT
+            )
+            services = [item.strip() for item in str(values.get('Нужные услуги') or 'Консультация').split(',') if item.strip()]
+            comment = str(values.get('Комментарий') or '').strip()
+            raw_token, token_hash = OnboardingSubmission.issue_access_token()
+            submission = OnboardingSubmission.objects.create(
+                access_token_hash=token_hash,
+                kind=kind,
+                stage=OnboardingSubmission.STAGE_EXPRESS,
+                academic_year=academic_year,
+                full_name=full_name,
+                phone=phone,
+                email=str(values.get('Email') or '').strip(),
+                payload={
+                    'requested_services': services,
+                    'request_text': comment or 'Клиент добавлен менеджером для последующего заполнения анкеты.',
+                    'source': 'google_sheets_manual',
+                },
+            )
+            reviewer = resolve_sheet_reviewer(values)
+            from apps.client_onboarding.services import approve_submission
+
+            submission = approve_submission(
+                submission,
+                reviewer,
+                enqueue_sync=False,
+                onboarding_access_token=raw_token,
+            )
+            identity = submission.service_identity
+            gateway.update_row(MANUAL_CLIENT_SHEET, row['row_number'], {
+                'Статус': 'Создан',
+                'Внутренний ID': str(submission.public_id),
+                'SL-ID': submission.client.sl_id,
+                'Логин': identity.mobile_login,
+                'Пароль': identity.shared_password,
+                'Результат обработки': 'Клиент и аккаунт созданы',
+                'Добавлено': timezone.localtime().strftime('%d.%m.%Y %H:%M'),
+            })
+            sync_submission(submission.pk, gateway=gateway)
+            processed += 1
+        except Exception as exc:
+            failed += 1
+            gateway.update_row(MANUAL_CLIENT_SHEET, row['row_number'], {
+                'Статус': 'Ошибка',
+                'Результат обработки': f'Ошибка: {str(exc)}'[:1000],
+            })
+    return {'processed': processed, 'failed': failed}
 
 
 def sync_submission(submission_id, gateway=None):

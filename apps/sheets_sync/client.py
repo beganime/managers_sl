@@ -315,3 +315,17 @@ class GoogleSheetsGateway:
                 body={'valueInputOption': 'USER_ENTERED', 'data': updates},
             ).execute()
         return row_number, False
+
+    def update_row(self, sheet_name, row_number, values):
+        headers = self.headers(sheet_name)
+        updates = []
+        for header, value in values.items():
+            if header not in headers:
+                raise HeaderMismatchError(f'В листе {sheet_name} нет столбца {header}.')
+            column = column_letter(headers.index(header))
+            updates.append({'range': f'{quote_sheet(sheet_name)}!{column}{row_number}', 'values': [[value]]})
+        if updates:
+            self.service.spreadsheets().values().batchUpdate(
+                spreadsheetId=self.spreadsheet_id,
+                body={'valueInputOption': 'USER_ENTERED', 'data': updates},
+            ).execute()

@@ -88,7 +88,7 @@ class OnboardingApiTests(APITestCase):
             },
         }
 
-    def test_express_application_approval_unlocks_full_form_without_creating_client(self):
+    def test_express_application_approval_creates_account_and_keeps_full_form_editable(self):
         created = self.create_submission(self.express_payload())
         submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
         self.client.force_authenticate(self.manager)
@@ -101,8 +101,10 @@ class OnboardingApiTests(APITestCase):
         submission.refresh_from_db()
         self.assertEqual(submission.stage, 'express')
         self.assertEqual(submission.status, 'approved')
-        self.assertIsNone(submission.client_id)
-        self.assertEqual(Client.objects.count(), 0)
+        self.assertIsNotNone(submission.client_id)
+        self.assertEqual(Client.objects.count(), 1)
+        self.assertEqual(submission.client.sl_id, 'SL-001')
+        self.assertEqual(submission.client.questionnaire.status, 'draft')
 
         self.client.force_authenticate(user=None)
         full_payload = self.applicant_payload()
@@ -117,6 +119,19 @@ class OnboardingApiTests(APITestCase):
         submission.refresh_from_db()
         self.assertEqual(submission.stage, 'full')
         self.assertEqual(submission.status, 'submitted')
+
+        self.client.force_authenticate(self.manager)
+        approved_again = self.client.post(
+            reverse('manager-onboarding-submission-review', kwargs={'pk': submission.pk}),
+            {'decision': 'approve'},
+            format='json',
+        )
+        self.assertEqual(approved_again.status_code, 200, approved_again.data)
+        submission.refresh_from_db()
+        self.assertEqual(Client.objects.count(), 1)
+        self.assertEqual(submission.client.sl_id, 'SL-001')
+        self.assertEqual(Application.objects.filter(client=submission.client).count(), 3)
+        self.assertEqual(submission.client.questionnaire.status, 'approved')
 
 
     def test_anonymous_applicant_submission_requires_three_universities(self):
@@ -161,7 +176,7 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(submission.status, 'approved')
         self.assertEqual(submission.client.sl_id, 'SL-001')
         self.assertEqual(submission.client.custom_data['mobile_password'], 'Ivan_0710')
-        self.assertEqual(submission.client.custom_data['tmmail_email'], 'ivan.ivanov@tmmail.ru')
+        self.assertIsNone(submission.client.custom_data['tmmail_email'])
         self.assertEqual(submission.client.custom_data['tmmail_password'], 'Ivan_0710')
         self.assertEqual(submission.service_identity.shared_password, 'Ivan_0710')
         self.assertEqual(OnboardingReviewEvent.objects.filter(submission=submission, decision='approve').count(), 1)
@@ -170,13 +185,13 @@ class OnboardingApiTests(APITestCase):
             str(submission.public_id),
         )
         self.assertEqual(provisioning['mobile'], 'disabled')
-        self.assertEqual(provisioning['tmmail'], 'disabled')
+        self.assertEqual(provisioning['tmmail'], 'not_required')
         self.assertEqual(
             ClientProvisioningStep.objects.filter(
                 submission=submission,
                 status=ClientProvisioningStep.STATUS_DISABLED,
             ).count(),
-            2,
+            1,
         )
         self.assertEqual(Client.objects.count(), 1)
         self.assertEqual(ClientServiceIdentity.objects.count(), 1)
@@ -247,7 +262,7 @@ class OnboardingApiTests(APITestCase):
             ['start_review', 'approve'],
         )
 
-    def test_sl_id_is_global_and_mail_uses_birth_year_only_on_name_collision(self):
+    def test_sl_id_is_global_while_mail_rollout_is_deferred(self):
         first = self.create_submission()
         second_payload = self.applicant_payload()
         second_payload['academic_year'] = 2028
@@ -267,8 +282,8 @@ class OnboardingApiTests(APITestCase):
 
         clients = list(Client.objects.order_by('sl_id'))
         self.assertEqual([client.sl_id for client in clients], ['SL-001', 'SL-002'])
-        self.assertEqual(clients[0].custom_data['tmmail_email'], 'ivan.ivanov@tmmail.ru')
-        self.assertEqual(clients[1].custom_data['tmmail_email'], 'ivan.ivanov2008@tmmail.ru')
+        self.assertIsNone(clients[0].custom_data['tmmail_email'])
+        self.assertIsNone(clients[1].custom_data['tmmail_email'])
 
     @override_settings(
         STUDENTS_LIFE_PROVISION_API_URL='https://student.test/provision',
@@ -292,16 +307,16 @@ class OnboardingApiTests(APITestCase):
         first = provision_client_services.run(submission.client_id, str(submission.public_id))
         second = provision_client_services.run(submission.client_id, str(submission.public_id))
 
-        self.assertEqual(first, {'mobile': 'success', 'tmmail': 'success', 'updated_at': first['updated_at']})
+        self.assertEqual(first, {'mobile': 'success', 'tmmail': 'not_required', 'updated_at': first['updated_at']})
         self.assertEqual(second['mobile'], 'success')
-        self.assertEqual(second['tmmail'], 'success')
-        self.assertEqual(post_service_mock.call_count, 2)
+        self.assertEqual(second['tmmail'], 'not_required')
+        self.assertEqual(post_service_mock.call_count, 1)
         self.assertEqual(
             list(
                 submission.provisioning_steps.order_by('step')
                 .values_list('attempt_count', flat=True)
             ),
-            [1, 1],
+            [1, 0],
         )
 
     def test_school_submission_does_not_require_university_choices(self):

@@ -132,7 +132,15 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
             and instance.status == OnboardingSubmission.STATUS_APPROVED
             and validated_data.get('stage') == OnboardingSubmission.STAGE_FULL
         )
-        if instance.status != OnboardingSubmission.STATUS_CHANGES_REQUESTED and not promotes_express:
+        edits_existing_client = bool(
+            instance.client_id
+            and validated_data.get('stage', instance.stage) == OnboardingSubmission.STAGE_FULL
+        )
+        if (
+            instance.status != OnboardingSubmission.STATUS_CHANGES_REQUESTED
+            and not promotes_express
+            and not edits_existing_client
+        ):
             raise serializers.ValidationError('Изменять можно только анкету, возвращённую менеджером.')
         for field, value in validated_data.items():
             setattr(instance, field, value)
@@ -144,6 +152,34 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
         instance.submitted_at = timezone.now()
         instance.save()
         self._replace_choices(instance, choices)
+        if instance.client_id:
+            from apps.crm.models import ClientQuestionnaire
+
+            questionnaire_data = dict(instance.payload or {})
+            questionnaire_data['university_choices'] = [
+                {
+                    'university_id': choice.university_id,
+                    'university_name': choice.university.name,
+                    'programs': [
+                        {'id': program.id, 'name': program.name}
+                        for program in choice.programs.all()
+                    ],
+                }
+                for choice in instance.university_choices.select_related('university').prefetch_related('programs')
+            ]
+            ClientQuestionnaire.objects.update_or_create(
+                client_id=instance.client_id,
+                defaults={
+                    'status': ClientQuestionnaire.STATUS_SUBMITTED,
+                    'full_name': instance.full_name,
+                    'phone': instance.phone,
+                    'email': instance.email or None,
+                    'citizenship': instance.citizenship,
+                    'data': questionnaire_data,
+                    'submitted_at': instance.submitted_at,
+                    'last_synced_at': timezone.now(),
+                },
+            )
         OnboardingReviewEvent.objects.create(
             submission=instance,
             decision=OnboardingReviewEvent.DECISION_RESUBMIT,
@@ -228,6 +264,13 @@ class PublicOnboardingStatusSerializer(serializers.ModelSerializer):
             'admission_status',
             'service_credentials',
             'can_fill_full_questionnaire',
+            'payload',
+            'full_name',
+            'phone',
+            'email',
+            'date_of_birth',
+            'citizenship',
+            'academic_year',
             'submitted_at',
             'reviewed_at',
         )
