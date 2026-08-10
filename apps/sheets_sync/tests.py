@@ -1,5 +1,6 @@
 from datetime import date
 
+from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from apps.client_onboarding.models import OnboardingSubmission, OnboardingUniversityChoice
@@ -15,6 +16,7 @@ from .schema import EXAM_HEADERS, safe_sheet_title, university_acronym
 from .services import (
     import_onboarding_decisions,
     import_public_client_statuses,
+    resolve_sheet_reviewer,
     sync_onboarding_inbox,
     sync_onboarding_submission,
     sync_reference_data,
@@ -56,7 +58,15 @@ class FakeSheetsGateway:
         self.reference_columns[column] = (header, list(values))
         return len(values)
 
-    def set_dropdown_validation(self, sheet_name, header, values, start_row=2, end_row=2000):
+    def set_dropdown_validation(
+        self,
+        sheet_name,
+        header,
+        values,
+        start_row=2,
+        end_row=2000,
+        input_message='Выберите значение из списка.',
+    ):
         return None
 
     def read_rows(self, sheet_name, start_row=2):
@@ -151,8 +161,11 @@ class SheetsSyncServiceTests(TestCase):
         inbox_row = gateway.rows['Заявки из анкеты'][str(submission.public_id)]
         self.assertTrue(initial['created'])
         self.assertEqual(inbox_row['Статус'], 'Ожидание')
+        self.assertEqual(inbox_row['Ответственный'], '')
+        self.assertNotIn('\n', inbox_row['Вузы и программы'])
 
         inbox_row['Статус'] = 'Подтвержден'
+        inbox_row['Ответственный'] = 'Анна Менеджер'
         result = import_onboarding_decisions(gateway=gateway)
 
         submission.refresh_from_db()
@@ -182,6 +195,13 @@ class SheetsSyncServiceTests(TestCase):
 
         self.assertEqual(result, {'status': 'success', 'processed': 0, 'failed': 0})
         self.assertEqual(inbox_row['Статус'], 'Подтвержден')
+
+    def test_sheet_approval_requires_explicit_responsible_manager(self):
+        with self.assertRaisesMessage(
+            ValidationError,
+            'Выберите ответственного менеджера в Google Sheets.',
+        ):
+            resolve_sheet_reviewer({'Ответственный': ''})
 
     def test_approved_submission_is_upserted_without_duplicate_rows(self):
         submission = self.create_approved_submission()

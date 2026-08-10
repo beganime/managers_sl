@@ -92,7 +92,9 @@ class GoogleSheetsGateway:
         return headers
 
     def ensure_sheet(self, sheet_name, headers):
+        created = False
         if sheet_name not in self.sheet_titles():
+            created = True
             response = self.service.spreadsheets().batchUpdate(
                 spreadsheetId=self.spreadsheet_id,
                 body={'requests': [{'addSheet': {'properties': {'title': sheet_name}}}]},
@@ -162,6 +164,7 @@ class GoogleSheetsGateway:
                     }
                 }]},
             ).execute()
+        return created
 
     def replace_reference_column(self, sheet_name, column, header, values):
         existing_headers = self.headers(sheet_name)
@@ -186,7 +189,15 @@ class GoogleSheetsGateway:
             ).execute()
         return len(rows)
 
-    def set_dropdown_validation(self, sheet_name, header, values, start_row=2, end_row=2000):
+    def set_dropdown_validation(
+        self,
+        sheet_name,
+        header,
+        values,
+        start_row=2,
+        end_row=2000,
+        input_message='Выберите значение из списка.',
+    ):
         headers = self.headers(sheet_name)
         if header not in headers:
             raise HeaderMismatchError(f'В листе {sheet_name} нет столбца {header}.')
@@ -213,12 +224,178 @@ class GoogleSheetsGateway:
                             },
                             'strict': True,
                             'showCustomUi': True,
-                            'inputMessage': 'Выберите статус обработки анкеты.',
+                            'inputMessage': input_message,
                         },
                     }
                 }],
             },
         ).execute()
+
+    def format_sheet(
+        self,
+        sheet_name,
+        *,
+        hidden_headers=(),
+        column_widths=None,
+        header_height=32,
+        row_height=28,
+    ):
+        """Apply the common black-and-white operational workbook layout."""
+        metadata = self.metadata()
+        sheet = next(
+            (
+                item for item in metadata.get('sheets', [])
+                if item.get('properties', {}).get('title') == sheet_name
+            ),
+            None,
+        )
+        if not sheet:
+            raise SheetsSyncError(f'Лист {sheet_name} не найден.')
+
+        properties = sheet['properties']
+        sheet_id = properties['sheetId']
+        grid = properties.get('gridProperties', {})
+        row_count = max(int(grid.get('rowCount') or 1000), 2)
+        headers = self.headers(sheet_name)
+        column_count = max(len(headers), 1)
+        requests = []
+
+        # Existing conditional colors would override the unified white style.
+        for index in reversed(range(len(sheet.get('conditionalFormats', [])))):
+            requests.append({
+                'deleteConditionalFormatRule': {
+                    'sheetId': sheet_id,
+                    'index': index,
+                }
+            })
+
+        requests.extend([
+            {
+                'updateSheetProperties': {
+                    'properties': {
+                        'sheetId': sheet_id,
+                        'gridProperties': {'frozenRowCount': 1},
+                    },
+                    'fields': 'gridProperties.frozenRowCount',
+                }
+            },
+            {
+                'repeatCell': {
+                    'range': {
+                        'sheetId': sheet_id,
+                        'startRowIndex': 0,
+                        'endRowIndex': 1,
+                        'startColumnIndex': 0,
+                        'endColumnIndex': column_count,
+                    },
+                    'cell': {'userEnteredFormat': {
+                        'backgroundColor': {'red': 1, 'green': 1, 'blue': 1},
+                        'textFormat': {
+                            'foregroundColor': {'red': 0, 'green': 0, 'blue': 0},
+                            'bold': True,
+                            'fontSize': 10,
+                        },
+                        'horizontalAlignment': 'CENTER',
+                        'verticalAlignment': 'MIDDLE',
+                        'wrapStrategy': 'WRAP',
+                    }},
+                    'fields': (
+                        'userEnteredFormat(backgroundColor,textFormat,'
+                        'horizontalAlignment,verticalAlignment,wrapStrategy)'
+                    ),
+                }
+            },
+            {
+                'repeatCell': {
+                    'range': {
+                        'sheetId': sheet_id,
+                        'startRowIndex': 1,
+                        'endRowIndex': row_count,
+                        'startColumnIndex': 0,
+                        'endColumnIndex': column_count,
+                    },
+                    'cell': {'userEnteredFormat': {
+                        'backgroundColor': {'red': 1, 'green': 1, 'blue': 1},
+                        'textFormat': {
+                            'foregroundColor': {'red': 0, 'green': 0, 'blue': 0},
+                            'bold': False,
+                            'fontSize': 9,
+                        },
+                        'horizontalAlignment': 'LEFT',
+                        'verticalAlignment': 'MIDDLE',
+                        'wrapStrategy': 'CLIP',
+                    }},
+                    'fields': (
+                        'userEnteredFormat(backgroundColor,textFormat,'
+                        'horizontalAlignment,verticalAlignment,wrapStrategy)'
+                    ),
+                }
+            },
+            {
+                'updateDimensionProperties': {
+                    'range': {
+                        'sheetId': sheet_id,
+                        'dimension': 'ROWS',
+                        'startIndex': 0,
+                        'endIndex': 1,
+                    },
+                    'properties': {'pixelSize': int(header_height)},
+                    'fields': 'pixelSize',
+                }
+            },
+            {
+                'updateDimensionProperties': {
+                    'range': {
+                        'sheetId': sheet_id,
+                        'dimension': 'ROWS',
+                        'startIndex': 1,
+                        'endIndex': row_count,
+                    },
+                    'properties': {'pixelSize': int(row_height)},
+                    'fields': 'pixelSize',
+                }
+            },
+        ])
+
+        for header in hidden_headers:
+            if header not in headers:
+                continue
+            column_index = headers.index(header)
+            requests.append({
+                'updateDimensionProperties': {
+                    'range': {
+                        'sheetId': sheet_id,
+                        'dimension': 'COLUMNS',
+                        'startIndex': column_index,
+                        'endIndex': column_index + 1,
+                    },
+                    'properties': {'hiddenByUser': True},
+                    'fields': 'hiddenByUser',
+                }
+            })
+
+        for header, pixel_size in (column_widths or {}).items():
+            if header not in headers:
+                continue
+            column_index = headers.index(header)
+            requests.append({
+                'updateDimensionProperties': {
+                    'range': {
+                        'sheetId': sheet_id,
+                        'dimension': 'COLUMNS',
+                        'startIndex': column_index,
+                        'endIndex': column_index + 1,
+                    },
+                    'properties': {'pixelSize': int(pixel_size)},
+                    'fields': 'pixelSize',
+                }
+            })
+
+        if requests:
+            self.service.spreadsheets().batchUpdate(
+                spreadsheetId=self.spreadsheet_id,
+                body={'requests': requests},
+            ).execute()
 
     def find_row(self, sheet_name, identity_header, identity_value):
         headers = self.headers(sheet_name)
@@ -292,7 +469,7 @@ class GoogleSheetsGateway:
             response = self.service.spreadsheets().values().append(
                 spreadsheetId=self.spreadsheet_id,
                 range=f'{quote_sheet(sheet_name)}!A:{column_letter(len(headers) - 1)}',
-                valueInputOption='USER_ENTERED',
+                valueInputOption='RAW',
                 insertDataOption='INSERT_ROWS',
                 body={'values': [row]},
             ).execute()
@@ -312,7 +489,7 @@ class GoogleSheetsGateway:
         if updates:
             self.service.spreadsheets().values().batchUpdate(
                 spreadsheetId=self.spreadsheet_id,
-                body={'valueInputOption': 'USER_ENTERED', 'data': updates},
+                body={'valueInputOption': 'RAW', 'data': updates},
             ).execute()
         return row_number, False
 
@@ -327,5 +504,5 @@ class GoogleSheetsGateway:
         if updates:
             self.service.spreadsheets().values().batchUpdate(
                 spreadsheetId=self.spreadsheet_id,
-                body={'valueInputOption': 'USER_ENTERED', 'data': updates},
+                body={'valueInputOption': 'RAW', 'data': updates},
             ).execute()

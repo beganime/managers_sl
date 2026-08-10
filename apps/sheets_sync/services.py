@@ -79,6 +79,45 @@ MANUAL_CLIENT_HEADERS = (
     'SL-ID', 'Логин', 'Пароль', 'Результат обработки', 'Добавлено',
 )
 
+SHEET_LAYOUTS = {
+    'Заявки из анкеты': {
+        'hidden_headers': ('Внутренний ID',),
+        'column_widths': {
+            'ФИО абитуриента': 210,
+            'Вузы и программы': 360,
+            'Ответственный': 190,
+            'Комментарий менеджера': 260,
+            'Что хочет клиент': 300,
+        },
+    },
+    'Общее': {
+        'column_widths': {
+            'ФИО абитуриента': 210,
+            'Куда поступает': 360,
+            'Контакты студента': 230,
+            'Контакты родителя': 230,
+            'Замечание': 260,
+            'Комментарий': 260,
+        },
+    },
+    MANUAL_CLIENT_SHEET: {
+        'hidden_headers': ('Внутренний ID',),
+        'column_widths': {
+            'ФИО': 210,
+            'Нужные услуги': 240,
+            'Комментарий': 280,
+            'Ответственный': 190,
+        },
+    },
+    'Справочники': {
+        'column_widths': {
+            'Ответственные': 210,
+            'Университеты': 360,
+            'Программы': 360,
+        },
+    },
+}
+
 
 def sheets_sync_enabled():
     return bool(
@@ -86,6 +125,21 @@ def sheets_sync_enabled():
         and settings.GOOGLE_SHEETS_SPREADSHEET_ID
         and settings.GOOGLE_SHEETS_CREDENTIALS_FILE
     )
+
+
+def manager_sheet_options():
+    return [
+        display_user(user)
+        for user in User.objects.filter(is_active=True)
+        .filter(Q(role='manager') | Q(role='admin') | Q(is_superuser=True))
+        .order_by('first_name', 'last_name', 'email')
+    ]
+
+
+def ensure_operational_sheet(gateway, sheet_name, headers):
+    created = gateway.ensure_sheet(sheet_name, headers)
+    if created and hasattr(gateway, 'format_sheet'):
+        gateway.format_sheet(sheet_name, **SHEET_LAYOUTS.get(sheet_name, {}))
 
 
 def display_user(user):
@@ -257,8 +311,7 @@ def submission_onboarding_values(submission):
         'Гражданство': submission.citizenship,
         'Нужные услуги': serialize_value(payload.get('requested_services', [])),
         'Что хочет клиент': payload.get('request_text', ''),
-        'Вузы и программы': '\n'.join(choices),
-        'Ответственный': display_user(submission.reviewed_by),
+        'Вузы и программы': ' | '.join(choices),
         'Комментарий менеджера': submission.review_comment,
         'SL-ID': submission.client.sl_id if submission.client_id else '',
         'Отправлено': serialize_value(submission.submitted_at),
@@ -288,12 +341,7 @@ def resolve_sheet_reviewer(values):
         raise ValidationError(
             'Ответственный из Google Sheets не найден среди активных менеджеров.'
         )
-    for reviewer in reviewers:
-        if hasattr(reviewer, 'employee_profile'):
-            return reviewer
-    if reviewers:
-        return reviewers[0]
-    raise ValidationError('Нет активного менеджера для подтверждения анкеты.')
+    raise ValidationError('Выберите ответственного менеджера в Google Sheets.')
 
 
 def _finish_run(run, *, status, processed=0, failed=0, error=''):
@@ -376,16 +424,23 @@ def sync_onboarding_submission(
         gateway = gateway or GoogleSheetsGateway()
         sheet_name = settings.GOOGLE_SHEETS_ONBOARDING_SHEET
         if prepare_sheet:
-            gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
+            ensure_operational_sheet(gateway, sheet_name, ONBOARDING_HEADERS)
             gateway.set_dropdown_validation(
                 sheet_name,
                 'Статус',
                 ONBOARDING_STATUS_OPTIONS,
             )
+            gateway.set_dropdown_validation(
+                sheet_name,
+                'Ответственный',
+                manager_sheet_options(),
+                input_message='Выберите ответственного менеджера.',
+            )
 
         values = submission_onboarding_values(submission)
         create_only_values = {
             'Статус': ONBOARDING_INTERNAL_STATUS_LABELS[submission.status],
+            'Ответственный': '',
             'Результат обработки': '',
         }
         if force_status or submission.status not in {
@@ -424,11 +479,17 @@ def sync_onboarding_inbox(limit=1000, gateway=None):
     try:
         gateway = gateway or GoogleSheetsGateway()
         sheet_name = settings.GOOGLE_SHEETS_ONBOARDING_SHEET
-        gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
+        ensure_operational_sheet(gateway, sheet_name, ONBOARDING_HEADERS)
         gateway.set_dropdown_validation(
             sheet_name,
             'Статус',
             ONBOARDING_STATUS_OPTIONS,
+        )
+        gateway.set_dropdown_validation(
+            sheet_name,
+            'Ответственный',
+            manager_sheet_options(),
+            input_message='Выберите ответственного менеджера.',
         )
         existing_ids = {
             str(row['values'].get('Внутренний ID', '') or '').strip()
@@ -477,11 +538,17 @@ def import_onboarding_decisions(limit=1000, gateway=None):
         gateway = gateway or GoogleSheetsGateway()
         manual_result = import_manual_clients(gateway=gateway, limit=limit)
         sheet_name = settings.GOOGLE_SHEETS_ONBOARDING_SHEET
-        gateway.ensure_sheet(sheet_name, ONBOARDING_HEADERS)
+        ensure_operational_sheet(gateway, sheet_name, ONBOARDING_HEADERS)
         gateway.set_dropdown_validation(
             sheet_name,
             'Статус',
             ONBOARDING_STATUS_OPTIONS,
+        )
+        gateway.set_dropdown_validation(
+            sheet_name,
+            'Ответственный',
+            manager_sheet_options(),
+            input_message='Выберите ответственного менеджера.',
         )
         rows = gateway.read_rows(sheet_name)[:max(int(limit), 1)]
         processed = manual_result['processed']
@@ -572,8 +639,14 @@ def import_onboarding_decisions(limit=1000, gateway=None):
 
 
 def import_manual_clients(*, gateway, limit=1000):
-    gateway.ensure_sheet(MANUAL_CLIENT_SHEET, MANUAL_CLIENT_HEADERS)
+    ensure_operational_sheet(gateway, MANUAL_CLIENT_SHEET, MANUAL_CLIENT_HEADERS)
     gateway.set_dropdown_validation(MANUAL_CLIENT_SHEET, 'Статус', ('Новый', 'Создан', 'Ошибка'))
+    gateway.set_dropdown_validation(
+        MANUAL_CLIENT_SHEET,
+        'Ответственный',
+        manager_sheet_options(),
+        input_message='Выберите ответственного менеджера.',
+    )
     processed = 0
     failed = 0
     for row in gateway.read_rows(MANUAL_CLIENT_SHEET)[:max(int(limit), 1)]:
@@ -666,7 +739,7 @@ def sync_submission(submission_id, gateway=None):
 
         gateway = gateway or GoogleSheetsGateway()
         general_sheet = settings.GOOGLE_SHEETS_GENERAL_SHEET
-        gateway.ensure_sheet(general_sheet, GENERAL_HEADERS)
+        ensure_operational_sheet(gateway, general_sheet, GENERAL_HEADERS)
         general_values = submission_general_values(submission)
         create_only_values = {
             header: general_values.pop(header)
