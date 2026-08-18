@@ -181,9 +181,11 @@ class ClientServiceIdentity(TimeStampedModel):
 class ClientProvisioningStep(TimeStampedModel):
     STEP_MOBILE_ACCOUNT = 'mobile_account'
     STEP_TMMAIL = 'tmmail'
+    STEP_DISK = 'disk'
     STEP_CHOICES = (
         (STEP_MOBILE_ACCOUNT, 'Аккаунт Students Life'),
         (STEP_TMMAIL, 'Почтовый ящик TMmail'),
+        (STEP_DISK, 'Папки клиента на диске'),
     )
 
     STATUS_PENDING = 'pending'

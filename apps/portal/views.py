@@ -1,11 +1,15 @@
 import calendar
 import json
+import mimetypes
+from pathlib import PurePosixPath
 from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 from urllib import error as urlerror
 from urllib import request as urlrequest
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urlencode, urljoin, urlsplit
+
+import requests
 
 from django.conf import settings
 from django.contrib import messages
@@ -29,10 +33,10 @@ from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import FormView, TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
-from apps.client_onboarding.models import OnboardingSubmission
+from apps.client_onboarding.models import ClientProvisioningStep, OnboardingSubmission
 from apps.client_onboarding.permissions import can_review_onboarding
 from apps.client_onboarding.services import review_submission
-from apps.client_onboarding.tasks import post_service, provision_client_services
+from apps.client_onboarding.tasks import disk_category_for_submission, post_service, provision_client_services
 from apps.core.models import SystemSetting
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
@@ -74,10 +78,36 @@ from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAt
 from apps.sheets_sync.models import SheetSyncRun
 from apps.sheets_sync.services import enqueue_submission_sync
 from apps.portal.akylchat import AkylChatClient, AkylChatError
+from users.disk_auth import can_access_disk
 
 
 PAGE_SIZE = 25
 User = get_user_model()
+
+DISK_UPLOAD_FOLDERS = (
+    ('оригиналы', 'Оригиналы'),
+    ('переводы', 'Переводы'),
+    ('договоры', 'Договоры'),
+    ('университеты', 'Университеты'),
+    ('приглашения', 'Приглашения'),
+)
+DISK_UPLOAD_EXTENSIONS = {'.pdf', '.docx', '.jpg', '.jpeg', '.png'}
+DISK_UPLOAD_MAX_SIZE = 50 * 1024 * 1024
+
+
+def build_client_disk_url(client):
+    """Return the client's DiskSL folder when provisioning has completed."""
+    disk_step = client.provisioning_steps.filter(
+        step=ClientProvisioningStep.STEP_DISK,
+        status=ClientProvisioningStep.STATUS_SUCCESS,
+    ).order_by('-finished_at', '-id').first()
+    root = str((disk_step.response_data if disk_step else {}).get('root') or '').strip('/')
+    if not root:
+        return settings.DISK_WEB_URL, False
+
+    disk_url = urlsplit(settings.DISK_WEB_URL)
+    origin = f'{disk_url.scheme}://{disk_url.netloc}'
+    return f'{origin}/web/client/files?{urlencode({"path": f"/{root}"})}', True
 
 QUESTIONNAIRE_FIELD_LABELS = {
     'form_type': 'Тип заявки',
@@ -253,6 +283,13 @@ NAV_GROUPS = (
             {'name': 'incoming_leads', 'label': 'Потенциальные клиенты', 'icon': 'inbox'},
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
+            {
+                'name': 'disk',
+                'label': 'Диск',
+                'icon': 'hard-drive',
+                'url': settings.DISK_WEB_URL,
+                'external': True,
+            },
             {'name': 'document_upload_rating', 'label': 'Рейтинг загрузок', 'icon': 'badge-plus'},
             {'name': 'client_chats', 'label': 'Чаты клиентов', 'icon': 'messages-square'},
             {
@@ -2130,6 +2167,7 @@ class ClientDetailView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         client = self.get_client()
         exams_ok, exams, exams_error = get_client_exams_from_students_life(client)
+        disk_url, disk_ready = build_client_disk_url(client)
         context.update({
             'client': client,
             'applications': application_queryset(self.request.user).filter(client=client).order_by('-created_at'),
@@ -2140,8 +2178,74 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             'mobile_exams_ok': exams_ok,
             'mobile_exams_error': exams_error,
             'mobile_user_id': client_mobile_user_id(client),
+            'disk_url': disk_url,
+            'disk_ready': disk_ready,
+            'disk_upload_folders': DISK_UPLOAD_FOLDERS,
+            'can_access_disk': can_access_disk(self.request.user),
         })
         return context
+
+
+class ClientDiskUploadView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request, pk):
+        if not can_access_disk(request.user):
+            messages.error(request, 'У вас нет доступа к файлам клиентов.')
+            return redirect('portal:client_detail', pk=pk)
+
+        client = get_object_or_404(client_queryset(request.user), pk=pk)
+        _disk_url, disk_ready = build_client_disk_url(client)
+        submission = getattr(client, 'onboarding_submission', None)
+        uploaded_file = request.FILES.get('file')
+        folder = request.POST.get('folder', '').strip()
+        allowed_folders = {value for value, _label in DISK_UPLOAD_FOLDERS}
+        if not disk_ready or not submission:
+            messages.error(request, 'Папка клиента ещё не создана в DiskSL. Повторите подключение систем в анкете.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if not uploaded_file:
+            messages.error(request, 'Выберите файл для загрузки.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if folder not in allowed_folders:
+            messages.error(request, 'Выберите допустимую папку DiskSL.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if uploaded_file.size <= 0 or uploaded_file.size > DISK_UPLOAD_MAX_SIZE:
+            messages.error(request, 'Размер файла должен быть от 1 байта до 50 МБ.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if PurePosixPath(uploaded_file.name).suffix.lower() not in DISK_UPLOAD_EXTENSIONS:
+            messages.error(request, 'Допустимы только PDF, DOCX, JPG и PNG.')
+            return redirect('portal:client_detail', pk=client.pk)
+
+        endpoint = settings.DISK_PROVISION_API_URL.rsplit('/folders', 1)[0] + '/files'
+        category = disk_category_for_submission(submission)
+        headers = {
+            'Authorization': f'Bearer {settings.DISK_PROVISION_SERVICE_TOKEN}',
+            'Content-Type': uploaded_file.content_type or mimetypes.guess_type(uploaded_file.name)[0] or 'application/octet-stream',
+            'Content-Length': str(uploaded_file.size),
+            'X-Academic-Year': str(client.academic_year),
+            'X-SL-ID': quote(client.sl_id or '', safe=''),
+            'X-Client-Name': quote(client.full_name, safe=''),
+            'X-Disk-Category': quote(category, safe=''),
+            'X-Disk-Folder': quote(folder, safe=''),
+            'X-File-Name': quote(uploaded_file.name, safe=''),
+            'X-Actor': quote(request.user.email, safe=''),
+        }
+        try:
+            uploaded_file.file.seek(0)
+            response = requests.post(
+                endpoint,
+                data=uploaded_file.file,
+                headers=headers,
+                timeout=(5, 120),
+            )
+            response.raise_for_status()
+            result = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            messages.error(request, f'Не удалось загрузить файл в DiskSL: {exc}')
+            return redirect('portal:client_detail', pk=client.pk)
+
+        messages.success(request, f'Файл загружен в DiskSL: {result.get("path", uploaded_file.name)}')
+        return redirect('portal:client_detail', pk=client.pk)
 
 
 class ClientExamPortalView(LoginRequiredMixin, View):

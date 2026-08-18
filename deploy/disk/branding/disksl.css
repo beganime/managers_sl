@@ -1,0 +1,209 @@
+/* DiskSL branding overrides. Loaded by SFTPGo as additional CSS. */
+
+/* Login: one centered brand mark without a duplicated text title. */
+#sign_in_form > .container.mb-10 .row {
+    justify-content: center;
+}
+
+#sign_in_form > .container.mb-10 .col-5 {
+    flex: 0 0 auto;
+    width: auto;
+    padding: 0;
+}
+
+#sign_in_form > .container.mb-10 .col-7 {
+    display: none;
+}
+
+#sign_in_form > .container.mb-10 img[alt="Logo"] {
+    width: 138px !important;
+    height: 138px !important;
+    object-fit: cover;
+    border-radius: 22px;
+    box-shadow: 0 2px 8px rgba(3, 39, 74, 0.08);
+}
+
+/* Search and filters inserted by disksl.js on the files page. */
+.disksl-tools-panel {
+    margin: 0 2rem;
+    padding: 16px;
+    border: 1px solid var(--bs-gray-300);
+    border-radius: 10px;
+    background: var(--bs-body-bg);
+}
+
+.disksl-tools-panel[hidden] {
+    display: none !important;
+}
+
+.disksl-activity-panel {
+    margin: 12px 2rem 0;
+    padding: 16px;
+    border: 1px solid var(--bs-gray-300);
+    border-radius: 10px;
+    background: var(--bs-body-bg);
+}
+
+.disksl-activity-panel[hidden] {
+    display: none !important;
+}
+
+.disksl-activity-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.disksl-activity-title {
+    color: var(--bs-body-color);
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.disksl-activity-subtitle,
+.disksl-activity-meta,
+.disksl-activity-empty {
+    color: var(--bs-gray-600);
+    font-size: 12px;
+}
+
+.disksl-activity-list {
+    max-height: 360px;
+    overflow-y: auto;
+}
+
+.disksl-activity-row {
+    padding: 10px 2px;
+    border-top: 1px solid var(--bs-gray-200);
+}
+
+.disksl-activity-main,
+.disksl-activity-meta {
+    overflow-wrap: anywhere;
+}
+
+.disksl-activity-empty {
+    padding: 12px 2px;
+}
+
+.disksl-tools {
+    display: flex;
+    align-items: end;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.disksl-field {
+    position: relative;
+    min-width: 160px;
+}
+
+.disksl-field--search {
+    flex: 1 1 320px;
+    max-width: 520px;
+}
+
+.disksl-field--local {
+    flex: 1 1 240px;
+    max-width: 360px;
+}
+
+.disksl-field--local > .d-flex,
+.disksl-field--local input {
+    width: 100% !important;
+}
+
+.disksl-label {
+    display: block;
+    margin: 0 0 5px 2px;
+    color: var(--bs-gray-700);
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.disksl-control {
+    width: 100%;
+    min-height: 42px;
+    border: 1px solid var(--bs-gray-300);
+    border-radius: 8px;
+    background: var(--bs-body-bg);
+    color: var(--bs-body-color);
+    padding: 8px 12px;
+}
+
+.disksl-control:focus {
+    border-color: var(--bs-primary);
+    outline: 0;
+    box-shadow: 0 0 0 3px rgba(0, 117, 255, 0.12);
+}
+
+.disksl-results {
+    position: absolute;
+    z-index: 1090;
+    top: calc(100% + 6px);
+    right: 0;
+    left: 0;
+    display: none;
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--bs-gray-300);
+    border-radius: 10px;
+    background: var(--bs-body-bg);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.disksl-results.is-open {
+    display: block;
+}
+
+.disksl-result,
+.disksl-result-empty {
+    display: block;
+    padding: 10px 12px;
+}
+
+.disksl-result {
+    color: var(--bs-body-color);
+    text-decoration: none;
+    border-bottom: 1px solid var(--bs-gray-200);
+}
+
+.disksl-result:last-child {
+    border-bottom: 0;
+}
+
+.disksl-result:hover {
+    color: var(--bs-primary);
+    background: var(--bs-gray-100);
+}
+
+.disksl-result small,
+.disksl-result-empty {
+    color: var(--bs-gray-600);
+}
+
+@media (max-width: 767px) {
+    #sign_in_form > .container.mb-10 img[alt="Logo"] {
+        width: 112px !important;
+        height: 112px !important;
+        border-radius: 18px;
+    }
+
+    .disksl-field,
+    .disksl-field--search {
+        flex: 1 1 100%;
+        max-width: none;
+    }
+
+    .disksl-tools-panel {
+        margin: 0 1rem;
+        padding: 12px;
+    }
+
+    .disksl-activity-panel {
+        margin: 12px 1rem 0;
+        padding: 12px;
+    }
+}

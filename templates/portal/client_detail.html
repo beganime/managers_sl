@@ -5,6 +5,7 @@
     <div class="panel-header">
         <h2 class="panel-title">{{ client.full_name }}</h2>
         <div class="filters">
+            <a class="btn{% if disk_ready %} secondary{% endif %}" href="{{ disk_url }}" target="_blank" rel="noopener"><i data-lucide="folder-open"></i>{% if disk_ready %}Папка клиента{% else %}DiskSL{% endif %}</a>
             <a class="btn secondary" href="{% url 'portal:client_document_create' client.id %}"><i data-lucide="file-plus-2"></i>Создать документ</a>
             <a class="btn" href="{% url 'portal:clients' %}?edit={{ client.id }}"><i data-lucide="square-pen"></i>Редактировать</a>
         </div>
@@ -20,6 +21,31 @@
             <div><div class="muted small">Паспорт</div><div>{{ client.passport_inter_num|default:client.passport_local_num|default:"-" }}</div></div>
             <div><div class="muted small">Интерес</div><div>{{ client.interested_university|default:client.interested_program|default:client.get_direction_display|default:"-" }}</div></div>
         </div>
+    </div>
+</section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Файлы клиента в DiskSL</h2>
+        <a class="btn" href="{{ disk_url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть DiskSL</a>
+    </div>
+    <div class="panel-body">
+        {% if disk_ready and can_access_disk %}
+            <form class="toolbar" method="post" action="{% url 'portal:client_disk_upload' client.id %}" enctype="multipart/form-data" data-disable-on-submit>
+                {% csrf_token %}
+                <div class="filters">
+                    <select class="input" name="folder" required>
+                        {% for value, label in disk_upload_folders %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                    </select>
+                    <input class="input" type="file" name="file" accept=".pdf,.docx,.jpg,.jpeg,.png" required>
+                    <button class="btn primary" type="submit"><i data-lucide="upload"></i>Загрузить до 50 МБ</button>
+                </div>
+            </form>
+        {% elif not can_access_disk %}
+            <div class="empty">У вашей роли нет доступа к паспортам и файлам клиентов.</div>
+        {% else %}
+            <div class="empty">Папка появится после подтверждения полной анкеты и подключения DiskSL.</div>
+        {% endif %}
     </div>
 </section>
 

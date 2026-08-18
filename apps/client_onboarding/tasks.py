@@ -1,6 +1,8 @@
 from datetime import timedelta
 
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from celery import shared_task
 from django.conf import settings
@@ -17,17 +19,49 @@ from .models import ClientProvisioningStep, OnboardingSubmission
 def post_service(url, token, payload):
     if not url or not token:
         return {'status': 'disabled'}
-    response = requests.post(
-        url,
-        json=payload,
-        headers={'Authorization': f'Bearer {token}'},
-        timeout=settings.SERVICE_REQUEST_TIMEOUT,
+    retry = Retry(
+        total=3,
+        connect=3,
+        read=3,
+        status=3,
+        backoff_factor=0.5,
+        status_forcelist=(429, 502, 503, 504),
+        allowed_methods=frozenset({'POST'}),
+        raise_on_status=False,
     )
+    with requests.Session() as session:
+        session.mount('https://', HTTPAdapter(max_retries=retry))
+        session.mount('http://', HTTPAdapter(max_retries=retry))
+        response = session.post(
+            url,
+            json=payload,
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=settings.SERVICE_REQUEST_TIMEOUT,
+        )
     response.raise_for_status()
     return response.json()
 
 
 PROVISIONING_LEASE = timedelta(minutes=5)
+
+
+def disk_category_for_submission(submission):
+    payload = dict(submission.payload or {})
+    education_level = str(
+        payload.get('desired_education_level')
+        or payload.get('education_level')
+        or payload.get('degree')
+        or ''
+    ).strip().lower()
+    if education_level in {'master', 'masters', 'магистр', 'магистратура'} or 'магистр' in education_level:
+        return 'Магистры'
+
+    funding = str(submission.client.funding_type or payload.get('funding_type') or '').strip().lower()
+    if funding in {'government', 'гос', 'гослиния', 'государственная линия'}:
+        return 'Гослиния'
+    if funding in {'budget', 'бюджет'}:
+        return 'Бюджет'
+    return 'Контракт'
 
 
 def claim_provisioning_step(submission, step_name):
@@ -118,6 +152,18 @@ def execute_service_step(submission, step_name):
                     'display_name': client.full_name,
                 },
             )
+        elif step_name == ClientProvisioningStep.STEP_DISK:
+            response = post_service(
+                settings.DISK_PROVISION_API_URL,
+                settings.DISK_PROVISION_SERVICE_TOKEN,
+                {
+                    'event_id': step.event_id,
+                    'academic_year': client.academic_year,
+                    'sl_id': client.sl_id,
+                    'full_name': client.full_name,
+                    'category': disk_category_for_submission(submission),
+                },
+            )
         else:
             raise ValueError('Unknown provisioning step.')
         status = (
@@ -141,9 +187,11 @@ def provision_client_services(client_id, event_id=''):
     data = dict(client.custom_data or {})
     mobile_step = execute_service_step(submission, ClientProvisioningStep.STEP_MOBILE_ACCOUNT)
     mail_step = execute_service_step(submission, ClientProvisioningStep.STEP_TMMAIL)
+    disk_step = execute_service_step(submission, ClientProvisioningStep.STEP_DISK)
     data['service_provisioning'] = {
         'mobile': mobile_step.status,
         'tmmail': mail_step.status,
+        'disk': disk_step.status,
         'updated_at': timezone.now().isoformat(),
     }
     Client.objects.filter(pk=client.pk).update(custom_data=data)

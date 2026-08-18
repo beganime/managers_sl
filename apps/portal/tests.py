@@ -1,16 +1,125 @@
 from datetime import timedelta
+from urllib.parse import parse_qs, urlsplit
 from unittest.mock import patch
 from unittest.mock import Mock
 
 from django.contrib.auth import get_user_model
-from django.test import TestCase
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.client_onboarding.models import OnboardingReviewEvent, OnboardingSubmission
+from apps.client_onboarding.models import ClientProvisioningStep, OnboardingReviewEvent, OnboardingSubmission
 from apps.client_onboarding.services import review_submission
+from apps.crm.models import Client
 from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
+from apps.portal.views import build_client_disk_url
+
+
+class ClientDiskLinkTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name='Students Life', country='Туркменистан')
+        self.manager = get_user_model().objects.create_user(
+            email='disk-manager@example.com',
+            password='test-password',
+            is_staff=True,
+        )
+        self.client.force_login(self.manager)
+        self.crm_client = Client.objects.create(
+            company=self.company,
+            manager=self.manager,
+            full_name='Иванов Иван Иванович',
+            phone='+99361111111',
+            sl_id='SL-2027-001',
+            academic_year=2027,
+        )
+        self.submission = OnboardingSubmission.objects.create(
+            access_token_hash='test-token-hash',
+            kind=OnboardingSubmission.KIND_APPLICANT,
+            academic_year=2027,
+            full_name=self.crm_client.full_name,
+            phone=self.crm_client.phone,
+            client=self.crm_client,
+        )
+
+    @override_settings(DISK_WEB_URL='https://disk.manager-sl.ru/web/client/login')
+    def test_successful_provisioning_opens_exact_client_folder(self):
+        root = self.create_disk_step()
+
+        url, ready = build_client_disk_url(self.crm_client)
+
+        self.assertTrue(ready)
+        self.assertEqual(urlsplit(url).path, '/web/client/files')
+        self.assertEqual(parse_qs(urlsplit(url).query)['path'], ['/' + root.rstrip('/')])
+
+    def create_disk_step(self):
+        root = '2027/Контракт/Иванов Иван Иванович (SL-2027-001)/'
+        ClientProvisioningStep.objects.create(
+            submission=self.submission,
+            client=self.crm_client,
+            step=ClientProvisioningStep.STEP_DISK,
+            status=ClientProvisioningStep.STATUS_SUCCESS,
+            event_id='disk-link-test',
+            response_data={'root': root},
+        )
+        return root
+
+    @override_settings(DISK_WEB_URL='https://disk.manager-sl.ru/web/client/login')
+    def test_unprovisioned_client_opens_disk_login(self):
+        url, ready = build_client_disk_url(self.crm_client)
+
+        self.assertFalse(ready)
+        self.assertEqual(url, 'https://disk.manager-sl.ru/web/client/login')
+
+    @override_settings(
+        DISK_PROVISION_API_URL='https://disk.manager-sl.ru/api/internal/disk/folders',
+        DISK_PROVISION_SERVICE_TOKEN='disk-token',
+    )
+    @patch('apps.portal.views.requests.post')
+    def test_manager_can_upload_supported_file_to_client_disk(self, post):
+        self.create_disk_step()
+        post.return_value.raise_for_status.return_value = None
+        post.return_value.json.return_value = {
+            'status': 'uploaded',
+            'path': '/2027/Контракт/client/оригиналы/passport.pdf',
+        }
+
+        response = self.client.post(
+            reverse('portal:client_disk_upload', args=[self.crm_client.pk]),
+            {
+                'folder': 'оригиналы',
+                'file': SimpleUploadedFile('passport.pdf', b'%PDF-1.4\n%%EOF', content_type='application/pdf'),
+            },
+            secure=True,
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('portal:client_detail', args=[self.crm_client.pk]),
+            fetch_redirect_response=False,
+        )
+        post.assert_called_once()
+        _args, kwargs = post.call_args
+        self.assertEqual(kwargs['headers']['Authorization'], 'Bearer disk-token')
+        self.assertEqual(kwargs['headers']['X-Actor'], 'disk-manager%40example.com')
+        self.assertEqual(kwargs['headers']['X-Disk-Folder'], '%D0%BE%D1%80%D0%B8%D0%B3%D0%B8%D0%BD%D0%B0%D0%BB%D1%8B')
+
+    @patch('apps.portal.views.requests.post')
+    def test_manager_cannot_upload_unsupported_file(self, post):
+        self.create_disk_step()
+
+        response = self.client.post(
+            reverse('portal:client_disk_upload', args=[self.crm_client.pk]),
+            {
+                'folder': 'оригиналы',
+                'file': SimpleUploadedFile('script.exe', b'unsafe'),
+            },
+            secure=True,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        post.assert_not_called()
 
 
 class PortalClientChatTests(TestCase):

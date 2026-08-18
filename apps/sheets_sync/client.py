@@ -34,6 +34,8 @@ class GoogleSheetsGateway:
         if not self.credentials_file:
             raise ImproperlyConfigured('GOOGLE_SHEETS_CREDENTIALS_FILE не задан.')
         self._service = None
+        self._metadata_cache = None
+        self._headers_cache = {}
 
     @property
     def service(self):
@@ -53,11 +55,13 @@ class GoogleSheetsGateway:
             self._service = build('sheets', 'v4', credentials=credentials, cache_discovery=False)
         return self._service
 
-    def metadata(self):
-        return self.service.spreadsheets().get(
-            spreadsheetId=self.spreadsheet_id,
-            includeGridData=False,
-        ).execute()
+    def metadata(self, force_refresh=False):
+        if force_refresh or self._metadata_cache is None:
+            self._metadata_cache = self.service.spreadsheets().get(
+                spreadsheetId=self.spreadsheet_id,
+                includeGridData=False,
+            ).execute()
+        return self._metadata_cache
 
     def health_check(self):
         metadata = self.metadata()
@@ -77,7 +81,9 @@ class GoogleSheetsGateway:
                 return properties.get('sheetId')
         raise SheetsSyncError(f'Лист {sheet_name} не найден.')
 
-    def headers(self, sheet_name):
+    def headers(self, sheet_name, force_refresh=False):
+        if not force_refresh and sheet_name in self._headers_cache:
+            return list(self._headers_cache[sheet_name])
         result = self.service.spreadsheets().values().get(
             spreadsheetId=self.spreadsheet_id,
             range=f'{quote_sheet(sheet_name)}!1:1',
@@ -89,7 +95,8 @@ class GoogleSheetsGateway:
             raise HeaderMismatchError(
                 f'В листе {sheet_name} повторяются заголовки: {", ".join(sorted(duplicates))}'
             )
-        return headers
+        self._headers_cache[sheet_name] = list(headers)
+        return list(headers)
 
     def ensure_sheet(self, sheet_name, headers):
         created = False
@@ -100,12 +107,14 @@ class GoogleSheetsGateway:
                 body={'requests': [{'addSheet': {'properties': {'title': sheet_name}}}]},
             ).execute()
             sheet_id = response['replies'][0]['addSheet']['properties']['sheetId']
+            self._metadata_cache = None
             self.service.spreadsheets().values().update(
                 spreadsheetId=self.spreadsheet_id,
                 range=f'{quote_sheet(sheet_name)}!A1',
                 valueInputOption='RAW',
                 body={'values': [list(headers)]},
             ).execute()
+            self._headers_cache[sheet_name] = list(headers)
             self.service.spreadsheets().batchUpdate(
                 spreadsheetId=self.spreadsheet_id,
                 body={'requests': [
@@ -139,6 +148,7 @@ class GoogleSheetsGateway:
                 valueInputOption='RAW',
                 body={'values': [missing]},
             ).execute()
+            self._headers_cache[sheet_name] = list(existing) + list(missing)
             sheet_id = self.sheet_id(sheet_name)
             self.service.spreadsheets().batchUpdate(
                 spreadsheetId=self.spreadsheet_id,

@@ -255,6 +255,11 @@ def approve_submission(
             'event_id': f'{submission.public_id}:tmmail',
         },
     )
+    ClientProvisioningStep.objects.get_or_create(
+        submission=submission,
+        step=ClientProvisioningStep.STEP_DISK,
+        defaults={'client': client, 'event_id': f'{submission.public_id}:disk'},
+    )
 
     previous_status = submission.status
     submission.client = client

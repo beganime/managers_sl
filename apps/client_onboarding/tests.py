@@ -1,6 +1,7 @@
 from unittest.mock import patch
+from types import SimpleNamespace
 
-from django.test import override_settings
+from django.test import SimpleTestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 
@@ -15,7 +16,25 @@ from .models import (
     OnboardingReviewEvent,
     OnboardingSubmission,
 )
-from .tasks import notify_onboarding_status, provision_client_services
+from .tasks import disk_category_for_submission, notify_onboarding_status, provision_client_services
+
+
+class DiskCategoryTests(SimpleTestCase):
+    def submission(self, funding_type='', payload=None):
+        return SimpleNamespace(
+            client=SimpleNamespace(funding_type=funding_type),
+            payload=payload or {},
+        )
+
+    def test_master_has_priority_over_funding_type(self):
+        submission = self.submission('budget', {'desired_education_level': 'Магистратура'})
+        self.assertEqual(disk_category_for_submission(submission), 'Магистры')
+
+    def test_funding_categories_and_contract_fallback(self):
+        self.assertEqual(disk_category_for_submission(self.submission('government')), 'Гослиния')
+        self.assertEqual(disk_category_for_submission(self.submission('budget')), 'Бюджет')
+        self.assertEqual(disk_category_for_submission(self.submission('contract')), 'Контракт')
+        self.assertEqual(disk_category_for_submission(self.submission()), 'Контракт')
 
 
 class OnboardingApiTests(APITestCase):
@@ -290,6 +309,8 @@ class OnboardingApiTests(APITestCase):
         STUDENTS_LIFE_PROVISION_TOKEN='student-token',
         SMTP_SL_API_BASE_URL='https://smtp.test',
         SMTP_SL_SERVICE_TOKEN='smtp-token',
+        DISK_PROVISION_API_URL='https://disk.test/internal/folders',
+        DISK_PROVISION_SERVICE_TOKEN='disk-token',
     )
     @patch('apps.client_onboarding.tasks.post_service', return_value={'status': 'created'})
     def test_successful_service_provisioning_is_not_repeated(self, post_service_mock):
@@ -307,16 +328,22 @@ class OnboardingApiTests(APITestCase):
         first = provision_client_services.run(submission.client_id, str(submission.public_id))
         second = provision_client_services.run(submission.client_id, str(submission.public_id))
 
-        self.assertEqual(first, {'mobile': 'success', 'tmmail': 'not_required', 'updated_at': first['updated_at']})
+        self.assertEqual(first, {
+            'mobile': 'success',
+            'tmmail': 'not_required',
+            'disk': 'success',
+            'updated_at': first['updated_at'],
+        })
         self.assertEqual(second['mobile'], 'success')
         self.assertEqual(second['tmmail'], 'not_required')
-        self.assertEqual(post_service_mock.call_count, 1)
+        self.assertEqual(second['disk'], 'success')
+        self.assertEqual(post_service_mock.call_count, 2)
         self.assertEqual(
             list(
                 submission.provisioning_steps.order_by('step')
                 .values_list('attempt_count', flat=True)
             ),
-            [1, 0],
+            [1, 1, 0],
         )
 
     def test_school_submission_does_not_require_university_choices(self):
