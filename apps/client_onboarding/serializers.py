@@ -1,3 +1,5 @@
+import re
+
 from django.db import transaction
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import timezone
@@ -6,6 +8,10 @@ from rest_framework import serializers
 from apps.education.models import Program, University
 
 from .models import OnboardingReviewEvent, OnboardingSubmission, OnboardingUniversityChoice
+
+
+EXPRESS_COMMENT_MAX_LENGTH = 1000
+EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.(?:com|ru)$', re.IGNORECASE)
 
 
 class UniversityChoiceInputSerializer(serializers.Serializer):
@@ -42,6 +48,14 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Год поступления должен быть в пределах ближайших десяти лет.')
         return value
 
+    def validate_email(self, value):
+        normalized = str(value or '').strip().lower()
+        if normalized and not EMAIL_PATTERN.fullmatch(normalized):
+            raise serializers.ValidationError(
+                'Укажите Email в формате name@provider.com или name@provider.ru.'
+            )
+        return normalized
+
     def validate(self, attrs):
         choices = attrs.get('university_choices', [])
         kind = attrs.get('kind', getattr(self.instance, 'kind', None))
@@ -57,11 +71,20 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
             if choices:
                 raise serializers.ValidationError({'university_choices': 'В экспресс-заявке ВУЗы пока не выбираются.'})
             payload = attrs.get('payload', getattr(self.instance, 'payload', {})) or {}
+            email = attrs.get('email', getattr(self.instance, 'email', ''))
+            if not str(email or '').strip():
+                raise serializers.ValidationError({'email': 'Email обязателен для экспресс-заявки.'})
             services = payload.get('requested_services') or []
             if not isinstance(services, list) or not services:
                 raise serializers.ValidationError({'payload': 'Выберите хотя бы одну нужную услугу.'})
-            if not str(payload.get('request_text') or '').strip():
+            request_text = str(payload.get('request_text') or '').strip()
+            if not request_text:
                 raise serializers.ValidationError({'payload': 'Кратко напишите, что именно вы хотите.'})
+            if len(request_text) > EXPRESS_COMMENT_MAX_LENGTH:
+                raise serializers.ValidationError({
+                    'payload': f'Комментарий не должен превышать {EXPRESS_COMMENT_MAX_LENGTH} символов.'
+                })
+            attrs['payload'] = {**payload, 'request_text': request_text}
             return attrs
 
         if kind == OnboardingSubmission.KIND_SCHOOL_STUDENT:

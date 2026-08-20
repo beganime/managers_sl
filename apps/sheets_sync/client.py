@@ -1,5 +1,3 @@
-import re
-
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
@@ -452,6 +450,14 @@ class GoogleSheetsGateway:
             })
         return rows
 
+    def next_empty_row(self, sheet_name, start_row=2):
+        """Return a concrete empty row without relying on Sheets append heuristics."""
+        rows = self.read_rows(sheet_name, start_row=start_row)
+        for row in rows:
+            if not any(str(value or '').strip() for value in row['values'].values()):
+                return row['row_number']
+        return rows[-1]['row_number'] + 1 if rows else start_row
+
     def upsert_row(
         self,
         sheet_name,
@@ -476,18 +482,17 @@ class GoogleSheetsGateway:
             row = [''] * len(headers)
             for header, value in {**create_only_values, **values}.items():
                 row[headers.index(header)] = value
-            response = self.service.spreadsheets().values().append(
+            row_number = self.next_empty_row(sheet_name)
+            self.service.spreadsheets().values().update(
                 spreadsheetId=self.spreadsheet_id,
-                range=f'{quote_sheet(sheet_name)}!A:{column_letter(len(headers) - 1)}',
+                range=(
+                    f'{quote_sheet(sheet_name)}!A{row_number}:'
+                    f'{column_letter(len(headers) - 1)}{row_number}'
+                ),
                 valueInputOption='RAW',
-                insertDataOption='INSERT_ROWS',
                 body={'values': [row]},
             ).execute()
-            updated_range = response.get('updates', {}).get('updatedRange', '')
-            match = re.search(r'![A-Z]+(\d+):', updated_range)
-            if not match:
-                raise SheetsSyncError(f'Google Sheets не вернул номер добавленной строки: {updated_range}')
-            return int(match.group(1)), True
+            return row_number, True
 
         updates = []
         for header, value in values.items():

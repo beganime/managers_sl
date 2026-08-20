@@ -312,6 +312,7 @@ def submission_onboarding_values(submission):
         'Нужные услуги': serialize_value(payload.get('requested_services', [])),
         'Что хочет клиент': payload.get('request_text', ''),
         'Вузы и программы': ' | '.join(choices),
+        'Ответственный': display_user(submission.reviewed_by) if submission.reviewed_by_id else '',
         'Комментарий менеджера': submission.review_comment,
         'SL-ID': submission.client.sl_id if submission.client_id else '',
         'Отправлено': serialize_value(submission.submitted_at),
@@ -341,7 +342,11 @@ def resolve_sheet_reviewer(values):
         raise ValidationError(
             'Ответственный из Google Sheets не найден среди активных менеджеров.'
         )
-    raise ValidationError('Выберите ответственного менеджера в Google Sheets.')
+    if reviewers:
+        # Sheets does not expose which employee edited a cell. Use the primary
+        # administrator as a technical reviewer when only the status was set.
+        return reviewers[0]
+    raise ValidationError('Нет активного менеджера для подтверждения заявки.')
 
 
 def _finish_run(run, *, status, processed=0, failed=0, error=''):

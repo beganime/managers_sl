@@ -116,6 +116,7 @@ QUESTIONNAIRE_FIELD_LABELS = {
     'full_name': 'Полное ФИО',
     'birth_date': 'Дата рождения',
     'gender': 'Пол',
+    'is_conscript': 'Призывник',
     'citizenship': 'Гражданство',
     'marital_status': 'Семейное положение',
     'face_photo_url': 'Фотография лица',
@@ -172,7 +173,7 @@ QUESTIONNAIRE_FIELD_LABELS = {
 }
 
 QUESTIONNAIRE_SECTIONS = (
-    ('Личные данные', ('full_name', 'birth_date', 'gender', 'citizenship', 'marital_status')),
+    ('Личные данные', ('full_name', 'birth_date', 'gender', 'is_conscript', 'citizenship', 'marital_status')),
     ('Адрес проживания', ('residence_country', 'residence_region', 'residence_city', 'residence_street', 'residence_house', 'residence_postal_code')),
     ('Паспортные данные', ('passport_number', 'passport_issued_by', 'passport_issue_date', 'passport_expiry_date', 'has_international_passport')),
     ('Контакты', ('phone', 'email', 'extra_phone', 'imo', 'telegram', 'preferred_contact_method')),
@@ -294,7 +295,7 @@ NAV_GROUPS = (
             {'name': 'client_chats', 'label': 'Чаты клиентов', 'icon': 'messages-square'},
             {
                 'name': 'onboarding_submissions',
-                'label': 'Входящие анкеты',
+                'label': 'Новые заявки',
                 'icon': 'inbox',
                 'onboarding_only': True,
             },

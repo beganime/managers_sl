@@ -107,6 +107,25 @@ class OnboardingApiTests(APITestCase):
             },
         }
 
+    def test_express_application_requires_valid_email_and_limits_comment(self):
+        missing_email = self.express_payload()
+        missing_email.pop('email')
+        response = self.client.post(reverse('client-onboarding-create'), missing_email, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn('email', response.data)
+
+        invalid_email = self.express_payload()
+        invalid_email['email'] = 'client.example.com'
+        response = self.client.post(reverse('client-onboarding-create'), invalid_email, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn('email', response.data)
+
+        long_comment = self.express_payload()
+        long_comment['payload']['request_text'] = 'а' * 1001
+        response = self.client.post(reverse('client-onboarding-create'), long_comment, format='json')
+        self.assertEqual(response.status_code, 400, response.data)
+        self.assertIn('payload', response.data)
+
     def test_express_application_approval_creates_account_and_keeps_full_form_editable(self):
         created = self.create_submission(self.express_payload())
         submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
@@ -178,6 +197,8 @@ class OnboardingApiTests(APITestCase):
         STUDENTS_LIFE_PROVISION_TOKEN='',
         TMMAIL_PROVISION_API_URL='',
         TMMAIL_PROVISION_TOKEN='',
+        DISK_PROVISION_API_URL='',
+        DISK_PROVISION_SERVICE_TOKEN='',
     )
     def test_manager_approval_creates_client_questionnaire_and_one_application_per_university(self):
         created = self.create_submission()
@@ -210,7 +231,7 @@ class OnboardingApiTests(APITestCase):
                 submission=submission,
                 status=ClientProvisioningStep.STATUS_DISABLED,
             ).count(),
-            1,
+            2,
         )
         self.assertEqual(Client.objects.count(), 1)
         self.assertEqual(ClientServiceIdentity.objects.count(), 1)
@@ -353,6 +374,7 @@ class OnboardingApiTests(APITestCase):
             'academic_year': 2027,
             'full_name': 'Анна Школьница',
             'phone': '+99361111111',
+            'email': 'school.student@example.com',
             'payload': {
                 'school': 'Школа 1',
                 'requested_services': ['Консультация'],

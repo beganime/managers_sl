@@ -1,6 +1,5 @@
 from datetime import date
 
-from django.core.exceptions import ValidationError
 from django.test import TestCase
 
 from apps.client_onboarding.models import OnboardingSubmission, OnboardingUniversityChoice
@@ -10,7 +9,7 @@ from apps.education.models import City, Country, Program, University
 from apps.organizations.models import Company
 from users.models import User
 
-from .client import column_letter, quote_sheet
+from .client import GoogleSheetsGateway, column_letter, quote_sheet
 from .models import ClientAdmissionSnapshot, SheetRowBinding
 from .schema import EXAM_HEADERS, safe_sheet_title, university_acronym
 from .services import (
@@ -100,6 +99,16 @@ class SchemaTests(TestCase):
         self.assertEqual(safe_sheet_title('КФУ/тест'), 'КФУ тест')
         self.assertEqual(university_acronym('Казанский федеральный университет'), 'КФУ')
         self.assertEqual(university_acronym('БГУ (Белорусский государственный университет)'), 'БГУ')
+
+    def test_next_empty_row_ignores_partially_filled_rows(self):
+        gateway = object.__new__(GoogleSheetsGateway)
+        gateway.read_rows = lambda sheet_name, start_row=2: [
+            {'row_number': 2, 'values': {'Внутренний ID': 'id-1', 'Email': ''}},
+            {'row_number': 3, 'values': {'Внутренний ID': '', 'Email': ''}},
+            {'row_number': 4, 'values': {'Внутренний ID': '', 'Email': 'legacy@example.com'}},
+        ]
+
+        self.assertEqual(gateway.next_empty_row('Заявки из анкеты'), 3)
 
 
 class SheetsSyncServiceTests(TestCase):
@@ -196,12 +205,23 @@ class SheetsSyncServiceTests(TestCase):
         self.assertEqual(result, {'status': 'success', 'processed': 0, 'failed': 0})
         self.assertEqual(inbox_row['Статус'], 'Подтвержден')
 
-    def test_sheet_approval_requires_explicit_responsible_manager(self):
-        with self.assertRaisesMessage(
-            ValidationError,
-            'Выберите ответственного менеджера в Google Sheets.',
-        ):
-            resolve_sheet_reviewer({'Ответственный': ''})
+    def test_sheet_approval_uses_primary_manager_when_responsible_is_blank(self):
+        self.assertEqual(resolve_sheet_reviewer({'Ответственный': ''}), self.manager)
+
+    def test_google_sheet_status_approves_submission_without_responsible(self):
+        submission = self.create_submitted_submission()
+        gateway = FakeSheetsGateway()
+        sync_onboarding_submission(submission.pk, gateway=gateway)
+        inbox_row = gateway.rows['Заявки из анкеты'][str(submission.public_id)]
+        inbox_row['Статус'] = 'Подтвержден'
+
+        result = import_onboarding_decisions(gateway=gateway)
+
+        submission.refresh_from_db()
+        self.assertEqual(result, {'status': 'success', 'processed': 1, 'failed': 0})
+        self.assertEqual(submission.status, OnboardingSubmission.STATUS_APPROVED)
+        self.assertEqual(submission.reviewed_by, self.manager)
+        self.assertEqual(inbox_row['Ответственный'], 'Анна Менеджер')
 
     def test_approved_submission_is_upserted_without_duplicate_rows(self):
         submission = self.create_approved_submission()
