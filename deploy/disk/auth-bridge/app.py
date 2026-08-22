@@ -26,6 +26,7 @@ S3_BUCKET = os.environ['S3_BUCKET']
 S3_ACCESS_KEY = os.environ['S3_ACCESS_KEY']
 S3_SECRET_KEY = os.environ['S3_SECRET_KEY']
 S3_KEY_PREFIX = os.environ.get('S3_KEY_PREFIX', 'disk/').strip('/') + '/'
+S3_QUOTA_BYTES = max(int(os.environ.get('S3_QUOTA_BYTES', str(1024 ** 3))), 1)
 DISK_PROVISION_TOKEN = os.environ['DISK_PROVISION_TOKEN']
 DISK_ACTIVITY_HOOK_TOKEN = os.environ['DISK_ACTIVITY_HOOK_TOKEN']
 ACTIVITY_DB_PATH = os.environ.get('ACTIVITY_DB_PATH', '/data/activity.sqlite3')
@@ -131,6 +132,32 @@ def recent_activity(limit: int = 40) -> list[dict]:
             (safe_limit,),
         ).fetchall()
     return [dict(row) for row in rows]
+
+
+def storage_usage() -> dict:
+    used = 0
+    objects = 0
+    continuation_token = None
+    while True:
+        kwargs = {'Bucket': S3_BUCKET, 'Prefix': S3_KEY_PREFIX, 'MaxKeys': 1000}
+        if continuation_token:
+            kwargs['ContinuationToken'] = continuation_token
+        response = S3_CLIENT.list_objects_v2(**kwargs)
+        for item in response.get('Contents') or []:
+            used += max(0, int(item.get('Size') or 0))
+            objects += 1
+        if not response.get('IsTruncated'):
+            break
+        continuation_token = response.get('NextContinuationToken')
+        if not continuation_token:
+            break
+    return {
+        'used_bytes': used,
+        'free_bytes': max(S3_QUOTA_BYTES - used, 0),
+        'total_bytes': S3_QUOTA_BYTES,
+        'usage_percent': round(min((used / S3_QUOTA_BYTES) * 100, 100), 2),
+        'objects': objects,
+    }
 
 
 def manager_authenticate(username: str, password: str) -> dict | None:
@@ -254,6 +281,12 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(200, {'status': 'ok'})
         if parsed.path == '/activity/recent':
             return self.respond(200, {'events': recent_activity()})
+        if parsed.path == '/storage/usage':
+            try:
+                return self.respond(200, storage_usage())
+            except Exception as exc:
+                print(f'storage usage failed: {exc}', flush=True)
+                return self.respond(502, {'detail': 'Storage is temporarily unavailable'})
         return self.respond(404, {'detail': 'Not found'})
 
     def do_POST(self):

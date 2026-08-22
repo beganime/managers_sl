@@ -243,6 +243,9 @@ DISK_PROVISION_API_URL = os.environ.get(
     'https://disk.manager-sl.ru/api/internal/disk/folders',
 )
 DISK_PROVISION_SERVICE_TOKEN = os.environ.get('DISK_PROVISION_SERVICE_TOKEN', '')
+TRANSLATE_SL_URL = os.environ.get('TRANSLATE_SL_URL', 'https://translate.manager-sl.ru').rstrip('/')
+TRANSLATE_SL_SSO_SECRET = os.environ.get('TRANSLATE_SL_SSO_SECRET', '')
+TRANSLATE_SL_SSO_MAX_AGE = int(os.environ.get('TRANSLATE_SL_SSO_MAX_AGE', '120'))
 
 GOOGLE_SHEETS_ENABLED = env_bool('GOOGLE_SHEETS_ENABLED', False)
 GOOGLE_SHEETS_SPREADSHEET_ID = os.environ.get('GOOGLE_SHEETS_SPREADSHEET_ID', '')

@@ -25,6 +25,49 @@ CYRILLIC_TO_LATIN = str.maketrans({
     'ä': 'a', 'ç': 'c', 'ň': 'n', 'ö': 'o', 'ş': 's', 'ü': 'u', 'ý': 'y',
 })
 
+PATRONYMIC_SUFFIXES = (
+    'ович', 'евич', 'ич', 'овна', 'евна', 'ична', 'инична',
+)
+SURNAME_SUFFIXES = (
+    'ова', 'ева', 'ина', 'ына', 'ская', 'цкая', 'ая', 'яя',
+    'ов', 'ев', 'ин', 'ын', 'ский', 'цкий', 'ой', 'ый',
+    'енко', 'ко', 'их', 'ых', 'аво', 'яго', 'ово',
+)
+
+
+def split_person_name(value):
+    """Return (first name, last name) for common RU/TM full-name orders."""
+    parts = [part for part in re.split(r'\s+', str(value or '').strip()) if part]
+    if not parts:
+        return 'student', 'client'
+    if len(parts) == 1:
+        return parts[0], 'client'
+
+    patronymic_indexes = [
+        index for index, part in enumerate(parts)
+        if part.casefold().endswith(PATRONYMIC_SUFFIXES)
+    ]
+    patronymic_index = patronymic_indexes[-1] if patronymic_indexes else None
+    surname_indexes = [
+        index for index, part in enumerate(parts)
+        if part.casefold().endswith(SURNAME_SUFFIXES)
+    ]
+
+    if patronymic_index is not None:
+        first_index = max(0, patronymic_index - 1)
+        surname_index = next(
+            (index for index in surname_indexes if index != first_index and index != patronymic_index),
+            0 if first_index != 0 else len(parts) - 1,
+        )
+    elif surname_indexes:
+        surname_index = surname_indexes[0]
+        first_index = 1 if surname_index == 0 and len(parts) > 1 else 0
+    else:
+        # The questionnaire uses the conventional "Фамилия Имя Отчество" order.
+        surname_index, first_index = 0, 1
+
+    return parts[first_index], parts[surname_index]
+
 
 def latin_name(value, fallback='student'):
     normalized = str(value or '').strip().casefold().translate(CYRILLIC_TO_LATIN)
@@ -45,9 +88,9 @@ def _used_tmmail_addresses():
 
 
 def allocate_tmmail_address(submission, sl_id):
-    name_parts = submission.full_name.split()
-    first_name = latin_name(name_parts[0] if name_parts else '', 'student')
-    last_name = latin_name(name_parts[-1] if len(name_parts) > 1 else '', 'client')
+    given_name, family_name = split_person_name(submission.full_name)
+    first_name = latin_name(given_name, 'student')
+    last_name = latin_name(family_name, 'client')
     local_part = f'{first_name}.{last_name}'
     candidates = [f'{local_part}@tmmail.ru']
     if submission.date_of_birth:
@@ -66,8 +109,8 @@ def allocate_tmmail_address(submission, sl_id):
 
 
 def build_service_credentials(submission, sl_id):
-    name_parts = submission.full_name.split()
-    first_name = latin_name(name_parts[0] if name_parts else '', 'student')
+    given_name, _ = split_person_name(submission.full_name)
+    first_name = latin_name(given_name, 'student')
     shared_password = f'{first_name.capitalize()}_0710'
     return {
         'mobile_login': sl_id,
@@ -278,7 +321,6 @@ def approve_submission(
     if enqueue_sync:
         transaction.on_commit(lambda: _enqueue_submission_sync(submission.pk))
     transaction.on_commit(lambda: _enqueue_service_provisioning(client.pk, str(submission.public_id)))
-    transaction.on_commit(lambda: _enqueue_onboarding_notification(submission.pk))
     return submission
 
 

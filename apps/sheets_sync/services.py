@@ -1,6 +1,7 @@
 import hashlib
 import json
 import logging
+import re
 from decimal import Decimal
 
 from django.conf import settings
@@ -22,6 +23,8 @@ from .schema import (
     ONBOARDING_STATUS_OPTIONS,
     OFFICE_CODES,
     REFERENCE_COLUMNS,
+    UNIVERSITY_HEADERS,
+    safe_sheet_title,
     university_acronym,
 )
 
@@ -63,6 +66,16 @@ GENERAL_CREATE_ONLY_HEADERS = {
     'Отказник',
 }
 
+GENERAL_MANAGER_HEADERS = (
+    'Ответственный', 'Загружены документы', 'Гос/б/к',
+    'В каком офисе оформили', 'Кто подавал', 'Имеется договор',
+    'Какой договор', 'Какая почта', 'Пароль', 'Плата за услугу',
+    'Валюта услуги', 'Сколько оплатил', 'Дата последней оплаты',
+    'Сколько осталось', 'Кому оплатил', 'Статус сейчас',
+    'В какой город приглашение', 'Встреча', 'Где находится сейчас',
+    'Замечание', 'Комментарий', 'Отказник',
+)
+
 # This is deliberately narrower than the columns used by managers. Passport,
 # finance, credentials and internal comments must never cross this boundary.
 GENERAL_PUBLIC_STATUS_FIELDS = {
@@ -82,6 +95,7 @@ MANUAL_CLIENT_HEADERS = (
 SHEET_LAYOUTS = {
     'Заявки из анкеты': {
         'hidden_headers': ('Внутренний ID',),
+        'manual_headers': ('Статус', 'Ответственный', 'Комментарий менеджера'),
         'column_widths': {
             'ФИО абитуриента': 210,
             'Вузы и программы': 360,
@@ -91,6 +105,7 @@ SHEET_LAYOUTS = {
         },
     },
     'Общее': {
+        'manual_headers': GENERAL_MANAGER_HEADERS,
         'column_widths': {
             'ФИО абитуриента': 210,
             'Куда поступает': 360,
@@ -174,10 +189,16 @@ def normalize_funding(value):
         'гос': 'Государственная линия',
         'гослиния': 'Государственная линия',
         'государственная линия': 'Государственная линия',
+        'government': 'Государственная линия',
         'б': 'Бюджет',
         'бюджет': 'Бюджет',
+        'budget': 'Бюджет',
         'к': 'Контракт',
         'контракт': 'Контракт',
+        'contract': 'Контракт',
+        'мед': 'Медик',
+        'медик': 'Медик',
+        'medical': 'Медик',
     }
     return mapping.get(normalized, str(value or '').strip())
 
@@ -225,13 +246,20 @@ def submission_general_values(submission):
     for choice in choices:
         programs = list(choice.programs.all())
         program_names = ', '.join(program.name for program in programs)
-        university_name = university_acronym(choice.university.name)
+        university_name = choice.university.abbreviation or university_acronym(choice.university.name)
         admission_parts.append(
             f'{university_name}: {program_names}' if program_names else university_name
         )
         city = getattr(choice.university, 'city', None)
         if city and city.name not in destination_cities:
             destination_cities.append(city.name)
+    if not admission_parts:
+        universities_text = str(payload_value(payload, 'desired_universities', default='') or '').strip()
+        programs_text = str(payload_value(payload, 'desired_program', default='') or '').strip()
+        if universities_text and programs_text:
+            admission_parts.append(f'{universities_text}: {programs_text}')
+        elif universities_text or programs_text:
+            admission_parts.append(universities_text or programs_text)
 
     student_contacts = [submission.phone]
     if submission.email:
@@ -253,6 +281,18 @@ def submission_general_values(submission):
     service_fee = payload_value(payload, 'service_fee', 'service_price', default='')
     service_currency = payload_value(payload, 'service_currency', 'currency', default='USD' if service_fee else '')
     updated_at = timezone.localtime(submission.updated_at).strftime('%d.%m.%Y %H:%M')
+    requested_services = payload_value(payload, 'requested_services', default=[])
+    funding_service = normalize_funding(payload_value(payload, 'funding_type', 'admission_type', 'gos_b_k'))
+    help_needed = payload_value(payload, 'help_needed', default=[])
+    all_services = []
+    for service in (
+        list(requested_services) if isinstance(requested_services, (list, tuple)) else [requested_services]
+    ) + ([funding_service] if funding_service else []) + (
+        list(help_needed) if isinstance(help_needed, (list, tuple)) else [help_needed]
+    ):
+        label = str(service or '').strip()
+        if label and label.casefold() not in {item.casefold() for item in all_services}:
+            all_services.append(label)
 
     return {
         'Айди': client.sl_id,
@@ -260,8 +300,11 @@ def submission_general_values(submission):
         'Год поступления': submission.academic_year,
         'Ответственный': display_user(client.manager),
         'ФИО абитуриента': submission.full_name,
+        'Все услуги': ', '.join(all_services),
+        'Нужные услуги': serialize_value(requested_services),
+        'Что хочет клиент': payload_value(payload, 'request_text'),
         'Куда поступает': '; '.join(admission_parts),
-        'Город поступления': ', '.join(destination_cities),
+        'Город поступления': ', '.join(destination_cities) or payload_value(payload, 'desired_city'),
         'Дата рождения': serialize_value(submission.date_of_birth),
         'Номер паспорта': payload_value(payload, 'passport_number', 'passport_inter_num', 'passport'),
         'Город рождения': payload_value(payload, 'birth_city', 'passport_birth_place', 'birth_place'),
@@ -291,13 +334,20 @@ def submission_onboarding_values(submission):
     choices = []
     for choice in submission.university_choices.all():
         program_names = ', '.join(program.name for program in choice.programs.all())
-        university_name = university_acronym(choice.university.name)
+        university_name = choice.university.abbreviation or university_acronym(choice.university.name)
         choices.append(
             f'{choice.rank}. {university_name}: {program_names}'
             if program_names
             else f'{choice.rank}. {university_name}'
         )
     payload = submission.payload or {}
+    if not choices:
+        universities_text = str(payload.get('desired_universities') or '').strip()
+        programs_text = str(payload.get('desired_program') or '').strip()
+        if universities_text and programs_text:
+            choices.append(f'{universities_text}: {programs_text}')
+        elif universities_text or programs_text:
+            choices.append(universities_text or programs_text)
     return {
         'Внутренний ID': str(submission.public_id),
         'Этап': submission.get_stage_display(),
@@ -317,6 +367,57 @@ def submission_onboarding_values(submission):
         'SL-ID': submission.client.sl_id if submission.client_id else '',
         'Отправлено': serialize_value(submission.submitted_at),
         'Обновлено': serialize_value(submission.updated_at),
+    }
+
+
+def submission_university_rows(submission):
+    payload = submission.payload or {}
+    rows = []
+    for choice in submission.university_choices.all():
+        programs = ', '.join(program.name for program in choice.programs.all())
+        rows.append((
+            choice.university.abbreviation or university_acronym(choice.university.name),
+            programs,
+        ))
+    if rows:
+        return rows
+
+    desired_program = str(payload.get('desired_program') or '').strip()
+    raw_names = str(payload.get('desired_universities') or '').strip()
+    for token in (part.strip() for part in re.split(r'[/,;|]+', raw_names)):
+        if not token:
+            continue
+        university = University.objects.filter(
+            Q(abbreviation__iexact=token)
+            | Q(name__iexact=token)
+            | Q(name__icontains=token)
+        ).order_by('name').first()
+        title = (
+            university.abbreviation or university_acronym(university.name)
+            if university
+            else university_acronym(token) or token
+        )
+        rows.append((title, desired_program))
+    return rows
+
+
+def submission_university_values(submission, programs):
+    payload = submission.payload or {}
+    return {
+        'Айди': submission.client.sl_id,
+        'Внутренний ID': str(submission.public_id),
+        'Ответственный': display_user(submission.client.manager),
+        'ФИО': submission.full_name,
+        'Уровень образования': payload_value(payload, 'desired_education_level', 'education_level'),
+        'Направления': programs,
+        'Статус подачи в вуз': payload_value(payload, 'university_application_status'),
+        'Рабочая почта': payload_value(payload, 'university_email', 'work_email'),
+        'Логин кабинета/экзамена': payload_value(payload, 'university_login', 'exam_login'),
+        'Пароль кабинета/экзамена': payload_value(payload, 'university_password', 'exam_password'),
+        'Дата подачи': serialize_value(payload_value(payload, 'university_submitted_at')),
+        'Замечание': payload_value(payload, 'university_note', 'remark'),
+        'Обновлено': serialize_value(submission.updated_at),
+        'Версия': 1,
     }
 
 
@@ -772,6 +873,15 @@ def sync_submission(submission_id, gateway=None):
         )
 
         processed = 1
+        for university_title, programs in submission_university_rows(submission):
+            university_sheet = safe_sheet_title(university_title)
+            ensure_operational_sheet(gateway, university_sheet, UNIVERSITY_HEADERS)
+            gateway.upsert_row(
+                university_sheet,
+                'Айди',
+                submission.client.sl_id,
+                submission_university_values(submission, programs),
+            )
         _finish_run(run, status=SheetSyncRun.STATUS_SUCCESS, processed=processed)
         return {'status': 'success', 'processed': processed}
     except Exception as exc:
@@ -842,10 +952,20 @@ def import_public_client_statuses(limit=1000, gateway=None):
             client.sl_id: client
             for client in Client.objects.filter(sl_id__in=sl_ids)
         }
+        bindings = {
+            binding.object_ref: binding
+            for binding in SheetRowBinding.objects.filter(
+                spreadsheet_id=gateway.spreadsheet_id,
+                sheet_name=sheet_name,
+                entity_type=SheetRowBinding.ENTITY_CLIENT,
+                object_ref__in=[str(client.pk) for client in clients.values()],
+            )
+        }
 
         processed = 0
         failed = 0
         now = timezone.now()
+        seen_clients = set()
         for row in rows:
             try:
                 values = row['values']
@@ -853,6 +973,18 @@ def import_public_client_statuses(limit=1000, gateway=None):
                 client = clients.get(sl_id)
                 if not client:
                     continue
+                client_ref = str(client.pk)
+                binding = bindings.get(client_ref)
+                if binding and binding.row_number != row['row_number']:
+                    logger.warning(
+                        'Пропущена дублирующая строка %s для %s; клиент привязан к строке %s.',
+                        row['row_number'], sl_id, binding.row_number,
+                    )
+                    continue
+                if not binding and client_ref in seen_clients:
+                    logger.warning('Пропущена повторная строка %s для %s.', row['row_number'], sl_id)
+                    continue
+                seen_clients.add(client_ref)
                 safe_values = {
                     field: str(values.get(header, '') or '').strip()
                     for field, header in GENERAL_PUBLIC_STATUS_FIELDS.items()
@@ -882,7 +1014,7 @@ def import_public_client_statuses(limit=1000, gateway=None):
                     snapshot.last_imported_at = now
                     snapshot.save()
 
-                SheetRowBinding.objects.update_or_create(
+                binding, _ = SheetRowBinding.objects.update_or_create(
                     spreadsheet_id=gateway.spreadsheet_id,
                     sheet_name=sheet_name,
                     entity_type=SheetRowBinding.ENTITY_CLIENT,
@@ -893,6 +1025,7 @@ def import_public_client_statuses(limit=1000, gateway=None):
                         'last_synced_at': now,
                     },
                 )
+                bindings[client_ref] = binding
                 if changed:
                     processed += 1
             except Exception:

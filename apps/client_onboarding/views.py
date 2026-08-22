@@ -23,6 +23,26 @@ class PublicOnboardingSubmissionCreateView(APIView):
     def post(self, request):
         serializer = OnboardingSubmissionWriteSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+        values = serializer.validated_data
+        if values.get('stage') == OnboardingSubmission.STAGE_FULL:
+            existing_account = OnboardingSubmission.objects.filter(
+                kind=values.get('kind'),
+                academic_year=values.get('academic_year'),
+                email__iexact=values.get('email') or '',
+                phone=values.get('phone') or '',
+                full_name__iexact=values.get('full_name') or '',
+                client__isnull=False,
+            ).exists()
+            if existing_account:
+                return Response(
+                    {
+                        'detail': (
+                            'Для этого клиента уже существует одобренная заявка. '
+                            'Войдите в аккаунт и продолжите исходную анкету.'
+                        )
+                    },
+                    status=status.HTTP_409_CONFLICT,
+                )
         submission = serializer.save()
         return Response(
             {

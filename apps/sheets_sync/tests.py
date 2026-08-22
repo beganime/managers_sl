@@ -99,6 +99,10 @@ class SchemaTests(TestCase):
         self.assertEqual(safe_sheet_title('КФУ/тест'), 'КФУ тест')
         self.assertEqual(university_acronym('Казанский федеральный университет'), 'КФУ')
         self.assertEqual(university_acronym('БГУ (Белорусский государственный университет)'), 'БГУ')
+        self.assertEqual(university_acronym('МГУ'), 'МГУ')
+        self.assertEqual(university_acronym('КФУ'), 'КФУ')
+        self.assertEqual(university_acronym('ДВФУ'), 'ДВФУ')
+        self.assertEqual(university_acronym('Сеченова'), 'Сеченова')
 
     def test_next_empty_row_ignores_partially_filled_rows(self):
         gateway = object.__new__(GoogleSheetsGateway)
@@ -282,3 +286,19 @@ class SheetsSyncServiceTests(TestCase):
         self.assertEqual(serialized['admission_status']['current_status'], 'Приглашение готово')
         self.assertNotIn('passport', str(serialized).casefold())
         self.assertNotIn('MUST-NOT-BE-IMPORTED', str(serialized))
+
+    def test_public_status_uses_bound_client_row_instead_of_last_duplicate(self):
+        submission = self.create_approved_submission()
+        gateway = FakeSheetsGateway()
+        sync_submission(submission.pk, gateway=gateway)
+        gateway.read_rows = lambda sheet_name, start_row=2: [
+            {'row_number': 2, 'values': {'Айди': 'SL-001', 'Статус сейчас': 'Статус этого клиента'}},
+            {'row_number': 3, 'values': {'Айди': 'SL-001', 'Статус сейчас': 'Чужая последняя строка'}},
+        ]
+
+        result = import_public_client_statuses(gateway=gateway)
+
+        self.assertEqual(result['failed'], 0)
+        snapshot = ClientAdmissionSnapshot.objects.get(client=submission.client)
+        self.assertEqual(snapshot.row_number, 2)
+        self.assertEqual(snapshot.current_status, 'Статус этого клиента')

@@ -165,6 +165,7 @@ class Client(TimeStampedModel):
         ('government', 'Государственная линия'),
         ('budget', 'Бюджет'),
         ('contract', 'Контракт'),
+        ('medical', 'Медик'),
     )
     STATUS_CHOICES = (
         ('new', 'Новый'),
@@ -525,76 +526,23 @@ class ClientQuestionnaire(TimeStampedModel):
         return f'Анкета: {self.full_name or self.client.full_name}'
 
     def generate_file(self):
+        from copy import deepcopy
+
         from docx import Document
+        from docx.oxml.ns import qn
         from docx.shared import Inches, Pt
 
         template_path = os.path.join(os.path.dirname(__file__), 'document_templates', 'anketa_students_life_template_v2.docx')
         document = Document(template_path) if os.path.exists(template_path) else Document()
         data = self.data or {}
 
-        value_labels = {
-            'male': '???????',
-            'female': '???????',
-            'school_student': '???????? / ??????????????? ??????',
-            'applicant': '?????????? / ?????? ??????',
-            True: '??',
-            False: '???',
-        }
-        labels = {
-            'full_name': '???',
-            'birth_date': '???? ????????',
-            'gender': '???',
-            'citizenship': '???????????',
-            'marital_status': '???????? ?????????',
-            'residence_country': '??????',
-            'residence_region': '??????',
-            'residence_city': '?????',
-            'residence_street': '?????',
-            'residence_house': '??? / ????????',
-            'residence_postal_code': '???????? ??????',
-            'passport_number': '???????',
-            'passport_issued_by': '??? ????????',
-            'passport_issue_date': '???? ?????? ????????',
-            'passport_expiry_date': '???? ????????? ????????',
-            'has_international_passport': '?????????????',
-            'phone': '???????',
-            'email': 'Email',
-            'extra_phone': '???. ???????',
-            'imo': 'Imo',
-            'telegram': 'Telegram',
-            'preferred_contact_method': '?????? ?????',
-            'parent_full_name': '??? ????????',
-            'parent_relation': '??? ????????',
-            'parent_contacts': '???????? ????????',
-            'parent_workplace': '?????? ????????',
-            'family_members': '?????',
-            'education_level': '??????? ???????????',
-            'school_class': '?????',
-            'school_name': '??????? ?????????',
-            'school_country': '?????? ?????',
-            'school_city': '????? ?????',
-            'graduation_year': '??? ?????????',
-            'education_status': '??????',
-            'desired_program': '????????? / ???',
-            'admission_goal': '????',
-            'desired_city': '?????',
-            'desired_country': '??????',
-            'desired_language': '???? ????????',
-            'desired_education_level': '??????? ????????',
-            'admission_urgency': '?????????',
-            'has_visa': '????',
-            'visa_country': '?????? ????',
-            'visa_city': '????? ????',
-            'visa_valid_until': '???? ????',
-            'hobbies': '?????',
-            'applicant_comment': '???????????',
-            'referral_source': '????????',
-            'data_processing_consent': '???????? ?? ????????? ??????',
-            'status': '?????? ??????',
-            'generated_document_at': '???? ????????????',
-        }
-
-        from .questionnaire_labels import QUESTIONNAIRE_DOCUMENT_LABELS, QUESTIONNAIRE_VALUE_LABELS
+        from .questionnaire_labels import (
+            QUESTIONNAIRE_DOCUMENT_LABELS,
+            QUESTIONNAIRE_INTERNAL_FIELDS,
+            QUESTIONNAIRE_VALUE_LABELS,
+            questionnaire_field_label,
+            questionnaire_value_label,
+        )
 
         labels = QUESTIONNAIRE_DOCUMENT_LABELS
         value_labels = QUESTIONNAIRE_VALUE_LABELS
@@ -613,17 +561,38 @@ class ClientQuestionnaire(TimeStampedModel):
                 items = []
                 for item in value:
                     if isinstance(item, dict):
+                        university = item.get('university_name')
+                        programs = item.get('programs')
+                        if university:
+                            program_text = render_value(programs)
+                            items.append(f'{university}: {program_text}' if programs else str(university))
+                            continue
                         language = item.get('language') or item.get('name') or item.get('title')
                         level = item.get('level')
-                        items.append(f'{language} - {level}' if language and level else str(language or item))
+                        if language:
+                            items.append(f'{language} - {questionnaire_value_label(level)}' if level else str(language))
+                        else:
+                            items.append('; '.join(
+                                f'{questionnaire_field_label(key)}: {render_value(val)}'
+                                for key, val in item.items()
+                            ))
                     else:
-                        items.append(str(item))
+                        items.append(str(questionnaire_value_label(item)))
                 return '\n'.join(f'- {item}' for item in items) if items else '-' 
             if isinstance(value, dict):
-                return '\n'.join(f'{labels.get(str(key), key)}: {render_value(val)}' for key, val in value.items())
-            return str(value)
+                return '\n'.join(
+                    f'{questionnaire_field_label(key)}: {render_value(val)}'
+                    for key, val in value.items()
+                    if key not in QUESTIONNAIRE_INTERNAL_FIELDS
+                )
+            return str(questionnaire_value_label(value))
 
         def clear_cell(cell):
+            # The branded template contains nested demonstration tables in a
+            # few cells. Clearing only paragraphs leaves the previous client's
+            # data in the generated questionnaire, so remove nested tables too.
+            for nested_table in list(cell._tc.findall(qn('w:tbl'))):
+                cell._tc.remove(nested_table)
             for paragraph in cell.paragraphs:
                 paragraph.clear()
 
@@ -635,28 +604,38 @@ class ClientQuestionnaire(TimeStampedModel):
 
         def set_pair(table, row_index, field_one, value_one, field_two=None, value_two=None):
             cells = table.rows[row_index].cells
-            set_cell(cells[0], labels.get(field_one, field_one), bold=True)
+            set_cell(cells[0], questionnaire_field_label(field_one), bold=True)
             set_cell(cells[3], render_value(value_one))
             if field_two and len(cells) > 6:
-                set_cell(cells[5], labels.get(field_two, field_two), bold=True)
+                set_cell(cells[5], questionnaire_field_label(field_two), bold=True)
                 set_cell(cells[6], render_value(value_two))
             elif len(cells) > 6:
                 set_cell(cells[5], '')
                 set_cell(cells[6], '')
 
         def append_pair(table, field_one, value_one, field_two=None, value_two=None):
-            cells = table.add_row().cells
-            if len(cells) >= 7:
-                set_cell(cells[0], labels.get(field_one, field_one), bold=True)
+            table._tbl.append(deepcopy(table.rows[-1]._tr))
+            cells = table.rows[-1].cells
+            if len(cells) >= 4:
+                set_cell(cells[0], questionnaire_field_label(field_one), bold=True)
                 set_cell(cells[3], render_value(value_one))
-                if field_two:
-                    set_cell(cells[5], labels.get(field_two, field_two), bold=True)
+                if field_two and len(cells) > 6:
+                    set_cell(cells[5], questionnaire_field_label(field_two), bold=True)
                     set_cell(cells[6], render_value(value_two))
+                elif len(cells) > 6:
+                    set_cell(cells[5], '')
+                    set_cell(cells[6], '')
 
         if len(document.tables) >= 14:
             tables = document.tables
             form_type = data.get('form_type') or data.get('application_type') or 'applicant'
             title = 'ПРЕДВАРИТЕЛЬНАЯ ЗАЯВКА ШКОЛЬНИКА' if form_type == 'school_student' else 'АНКЕТА АБИТУРИЕНТА'
+            if document.sections[0].header.tables:
+                header_cell = document.sections[0].header.tables[0].cell(0, 2)
+                header_runs = [run for paragraph in header_cell.paragraphs for run in paragraph.runs]
+                if len(header_runs) >= 3:
+                    header_runs[0].text = title.capitalize()
+                    header_runs[2].text = timezone.localtime(timezone.now()).strftime('%d.%m.%Y %H:%M')
             set_cell(
                 tables[0].cell(0, 0),
                 f'{title}\nПерсональная карточка для поступления и сопровождения\nДата формирования: {timezone.localtime(timezone.now()):%d.%m.%Y %H:%M}',
@@ -667,13 +646,26 @@ class ClientQuestionnaire(TimeStampedModel):
 
             set_pair(tables[1], 1, 'full_name', data.get('full_name') or self.full_name, 'birth_date', data.get('birth_date'))
             set_pair(tables[1], 2, 'gender', data.get('gender'), 'citizenship', data.get('citizenship') or self.citizenship)
-            set_pair(tables[1], 3, 'marital_status', data.get('marital_status'))
+            set_pair(tables[1], 3, 'marital_status', data.get('marital_status'), 'is_conscript', data.get('is_conscript'))
             set_pair(tables[2], 1, 'residence_country', data.get('residence_country'), 'residence_region', data.get('residence_region'))
             set_pair(tables[2], 2, 'residence_city', data.get('residence_city'), 'residence_street', data.get('residence_street'))
             set_pair(tables[2], 3, 'residence_house', data.get('residence_house'), 'residence_postal_code', data.get('residence_postal_code'))
-            set_pair(tables[3], 1, 'passport_number', data.get('passport_number'), 'passport_issued_by', data.get('passport_issued_by'))
+            if data.get('current_residence') or data.get('current_location'):
+                append_pair(tables[2], 'current_residence', data.get('current_residence'), 'current_location', data.get('current_location'))
+            passport_number = render_value(data.get('passport_number'))
+            passport_status = []
+            if 'has_international_passport' in data:
+                passport_status.append(
+                    f"Действующий: {render_value(data.get('has_international_passport'))}"
+                )
+            if 'passport_pending' in data:
+                passport_status.append(
+                    f"Оформляется: {render_value(data.get('passport_pending'))}"
+                )
+            passport_value = '\n'.join([passport_number, *passport_status])
+            set_pair(tables[3], 1, 'passport_number', passport_value, 'passport_issued_by', data.get('passport_issued_by'))
             set_pair(tables[3], 2, 'passport_issue_date', data.get('passport_issue_date'), 'passport_expiry_date', data.get('passport_expiry_date'))
-            set_pair(tables[3], 3, 'has_international_passport', data.get('has_international_passport'))
+            tables[3]._tbl.remove(tables[3].rows[3]._tr)
             set_pair(tables[4], 1, 'phone', data.get('phone') or self.phone, 'email', data.get('email') or self.email)
             set_pair(tables[4], 2, 'extra_phone', data.get('extra_phone'), 'imo', data.get('imo'))
             set_pair(tables[4], 3, 'telegram', data.get('telegram'), 'preferred_contact_method', data.get('preferred_contact_method'))
@@ -688,7 +680,12 @@ class ClientQuestionnaire(TimeStampedModel):
             set_pair(tables[7], 1, 'desired_program', data.get('desired_program') or self.desired_program, 'admission_goal', data.get('admission_goal'))
             set_pair(tables[7], 2, 'desired_city', data.get('desired_city') or self.desired_city, 'desired_country', data.get('desired_country') or self.desired_country)
             set_pair(tables[7], 3, 'desired_language', data.get('desired_language'), 'desired_education_level', data.get('desired_education_level'))
-            set_pair(tables[7], 4, 'admission_urgency', data.get('admission_urgency'))
+            set_pair(tables[7], 4, 'admission_urgency', data.get('admission_urgency'), 'academic_year', data.get('academic_year') or self.client.academic_year)
+            if data.get('desired_universities'):
+                append_pair(tables[7], 'desired_universities', data.get('desired_universities'))
+            if data.get('university_choices'):
+                append_pair(tables[7], 'university_choices', data.get('university_choices'))
+            append_pair(tables[7], 'funding_type', data.get('funding_type') or self.client.funding_type, 'requested_services', data.get('requested_services'))
             set_pair(tables[8], 1, 'has_visa', data.get('has_visa'))
             if data.get('visa_country') or data.get('visa_city'):
                 append_pair(tables[8], 'visa_country', data.get('visa_country'), 'visa_city', data.get('visa_city'))
@@ -699,18 +696,47 @@ class ClientQuestionnaire(TimeStampedModel):
                 append_pair(tables[9], 'hobbies', data.get('hobbies'))
             if data.get('applicant_comment'):
                 append_pair(tables[9], 'applicant_comment', data.get('applicant_comment'))
+            if data.get('request_text'):
+                append_pair(tables[9], 'request_text', data.get('request_text'))
             append_pair(tables[9], 'data_processing_consent', data.get('data_processing_consent'))
-            languages = data.get('languages') or [{'language': labels.get('languages', 'Languages'), 'level': '-'}]
-            for index, item in enumerate(languages):
-                cells = tables[10].rows[index + 1].cells if index + 1 < len(tables[10].rows) else tables[10].add_row().cells
+            languages = data.get('languages') or [{'language': 'Не указано', 'level': '-'}]
+            language_row = deepcopy(tables[10].rows[1]._tr)
+            for row in list(tables[10].rows[1:]):
+                tables[10]._tbl.remove(row._tr)
+            for item in languages:
+                tables[10]._tbl.append(deepcopy(language_row))
+                cells = tables[10].rows[-1].cells
                 language = item.get('language') if isinstance(item, dict) else str(item)
                 level = item.get('level') if isinstance(item, dict) else '-'
                 set_cell(cells[0], language, bold=True)
                 set_cell(cells[3], render_value(level))
-            set_cell(tables[11].rows[1].cells[0], render_value(data.get('achievements')))
-            set_cell(tables[12].rows[1].cells[0], render_value(data.get('help_needed')))
+            if data.get('achievements'):
+                set_cell(tables[11].rows[1].cells[0], render_value(data.get('achievements')))
+            else:
+                tables[11]._element.getparent().remove(tables[11]._element)
+            if data.get('help_needed'):
+                set_cell(tables[12].rows[1].cells[0], render_value(data.get('help_needed')))
+            else:
+                tables[12]._element.getparent().remove(tables[12]._element)
             set_pair(tables[13], 1, 'status', self.get_status_display())
             set_pair(tables[13], 2, 'generated_document_at', timezone.now())
+            manager_section_number = 11 + int(bool(data.get('achievements'))) + int(bool(data.get('help_needed')))
+            set_cell(tables[13].rows[0].cells[0], str(manager_section_number), bold=True)
+            set_cell(
+                tables[13].rows[3].cells[0],
+                'Подпись менеджера\n________________________',
+                bold=True,
+            )
+            set_cell(
+                tables[13].rows[3].cells[5],
+                'Подпись абитуриента / представителя\n________________________',
+                bold=True,
+            )
+            tables[13]._tbl.remove(tables[13].rows[4]._tr)
+            # The explanatory footer row otherwise spills alone onto a blank
+            # fourth page in LibreOffice and Word previews.
+            if len(tables[13].rows) > 4:
+                tables[13]._tbl.remove(tables[13].rows[4]._tr)
         else:
             section = document.sections[0]
             section.top_margin = Inches(0.47)
@@ -719,10 +745,12 @@ class ClientQuestionnaire(TimeStampedModel):
             section.right_margin = Inches(0.5)
             table = document.add_table(rows=0, cols=2)
             table.style = 'Table Grid'
-            for field in ('full_name', 'phone', 'email', 'citizenship', 'desired_program', 'desired_country', 'desired_city'):
+            for field, value in data.items():
+                if field in QUESTIONNAIRE_INTERNAL_FIELDS:
+                    continue
                 row = table.add_row().cells
-                set_cell(row[0], labels.get(field, field), bold=True)
-                set_cell(row[1], render_value(data.get(field) or getattr(self, field, '')))
+                set_cell(row[0], questionnaire_field_label(field), bold=True)
+                set_cell(row[1], render_value(value))
 
         buffer = io.BytesIO()
         document.save(buffer)

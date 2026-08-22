@@ -374,6 +374,88 @@ class MobileClientDocumentUploadAPIView(APIView):
         })
 
 
+class MobileChatAttachmentUploadAPIView(APIView):
+    """Archive a chat attachment in the approved client's private DiskSL folder."""
+
+    permission_classes = []
+    allowed_extensions = {'.pdf', '.docx', '.jpg', '.jpeg', '.png', '.webp'}
+    max_size = 50 * 1024 * 1024
+
+    def post(self, request, *args, **kwargs):
+        actual_key = getattr(settings, 'LEADS_API_KEY', '')
+        if not actual_key or request.headers.get('X-API-KEY') != actual_key:
+            return Response({'detail': 'Invalid API key.'}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            content_length = int(request.headers.get('Content-Length') or 0)
+        except (TypeError, ValueError):
+            content_length = 0
+        if content_length <= 0 or content_length > self.max_size:
+            return Response({'detail': 'File size must be between 1 byte and 50 MB.'}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+        sl_id = unquote(clean_header(request.headers.get('X-SL-ID'), 100)).upper()
+        mobile_user_id = clean_header(request.headers.get('X-Mobile-User-ID'), 30)
+        filename = PurePosixPath(unquote(clean_header(request.headers.get('X-File-Name'), 1000))).name
+        extension = PurePosixPath(filename).suffix.lower()
+        if not sl_id or not filename:
+            return Response({'detail': 'SL-ID and file name are required.'}, status=status.HTTP_400_BAD_REQUEST)
+        if extension not in self.allowed_extensions:
+            return Response({'detail': 'Only PDF, DOCX, JPG, PNG and WEBP files are allowed.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        client = CrmClient.objects.filter(sl_id__iexact=sl_id).first()
+        if not client and mobile_user_id:
+            client = CrmClient.objects.filter(mobile_app_user_id=mobile_user_id).first()
+        if not client:
+            return Response({'detail': 'Approved client was not found.'}, status=status.HTTP_404_NOT_FOUND)
+        submission = getattr(client, 'onboarding_submission', None)
+        disk_step = client.provisioning_steps.filter(
+            step=ClientProvisioningStep.STEP_DISK,
+            status=ClientProvisioningStep.STATUS_SUCCESS,
+        ).order_by('-finished_at', '-id').first()
+        if not submission or not disk_step or not client.sl_id or not client.academic_year:
+            return Response({'detail': 'The client DiskSL folder is not ready yet.'}, status=status.HTTP_409_CONFLICT)
+
+        try:
+            raw_file = request.stream.read(self.max_size + 1)
+        except OSError:
+            return Response({'detail': 'Unable to read uploaded file.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not raw_file or len(raw_file) > self.max_size:
+            return Response({'detail': 'File size must be between 1 byte and 50 MB.'}, status=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE)
+
+        endpoint = settings.DISK_PROVISION_API_URL.rsplit('/folders', 1)[0] + '/files'
+        content_type = request.content_type or mimetypes.guess_type(filename)[0] or 'application/octet-stream'
+        headers = {
+            'Authorization': f'Bearer {settings.DISK_PROVISION_SERVICE_TOKEN}',
+            'Content-Type': content_type,
+            'Content-Length': str(len(raw_file)),
+            'X-Academic-Year': str(client.academic_year),
+            'X-SL-ID': quote(client.sl_id, safe=''),
+            'X-Client-Name': quote(client.full_name, safe=''),
+            'X-Disk-Category': quote(disk_category_for_submission(submission), safe=''),
+            'X-Disk-Folder': quote('чат', safe=''),
+            'X-File-Name': quote(filename, safe=''),
+            'X-Actor': quote(clean_header(request.headers.get('X-Actor'), 255) or f'students-life:{client.sl_id}', safe=''),
+        }
+        try:
+            disk_response = requests.post(endpoint, data=raw_file, headers=headers, timeout=(5, 120))
+            disk_response.raise_for_status()
+            result = disk_response.json()
+        except (requests.RequestException, ValueError) as exc:
+            return Response({'detail': f'DiskSL upload failed: {exc}'}, status=status.HTTP_502_BAD_GATEWAY)
+
+        disk_path = clean_header(result.get('path'), 1000)
+        if not disk_path:
+            return Response({'detail': 'DiskSL did not return a file path.'}, status=status.HTTP_502_BAD_GATEWAY)
+        parent_path = str(PurePosixPath('/' + disk_path.strip('/')).parent)
+        disk_url = urlsplit(settings.DISK_WEB_URL)
+        disk_origin = f'{disk_url.scheme}://{disk_url.netloc}'
+        return Response({
+            'disk_path': disk_path,
+            'disk_folder_url': f'{disk_origin}/web/client/files?{urlencode({"path": parent_path})}',
+            'detail': 'Chat attachment uploaded to DiskSL.',
+        })
+
+
 class MobileClientQuestionnaireSyncAPIView(APIView):
     permission_classes = []
 

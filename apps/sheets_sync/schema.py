@@ -7,6 +7,9 @@ GENERAL_HEADERS = (
     'Год поступления',
     'Ответственный',
     'ФИО абитуриента',
+    'Все услуги',
+    'Нужные услуги',
+    'Что хочет клиент',
     'Куда поступает',
     'Город поступления',
     'Дата рождения',
@@ -157,10 +160,17 @@ def safe_sheet_title(value):
 
 def university_acronym(name):
     name = str(name or '').strip()
+    if not name:
+        return ''
     explicit = re.match(r'^([A-ZА-ЯЁ0-9][A-ZА-ЯЁ0-9.\-]{1,14})\s*\(', name)
     if explicit:
         return explicit.group(1).replace('.', '')
+    if re.fullmatch(r'[A-ZА-ЯЁ0-9][A-ZА-ЯЁ0-9.\-]{1,15}', name):
+        return name.replace('.', '')
     words = re.findall(r'[A-Za-zА-Яа-яЁё0-9]+', name)
+    if len(words) == 1:
+        return words[0][:100]
     ignored = {'имени', 'им'}
     letters = [word[0].upper() for word in words if word.lower() not in ignored]
-    return ''.join(letters)
+    acronym = ''.join(letters)
+    return acronym if len(acronym) >= 2 else safe_sheet_title(name)

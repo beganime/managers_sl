@@ -79,6 +79,36 @@ class GoogleSheetsGateway:
                 return properties.get('sheetId')
         raise SheetsSyncError(f'Лист {sheet_name} не найден.')
 
+    def rename_sheet(self, old_name, new_name):
+        """Rename a worksheet without moving or rewriting any client rows."""
+        old_name = str(old_name or '').strip()
+        new_name = str(new_name or '').strip()
+        if not old_name or not new_name:
+            raise SheetsSyncError('Для переименования нужны старое и новое названия листа.')
+        if old_name == new_name:
+            return False
+        titles = self.sheet_titles()
+        if old_name not in titles:
+            raise SheetsSyncError(f'Лист {old_name} не найден.')
+        if new_name in titles:
+            raise SheetsSyncError(f'Лист {new_name} уже существует.')
+        self.service.spreadsheets().batchUpdate(
+            spreadsheetId=self.spreadsheet_id,
+            body={'requests': [{
+                'updateSheetProperties': {
+                    'properties': {
+                        'sheetId': self.sheet_id(old_name),
+                        'title': new_name,
+                    },
+                    'fields': 'title',
+                }
+            }]},
+        ).execute()
+        self._metadata_cache = None
+        if old_name in self._headers_cache:
+            self._headers_cache[new_name] = self._headers_cache.pop(old_name)
+        return True
+
     def headers(self, sheet_name, force_refresh=False):
         if not force_refresh and sheet_name in self._headers_cache:
             return list(self._headers_cache[sheet_name])
@@ -244,6 +274,7 @@ class GoogleSheetsGateway:
         sheet_name,
         *,
         hidden_headers=(),
+        manual_headers=(),
         column_widths=None,
         header_height=32,
         row_height=28,
@@ -364,6 +395,28 @@ class GoogleSheetsGateway:
                 }
             },
         ])
+
+        # Columns completed by a manager are deliberately distinguished with
+        # one restrained neutral tint; all other operational cells stay white.
+        for header in manual_headers:
+            if header not in headers:
+                continue
+            column_index = headers.index(header)
+            requests.append({
+                'repeatCell': {
+                    'range': {
+                        'sheetId': sheet_id,
+                        'startRowIndex': 1,
+                        'endRowIndex': row_count,
+                        'startColumnIndex': column_index,
+                        'endColumnIndex': column_index + 1,
+                    },
+                    'cell': {'userEnteredFormat': {
+                        'backgroundColor': {'red': 0.96, 'green': 0.96, 'blue': 0.94},
+                    }},
+                    'fields': 'userEnteredFormat.backgroundColor',
+                }
+            })
 
         for header in hidden_headers:
             if header not in headers:

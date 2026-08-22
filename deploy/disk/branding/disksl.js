@@ -134,6 +134,45 @@
         <div id="disksl-activity-list" class="disksl-activity-list"></div>`;
     panel.insertAdjacentElement('afterend', activityPanel);
 
+    const usagePanel = document.createElement('section');
+    usagePanel.id = 'disksl-usage';
+    usagePanel.className = 'disksl-usage';
+    usagePanel.innerHTML = `
+        <div class="disksl-usage-chart" role="img" aria-label="Заполнение хранилища">
+            <div id="disksl-usage-percent" class="disksl-usage-percent">—</div>
+        </div>
+        <div class="disksl-usage-copy">
+            <div class="disksl-usage-title">Хранилище DiskSL</div>
+            <div id="disksl-usage-values" class="disksl-usage-values">Загрузка данных…</div>
+        </div>`;
+    activityPanel.insertAdjacentElement('afterend', usagePanel);
+
+    function formatBytes(value) {
+        const bytes = Math.max(Number(value) || 0, 0);
+        if (bytes < 1024) return `${bytes} Б`;
+        const units = ['КБ', 'МБ', 'ГБ', 'ТБ'];
+        let amount = bytes;
+        let unit = -1;
+        do { amount /= 1024; unit += 1; } while (amount >= 1024 && unit < units.length - 1);
+        return `${amount >= 10 ? amount.toFixed(1) : amount.toFixed(2)} ${units[unit]}`;
+    }
+
+    async function loadUsage() {
+        try {
+            const response = await fetch('/web/client/disksl/usage', {credentials: 'same-origin'});
+            if (!response.ok) throw new Error('usage unavailable');
+            const payload = await response.json();
+            const percent = Math.max(0, Math.min(Number(payload.usage_percent) || 0, 100));
+            usagePanel.style.setProperty('--disksl-usage', `${percent * 3.6}deg`);
+            document.getElementById('disksl-usage-percent').textContent = `${percent.toFixed(1)}%`;
+            document.getElementById('disksl-usage-values').textContent =
+                `Занято ${formatBytes(payload.used_bytes)} · Свободно ${formatBytes(payload.free_bytes)} · Всего ${formatBytes(payload.total_bytes)}`;
+        } catch (_error) {
+            document.getElementById('disksl-usage-values').textContent = 'Данные о хранилище временно недоступны';
+        }
+    }
+    loadUsage();
+
     toggleButton.addEventListener('click', () => {
         const shouldOpen = panel.hidden;
         panel.hidden = !shouldOpen;

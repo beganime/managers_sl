@@ -11,3 +11,4 @@ staticfiles/
 *google-service-account*.json
 *google_service_account*.json
 secrets/
+artifacts/

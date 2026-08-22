@@ -3,6 +3,7 @@ from decimal import Decimal, InvalidOperation
 from rest_framework import serializers
 
 from apps.education.models import City, Country, Currency, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
+from apps.education.priority_catalog import priority_offer_for_name
 from apps.erp_services.models import Service
 
 
@@ -151,7 +152,7 @@ class ClientUniversityContactSerializer(serializers.ModelSerializer):
 class ClientProgramShortSerializer(serializers.ModelSerializer):
     program_id = serializers.IntegerField(source='id', read_only=True)
     program_title = serializers.CharField(source='name', read_only=True)
-    university_id = serializers.IntegerField(source='university_id', read_only=True)
+    university_id = serializers.IntegerField(read_only=True)
     university_name = serializers.SerializerMethodField()
     country = serializers.SerializerMethodField()
     country_name = serializers.SerializerMethodField()
@@ -168,6 +169,7 @@ class ClientProgramShortSerializer(serializers.ModelSerializer):
     fees = serializers.SerializerMethodField()
     intakes = serializers.SerializerMethodField()
     required_documents = serializers.SerializerMethodField()
+    priority_offer = serializers.SerializerMethodField()
 
     class Meta:
         model = Program
@@ -200,6 +202,7 @@ class ClientProgramShortSerializer(serializers.ModelSerializer):
             'fees',
             'intakes',
             'required_documents',
+            'priority_offer',
         )
 
     def get_university_name(self, obj):
@@ -299,9 +302,30 @@ class ClientProgramShortSerializer(serializers.ModelSerializer):
         try:
             fees_manager = getattr(obj, 'fees', None)
             fees = fees_manager.all() if hasattr(fees_manager, 'all') else []
-            return ClientProgramFeeSerializer(fees, many=True, context=self.context).data
+            result = list(ClientProgramFeeSerializer(fees, many=True, context=self.context).data)
+            offer = priority_offer_for_name(obj.name)
+            has_priority_price = any(
+                str(item.get('source') or '').casefold() == 'гослиния' or item.get('priority_code')
+                for item in result
+            )
+            if offer and not has_priority_price:
+                result.append({
+                    'id': f"priority-{offer['code']}",
+                    'currency': 'USD',
+                    'currency_symbol': '$',
+                    'tuition_fee': None,
+                    'service_fee_usd': str(offer['service_fee_usd']),
+                    'application_fee': '0',
+                    'dormitory_fee': '0',
+                    'insurance_fee': '0',
+                    'source': 'Гослиния',
+                })
+            return result
         except Exception:
             return []
+
+    def get_priority_offer(self, obj):
+        return priority_offer_for_name(obj.name)
 
     def get_intakes(self, obj):
         try:
@@ -342,6 +366,7 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
         fields = (
             'id',
             'name',
+            'abbreviation',
             'legal_name',
             'country',
             'country_name',
@@ -436,6 +461,21 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
                     })
                 except Exception:
                     continue
+            offer = priority_offer_for_name(program.name)
+            if offer:
+                fees.append({
+                    'program_id': program.id,
+                    'program_name': program.name,
+                    'currency': 'USD',
+                    'currency_symbol': '$',
+                    'tuition_fee': None,
+                    'service_fee_usd': str(offer['service_fee_usd']),
+                    'application_fee': '0',
+                    'dormitory_fee': '0',
+                    'insurance_fee': '0',
+                    'source': 'Гослиния',
+                    'priority_code': offer['code'],
+                })
         return fees
 
     def get_programs_count(self, obj):

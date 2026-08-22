@@ -6,6 +6,7 @@
         <h2 class="panel-title">{{ client.full_name }}</h2>
         <div class="filters">
             <a class="btn{% if disk_ready %} secondary{% endif %}" href="{{ disk_url }}" target="_blank" rel="noopener"><i data-lucide="folder-open"></i>{% if disk_ready %}Папка клиента{% else %}DiskSL{% endif %}</a>
+            {% if can_access_disk %}<a class="btn secondary" href="{{ translate_url }}" target="_blank" rel="noopener"><i data-lucide="languages"></i>Перевести документ</a>{% endif %}
             <a class="btn secondary" href="{% url 'portal:client_document_create' client.id %}"><i data-lucide="file-plus-2"></i>Создать документ</a>
             <a class="btn" href="{% url 'portal:clients' %}?edit={{ client.id }}"><i data-lucide="square-pen"></i>Редактировать</a>
         </div>

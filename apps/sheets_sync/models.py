@@ -131,3 +131,17 @@ class ClientAdmissionSnapshot(TimeStampedModel):
 
     def __str__(self):
         return f'{self.client.sl_id}: {self.current_status or "без статуса"}'
+
+
+class SheetSearchSource(TimeStampedModel):
+    title = models.CharField('Название книги', max_length=160)
+    spreadsheet_id = models.CharField('ID Google Sheets', max_length=160, unique=True)
+    is_active = models.BooleanField('Искать в этой книге', default=True, db_index=True)
+
+    class Meta:
+        verbose_name = 'Источник поиска Google Sheets'
+        verbose_name_plural = 'Источники поиска Google Sheets'
+        ordering = ['title']
+
+    def __str__(self):
+        return self.title

@@ -195,17 +195,31 @@ def provision_client_services(client_id, event_id=''):
         'updated_at': timezone.now().isoformat(),
     }
     Client.objects.filter(pk=client.pk).update(custom_data=data)
+    # Provisioning stores the latest FCM token and already attempts the first
+    # credential push. If no device received it, enqueue a retry only after the
+    # mobile account exists, avoiding the former provisioning/notification race.
+    mobile_response = mobile_step.response_data or {}
+    if 'push_sent' in mobile_response and not int(mobile_response.get('push_sent') or 0):
+        notify_onboarding_status.run(submission.pk)
     return data['service_provisioning']
 
 
 @shared_task(bind=True, max_retries=5, retry_backoff=True, retry_jitter=True)
 def notify_onboarding_status(self, submission_id):
-    submission = OnboardingSubmission.objects.select_related('client').get(pk=submission_id)
+    submission = OnboardingSubmission.objects.select_related('client', 'service_identity').get(pk=submission_id)
 
     if submission.status == OnboardingSubmission.STATUS_APPROVED:
         if submission.client_id:
             title = 'Аккаунт одобрен'
-            body = f'Ваш идентификатор — {submission.client.sl_id}. Данные для входа доступны в приложении.'
+            try:
+                identity = submission.service_identity
+            except Exception:
+                identity = None
+            login = getattr(identity, 'mobile_login', '') or submission.client.sl_id
+            password = getattr(identity, 'shared_password', '') or (submission.client.custom_data or {}).get('mobile_password', '')
+            body = f'Ваш логин: {login}'
+            if password:
+                body += f'\nВаш пароль: {password}'
         else:
             title = 'Экспресс-заявка одобрена'
             body = 'Теперь можно заполнить полную анкету абитуриента.'

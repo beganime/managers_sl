@@ -48,6 +48,42 @@
     display: none !important;
 }
 
+.disksl-usage {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 12px 2rem 0;
+    padding: 14px 16px;
+    border: 1px solid var(--bs-gray-300);
+    border-radius: 10px;
+    background: var(--bs-body-bg);
+    --disksl-usage: 0deg;
+}
+
+.disksl-usage-chart {
+    display: grid;
+    place-items: center;
+    width: 62px;
+    height: 62px;
+    flex: 0 0 62px;
+    border-radius: 50%;
+    background: conic-gradient(var(--bs-primary) var(--disksl-usage), var(--bs-gray-200) 0);
+    position: relative;
+}
+
+.disksl-usage-chart::after {
+    content: '';
+    position: absolute;
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    background: var(--bs-body-bg);
+}
+
+.disksl-usage-percent { position: relative; z-index: 1; font-size: 11px; font-weight: 700; }
+.disksl-usage-title { color: var(--bs-body-color); font-weight: 700; }
+.disksl-usage-values { color: var(--bs-gray-600); font-size: 12px; margin-top: 3px; }
+
 .disksl-activity-header {
     display: flex;
     align-items: center;
@@ -206,4 +242,6 @@
         margin: 12px 1rem 0;
         padding: 12px;
     }
+
+    .disksl-usage { margin: 12px 1rem 0; }
 }

@@ -4,6 +4,7 @@ from unittest.mock import patch
 from unittest.mock import Mock
 
 from django.contrib.auth import get_user_model
+from django.core import signing
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -14,7 +15,27 @@ from apps.client_onboarding.services import review_submission
 from apps.crm.models import Client
 from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
-from apps.portal.views import build_client_disk_url
+from apps.portal.views import build_client_disk_url, build_questionnaire_sections
+
+
+class QuestionnairePresentationTests(TestCase):
+    def test_api_field_names_are_not_shown_to_managers(self):
+        sections = build_questionnaire_sections({
+            'funding_type': 'government',
+            'requested_services': ['Подбор вуза'],
+            'desired_universities': 'БГМУ / РУДН',
+            'unknown_mobile_flag': 'Значение',
+        })
+        labels = [row['label'] for section in sections for row in section['rows']]
+        values = [row['value'] for section in sections for row in section['rows']]
+
+        self.assertIn('Форма поступления', labels)
+        self.assertIn('Нужные услуги', labels)
+        self.assertIn('Желаемые вузы', labels)
+        self.assertIn('Дополнительное поле', labels)
+        self.assertIn('Гослиния', values)
+        self.assertNotIn('funding_type', labels)
+        self.assertNotIn('unknown_mobile_flag', labels)
 
 
 class ClientDiskLinkTests(TestCase):
@@ -120,6 +141,50 @@ class ClientDiskLinkTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         post.assert_not_called()
+
+    @override_settings(
+        TRANSLATE_SL_URL='https://translate.manager-sl.ru',
+        TRANSLATE_SL_SSO_SECRET='shared-test-secret',
+    )
+    def test_manager_opens_translate_sl_with_signed_identity_and_client(self):
+        response = self.client.get(
+            reverse('portal:translate_sl'),
+            {'next': '/upload/?client=SL-2027-001'},
+            secure=True,
+        )
+
+        self.assertEqual(response.status_code, 302)
+        target = urlsplit(response.url)
+        self.assertEqual(target.netloc, 'translate.manager-sl.ru')
+        token = parse_qs(target.query)['token'][0]
+        payload = signing.loads(
+            token,
+            key='shared-test-secret',
+            salt='manager-sl.translate-sso.v1',
+            max_age=120,
+        )
+        self.assertEqual(payload['email'], self.manager.email)
+        self.assertEqual(payload['next'], '/upload/?client=SL-2027-001')
+
+    @override_settings(
+        TRANSLATE_SL_URL='https://translate.manager-sl.ru',
+        TRANSLATE_SL_SSO_SECRET='shared-test-secret',
+    )
+    def test_translate_sl_redirect_rejects_external_next_url(self):
+        response = self.client.get(
+            reverse('portal:translate_sl'),
+            {'next': 'https://example.net/stolen'},
+            secure=True,
+        )
+
+        token = parse_qs(urlsplit(response.url).query)['token'][0]
+        payload = signing.loads(
+            token,
+            key='shared-test-secret',
+            salt='manager-sl.translate-sso.v1',
+            max_age=120,
+        )
+        self.assertEqual(payload['next'], '/')
 
 
 class PortalClientChatTests(TestCase):

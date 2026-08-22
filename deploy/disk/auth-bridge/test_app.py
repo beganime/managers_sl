@@ -22,6 +22,24 @@ import app  # noqa: E402
 
 
 class UploadHelpersTests(unittest.TestCase):
+    @mock.patch.object(app, 'S3_CLIENT')
+    def test_storage_usage_paginates_and_calculates_free_space(self, storage):
+        storage.list_objects_v2.side_effect = [
+            {
+                'Contents': [{'Size': 100}, {'Size': 250}],
+                'IsTruncated': True,
+                'NextContinuationToken': 'next',
+            },
+            {'Contents': [{'Size': 650}], 'IsTruncated': False},
+        ]
+
+        result = app.storage_usage()
+
+        self.assertEqual(result['used_bytes'], 1000)
+        self.assertEqual(result['free_bytes'], app.S3_QUOTA_BYTES - 1000)
+        self.assertEqual(result['objects'], 3)
+        self.assertEqual(storage.list_objects_v2.call_count, 2)
+
     def test_accepts_supported_file_name(self):
         self.assertEqual(app.safe_upload_name('passport.pdf'), 'passport.pdf')
         self.assertEqual(app.safe_upload_name('scan/photo.JPG'), 'scan_photo.JPG')

@@ -89,3 +89,28 @@ class MobileDocumentUploadTests(TestCase):
             content_type='application/pdf',
         )
         self.assertEqual(response.status_code, 403)
+
+    @patch('leads.views.requests.post')
+    def test_chat_attachment_is_forwarded_to_separate_disk_folder(self, post_mock):
+        disk_response = Mock()
+        disk_response.raise_for_status.return_value = None
+        disk_response.json.return_value = {
+            'path': '2027/Контракт/Иванов Иван Иванович (SL-2027-999)/чат/photo.jpg',
+        }
+        post_mock.return_value = disk_response
+
+        response = self.client.post(
+            '/api/mobile/chat/upload/',
+            data=b'jpeg-data',
+            content_type='image/jpeg',
+            HTTP_X_API_KEY='test-leads-key',
+            HTTP_X_MOBILE_USER_ID='999',
+            HTTP_X_SL_ID='SL-2027-999',
+            HTTP_X_FILE_NAME='photo.jpg',
+            HTTP_X_ACTOR='client',
+        )
+
+        self.assertEqual(response.status_code, 200, response.data)
+        self.assertIn('/чат/', response.data['disk_path'])
+        forwarded_headers = post_mock.call_args.kwargs['headers']
+        self.assertEqual(forwarded_headers['X-Disk-Folder'], '%D1%87%D0%B0%D1%82')

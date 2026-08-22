@@ -16,7 +16,21 @@ from .models import (
     OnboardingReviewEvent,
     OnboardingSubmission,
 )
+from .services import build_service_credentials, split_person_name
 from .tasks import disk_category_for_submission, notify_onboarding_status, provision_client_services
+
+
+class PersonNameTests(SimpleTestCase):
+    def test_standard_surname_name_patronymic_order(self):
+        self.assertEqual(split_person_name('Иванов Александр Сергеевич'), ('Александр', 'Иванов'))
+
+    def test_name_surname_order(self):
+        self.assertEqual(split_person_name('Иван Иванов'), ('Иван', 'Иванов'))
+
+    def test_credentials_use_given_name(self):
+        submission = SimpleNamespace(full_name='Петрова Регина Ивановна')
+        credentials = build_service_credentials(submission, 'SL-001')
+        self.assertEqual(credentials['mobile_password'], 'Regina_0710')
 
 
 class DiskCategoryTests(SimpleTestCase):
@@ -171,6 +185,30 @@ class OnboardingApiTests(APITestCase):
         self.assertEqual(Application.objects.filter(client=submission.client).count(), 3)
         self.assertEqual(submission.client.questionnaire.status, 'approved')
 
+    def test_full_post_cannot_duplicate_an_approved_express_client(self):
+        created = self.create_submission(self.express_payload())
+        submission = OnboardingSubmission.objects.get(public_id=created.data['public_id'])
+        self.client.force_authenticate(self.manager)
+        approved = self.client.post(
+            reverse('manager-onboarding-submission-review', kwargs={'pk': submission.pk}),
+            {'decision': 'approve'},
+            format='json',
+        )
+        self.assertEqual(approved.status_code, 200, approved.data)
+
+        self.client.force_authenticate(user=None)
+        duplicate = self.applicant_payload()
+        duplicate.update({
+            'stage': 'full',
+            'email': self.express_payload()['email'],
+            'phone': self.express_payload()['phone'],
+        })
+        response = self.client.post(reverse('client-onboarding-create'), duplicate, format='json')
+
+        self.assertEqual(response.status_code, 409, response.data)
+        self.assertEqual(OnboardingSubmission.objects.count(), 1)
+        self.assertEqual(Client.objects.count(), 1)
+
 
     def test_anonymous_applicant_submission_requires_three_universities(self):
         payload = self.applicant_payload()
@@ -180,6 +218,22 @@ class OnboardingApiTests(APITestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(OnboardingSubmission.objects.count(), 0)
+
+    def test_full_questionnaire_accepts_simple_university_and_program_text(self):
+        payload = self.applicant_payload()
+        payload['university_choices'] = []
+        payload['payload'] = {
+            **payload.get('payload', {}),
+            'desired_universities': 'РУДН / Сеченова / БГМУ',
+            'desired_program': 'лечебное дело и стоматология',
+        }
+
+        response = self.client.post(reverse('client-onboarding-create'), payload, format='json')
+
+        self.assertEqual(response.status_code, 201, response.data)
+        submission = OnboardingSubmission.objects.get(public_id=response.data['public_id'])
+        self.assertEqual(submission.university_choices.count(), 0)
+        self.assertEqual(submission.payload['desired_universities'], 'РУДН / Сеченова / БГМУ')
 
     def test_status_requires_submission_token(self):
         created = self.create_submission()

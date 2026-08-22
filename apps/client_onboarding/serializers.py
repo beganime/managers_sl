@@ -11,6 +11,10 @@ from .models import OnboardingReviewEvent, OnboardingSubmission, OnboardingUnive
 
 
 EXPRESS_COMMENT_MAX_LENGTH = 1000
+LONG_TEXT_PAYLOAD_FIELDS = {
+    'request_text', 'admission_goal', 'applicant_comment', 'hobbies',
+    'comment', 'note', 'remark',
+}
 EMAIL_PATTERN = re.compile(r'^[^\s@]+@[^\s@]+\.(?:com|ru)$', re.IGNORECASE)
 
 
@@ -67,10 +71,19 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
         if self.instance and kind != self.instance.kind:
             raise serializers.ValidationError({'kind': 'Тип заявки нельзя изменить после отправки.'})
 
+        payload = attrs.get('payload', getattr(self.instance, 'payload', {})) or {}
+        for key, value in payload.items():
+            if not isinstance(value, str):
+                continue
+            max_length = 1000 if key in LONG_TEXT_PAYLOAD_FIELDS else 255
+            if len(value) > max_length:
+                raise serializers.ValidationError({
+                    'payload': f'Поле «{key}» не должно превышать {max_length} символов.'
+                })
+
         if stage == OnboardingSubmission.STAGE_EXPRESS:
             if choices:
                 raise serializers.ValidationError({'university_choices': 'В экспресс-заявке ВУЗы пока не выбираются.'})
-            payload = attrs.get('payload', getattr(self.instance, 'payload', {})) or {}
             email = attrs.get('email', getattr(self.instance, 'email', ''))
             if not str(email or '').strip():
                 raise serializers.ValidationError({'email': 'Email обязателен для экспресс-заявки.'})
@@ -91,6 +104,23 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({'stage': 'Для школьника используется экспресс-заявка.'})
 
         if kind == OnboardingSubmission.KIND_APPLICANT:
+            desired_universities = str(payload.get('desired_universities') or '').strip()
+            desired_program = str(payload.get('desired_program') or '').strip()
+            if not choices and (not desired_universities or not desired_program):
+                raise serializers.ValidationError({
+                    'payload': 'Укажите желаемые вузы и направления обучения.'
+                })
+            if not choices:
+                if len(desired_universities) > 255 or len(desired_program) > 255:
+                    raise serializers.ValidationError({
+                        'payload': 'Названия вузов и направлений не должны превышать 255 символов.'
+                    })
+                attrs['payload'] = {
+                    **payload,
+                    'desired_universities': desired_universities,
+                    'desired_program': desired_program,
+                }
+                return attrs
             if not 3 <= len(choices) <= 5:
                 raise serializers.ValidationError({'university_choices': 'Нужно выбрать от 3 до 5 ВУЗов.'})
             university_ids = [item['university_id'] for item in choices]
@@ -149,6 +179,14 @@ class OnboardingSubmissionWriteSerializer(serializers.ModelSerializer):
     @transaction.atomic
     def update(self, instance, validated_data):
         choices = validated_data.pop('university_choices', [])
+        if 'payload' in validated_data:
+            # The full questionnaire is the next stage of the same express
+            # application. Preserve the service request captured at the first
+            # stage instead of replacing the JSON document wholesale.
+            validated_data['payload'] = {
+                **(instance.payload or {}),
+                **(validated_data.get('payload') or {}),
+            }
         promotes_express = (
             instance.kind == OnboardingSubmission.KIND_APPLICANT
             and instance.stage == OnboardingSubmission.STAGE_EXPRESS
@@ -238,6 +276,15 @@ class PublicOnboardingStatusSerializer(serializers.ModelSerializer):
     admission_status = serializers.SerializerMethodField()
     service_credentials = serializers.SerializerMethodField()
     can_fill_full_questionnaire = serializers.SerializerMethodField()
+    payload = serializers.SerializerMethodField()
+
+    def get_payload(self, obj):
+        private_fragments = ('passport', 'password', 'login', 'finance', 'payment')
+        return {
+            key: value
+            for key, value in (obj.payload or {}).items()
+            if not any(fragment in str(key).casefold() for fragment in private_fragments)
+        }
 
     def get_service_credentials(self, obj):
         try:
@@ -292,6 +339,7 @@ class PublicOnboardingStatusSerializer(serializers.ModelSerializer):
             'email',
             'date_of_birth',
             'citizenship',
+            'payload',
             'academic_year',
             'submitted_at',
             'reviewed_at',
