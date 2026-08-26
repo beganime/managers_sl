@@ -1,91 +1,166 @@
 {% extends "portal/base.html" %}
+{% load static %}
+
+{% block extra_head %}
+<style>
+    .dashboard-shell { display:grid; gap:18px; }
+    .dashboard-hero-new {
+        min-height:260px; position:relative; overflow:hidden; display:grid; align-items:center;
+        padding:clamp(24px,4vw,46px); border:1px solid #d7dee7; border-radius:18px;
+        background:#fff url("{% static 'dashboard-hero-sl.png' %}") center/cover no-repeat;
+        box-shadow:0 14px 40px rgba(15,23,42,.09);
+    }
+    .dashboard-hero-new::after { content:""; position:absolute; inset:0; background:linear-gradient(90deg,rgba(255,255,255,.98) 0%,rgba(255,255,255,.92) 40%,rgba(255,255,255,.12) 72%); }
+    .dashboard-hero-copy { position:relative; z-index:1; max-width:570px; }
+    .dashboard-kicker { display:flex; align-items:center; gap:8px; margin-bottom:12px; color:#b71d17; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
+    .dashboard-hero-copy h2 { margin:0; color:#172033; font-size:clamp(30px,4vw,48px); line-height:1.03; letter-spacing:-.04em; }
+    .dashboard-hero-copy p { max-width:500px; margin:16px 0 22px; color:#5f6b7d; line-height:1.6; }
+    .dashboard-hero-actions { display:flex; flex-wrap:wrap; gap:10px; }
+    .dashboard-service-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .dashboard-service {
+        min-height:138px; position:relative; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between;
+        padding:18px; border:1px solid #dce2e9; border-radius:14px; background:#fff; box-shadow:var(--shadow);
+        transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease;
+    }
+    .dashboard-service:hover { transform:translateY(-2px); border-color:#b8c5d2; box-shadow:0 14px 28px rgba(15,23,42,.1); }
+    .dashboard-service::after { content:""; position:absolute; width:92px; height:92px; right:-34px; bottom:-42px; border-radius:50%; background:var(--service-soft); }
+    .dashboard-service-icon { width:42px; height:42px; display:grid; place-items:center; border-radius:12px; color:#fff; background:var(--service-color); }
+    .dashboard-service-icon svg { width:21px; height:21px; }
+    .dashboard-service strong { display:block; margin-top:16px; color:#172033; font-size:15px; }
+    .dashboard-service span { display:block; margin-top:5px; color:#687386; font-size:12px; line-height:1.45; }
+    .dashboard-service.red { --service-color:#b71d17; --service-soft:#f7d8d6; }
+    .dashboard-service.blue { --service-color:#0d416d; --service-soft:#dbe8f2; }
+    .dashboard-service.navy { --service-color:#1e293b; --service-soft:#e2e8f0; }
+    .dashboard-service.slate { --service-color:#526176; --service-soft:#e7ebf0; }
+    .dashboard-insights { display:grid; grid-template-columns:1.35fr .8fr .8fr; gap:14px; }
+    .dashboard-insight { min-width:0; padding:20px; border:1px solid #dce2e9; border-radius:14px; background:#fff; box-shadow:var(--shadow); }
+    .dashboard-insight-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:18px; }
+    .dashboard-insight-head h3 { margin:0; color:#172033; font-size:16px; }
+    .dashboard-insight-head p { margin:5px 0 0; color:#7a8595; font-size:12px; }
+    .chart-bars { display:grid; gap:13px; }
+    .chart-bar-head { display:flex; justify-content:space-between; gap:10px; margin-bottom:6px; font-size:12px; }
+    .chart-bar-head span { color:#687386; }
+    .chart-bar-head strong { color:#172033; }
+    .chart-track { height:9px; overflow:hidden; border-radius:999px; background:#edf1f5; }
+    .chart-fill { width:max(3px,var(--bar-width)); height:100%; border-radius:inherit; background:var(--bar-color); }
+    .donut-wrap { min-height:145px; display:grid; place-items:center; align-content:center; gap:13px; text-align:center; }
+    .dashboard-donut { width:102px; height:102px; position:relative; display:grid; place-items:center; border-radius:50%; background:conic-gradient(var(--donut-color) var(--chart-progress),#e9edf2 0); }
+    .dashboard-donut::after { content:""; position:absolute; width:74px; height:74px; border-radius:50%; background:#fff; }
+    .dashboard-donut strong { position:relative; z-index:1; color:#172033; font-size:20px; }
+    .donut-copy strong,.donut-copy span { display:block; }
+    .donut-copy strong { color:#172033; font-size:13px; }
+    .donut-copy span { margin-top:4px; color:#687386; font-size:11px; line-height:1.45; }
+    .dashboard-list-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; }
+    .dashboard-list-grid .panel { min-width:0; }
+    @media (max-width:1100px) {
+        .dashboard-service-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
+        .dashboard-insights { grid-template-columns:1fr 1fr; }
+        .dashboard-insights .dashboard-insight:first-child { grid-column:1/-1; }
+    }
+    @media (max-width:720px) {
+        .dashboard-shell { gap:14px; }
+        .dashboard-hero-new { min-height:340px; align-items:end; padding:22px; background-position:67% center; }
+        .dashboard-hero-new::after { background:linear-gradient(180deg,rgba(255,255,255,.08) 0%,rgba(255,255,255,.95) 47%,#fff 74%); }
+        .dashboard-hero-copy h2 { font-size:32px; }
+        .dashboard-hero-copy p { margin:12px 0 18px; font-size:13px; }
+        .dashboard-hero-actions .btn { flex:1 1 100%; }
+        .dashboard-service-grid { grid-template-columns:1fr 1fr; gap:9px; }
+        .dashboard-service { min-height:145px; padding:15px; }
+        .dashboard-service strong { font-size:14px; }
+        .dashboard-insights,.dashboard-list-grid { grid-template-columns:1fr; }
+        .dashboard-insights .dashboard-insight:first-child { grid-column:auto; }
+        .dashboard-insight { padding:17px; }
+        .metric-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+        .metric { min-height:110px; padding:15px; }
+        .metric-value { font-size:28px; }
+        .workday-summary .filters,.workday-summary .filters form,.workday-summary .btn { width:100%; }
+    }
+    @media (max-width:390px) { .dashboard-service-grid { grid-template-columns:1fr; } }
+</style>
+{% endblock %}
 
 {% block content %}
-{% if is_current_user_birthday %}
-<section class="birthday-celebration" role="status" aria-label="Поздравление с днём рождения">
-    <div class="birthday-celebration-icon" aria-hidden="true"><i data-lucide="cake-slice"></i></div>
-    <div>
-        <h2 class="birthday-celebration-title">С днём рождения, {{ birthday_first_name }}!</h2>
-        <div class="birthday-celebration-message">Желаем здоровья, благополучия, уверенности в работе и новых достижений. Спасибо, что вы с нами.</div>
-    </div>
-</section>
-{% endif %}
+<div class="dashboard-shell">
+    {% if is_current_user_birthday %}
+    <section class="birthday-celebration" role="status" aria-label="Поздравление с днём рождения">
+        <div class="birthday-celebration-icon" aria-hidden="true"><i data-lucide="cake-slice"></i></div>
+        <div><h2 class="birthday-celebration-title">С днём рождения, {{ birthday_first_name }}!</h2><div class="birthday-celebration-message">Желаем здоровья, благополучия и новых достижений. Спасибо, что вы с нами.</div></div>
+    </section>
+    {% endif %}
 
-<section class="panel" style="margin-bottom:18px;">
-    <div class="panel-header">
-        <h2 class="panel-title">Рабочий день</h2>
-        {% if workday %}<span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span>{% endif %}
-    </div>
-    <div class="panel-body">
-        {% if workday %}
-        <div class="grid workday-summary">
-            <div>
-                <div class="muted small">{{ today|date:"d M Y" }}</div>
+    <section class="dashboard-hero-new">
+        <div class="dashboard-hero-copy">
+            <div class="dashboard-kicker"><i data-lucide="sparkles"></i>Рабочее пространство Students Life</div>
+            <h2>Всё важное для работы — на одном экране.</h2>
+            <p>Проверяйте новые анкеты, документы и обращения клиентов, затем переходите в нужный сервис без поиска по вкладкам.</p>
+            <div class="dashboard-hero-actions">
+                <a class="btn primary" href="{% url 'portal:onboarding_submissions' %}"><i data-lucide="inbox"></i>Открыть заявки</a>
+                <a class="btn secondary" href="{{ dashboard_services.0.url }}" target="_blank" rel="noopener"><i data-lucide="smile-plus"></i>Указать настроение</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-service-grid" aria-label="Быстрый доступ к сервисам">
+        {% for service in dashboard_services %}
+        <a class="dashboard-service {{ service.tone }}" href="{{ service.url }}" target="_blank" rel="noopener">
+            <div class="dashboard-service-icon"><i data-lucide="{{ service.icon }}"></i></div>
+            <div><strong>{{ service.label }}</strong><span>{{ service.description }}</span></div>
+        </a>
+        {% endfor %}
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div><h2 class="panel-title">Рабочий день</h2><div class="muted small">{{ today|date:"d M Y" }}</div></div>
+            {% if workday %}<span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span>{% endif %}
+        </div>
+        <div class="panel-body">
+            {% if workday %}
+            <div class="grid workday-summary">
                 <div class="strong dashboard-workday-time">Отработано: {{ workday.total_work_hours }} ч</div>
+                <div class="filters">
+                    {% if workday.status == 'not_started' %}<form method="post" action="{% url 'portal:workday_start' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button></form>
+                    {% elif workday.status == 'closed' or workday.status == 'auto_closed' %}<a class="btn secondary" href="{% url 'portal:workday' %}"><i data-lucide="timer"></i>Открыть рабочий день</a>
+                    {% else %}<a class="btn primary" href="{% url 'portal:workday' %}"><i data-lucide="file-pen-line"></i>{% if workday.has_report %}Отчёт отправлен{% else %}Отправить отчёт{% endif %}</a><form method="post" action="{% url 'portal:workday_close' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn secondary" type="submit"><i data-lucide="square-check-big"></i>Закрыть день</button></form>{% endif %}
+                </div>
             </div>
-            <div class="filters">
-                {% if workday.status == 'not_started' %}
-                <form method="post" action="{% url 'portal:workday_start' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button></form>
-                {% elif workday.status == 'closed' or workday.status == 'auto_closed' %}
-                <a class="btn secondary" href="{% url 'portal:workday' %}"><i data-lucide="timer"></i>Открыть рабочий день</a>
-                {% else %}
-                <a class="btn primary" href="{% url 'portal:workday' %}"><i data-lucide="file-pen-line"></i>{% if workday.has_report %}Отчёт отправлен{% else %}Отправить отчёт{% endif %}</a>
-                <form method="post" action="{% url 'portal:workday_close' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn secondary" type="submit"><i data-lucide="square-check-big"></i>Закрыть день</button></form>
-                {% endif %}
+            {% else %}<div class="empty">Для учёта рабочего дня администратор должен создать профиль сотрудника.</div>{% endif %}
+        </div>
+    </section>
+
+    <section class="metric-grid">
+        {% for metric in metrics %}<a class="metric" href="{{ metric.url }}"><div class="metric-top"><span>{{ metric.label }}</span><i data-lucide="{{ metric.icon }}"></i></div><div class="metric-value">{{ metric.value }}</div></a>{% endfor %}
+    </section>
+
+    <section class="dashboard-insights" aria-label="Рабочая статистика">
+        <article class="dashboard-insight">
+            <div class="dashboard-insight-head"><div><h3>Экспресс-анкеты</h3><p>Распределение по текущему статусу</p></div><a class="pill" href="{% url 'portal:onboarding_submissions' %}">{{ express_total }} всего</a></div>
+            <div class="chart-bars">
+                {% for item in express_chart %}<div><div class="chart-bar-head"><span>{{ item.label }}</span><strong>{{ item.value }}</strong></div><div class="chart-track"><div class="chart-fill" style="--bar-width:{{ item.percent }}%;--bar-color:{{ item.color }};"></div></div></div>{% endfor %}
             </div>
-        </div>
-        {% else %}<div class="empty">Для учёта рабочего дня администратор должен создать профиль сотрудника.</div>{% endif %}
-    </div>
-</section>
+        </article>
+        <a class="dashboard-insight" href="{{ disk_url }}" target="_blank" rel="noopener">
+            <div class="dashboard-insight-head"><div><h3>DiskSL</h3><p>Облачное хранилище</p></div><i data-lucide="external-link"></i></div>
+            <div class="donut-wrap">
+                {% if disk_usage %}<div class="dashboard-donut" style="--chart-progress:{{ disk_usage.degrees }}deg;--donut-color:#b71d17;"><strong>{{ disk_usage.percent }}%</strong></div><div class="donut-copy"><strong>Свободно {{ disk_usage.free }}</strong><span>Занято {{ disk_usage.used }} из {{ disk_usage.total }}</span></div>
+                {% else %}<div class="dashboard-donut" style="--chart-progress:0deg;--donut-color:#b71d17;"><strong>—</strong></div><div class="donut-copy"><strong>Открыть DiskSL</strong><span>Статистика появится после ответа хранилища</span></div>{% endif %}
+            </div>
+        </a>
+        <a class="dashboard-insight" href="{% url 'portal:workday' %}">
+            <div class="dashboard-insight-head"><div><h3>Команда сегодня</h3><p>Начали рабочий день</p></div><i data-lucide="users-round"></i></div>
+            <div class="donut-wrap"><div class="dashboard-donut" style="--chart-progress:{{ workday_stats.degrees }}deg;--donut-color:#0d416d;"><strong>{{ workday_stats.percent }}%</strong></div><div class="donut-copy"><strong>{{ workday_stats.started }} из {{ workday_stats.total }}</strong><span>активных сотрудников отметились</span></div></div>
+        </a>
+    </section>
 
-<section class="metric-grid">
-    {% for metric in metrics %}
-    <a class="metric" href="{{ metric.url }}"><div class="metric-top"><span>{{ metric.label }}</span><i data-lucide="{{ metric.icon }}"></i></div><div class="metric-value">{{ metric.value }}</div></a>
-    {% endfor %}
-</section>
+    {% if admin_metrics %}<section class="metric-grid compact-metrics">{% for metric in admin_metrics %}<div class="metric"><div class="metric-top"><span>{{ metric.label }}</span><i data-lucide="{{ metric.icon }}"></i></div><div class="metric-value">{{ metric.value }}</div></div>{% endfor %}</section>{% endif %}
 
-{% if admin_metrics %}
-<section class="metric-grid compact-metrics">
-    {% for metric in admin_metrics %}<div class="metric"><div class="metric-top"><span>{{ metric.label }}</span><i data-lucide="{{ metric.icon }}"></i></div><div class="metric-value">{{ metric.value }}</div></div>{% endfor %}
-</section>
-{% endif %}
+    <section class="dashboard-list-grid">
+        <div class="panel"><div class="panel-header"><h2 class="panel-title">Экспресс-анкеты</h2><a class="pill" href="{% url 'portal:onboarding_submissions' %}">Все</a></div><div class="panel-body list">{% for item in recent_express %}<a class="list-row" href="{% url 'portal:onboarding_submission_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:"Без ФИО" }}</div><div class="muted small">{{ item.phone|default:item.email }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.submitted_at|date:"d.m" }}</span></a>{% empty %}<div class="empty">Новых экспресс-анкет нет.</div>{% endfor %}</div></div>
+        <div class="panel"><div class="panel-header"><h2 class="panel-title">Полные анкеты</h2><a class="pill" href="{% url 'portal:client_questionnaires' %}">Все</a></div><div class="panel-body list">{% for item in recent_questionnaires %}<a class="list-row" href="{% url 'portal:client_questionnaire_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:item.client.full_name }}</div><div class="muted small">{{ item.client.sl_id|default:"Без SL-ID" }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.updated_at|date:"d.m" }}</span></a>{% empty %}<div class="empty">Полных анкет пока нет.</div>{% endfor %}</div></div>
+        <div class="panel"><div class="panel-header"><h2 class="panel-title">Заявки с сайта</h2><a class="pill" href="{% url 'portal:incoming_leads' %}">Все</a></div><div class="panel-body list">{% for item in recent_website_leads %}<a class="list-row" href="{% url 'portal:lead_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:"Без ФИО" }}</div><div class="muted small">{{ item.phone|default:item.email }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.created_at|date:"d.m" }}</span></a>{% empty %}<div class="empty">Новых заявок с сайта нет.</div>{% endfor %}</div></div>
+        <div class="panel"><div class="panel-header"><h2 class="panel-title">Документы</h2><a class="pill" href="{% url 'portal:documents' %}">Все</a></div><div class="panel-body">{% include "portal/partials/dashboard_documents.html" with items=recent_documents %}</div></div>
+    </section>
 
-<section class="grid cols-2 dashboard-lists">
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Экспресс-анкеты</h2><a class="pill" href="{% url 'portal:onboarding_submissions' %}">Все</a></div>
-        <div class="panel-body list">
-            {% for item in recent_express %}
-            <a class="list-row" href="{% url 'portal:onboarding_submission_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:"Без ФИО" }}</div><div class="muted small">{{ item.phone|default:item.email }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.submitted_at|date:"d.m" }}</span></a>
-            {% empty %}<div class="empty">Новых экспресс-анкет нет.</div>{% endfor %}
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Полные анкеты</h2><a class="pill" href="{% url 'portal:client_questionnaires' %}">Все</a></div>
-        <div class="panel-body list">
-            {% for item in recent_questionnaires %}
-            <a class="list-row" href="{% url 'portal:client_questionnaire_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:item.client.full_name }}</div><div class="muted small">{{ item.client.sl_id|default:"Без SL-ID" }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.updated_at|date:"d.m" }}</span></a>
-            {% empty %}<div class="empty">Полных анкет пока нет.</div>{% endfor %}
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Заявки с сайта</h2><a class="pill" href="{% url 'portal:incoming_leads' %}">Все</a></div>
-        <div class="panel-body list">
-            {% for item in recent_website_leads %}
-            <a class="list-row" href="{% url 'portal:lead_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:"Без ФИО" }}</div><div class="muted small">{{ item.phone|default:item.email }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.created_at|date:"d.m" }}</span></a>
-            {% empty %}<div class="empty">Новых заявок с сайта нет.</div>{% endfor %}
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Документы</h2><a class="pill" href="{% url 'portal:documents' %}">Все</a></div>
-        <div class="panel-body">{% include "portal/partials/dashboard_documents.html" with items=recent_documents %}</div>
-    </div>
-</section>
-
-<section class="panel" style="margin-top:18px;">
-    <div class="panel-header"><h2 class="panel-title">Дни рождения в этом месяце</h2></div>
-    <div class="panel-body list">
-        {% for item in birthday_people %}<div class="list-row"><div><div class="strong">{{ item.user.get_full_name|default:item.user.email }}</div><div class="muted small">{{ item.office.name|default:item.company.name }}</div></div><span class="pill ok">{{ item.user.dob|date:"d M" }}</span></div>
-        {% empty %}<div class="empty">Дней рождения в этом месяце нет.</div>{% endfor %}
-    </div>
-</section>
+    <section class="panel"><div class="panel-header"><h2 class="panel-title">Дни рождения в этом месяце</h2></div><div class="panel-body list">{% for item in birthday_people %}<div class="list-row"><div><div class="strong">{{ item.user.get_full_name|default:item.user.email }}</div><div class="muted small">{{ item.office.name|default:item.company.name }}</div></div><span class="pill ok">{{ item.user.dob|date:"d M" }}</span></div>{% empty %}<div class="empty">Дней рождения в этом месяце нет.</div>{% endfor %}</div></section>
+</div>
 {% endblock %}

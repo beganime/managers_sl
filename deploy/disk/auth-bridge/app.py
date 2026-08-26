@@ -287,6 +287,14 @@ class Handler(BaseHTTPRequestHandler):
             except Exception as exc:
                 print(f'storage usage failed: {exc}', flush=True)
                 return self.respond(502, {'detail': 'Storage is temporarily unavailable'})
+        if parsed.path == '/internal/usage':
+            if not self.valid_provision_token():
+                return self.respond(401, {'detail': 'Authentication failed'})
+            try:
+                return self.respond(200, storage_usage())
+            except Exception as exc:
+                print(f'internal storage usage failed: {exc}', flush=True)
+                return self.respond(502, {'detail': 'Storage is temporarily unavailable'})
         return self.respond(404, {'detail': 'Not found'})
 
     def do_POST(self):

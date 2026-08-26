@@ -237,7 +237,12 @@ SERVICE_REQUEST_TIMEOUT = int(os.environ.get('SERVICE_REQUEST_TIMEOUT', '20'))
 AKYLCHAT_API_BASE_URL = os.environ.get('AKYLCHAT_API_BASE_URL', '').rstrip('/')
 AKYLCHAT_SERVICE_TOKEN = os.environ.get('AKYLCHAT_SERVICE_TOKEN', '')
 DISK_AUTH_SERVICE_TOKEN = os.environ.get('DISK_AUTH_SERVICE_TOKEN', '')
+EXAM_SL_AUTH_SERVICE_TOKEN = os.environ.get('EXAM_SL_AUTH_SERVICE_TOKEN', '')
 DISK_WEB_URL = os.environ.get('DISK_WEB_URL', 'https://disk.manager-sl.ru/web/client/login')
+DISK_USAGE_API_URL = os.environ.get(
+    'DISK_USAGE_API_URL',
+    'https://disk.manager-sl.ru/api/internal/disk/usage',
+)
 DISK_PROVISION_API_URL = os.environ.get(
     'DISK_PROVISION_API_URL',
     'https://disk.manager-sl.ru/api/internal/disk/folders',

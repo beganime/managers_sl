@@ -1,208 +1,160 @@
-/* DiskSL branding overrides. Loaded by SFTPGo as additional CSS. */
+/* DiskSL visual system. Loaded by SFTPGo as additional CSS. */
 
-:root {
-    --bs-primary: #b71d17;
-    --bs-primary-rgb: 183, 29, 23;
-    --bs-link-color: #0d416d;
-    --bs-link-hover-color: #092f50;
-    --bs-border-radius: 0.65rem;
+:root,
+[data-bs-theme="light"] {
+    color-scheme: light;
+    --bs-primary: #b4231d;
+    --bs-primary-rgb: 180, 35, 29;
+    --bs-link-color: #0a477a;
+    --bs-link-hover-color: #07355d;
+    --bs-border-radius: .75rem;
+    --disksl-bg: #f4f7fb;
+    --disksl-surface: #ffffff;
+    --disksl-surface-soft: #f7f9fc;
+    --disksl-border: #dce3ec;
+    --disksl-text: #172033;
+    --disksl-muted: #667085;
+    --disksl-track: #e8edf3;
+    --disksl-hover: #eef3f8;
+    --disksl-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 12px 32px rgba(15, 23, 42, .08);
 }
 
-body {
-    background: #f4f6f8 !important;
-    color: #172033;
+[data-bs-theme="dark"] {
+    color-scheme: dark;
+    --bs-primary: #e04b43;
+    --bs-primary-rgb: 224, 75, 67;
+    --bs-link-color: #78b9ec;
+    --bs-link-hover-color: #acd6f6;
+    --bs-body-bg: #0b1220;
+    --bs-body-color: #edf2f7;
+    --bs-secondary-bg: #172033;
+    --bs-tertiary-bg: #202a3d;
+    --bs-border-color: #344057;
+    --disksl-bg: #0b1220;
+    --disksl-surface: #141d2d;
+    --disksl-surface-soft: #1a2538;
+    --disksl-border: #344057;
+    --disksl-text: #edf2f7;
+    --disksl-muted: #aeb8c8;
+    --disksl-track: #2b374c;
+    --disksl-hover: #202c41;
+    --disksl-shadow: 0 1px 2px rgba(0, 0, 0, .35), 0 14px 38px rgba(0, 0, 0, .28);
 }
 
-.card,
-.modal-content,
-.dropdown-menu {
-    border: 1px solid #dce2e9 !important;
-    border-radius: 12px !important;
-    box-shadow: 0 1px 2px rgba(15, 23, 42, .05), 0 10px 28px rgba(15, 23, 42, .07) !important;
+html,
+body { min-height: 100%; background: var(--disksl-bg) !important; color: var(--disksl-text) !important; }
+.card, .modal-content, .dropdown-menu, .offcanvas, .list-group-item, .toast, .popover {
+    color: var(--disksl-text) !important;
+    background-color: var(--disksl-surface) !important;
+    border-color: var(--disksl-border) !important;
 }
-
-.btn-primary,
-.btn-light-primary:hover {
-    border-color: #b71d17 !important;
-    background-color: #b71d17 !important;
+.card, .modal-content, .dropdown-menu {
+    border: 1px solid var(--disksl-border) !important;
+    border-radius: 14px !important;
+    box-shadow: var(--disksl-shadow) !important;
+}
+.table, .table > :not(caption) > * > * {
+    color: var(--disksl-text) !important;
+    background-color: transparent !important;
+    border-color: var(--disksl-border) !important;
+}
+.table-hover > tbody > tr:hover > * { background-color: var(--disksl-hover) !important; }
+.form-control, .form-select, .input-group-text, .page-link {
+    color: var(--disksl-text) !important;
+    background-color: var(--disksl-surface) !important;
+    border-color: var(--disksl-border) !important;
+}
+.form-control::placeholder { color: var(--disksl-muted) !important; opacity: 1; }
+.text-muted, .text-gray-500, .text-gray-600, .text-gray-700 { color: var(--disksl-muted) !important; }
+.border, .border-top, .border-bottom, .dropdown-divider { border-color: var(--disksl-border) !important; }
+.btn-primary, .btn-light-primary:hover {
+    border-color: #b4231d !important;
+    background-color: #b4231d !important;
     color: #fff !important;
 }
-
-/* Login: one centered brand mark without a duplicated text title. */
-#sign_in_form > .container.mb-10 .row {
-    justify-content: center;
+.btn-primary:hover { border-color: #951b17 !important; background-color: #951b17 !important; }
+[data-bs-theme="dark"] .btn-light, [data-bs-theme="dark"] .btn-secondary, [data-bs-theme="dark"] .btn-light-primary {
+    color: var(--disksl-text) !important;
+    background: var(--disksl-surface-soft) !important;
+    border-color: var(--disksl-border) !important;
 }
 
-#sign_in_form > .container.mb-10 .col-5 {
-    flex: 0 0 auto;
-    width: auto;
-    padding: 0;
-}
-
-#sign_in_form > .container.mb-10 .col-7 {
-    display: none;
-}
-
+/* Login: one centered official mark without duplicated title. */
+#sign_in_form > .container.mb-10 .row { justify-content: center; }
+#sign_in_form > .container.mb-10 .col-5 { flex: 0 0 auto; width: auto; padding: 0; }
+#sign_in_form > .container.mb-10 .col-7 { display: none; }
 #sign_in_form > .container.mb-10 img[alt="Logo"] {
     width: 138px !important;
     height: 138px !important;
     object-fit: cover;
     border-radius: 22px;
-    box-shadow: 0 2px 8px rgba(3, 39, 74, 0.08);
+    border: 1px solid var(--disksl-border);
+    box-shadow: 0 8px 26px rgba(3, 39, 74, .12);
 }
 
-/* Search and filters inserted by disksl.js on the files page. */
-.disksl-tools-panel {
-    margin: 0 2rem;
-    padding: 16px;
-    border: 1px solid var(--bs-gray-300);
-    border-radius: 10px;
-    background: var(--bs-body-bg);
+/* Search, activity and usage blocks inserted by disksl.js. */
+.disksl-tools-panel, .disksl-activity-panel, .disksl-usage {
+    border: 1px solid var(--disksl-border);
+    border-radius: 12px;
+    color: var(--disksl-text);
+    background: var(--disksl-surface);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
 }
-
-.disksl-tools-panel[hidden] {
-    display: none !important;
-}
-
-.disksl-activity-panel {
-    margin: 12px 2rem 0;
-    padding: 16px;
-    border: 1px solid var(--bs-gray-300);
-    border-radius: 10px;
-    background: var(--bs-body-bg);
-}
-
-.disksl-activity-panel[hidden] {
-    display: none !important;
-}
-
+.disksl-tools-panel { margin: 0 2rem; padding: 16px; }
+.disksl-tools-panel[hidden], .disksl-activity-panel[hidden] { display: none !important; }
+.disksl-activity-panel { margin: 12px 2rem 0; padding: 16px; }
 .disksl-usage {
     display: flex;
     align-items: center;
     gap: 16px;
     margin: 12px 2rem 0;
     padding: 14px 16px;
-    border: 1px solid var(--bs-gray-300);
-    border-radius: 10px;
-    background: var(--bs-body-bg);
     --disksl-usage: 0deg;
 }
-
 .disksl-usage-chart {
+    position: relative;
     display: grid;
     place-items: center;
     width: 62px;
     height: 62px;
     flex: 0 0 62px;
     border-radius: 50%;
-    background: conic-gradient(var(--bs-primary) var(--disksl-usage), var(--bs-gray-200) 0);
-    position: relative;
+    background: conic-gradient(var(--bs-primary) var(--disksl-usage), var(--disksl-track) 0);
 }
-
 .disksl-usage-chart::after {
     content: '';
     position: absolute;
     width: 46px;
     height: 46px;
     border-radius: 50%;
-    background: var(--bs-body-bg);
+    background: var(--disksl-surface);
 }
-
-.disksl-usage-percent { position: relative; z-index: 1; font-size: 11px; font-weight: 700; }
-.disksl-usage-title { color: var(--bs-body-color); font-weight: 700; }
-.disksl-usage-values { color: var(--bs-gray-600); font-size: 12px; margin-top: 3px; }
-
-.disksl-activity-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    margin-bottom: 10px;
-}
-
-.disksl-activity-title {
-    color: var(--bs-body-color);
-    font-size: 15px;
-    font-weight: 700;
-}
-
-.disksl-activity-subtitle,
-.disksl-activity-meta,
-.disksl-activity-empty {
-    color: var(--bs-gray-600);
-    font-size: 12px;
-}
-
-.disksl-activity-list {
-    max-height: 360px;
-    overflow-y: auto;
-}
-
-.disksl-activity-row {
-    padding: 10px 2px;
-    border-top: 1px solid var(--bs-gray-200);
-}
-
-.disksl-activity-main,
-.disksl-activity-meta {
-    overflow-wrap: anywhere;
-}
-
-.disksl-activity-empty {
-    padding: 12px 2px;
-}
-
-.disksl-tools {
-    display: flex;
-    align-items: end;
-    flex-wrap: wrap;
-    gap: 10px;
-}
-
-.disksl-field {
-    position: relative;
-    min-width: 160px;
-}
-
-.disksl-field--search {
-    flex: 1 1 320px;
-    max-width: 520px;
-}
-
-.disksl-field--local {
-    flex: 1 1 240px;
-    max-width: 360px;
-}
-
-.disksl-field--local > .d-flex,
-.disksl-field--local input {
-    width: 100% !important;
-}
-
-.disksl-label {
-    display: block;
-    margin: 0 0 5px 2px;
-    color: var(--bs-gray-700);
-    font-size: 12px;
-    font-weight: 600;
-}
-
+.disksl-usage-percent { position: relative; z-index: 1; font-size: 11px; font-weight: 800; }
+.disksl-usage-title { color: var(--disksl-text); font-weight: 750; }
+.disksl-usage-values { color: var(--disksl-muted); font-size: 12px; margin-top: 3px; }
+.disksl-activity-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+.disksl-activity-title { color: var(--disksl-text); font-size: 15px; font-weight: 750; }
+.disksl-activity-subtitle, .disksl-activity-meta, .disksl-activity-empty { color: var(--disksl-muted); font-size: 12px; }
+.disksl-activity-list { max-height: 360px; overflow-y: auto; }
+.disksl-activity-row { padding: 10px 2px; border-top: 1px solid var(--disksl-border); }
+.disksl-activity-main, .disksl-activity-meta { overflow-wrap: anywhere; }
+.disksl-activity-empty { padding: 12px 2px; }
+.disksl-tools { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; }
+.disksl-field { position: relative; min-width: 160px; }
+.disksl-field--search { flex: 1 1 320px; max-width: 520px; }
+.disksl-field--local { flex: 1 1 240px; max-width: 360px; }
+.disksl-field--local > .d-flex, .disksl-field--local input { width: 100% !important; }
+.disksl-label { display: block; margin: 0 0 5px 2px; color: var(--disksl-muted); font-size: 12px; font-weight: 650; }
 .disksl-control {
     width: 100%;
     min-height: 42px;
-    border: 1px solid var(--bs-gray-300);
-    border-radius: 8px;
-    background: var(--bs-body-bg);
-    color: var(--bs-body-color);
+    border: 1px solid var(--disksl-border);
+    border-radius: 9px;
+    background: var(--disksl-surface-soft);
+    color: var(--disksl-text);
     padding: 8px 12px;
 }
-
-.disksl-control:focus {
-    border-color: var(--bs-primary);
-    outline: 0;
-    box-shadow: 0 0 0 3px rgba(0, 117, 255, 0.12);
-}
-
+.disksl-control:focus { border-color: var(--bs-primary); outline: 0; box-shadow: 0 0 0 3px rgba(var(--bs-primary-rgb), .15); }
 .disksl-results {
     position: absolute;
     z-index: 1090;
@@ -212,64 +164,25 @@ body {
     display: none;
     max-height: 320px;
     overflow-y: auto;
-    border: 1px solid var(--bs-gray-300);
+    border: 1px solid var(--disksl-border);
     border-radius: 10px;
-    background: var(--bs-body-bg);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    background: var(--disksl-surface);
+    box-shadow: var(--disksl-shadow);
 }
-
-.disksl-results.is-open {
-    display: block;
-}
-
-.disksl-result,
-.disksl-result-empty {
-    display: block;
-    padding: 10px 12px;
-}
-
-.disksl-result {
-    color: var(--bs-body-color);
-    text-decoration: none;
-    border-bottom: 1px solid var(--bs-gray-200);
-}
-
-.disksl-result:last-child {
-    border-bottom: 0;
-}
-
-.disksl-result:hover {
-    color: var(--bs-primary);
-    background: var(--bs-gray-100);
-}
-
-.disksl-result small,
-.disksl-result-empty {
-    color: var(--bs-gray-600);
-}
+.disksl-results.is-open { display: block; }
+.disksl-result, .disksl-result-empty { display: block; padding: 10px 12px; }
+.disksl-result { color: var(--disksl-text); text-decoration: none; border-bottom: 1px solid var(--disksl-border); }
+.disksl-result:last-child { border-bottom: 0; }
+.disksl-result:hover { color: var(--bs-primary); background: var(--disksl-hover); }
+.disksl-result small, .disksl-result-empty { color: var(--disksl-muted); }
 
 @media (max-width: 767px) {
-    #sign_in_form > .container.mb-10 img[alt="Logo"] {
-        width: 112px !important;
-        height: 112px !important;
-        border-radius: 18px;
-    }
-
-    .disksl-field,
-    .disksl-field--search {
-        flex: 1 1 100%;
-        max-width: none;
-    }
-
-    .disksl-tools-panel {
-        margin: 0 1rem;
-        padding: 12px;
-    }
-
-    .disksl-activity-panel {
-        margin: 12px 1rem 0;
-        padding: 12px;
-    }
-
-    .disksl-usage { margin: 12px 1rem 0; }
+    #sign_in_form > .container.mb-10 img[alt="Logo"] { width: 104px !important; height: 104px !important; border-radius: 18px; }
+    .card, .modal-content { border-radius: 12px !important; }
+    .disksl-field, .disksl-field--search, .disksl-field--local { flex: 1 1 100%; max-width: none; }
+    .disksl-tools-panel { margin: 0 .75rem; padding: 12px; }
+    .disksl-activity-panel { margin: 10px .75rem 0; padding: 12px; }
+    .disksl-usage { margin: 10px .75rem 0; padding: 12px; }
+    .disksl-usage-chart { width: 54px; height: 54px; flex-basis: 54px; }
+    .disksl-usage-chart::after { width: 40px; height: 40px; }
 }

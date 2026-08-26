@@ -104,6 +104,49 @@ DISK_UPLOAD_EXTENSIONS = {'.pdf', '.docx', '.jpg', '.jpeg', '.png'}
 DISK_UPLOAD_MAX_SIZE = 50 * 1024 * 1024
 
 
+def format_storage_size(value):
+    size = max(int(value or 0), 0)
+    units = ('Б', 'КБ', 'МБ', 'ГБ', 'ТБ')
+    amount = float(size)
+    unit = units[0]
+    for candidate in units:
+        unit = candidate
+        if amount < 1024 or candidate == units[-1]:
+            break
+        amount /= 1024
+    precision = 0 if unit == 'Б' else (1 if amount >= 10 else 2)
+    return f'{amount:.{precision}f} {unit}'
+
+
+def dashboard_disk_usage():
+    endpoint = str(getattr(settings, 'DISK_USAGE_API_URL', '') or '').strip()
+    token = str(getattr(settings, 'DISK_PROVISION_SERVICE_TOKEN', '') or '').strip()
+    if not endpoint or not token:
+        return None
+    try:
+        response = requests.get(
+            endpoint,
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=(3, 8),
+        )
+        response.raise_for_status()
+        payload = response.json()
+        used = max(int(payload.get('used_bytes') or 0), 0)
+        total = max(int(payload.get('total_bytes') or 0), 1)
+        free = max(int(payload.get('free_bytes') or total - used), 0)
+        percent = max(0.0, min(float(payload.get('usage_percent') or used / total * 100), 100.0))
+        return {
+            'used': format_storage_size(used),
+            'free': format_storage_size(free),
+            'total': format_storage_size(total),
+            'percent': round(percent, 1),
+            'degrees': round(percent * 3.6, 1),
+            'objects': max(int(payload.get('objects') or 0), 0),
+        }
+    except (requests.RequestException, TypeError, ValueError):
+        return None
+
+
 def build_client_disk_url(client):
     """Return the client's DiskSL folder when provisioning has completed."""
     disk_step = client.provisioning_steps.filter(
@@ -1363,6 +1406,25 @@ class DashboardView(PortalContextMixin, TemplateView):
             OnboardingSubmission.STATUS_IN_REVIEW,
             OnboardingSubmission.STATUS_CHANGES_REQUESTED,
         ]
+        express_counts = {
+            row['status']: row['total']
+            for row in express_submissions.values('status').annotate(total=Count('id'))
+        }
+        express_chart = [
+            {'label': 'Ожидают', 'value': express_counts.get(OnboardingSubmission.STATUS_SUBMITTED, 0), 'color': '#b71d17'},
+            {'label': 'На проверке', 'value': express_counts.get(OnboardingSubmission.STATUS_IN_REVIEW, 0), 'color': '#0d416d'},
+            {'label': 'Исправления', 'value': express_counts.get(OnboardingSubmission.STATUS_CHANGES_REQUESTED, 0), 'color': '#d97706'},
+            {'label': 'Одобрены', 'value': express_counts.get(OnboardingSubmission.STATUS_APPROVED, 0), 'color': '#198754'},
+        ]
+        express_total = max(sum(item['value'] for item in express_chart), 1)
+        for item in express_chart:
+            item['percent'] = round(item['value'] / express_total * 100, 1)
+
+        active_employees = employee_profiles.filter(is_active=True).count()
+        started_today = workdays.filter(date=today).exclude(status=WorkDay.STATUS_NOT_STARTED).count()
+        workday_percent = round(min(started_today / max(active_employees, 1) * 100, 100), 1)
+        disk_usage = dashboard_disk_usage()
+        task_manager_url = settings.TASK_MANAGER_WEB_URL.rstrip('/')
 
         context.update({
             'metrics': [
@@ -1389,6 +1451,46 @@ class DashboardView(PortalContextMixin, TemplateView):
                 and user.dob.day == today.day
             ),
             'birthday_first_name': user.first_name.strip() if user.first_name else full_name(user),
+            'express_chart': express_chart,
+            'express_total': sum(item['value'] for item in express_chart),
+            'workday_stats': {
+                'started': started_today,
+                'total': active_employees,
+                'percent': workday_percent,
+                'degrees': round(workday_percent * 3.6, 1),
+            },
+            'disk_usage': disk_usage,
+            'dashboard_services': [
+                {
+                    'label': 'Укажите настроение',
+                    'description': 'Отметьте, как проходит рабочий день.',
+                    'icon': 'smile-plus',
+                    'url': f'{task_manager_url}/mood',
+                    'tone': 'red',
+                },
+                {
+                    'label': 'Перевести документ',
+                    'description': 'Откройте TranslateSL и выберите шаблон.',
+                    'icon': 'languages',
+                    'url': settings.TRANSLATE_SL_URL,
+                    'tone': 'blue',
+                },
+                {
+                    'label': 'Экзамены',
+                    'description': 'Расписание и уведомления клиентов.',
+                    'icon': 'calendar-check-2',
+                    'url': settings.EXAM_SL_WEB_URL,
+                    'tone': 'navy',
+                },
+                {
+                    'label': 'Рабочие задачи',
+                    'description': 'Личные и общие задачи команды.',
+                    'icon': 'list-checks',
+                    'url': task_manager_url,
+                    'tone': 'slate',
+                },
+            ],
+            'disk_url': settings.DISK_WEB_URL,
             'today': today,
         })
         return context

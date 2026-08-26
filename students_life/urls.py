@@ -11,6 +11,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from apps.portal.views import PortalHomeView
 from users.auth_views import LoginView, LogoutView
 from users.disk_auth import disk_authenticate
+from users.service_auth import exam_authenticate
 from students_life.api_views import HealthCheckView, AppConfigView, DashboardSummaryView
 from students_life.mobile_api import (
     CalendarEventDetailView,
@@ -58,6 +59,7 @@ urlpatterns = [
     path('api/auth/logout/', LogoutView.as_view(), name='api_logout'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/internal/disk/auth/', disk_authenticate, name='disk_authenticate'),
+    path('api/internal/exam/auth/', exam_authenticate, name='exam_authenticate'),
 
     path('api/clients/', include('clients.urls')),
     path('api/tasks/', include('tasks.urls')),
