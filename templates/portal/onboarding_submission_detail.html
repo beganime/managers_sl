@@ -1,0 +1,198 @@
+{% extends "portal/base.html" %}
+
+{% block extra_head %}
+{% include "portal/partials/onboarding_monochrome_styles.html" %}
+{% endblock %}
+
+{% block content %}
+<div class="onboarding-page">
+<div class="toolbar">
+    <div class="filters">
+        <a class="btn" href="{% url 'portal:onboarding_submissions' %}"><i data-lucide="arrow-left"></i>К списку</a>
+        {% if submission.status == "approved" %}<span class="pill ok">Одобрена</span>
+        {% elif submission.status == "rejected" %}<span class="pill danger">Отклонена</span>
+        {% elif submission.status == "changes_requested" %}<span class="pill warn">Ожидает исправлений</span>
+        {% elif submission.status == "in_review" %}<span class="pill warn">На проверке</span>
+        {% else %}<span class="pill">Новая анкета</span>{% endif %}
+    </div>
+    <div class="muted small">{{ submission.public_id }}</div>
+</div>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">{{ submission.full_name }}</h2>
+            <div class="muted small">{{ submission.get_stage_display }} · {{ submission.get_kind_display }} · учебный год {{ submission.academic_year }}</div>
+        </div>
+        {% if submission.client %}<a class="btn primary" href="{% url 'portal:client_detail' submission.client.id %}">{{ submission.client.sl_id }} · карточка клиента</a>{% endif %}
+    </div>
+    <div class="panel-body">
+        <div class="grid cols-4">
+            <div><div class="muted small">Телефон</div><strong>{{ submission.phone }}</strong></div>
+            <div><div class="muted small">Email</div><strong>{{ submission.email|default:"—" }}</strong></div>
+            <div><div class="muted small">Дата рождения</div><strong>{{ submission.date_of_birth|date:"d.m.Y"|default:"—" }}</strong></div>
+            <div><div class="muted small">Гражданство</div><strong>{{ submission.citizenship|default:"—" }}</strong></div>
+            <div><div class="muted small">Отправлена</div><strong>{{ submission.submitted_at|date:"d.m.Y H:i" }}</strong></div>
+            <div><div class="muted small">Проверяет / проверил</div><strong>{% if submission.reviewed_by %}{{ submission.reviewed_by.get_full_name|default:submission.reviewed_by.email }}{% else %}—{% endif %}</strong></div>
+            <div><div class="muted small">Дата решения</div><strong>{{ submission.reviewed_at|date:"d.m.Y H:i"|default:"—" }}</strong></div>
+            <div><div class="muted small">Firebase token</div><strong>{% if submission.fcm_token %}Получен{% else %}Не получен{% endif %}</strong></div>
+        </div>
+        {% if submission.review_comment %}<div class="message warning" style="margin-top:14px;">Комментарий менеджера: {{ submission.review_comment }}</div>{% endif %}
+    </div>
+</section>
+
+{% if submission.kind == "applicant" and submission.stage == "full" %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><h2 class="panel-title">Выбранные вузы и программы</h2><span class="pill">{{ submission.university_choices.count }} вузов</span></div>
+    <div class="panel-body table-wrap">
+        <table>
+            <thead><tr><th>Приоритет</th><th>Вуз</th><th>Программы</th></tr></thead>
+            <tbody>
+                {% for choice in submission.university_choices.all %}
+                    <tr>
+                        <td>{{ choice.rank }}</td>
+                        <td><strong>{{ choice.university.name }}</strong></td>
+                        <td>{% for program in choice.programs.all %}{{ program.name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
+                    </tr>
+                {% empty %}<tr><td colspan="3" class="muted">Выборы не заполнены.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><h2 class="panel-title">Данные анкеты</h2></div>
+    <div class="panel-body">
+        {% for section in payload_sections %}
+            <div style="margin-bottom:18px;">
+                <h3 style="margin:0 0 8px; font-size:15px;">{{ section.title }}</h3>
+                <div class="grid cols-3">
+                    {% for row in section.rows %}
+                        <div class="item-card">
+                            <div class="muted small">{{ row.label }}</div>
+                            <strong style="white-space:pre-wrap; overflow-wrap:anywhere;">{% if row.filled %}{{ row.value }}{% else %}—{% endif %}</strong>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% empty %}<div class="empty">Дополнительные данные отсутствуют.</div>{% endfor %}
+    </div>
+</section>
+
+{% if submission.status == "approved" and submission.service_identity %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><h2 class="panel-title">Учётные данные клиента</h2><span class="pill ok">Созданы</span></div>
+    <div class="panel-body">
+        <div class="grid cols-3">
+            <div><div class="muted small">SL-ID / логин приложения</div><strong>{{ submission.service_identity.mobile_login }}</strong></div>
+            <div><div class="muted small">Единый пароль</div><strong>{{ submission.service_identity.shared_password }}</strong></div>
+            <div><div class="muted small">TMmail</div><strong>{{ submission.service_identity.tmmail_email|default:"Не требуется" }}</strong></div>
+        </div>
+    </div>
+</section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <div>
+            <h2 class="panel-title">Подключение системы</h2>
+            <div class="muted small">Повторный запуск использует тот же ключ и не создаёт второй аккаунт или ящик.</div>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="table-wrap">
+            <table>
+                <thead><tr><th>Шаг</th><th>Статус</th><th>Попытки</th><th>Последний запуск</th><th>Ошибка</th></tr></thead>
+                <tbody>
+                    {% for step in submission.provisioning_steps.all %}
+                        <tr>
+                            <td><strong>{{ step.get_step_display }}</strong></td>
+                            <td>
+                                {% if step.status == "success" %}<span class="pill ok">Готово</span>
+                                {% elif step.status == "failed" %}<span class="pill danger">Ошибка</span>
+                                {% elif step.status == "running" %}<span class="pill warn">Выполняется</span>
+                                {% elif step.status == "disabled" %}<span class="pill warn">Не настроено</span>
+                                {% elif step.status == "not_required" %}<span class="pill">Не требуется</span>
+                                {% else %}<span class="pill">Ожидает</span>{% endif %}
+                            </td>
+                            <td>{{ step.attempt_count }}</td>
+                            <td>{% if step.finished_at %}{{ step.finished_at|date:"d.m.Y H:i" }}{% elif step.started_at %}{{ step.started_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+                            <td>{{ step.last_error|truncatechars:120|default:"—" }}</td>
+                        </tr>
+                    {% empty %}<tr><td colspan="5" class="muted">Шаги ещё не созданы.</td></tr>{% endfor %}
+                    <tr>
+                        <td><strong>Google Sheets</strong></td>
+                        <td>
+                            {% if latest_sheet_sync.status == "success" %}<span class="pill ok">Готово</span>
+                            {% elif latest_sheet_sync.status == "failed" %}<span class="pill danger">Ошибка</span>
+                            {% elif latest_sheet_sync.status == "running" %}<span class="pill warn">Выполняется</span>
+                            {% elif latest_sheet_sync.status == "skipped" %}<span class="pill warn">Отключено</span>
+                            {% else %}<span class="pill">Ожидает</span>{% endif %}
+                        </td>
+                        <td>—</td>
+                        <td>{% if latest_sheet_sync.finished_at %}{{ latest_sheet_sync.finished_at|date:"d.m.Y H:i" }}{% elif latest_sheet_sync.created_at %}{{ latest_sheet_sync.created_at|date:"d.m.Y H:i" }}{% else %}—{% endif %}</td>
+                        <td>{{ latest_sheet_sync.error|truncatechars:120|default:"—" }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="contact-actions" style="margin-top:14px;">
+            <form method="post" action="{% url 'portal:onboarding_provisioning_retry' submission.id %}" data-disable-on-submit>
+                {% csrf_token %}<input type="hidden" name="target" value="services">
+                <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Повторить аккаунт и почту</button>
+            </form>
+            <form method="post" action="{% url 'portal:onboarding_provisioning_retry' submission.id %}" data-disable-on-submit>
+                {% csrf_token %}<input type="hidden" name="target" value="sheets">
+                <button class="btn" type="submit"><i data-lucide="refresh-cw"></i>Повторить Google Sheets</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if can_decide %}
+<section class="panel" x-data="{ correction: false, rejection: false }">
+    <div class="panel-header"><h2 class="panel-title">Решение менеджера</h2></div>
+    <div class="panel-body">
+        <div class="contact-actions">
+            {% if submission.status == "submitted" %}
+                <form method="post" action="{% url 'portal:onboarding_submission_review' submission.id %}" data-disable-on-submit>
+                    {% csrf_token %}<input type="hidden" name="decision" value="start_review">
+                    <button class="btn" type="submit"><i data-lucide="eye"></i>Взять на проверку</button>
+                </form>
+            {% endif %}
+            <form method="post" action="{% url 'portal:onboarding_submission_review' submission.id %}" data-disable-on-submit>
+                {% csrf_token %}<input type="hidden" name="decision" value="approve">
+                <button class="btn primary" type="submit"><i data-lucide="check"></i>{% if submission.stage == "express" and submission.kind == "applicant" %}Подтвердить заявку и открыть аккаунт{% else %}Одобрить и создать клиента{% endif %}</button>
+            </form>
+            <button class="btn" type="button" @click="correction = !correction; rejection = false"><i data-lucide="undo-2"></i>Вернуть на исправление</button>
+            <button class="btn danger" type="button" @click="rejection = !rejection; correction = false"><i data-lucide="x"></i>Отклонить</button>
+        </div>
+
+        <form x-show="correction" x-cloak method="post" action="{% url 'portal:onboarding_submission_review' submission.id %}" style="margin-top:14px;" data-disable-on-submit>
+            {% csrf_token %}<input type="hidden" name="decision" value="request_changes">
+            <textarea class="textarea" name="comment" rows="4" required placeholder="Что клиент должен исправить"></textarea>
+            <button class="btn primary" type="submit" style="margin-top:8px;">Отправить комментарий</button>
+        </form>
+        <form x-show="rejection" x-cloak method="post" action="{% url 'portal:onboarding_submission_review' submission.id %}" style="margin-top:14px;" data-disable-on-submit>
+            {% csrf_token %}<input type="hidden" name="decision" value="reject">
+            <textarea class="textarea" name="comment" rows="4" required placeholder="Причина отклонения"></textarea>
+            <button class="btn danger" type="submit" style="margin-top:8px;">Подтвердить отклонение</button>
+        </form>
+    </div>
+</section>
+{% endif %}
+
+{% if submission.review_events.exists %}
+<section class="panel" style="margin-top:16px;">
+    <div class="panel-header"><h2 class="panel-title">История решений</h2></div>
+    <div class="panel-body table-wrap">
+        <table>
+            <thead><tr><th>Дата</th><th>Действие</th><th>Сотрудник</th><th>Комментарий</th></tr></thead>
+            <tbody>{% for event in submission.review_events.all %}<tr><td>{{ event.created_at|date:"d.m.Y H:i" }}</td><td>{{ event.get_decision_display }}</td><td>{% if event.actor %}{{ event.actor.get_full_name|default:event.actor.email }}{% else %}Клиент{% endif %}</td><td>{{ event.comment|default:"—" }}</td></tr>{% endfor %}</tbody>
+        </table>
+    </div>
+</section>
+{% endif %}
+</div>
+{% endblock %}

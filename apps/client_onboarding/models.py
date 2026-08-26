@@ -12,6 +12,12 @@ from apps.education.models import Program, University
 
 
 class OnboardingSubmission(TimeStampedModel):
+    STAGE_EXPRESS = 'express'
+    STAGE_FULL = 'full'
+    STAGE_CHOICES = (
+        (STAGE_EXPRESS, 'Экспресс-заявка'),
+        (STAGE_FULL, 'Полная анкета'),
+    )
     KIND_APPLICANT = 'applicant'
     KIND_SCHOOL_STUDENT = 'school_student'
     KIND_CHOICES = (
@@ -20,11 +26,13 @@ class OnboardingSubmission(TimeStampedModel):
     )
 
     STATUS_SUBMITTED = 'submitted'
+    STATUS_IN_REVIEW = 'in_review'
     STATUS_CHANGES_REQUESTED = 'changes_requested'
     STATUS_APPROVED = 'approved'
     STATUS_REJECTED = 'rejected'
     STATUS_CHOICES = (
         (STATUS_SUBMITTED, 'Отправлена'),
+        (STATUS_IN_REVIEW, 'На проверке'),
         (STATUS_CHANGES_REQUESTED, 'Требуются исправления'),
         (STATUS_APPROVED, 'Одобрена'),
         (STATUS_REJECTED, 'Отклонена'),
@@ -33,6 +41,13 @@ class OnboardingSubmission(TimeStampedModel):
     public_id = models.UUIDField('Публичный ID', default=uuid.uuid4, unique=True, editable=False, db_index=True)
     access_token_hash = models.CharField('Хеш токена анкеты', max_length=64, editable=False)
     kind = models.CharField('Тип анкеты', max_length=24, choices=KIND_CHOICES)
+    stage = models.CharField(
+        'Этап заявки',
+        max_length=16,
+        choices=STAGE_CHOICES,
+        default=STAGE_FULL,
+        db_index=True,
+    )
     academic_year = models.PositiveSmallIntegerField('Год поступления', db_index=True)
     status = models.CharField('Статус', max_length=24, choices=STATUS_CHOICES, default=STATUS_SUBMITTED, db_index=True)
 
@@ -136,3 +151,133 @@ class AcademicYearSequence(models.Model):
 
     def __str__(self):
         return f'{self.academic_year}/{self.kind}: {self.last_number}'
+
+
+class ClientServiceIdentity(TimeStampedModel):
+    submission = models.OneToOneField(
+        OnboardingSubmission,
+        verbose_name='Анкета',
+        on_delete=models.PROTECT,
+        related_name='service_identity',
+    )
+    client = models.OneToOneField(
+        Client,
+        verbose_name='Клиент',
+        on_delete=models.CASCADE,
+        related_name='service_identity',
+    )
+    mobile_login = models.CharField('Логин Students Life', max_length=32, unique=True)
+    shared_password = models.CharField('Единый пароль', max_length=128)
+    tmmail_email = models.EmailField('Адрес TMmail', unique=True, null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Учётные данные сервисов клиента'
+        verbose_name_plural = 'Учётные данные сервисов клиентов'
+
+    def __str__(self):
+        return self.mobile_login
+
+
+class ClientProvisioningStep(TimeStampedModel):
+    STEP_MOBILE_ACCOUNT = 'mobile_account'
+    STEP_TMMAIL = 'tmmail'
+    STEP_DISK = 'disk'
+    STEP_CHOICES = (
+        (STEP_MOBILE_ACCOUNT, 'Аккаунт Students Life'),
+        (STEP_TMMAIL, 'Почтовый ящик TMmail'),
+        (STEP_DISK, 'Папки клиента на диске'),
+    )
+
+    STATUS_PENDING = 'pending'
+    STATUS_RUNNING = 'running'
+    STATUS_SUCCESS = 'success'
+    STATUS_FAILED = 'failed'
+    STATUS_DISABLED = 'disabled'
+    STATUS_NOT_REQUIRED = 'not_required'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Ожидает запуска'),
+        (STATUS_RUNNING, 'Выполняется'),
+        (STATUS_SUCCESS, 'Готово'),
+        (STATUS_FAILED, 'Ошибка'),
+        (STATUS_DISABLED, 'Сервис не настроен'),
+        (STATUS_NOT_REQUIRED, 'Не требуется'),
+    )
+
+    submission = models.ForeignKey(
+        OnboardingSubmission,
+        verbose_name='Анкета',
+        on_delete=models.CASCADE,
+        related_name='provisioning_steps',
+    )
+    client = models.ForeignKey(
+        Client,
+        verbose_name='Клиент',
+        on_delete=models.CASCADE,
+        related_name='provisioning_steps',
+    )
+    step = models.CharField('Шаг', max_length=32, choices=STEP_CHOICES)
+    status = models.CharField('Статус', max_length=24, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    event_id = models.CharField('Ключ идемпотентности', max_length=120, unique=True)
+    attempt_count = models.PositiveIntegerField('Количество попыток', default=0)
+    started_at = models.DateTimeField('Начало попытки', null=True, blank=True)
+    finished_at = models.DateTimeField('Окончание попытки', null=True, blank=True)
+    last_error = models.TextField('Последняя ошибка', blank=True)
+    response_data = models.JSONField('Ответ сервиса', default=dict, blank=True)
+
+    class Meta:
+        verbose_name = 'Шаг подключения сервиса'
+        verbose_name_plural = 'Шаги подключения сервисов'
+        ordering = ['submission_id', 'step']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['submission', 'step'],
+                name='uniq_client_provisioning_submission_step',
+            ),
+        ]
+        indexes = [models.Index(fields=['status', 'updated_at'])]
+
+    def __str__(self):
+        return f'{self.client.sl_id}: {self.get_step_display()}'
+
+
+class OnboardingReviewEvent(TimeStampedModel):
+    DECISION_START_REVIEW = 'start_review'
+    DECISION_APPROVE = 'approve'
+    DECISION_REQUEST_CHANGES = 'request_changes'
+    DECISION_REJECT = 'reject'
+    DECISION_RESUBMIT = 'resubmit'
+    DECISION_CHOICES = (
+        (DECISION_START_REVIEW, 'Взята на проверку'),
+        (DECISION_APPROVE, 'Одобрена'),
+        (DECISION_REQUEST_CHANGES, 'Возвращена на исправление'),
+        (DECISION_REJECT, 'Отклонена'),
+        (DECISION_RESUBMIT, 'Повторно отправлена'),
+    )
+
+    submission = models.ForeignKey(
+        OnboardingSubmission,
+        verbose_name='Анкета',
+        on_delete=models.CASCADE,
+        related_name='review_events',
+    )
+    decision = models.CharField('Решение', max_length=32, choices=DECISION_CHOICES)
+    from_status = models.CharField('Предыдущий статус', max_length=24)
+    to_status = models.CharField('Новый статус', max_length=24)
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Сотрудник',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='onboarding_review_events',
+    )
+    comment = models.TextField('Комментарий', blank=True)
+
+    class Meta:
+        verbose_name = 'Событие проверки анкеты'
+        verbose_name_plural = 'История проверки анкет'
+        ordering = ['created_at', 'id']
+        indexes = [models.Index(fields=['submission', 'created_at'])]
+
+    def __str__(self):
+        return f'{self.submission_id}: {self.decision}'

@@ -1,0 +1,72 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<div style="display:grid; grid-template-columns:minmax(260px, 340px) minmax(0, 1fr); gap:16px; align-items:start;">
+    <section class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Клиенты</h2>
+            <span class="pill">{{ chat_rooms|length }}</span>
+        </div>
+        <div class="panel-body" style="padding:10px; max-height:72vh; overflow:auto;">
+            {% for room in chat_rooms %}
+                <a href="?sl_id={{ room.sl_id|urlencode }}" class="item-card" style="display:block; margin-bottom:8px; {% if room.sl_id == selected_sl_id %}border-color:#17201c;{% endif %}">
+                    <div class="item-card-top">
+                        <div>
+                            <div class="item-card-title">{{ room.user_name|default:room.sl_id }}</div>
+                            <div class="muted small">{{ room.sl_id }}</div>
+                        </div>
+                        {% if room.unread_count %}<span class="pill warn">{{ room.unread_count }}</span>{% endif %}
+                    </div>
+                    {% if room.last_message %}
+                        <div class="muted small">{{ room.last_message.text|default:"Вложение"|truncatechars:70 }}</div>
+                    {% else %}
+                        <div class="muted small">Сообщений пока нет</div>
+                    {% endif %}
+                </a>
+            {% empty %}
+                <div class="empty">Активных клиентских чатов пока нет.</div>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="panel-header">
+            <div>
+                <h2 class="panel-title">{{ selected_room.user_name|default:"Переписка" }}</h2>
+                {% if selected_sl_id %}<div class="muted small">{{ selected_sl_id }}</div>{% endif %}
+            </div>
+        </div>
+        <div class="panel-body">
+            {% if integration_error %}
+                <div class="empty" style="color:var(--danger);">{{ integration_error }}</div>
+            {% elif selected_sl_id %}
+                <div style="display:grid; gap:10px; max-height:55vh; overflow:auto; padding:4px; margin-bottom:16px;">
+                    {% for item in chat_messages %}
+                        <div style="max-width:78%; padding:10px 12px; border:1px solid var(--line); border-radius:10px; background:#fff; {% if item.is_mine %}margin-left:auto; border-color:#9fb8ad;{% endif %}">
+                            <div class="muted small" style="margin-bottom:4px;">{% if item.sender_role == "manager" %}Менеджер {% endif %}{{ item.sender_display_name }} · {{ item.created_at|date:"d.m.Y H:i" }}</div>
+                            {% if item.text %}<div style="white-space:pre-wrap;">{{ item.text }}</div>{% endif %}
+                            {% for attachment in item.attachments %}
+                                <div style="margin-top:8px;"><a class="btn" href="{{ attachment.url }}" target="_blank" rel="noopener noreferrer"><i data-lucide="paperclip"></i>{{ attachment.name|default:"Открыть файл" }}</a></div>
+                            {% endfor %}
+                        </div>
+                    {% empty %}
+                        <div class="empty">Начните переписку с клиентом.</div>
+                    {% endfor %}
+                </div>
+                <form method="post" enctype="multipart/form-data" class="grid">
+                    {% csrf_token %}
+                    <input type="hidden" name="sl_id" value="{{ selected_sl_id }}">
+                    <textarea class="textarea" name="text" rows="3" placeholder="Сообщение клиенту"></textarea>
+                    <div class="filters">
+                        <input class="input" type="file" name="file" style="max-width:360px;">
+                        <span class="muted small">До {{ max_upload_mb }} МБ</span>
+                        <button class="btn primary" type="submit"><i data-lucide="send"></i>Отправить</button>
+                    </div>
+                </form>
+            {% else %}
+                <div class="empty">Выберите клиента слева.</div>
+            {% endif %}
+        </div>
+    </section>
+</div>
+{% endblock %}

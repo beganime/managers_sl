@@ -5,6 +5,7 @@ from .views import (
     ClientCityViewSet,
     ClientCountryViewSet,
     ClientProgramViewSet,
+    ClientPriorityProgramView,
     ClientServiceViewSet,
     ClientUniversityViewSet,
 )
@@ -19,5 +20,6 @@ router.register('services', ClientServiceViewSet, basename='client-service')
 
 
 urlpatterns = [
+    path('priority-programs/', ClientPriorityProgramView.as_view(), name='client-priority-programs'),
     path('', include(router.urls)),
 ]

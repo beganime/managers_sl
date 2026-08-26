@@ -3,15 +3,24 @@ from datetime import date
 from django.test import TestCase
 
 from apps.client_onboarding.models import OnboardingSubmission, OnboardingUniversityChoice
+from apps.client_onboarding.serializers import PublicOnboardingStatusSerializer
 from apps.client_onboarding.services import approve_submission
 from apps.education.models import City, Country, Program, University
 from apps.organizations.models import Company
 from users.models import User
 
-from .client import column_letter, quote_sheet
-from .models import SheetRowBinding
+from .client import GoogleSheetsGateway, column_letter, quote_sheet
+from .models import ClientAdmissionSnapshot, SheetRowBinding
 from .schema import EXAM_HEADERS, safe_sheet_title, university_acronym
-from .services import sync_reference_data, sync_submission
+from .services import (
+    import_onboarding_decisions,
+    import_public_client_statuses,
+    resolve_sheet_reviewer,
+    sync_onboarding_inbox,
+    sync_onboarding_submission,
+    sync_reference_data,
+    sync_submission,
+)
 
 
 class FakeSheetsGateway:
@@ -48,13 +57,36 @@ class FakeSheetsGateway:
         self.reference_columns[column] = (header, list(values))
         return len(values)
 
+    def set_dropdown_validation(
+        self,
+        sheet_name,
+        header,
+        values,
+        start_row=2,
+        end_row=2000,
+        input_message='Выберите значение из списка.',
+    ):
+        return None
+
+    def read_rows(self, sheet_name, start_row=2):
+        return [
+            {
+                'row_number': index,
+                'values': {'Айди': sl_id, **values},
+            }
+            for index, (sl_id, values) in enumerate(
+                self.rows.get(sheet_name, {}).items(),
+                start=start_row,
+            )
+        ]
+
 
 class SchemaTests(TestCase):
     def test_exam_contract_matches_current_google_sheet(self):
         self.assertEqual(
             EXAM_HEADERS,
             (
-                'ID экзамена', 'Айди', 'Внутренний ID', 'Вуз', 'Направление',
+                'ID экзамена', 'Айди', 'ФИО клиента', 'Внутренний ID', 'Вуз', 'Направление',
                 'Экзамен', 'Дата и время', 'логин', 'Пароль', 'почта',
                 'Место или ссылка', 'Ответственный', 'Обновлено', 'Версия уведомления',
             ),
@@ -66,6 +98,21 @@ class SchemaTests(TestCase):
         self.assertEqual(quote_sheet("КФУ 'Тест'"), "'КФУ ''Тест'''" )
         self.assertEqual(safe_sheet_title('КФУ/тест'), 'КФУ тест')
         self.assertEqual(university_acronym('Казанский федеральный университет'), 'КФУ')
+        self.assertEqual(university_acronym('БГУ (Белорусский государственный университет)'), 'БГУ')
+        self.assertEqual(university_acronym('МГУ'), 'МГУ')
+        self.assertEqual(university_acronym('КФУ'), 'КФУ')
+        self.assertEqual(university_acronym('ДВФУ'), 'ДВФУ')
+        self.assertEqual(university_acronym('Сеченова'), 'Сеченова')
+
+    def test_next_empty_row_ignores_partially_filled_rows(self):
+        gateway = object.__new__(GoogleSheetsGateway)
+        gateway.read_rows = lambda sheet_name, start_row=2: [
+            {'row_number': 2, 'values': {'Внутренний ID': 'id-1', 'Email': ''}},
+            {'row_number': 3, 'values': {'Внутренний ID': '', 'Email': ''}},
+            {'row_number': 4, 'values': {'Внутренний ID': '', 'Email': 'legacy@example.com'}},
+        ]
+
+        self.assertEqual(gateway.next_empty_row('Заявки из анкеты'), 3)
 
 
 class SheetsSyncServiceTests(TestCase):
@@ -95,6 +142,10 @@ class SheetsSyncServiceTests(TestCase):
             self.choices.append((university, program))
 
     def create_approved_submission(self):
+        submission = self.create_submitted_submission()
+        return approve_submission(submission, self.manager)
+
+    def create_submitted_submission(self):
         submission = OnboardingSubmission.objects.create(
             access_token_hash='test',
             kind=OnboardingSubmission.KIND_APPLICANT,
@@ -113,7 +164,68 @@ class SheetsSyncServiceTests(TestCase):
                 rank=rank,
             )
             choice.programs.add(program)
-        return approve_submission(submission, self.manager)
+        return submission
+
+    def test_google_sheet_status_approves_submission_and_writes_general_row(self):
+        submission = self.create_submitted_submission()
+        gateway = FakeSheetsGateway()
+
+        initial = sync_onboarding_submission(submission.pk, gateway=gateway)
+        inbox_row = gateway.rows['Заявки из анкеты'][str(submission.public_id)]
+        self.assertTrue(initial['created'])
+        self.assertEqual(inbox_row['Статус'], 'Ожидание')
+        self.assertEqual(inbox_row['Ответственный'], '')
+        self.assertNotIn('\n', inbox_row['Вузы и программы'])
+
+        inbox_row['Статус'] = 'Подтвержден'
+        inbox_row['Ответственный'] = 'Анна Менеджер'
+        result = import_onboarding_decisions(gateway=gateway)
+
+        submission.refresh_from_db()
+        self.assertEqual(result, {'status': 'success', 'processed': 1, 'failed': 0})
+        self.assertEqual(submission.status, OnboardingSubmission.STATUS_APPROVED)
+        self.assertIsNotNone(submission.client_id)
+        self.assertEqual(inbox_row['Статус'], 'Подтвержден')
+        self.assertEqual(inbox_row['SL-ID'], submission.client.sl_id)
+        self.assertIn('Обработано', inbox_row['Результат обработки'])
+        self.assertEqual(
+            gateway.rows['Общее'][submission.client.sl_id]['ФИО абитуриента'],
+            'Иван Иванов',
+        )
+
+        repeated = import_onboarding_decisions(gateway=gateway)
+        self.assertEqual(repeated, {'status': 'success', 'processed': 0, 'failed': 0})
+        self.assertEqual(OnboardingSubmission.objects.filter(client__isnull=False).count(), 1)
+
+    def test_inbox_recovery_does_not_overwrite_manager_status(self):
+        submission = self.create_submitted_submission()
+        gateway = FakeSheetsGateway()
+        sync_onboarding_submission(submission.pk, gateway=gateway)
+        inbox_row = gateway.rows['Заявки из анкеты'][str(submission.public_id)]
+        inbox_row['Статус'] = 'Подтвержден'
+
+        result = sync_onboarding_inbox(gateway=gateway)
+
+        self.assertEqual(result, {'status': 'success', 'processed': 0, 'failed': 0})
+        self.assertEqual(inbox_row['Статус'], 'Подтвержден')
+
+    def test_sheet_approval_uses_primary_manager_when_responsible_is_blank(self):
+        self.assertEqual(resolve_sheet_reviewer({'Ответственный': ''}), self.manager)
+
+    def test_google_sheet_status_approves_submission_without_responsible(self):
+        submission = self.create_submitted_submission()
+        gateway = FakeSheetsGateway()
+        sync_onboarding_submission(submission.pk, gateway=gateway)
+        inbox_row = gateway.rows['Заявки из анкеты'][str(submission.public_id)]
+        inbox_row['Статус'] = 'Подтвержден'
+
+        result = import_onboarding_decisions(gateway=gateway)
+
+        submission.refresh_from_db()
+        self.assertEqual(result, {'status': 'success', 'processed': 1, 'failed': 0})
+        self.assertEqual(submission.status, OnboardingSubmission.STATUS_APPROVED)
+        self.assertEqual(submission.reviewed_by, self.manager)
+        self.assertEqual(inbox_row['Ответственный'], 'Анна Менеджер')
 
     def test_approved_submission_is_upserted_without_duplicate_rows(self):
         submission = self.create_approved_submission()
@@ -123,11 +235,11 @@ class SheetsSyncServiceTests(TestCase):
         second = sync_submission(submission.pk, gateway=gateway)
 
         self.assertEqual(submission.client.sl_id, 'SL-001')
-        self.assertEqual(first['processed'], 4)
-        self.assertEqual(second['processed'], 4)
+        self.assertEqual(first['processed'], 1)
+        self.assertEqual(second['processed'], 1)
         self.assertEqual(gateway.rows['Общее']['SL-001']['ФИО абитуриента'], 'Иван Иванов')
         self.assertEqual(len(gateway.rows['Общее']), 1)
-        self.assertEqual(SheetRowBinding.objects.filter(sl_id='SL-001').count(), 4)
+        self.assertEqual(SheetRowBinding.objects.filter(sl_id='SL-001').count(), 1)
 
         gateway.rows['Общее']['SL-001']['Статус сейчас'] = 'Ручной статус'
         sync_submission(submission.pk, gateway=gateway)
@@ -143,3 +255,50 @@ class SheetsSyncServiceTests(TestCase):
         self.assertIn('Казань', gateway.reference_columns['B'][1])
         self.assertEqual(len(gateway.reference_columns['K'][1]), 3)
         self.assertEqual(len(gateway.reference_columns['L'][1]), 3)
+
+    def test_only_public_operational_fields_are_imported_for_client(self):
+        submission = self.create_approved_submission()
+        gateway = FakeSheetsGateway()
+        sync_submission(submission.pk, gateway=gateway)
+        row = gateway.rows['Общее']['SL-001']
+        row.update({
+            'Статус сейчас': 'Приглашение готово',
+            'В какой город приглашение': 'Казань',
+            'Встреча': 'Да',
+            'Где находится сейчас': 'Ашгабад',
+            'Номер паспорта': 'MUST-NOT-BE-IMPORTED',
+            'Пароль': 'MUST-NOT-BE-IMPORTED',
+            'Сколько оплатил': '2500',
+            'Комментарий': 'Внутренняя заметка менеджера',
+        })
+
+        first = import_public_client_statuses(gateway=gateway)
+        second = import_public_client_statuses(gateway=gateway)
+
+        snapshot = ClientAdmissionSnapshot.objects.get(client=submission.client)
+        self.assertEqual(first, {'status': 'success', 'processed': 1, 'failed': 0})
+        self.assertEqual(second, {'status': 'success', 'processed': 0, 'failed': 0})
+        self.assertEqual(snapshot.current_status, 'Приглашение готово')
+        self.assertEqual(snapshot.invitation_city, 'Казань')
+        self.assertEqual(snapshot.meeting, 'Да')
+        self.assertEqual(snapshot.current_location, 'Ашгабад')
+        serialized = PublicOnboardingStatusSerializer(submission).data
+        self.assertEqual(serialized['admission_status']['current_status'], 'Приглашение готово')
+        self.assertNotIn('passport', str(serialized).casefold())
+        self.assertNotIn('MUST-NOT-BE-IMPORTED', str(serialized))
+
+    def test_public_status_uses_bound_client_row_instead_of_last_duplicate(self):
+        submission = self.create_approved_submission()
+        gateway = FakeSheetsGateway()
+        sync_submission(submission.pk, gateway=gateway)
+        gateway.read_rows = lambda sheet_name, start_row=2: [
+            {'row_number': 2, 'values': {'Айди': 'SL-001', 'Статус сейчас': 'Статус этого клиента'}},
+            {'row_number': 3, 'values': {'Айди': 'SL-001', 'Статус сейчас': 'Чужая последняя строка'}},
+        ]
+
+        result = import_public_client_statuses(gateway=gateway)
+
+        self.assertEqual(result['failed'], 0)
+        snapshot = ClientAdmissionSnapshot.objects.get(client=submission.client)
+        self.assertEqual(snapshot.row_number, 2)
+        self.assertEqual(snapshot.current_status, 'Статус этого клиента')

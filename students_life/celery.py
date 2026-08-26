@@ -57,10 +57,22 @@ app.conf.beat_schedule = {
     },
     'sheets-sync-pending-submissions': {
         'task': 'sheets_sync.sync_pending_submissions',
+        'schedule': crontab(minute='*/5'),
+    },
+    'sheets-sync-onboarding-inbox': {
+        'task': 'sheets_sync.sync_onboarding_inbox',
+        'schedule': crontab(minute='*/5'),
+    },
+    'sheets-import-onboarding-decisions': {
+        'task': 'sheets_sync.import_onboarding_decisions',
         'schedule': crontab(minute='*/1'),
     },
     'sheets-sync-reference-data': {
         'task': 'sheets_sync.sync_reference_data',
+        'schedule': crontab(minute=15),
+    },
+    'sheets-import-public-client-statuses': {
+        'task': 'sheets_sync.import_public_client_statuses',
         'schedule': crontab(minute='*/5'),
     },
 }
