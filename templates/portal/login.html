@@ -1,18 +1,21 @@
+{% load static %}
 <!doctype html>
 <html lang="ru">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Вход | ManagerSL ERP</title>
+    <title>Вход | ManagerSL</title>
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
     <style>
         :root {
-            --bg: #f6f7f9;
+            --bg: #111827;
             --panel: #ffffff;
-            --text: #17201c;
-            --muted: #66746e;
-            --line: #dce3df;
-            --accent: #176b53;
+            --text: #172033;
+            --muted: #687386;
+            --line: #dce2e9;
+            --accent: #b71d17;
+            --accent-dark: #8f1511;
+            --link: #0d416d;
             --danger: #b42318;
         }
         * { box-sizing: border-box; }
@@ -21,7 +24,9 @@
             min-height: 100vh;
             display: grid;
             place-items: center;
-            background: var(--bg);
+            background:
+                radial-gradient(circle at 20% 10%, rgba(13, 65, 109, .34), transparent 38%),
+                linear-gradient(145deg, #111827 0%, #1e293b 100%);
             color: var(--text);
             font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
             padding: 24px;
@@ -30,21 +35,28 @@
             width: min(420px, 100%);
             background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 8px;
-            box-shadow: 0 18px 48px rgba(16, 24, 40, .12);
-            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 18px 42px rgba(0, 0, 0, .22);
+            padding: 30px;
         }
-        .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+        .brand {
+            display: grid;
+            justify-items: center;
+            text-align: center;
+            gap: 10px;
+            margin-bottom: 26px;
+        }
         .brand-mark {
-            width: 42px;
-            height: 42px;
-            border-radius: 8px;
-            background: #d7f2e7;
-            color: #0f4a39;
+            width: 72px;
+            height: 72px;
+            border-radius: 14px;
+            background: #fff;
             display: grid;
             place-items: center;
-            font-weight: 800;
+            overflow: hidden;
+            border: 1px solid var(--line);
         }
+        .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
         h1 { font-size: 24px; margin: 0 0 4px; }
         p { margin: 0; color: var(--muted); }
         form { display: grid; gap: 14px; }
@@ -57,7 +69,7 @@
             outline: none;
             font: inherit;
         }
-        input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(23, 107, 83, .12); }
+        input:focus { border-color: var(--link); box-shadow: 0 0 0 3px rgba(13, 65, 109, .14); }
         .btn {
             min-height: 42px;
             border: 1px solid var(--accent);
@@ -70,7 +82,9 @@
             justify-content: center;
             gap: 8px;
             cursor: pointer;
+            font-weight: 700;
         }
+        .btn:hover { border-color: var(--accent-dark); background: var(--accent-dark); }
         .errors {
             border: 1px solid #efb8ad;
             background: #fff3f0;
@@ -79,17 +93,19 @@
             padding: 10px 12px;
             font-size: 13px;
         }
-        .footer { margin-top: 16px; font-size: 13px; color: var(--muted); }
-        .footer a { color: var(--accent); text-decoration: none; font-weight: 700; }
+        @media (max-width: 520px) {
+            body { padding: 16px; }
+            .login-shell { padding: 24px 20px; }
+        }
     </style>
 </head>
 <body>
     <main class="login-shell">
         <div class="brand">
-            <div class="brand-mark">SL</div>
+            <div class="brand-mark"><img src="{% static 'logo.ico' %}" alt="Students Life"></div>
             <div>
                 <h1>ManagerSL</h1>
-                <p>Веб-кабинет ERP/CRM/HRM</p>
+                <p>Рабочий кабинет Students Life</p>
             </div>
         </div>
 
@@ -113,10 +129,6 @@
             </label>
             <button class="btn" type="submit"><i data-lucide="log-in"></i>Войти</button>
         </form>
-
-        <div class="footer">
-            Админка остаётся доступна отдельно: <a href="/admin/">/admin/</a>
-        </div>
     </main>
     <script>
         document.addEventListener('DOMContentLoaded', function () {

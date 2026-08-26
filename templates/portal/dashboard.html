@@ -3,178 +3,89 @@
 {% block content %}
 {% if is_current_user_birthday %}
 <section class="birthday-celebration" role="status" aria-label="Поздравление с днём рождения">
-    <div class="birthday-celebration-icon" aria-hidden="true">
-        <i data-lucide="cake-slice"></i>
-    </div>
+    <div class="birthday-celebration-icon" aria-hidden="true"><i data-lucide="cake-slice"></i></div>
     <div>
         <h2 class="birthday-celebration-title">С днём рождения, {{ birthday_first_name }}!</h2>
-        <div class="birthday-celebration-message">
-            Желаем здоровья, благополучия, уверенности в работе и новых достижений. Спасибо, что вы с нами.
-        </div>
+        <div class="birthday-celebration-message">Желаем здоровья, благополучия, уверенности в работе и новых достижений. Спасибо, что вы с нами.</div>
     </div>
 </section>
 {% endif %}
-<section class="grid cols-2" style="margin-bottom:18px;">
-    <div class="panel">
-        <div class="panel-header">
-            <h2 class="panel-title">Сегодня</h2>
-            {% if workday %}
-                <span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span>
-            {% endif %}
-        </div>
-        <div class="panel-body">
-            {% if workday %}
-                <div class="grid">
-                    <div>
-                        <div class="muted small">{{ today|date:"d M Y" }}</div>
-                        <div class="strong" style="font-size:22px; margin-top:4px;">Рабочий день: {{ workday.total_work_hours }} ч</div>
-                    </div>
-                    <div class="filters">
-                        {% if workday.status == 'not_started' %}
-                            <form method="post" action="{% url 'portal:workday_start' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button></form>
-                        {% elif workday.status == 'closed' or workday.status == 'auto_closed' %}
-                            <a class="btn secondary" href="{% url 'portal:workday' %}"><i data-lucide="timer"></i>История дня</a>
-                        {% else %}
-                            <a class="btn primary" href="{% url 'portal:workday' %}"><i data-lucide="file-pen-line"></i>{% if workday.has_report %}Отчёт отправлен{% else %}Отправить отчёт{% endif %}</a>
-                            <form method="post" action="{% url 'portal:workday_close' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn primary" type="submit"><i data-lucide="square-check-big"></i>Закрыть день</button></form>
-                        {% endif %}
-                        <a class="btn" href="{% url 'portal:calendar' %}"><i data-lucide="calendar-days"></i>Календарь</a>
-                    </div>
-                </div>
-            {% else %}
-                <div class="empty">Чтобы начать рабочий день, администратор должен создать вам EmployeeProfile.</div>
-            {% endif %}
-        </div>
-    </div>
 
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Ближайшие события</h2><a class="pill" href="{% url 'portal:calendar' %}">Календарь</a></div>
-        <div class="panel-body">
-            {% if calendar_events %}
-                <div class="list">
-                    {% for event in calendar_events|slice:":5" %}
-                        <a class="list-row" href="{{ event.url }}">
-                            <div>
-                                <div class="strong">{{ event.title }}</div>
-                                <div class="muted small">{{ event.type }}{% if event.details %} · {{ event.details }}{% endif %}</div>
-                            </div>
-                            <span class="pill">{{ event.date|date:"d M" }}</span>
-                        </a>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty">На ближайшие дни событий нет.</div>
-            {% endif %}
+<section class="panel" style="margin-bottom:18px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Рабочий день</h2>
+        {% if workday %}<span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span>{% endif %}
+    </div>
+    <div class="panel-body">
+        {% if workday %}
+        <div class="grid workday-summary">
+            <div>
+                <div class="muted small">{{ today|date:"d M Y" }}</div>
+                <div class="strong dashboard-workday-time">Отработано: {{ workday.total_work_hours }} ч</div>
+            </div>
+            <div class="filters">
+                {% if workday.status == 'not_started' %}
+                <form method="post" action="{% url 'portal:workday_start' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button></form>
+                {% elif workday.status == 'closed' or workday.status == 'auto_closed' %}
+                <a class="btn secondary" href="{% url 'portal:workday' %}"><i data-lucide="timer"></i>Открыть рабочий день</a>
+                {% else %}
+                <a class="btn primary" href="{% url 'portal:workday' %}"><i data-lucide="file-pen-line"></i>{% if workday.has_report %}Отчёт отправлен{% else %}Отправить отчёт{% endif %}</a>
+                <form method="post" action="{% url 'portal:workday_close' %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'portal:dashboard' %}"><button class="btn secondary" type="submit"><i data-lucide="square-check-big"></i>Закрыть день</button></form>
+                {% endif %}
+            </div>
         </div>
+        {% else %}<div class="empty">Для учёта рабочего дня администратор должен создать профиль сотрудника.</div>{% endif %}
     </div>
 </section>
 
 <section class="metric-grid">
-    {% for metric in metrics|slice:":6" %}
-        <a class="metric" href="{{ metric.url }}">
-            <div class="metric-top">
-                <span>{{ metric.label }}</span>
-                <i data-lucide="{{ metric.icon }}"></i>
-            </div>
-            <div class="metric-value">{{ metric.value }}</div>
-        </a>
+    {% for metric in metrics %}
+    <a class="metric" href="{{ metric.url }}"><div class="metric-top"><span>{{ metric.label }}</span><i data-lucide="{{ metric.icon }}"></i></div><div class="metric-value">{{ metric.value }}</div></a>
     {% endfor %}
 </section>
 
 {% if admin_metrics %}
-<section class="metric-grid">
-    {% for metric in admin_metrics %}
-        <div class="metric">
-            <div class="metric-top">
-                <span>{{ metric.label }}</span>
-                <i data-lucide="{{ metric.icon }}"></i>
-            </div>
-            <div class="metric-value">{% if metric.money %}${{ metric.value|floatformat:2 }}{% else %}{{ metric.value }}{% endif %}</div>
-        </div>
-    {% endfor %}
+<section class="metric-grid compact-metrics">
+    {% for metric in admin_metrics %}<div class="metric"><div class="metric-top"><span>{{ metric.label }}</span><i data-lucide="{{ metric.icon }}"></i></div><div class="metric-value">{{ metric.value }}</div></div>{% endfor %}
 </section>
 {% endif %}
 
-{% if admin_quick_actions %}
-<section class="panel" style="margin-bottom:18px;">
-    <div class="panel-header"><h2 class="panel-title">Быстрые действия администратора</h2></div>
-    <div class="panel-body">
-        <div class="filters">
-            {% for action in admin_quick_actions %}
-                <a class="btn" href="{{ action.url }}"><i data-lucide="{{ action.icon }}"></i>{{ action.label }}</a>
-            {% endfor %}
+<section class="grid cols-2 dashboard-lists">
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Экспресс-анкеты</h2><a class="pill" href="{% url 'portal:onboarding_submissions' %}">Все</a></div>
+        <div class="panel-body list">
+            {% for item in recent_express %}
+            <a class="list-row" href="{% url 'portal:onboarding_submission_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:"Без ФИО" }}</div><div class="muted small">{{ item.phone|default:item.email }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.submitted_at|date:"d.m" }}</span></a>
+            {% empty %}<div class="empty">Новых экспресс-анкет нет.</div>{% endfor %}
         </div>
     </div>
-</section>
-{% endif %}
-
-<section class="grid cols-3">
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Мои лиды</h2><a class="pill" href="{% url 'portal:leads' %}">Открыть</a></div>
-        <div class="panel-body">{% include "portal/partials/dashboard_leads.html" with items=my_leads %}</div>
+        <div class="panel-header"><h2 class="panel-title">Полные анкеты</h2><a class="pill" href="{% url 'portal:client_questionnaires' %}">Все</a></div>
+        <div class="panel-body list">
+            {% for item in recent_questionnaires %}
+            <a class="list-row" href="{% url 'portal:client_questionnaire_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:item.client.full_name }}</div><div class="muted small">{{ item.client.sl_id|default:"Без SL-ID" }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.updated_at|date:"d.m" }}</span></a>
+            {% empty %}<div class="empty">Полных анкет пока нет.</div>{% endfor %}
+        </div>
     </div>
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Мои клиенты</h2><a class="pill" href="{% url 'portal:clients' %}">Открыть</a></div>
-        <div class="panel-body">{% include "portal/partials/dashboard_clients.html" with items=my_clients %}</div>
+        <div class="panel-header"><h2 class="panel-title">Заявки с сайта</h2><a class="pill" href="{% url 'portal:incoming_leads' %}">Все</a></div>
+        <div class="panel-body list">
+            {% for item in recent_website_leads %}
+            <a class="list-row" href="{% url 'portal:lead_detail' item.pk %}"><div><div class="strong">{{ item.full_name|default:"Без ФИО" }}</div><div class="muted small">{{ item.phone|default:item.email }} · {{ item.get_status_display }}</div></div><span class="pill">{{ item.created_at|date:"d.m" }}</span></a>
+            {% empty %}<div class="empty">Новых заявок с сайта нет.</div>{% endfor %}
+        </div>
     </div>
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Мои задачи</h2><a class="pill" href="{% url 'portal:tasks' %}">Открыть</a></div>
-        <div class="panel-body">{% include "portal/partials/dashboard_tasks.html" with items=my_tasks %}</div>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Заявки</h2><a class="pill" href="{% url 'portal:applications' %}">Открыть</a></div>
-        <div class="panel-body">{% include "portal/partials/dashboard_applications.html" with items=my_applications %}</div>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Платежи</h2><a class="pill" href="{% url 'portal:finance' %}">Открыть</a></div>
-        <div class="panel-body">{% include "portal/partials/dashboard_payments.html" with items=recent_payments %}</div>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Документы</h2><a class="pill" href="{% url 'portal:documents' %}">Открыть</a></div>
+        <div class="panel-header"><h2 class="panel-title">Документы</h2><a class="pill" href="{% url 'portal:documents' %}">Все</a></div>
         <div class="panel-body">{% include "portal/partials/dashboard_documents.html" with items=recent_documents %}</div>
     </div>
 </section>
 
-<section class="grid cols-2" style="margin-top:18px;">
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Дни рождения в этом месяце</h2><a class="pill" href="{% url 'portal:calendar' %}">Все</a></div>
-        <div class="panel-body">
-            {% if birthday_people %}
-                <div class="list">
-                {% for item in birthday_people %}
-                    <div class="list-row">
-                        <div>
-                            <div class="strong">{{ item.user.get_full_name|default:item.user.email }}</div>
-                            <div class="muted small">{{ item.office.name|default:item.company.name }}</div>
-                        </div>
-                        <span class="pill ok">{{ item.user.dob|date:"d M" }}</span>
-                    </div>
-                {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty">Дней рождения в этом месяце нет.</div>
-            {% endif %}
-        </div>
-    </div>
-    <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">База знаний</h2><a class="pill" href="{% url 'portal:knowledge' %}">Открыть</a></div>
-        <div class="panel-body">
-            {% if knowledge_items %}
-                <div class="list">
-                {% for item in knowledge_items %}
-                    <div class="list-row">
-                        <div>
-                            <div class="strong">{{ item.title }}</div>
-                            <div class="muted small">{{ item.summary|default:item.category.name|truncatechars:96 }}</div>
-                        </div>
-                        <span class="pill">{{ item.get_status_display }}</span>
-                    </div>
-                {% endfor %}
-                </div>
-            {% else %}
-                <div class="empty">Статей пока нет.</div>
-            {% endif %}
-        </div>
+<section class="panel" style="margin-top:18px;">
+    <div class="panel-header"><h2 class="panel-title">Дни рождения в этом месяце</h2></div>
+    <div class="panel-body list">
+        {% for item in birthday_people %}<div class="list-row"><div><div class="strong">{{ item.user.get_full_name|default:item.user.email }}</div><div class="muted small">{{ item.office.name|default:item.company.name }}</div></div><span class="pill ok">{{ item.user.dob|date:"d M" }}</span></div>
+        {% empty %}<div class="empty">Дней рождения в этом месяце нет.</div>{% endfor %}
     </div>
 </section>
 {% endblock %}

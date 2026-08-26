@@ -270,77 +270,62 @@ def questionnaire_generated_document_url(questionnaire):
 
 NAV_GROUPS = (
     {
-        'key': 'dashboard',
-        'label': 'Дашборд',
+        'key': 'main',
+        'label': 'Основное',
         'icon': 'layout-dashboard',
         'items': (
-            {'name': 'dashboard', 'label': 'Главная', 'icon': 'layout-dashboard'},
+            {'name': 'dashboard', 'label': 'Дашборд', 'icon': 'layout-dashboard'},
             {'name': 'workday', 'label': 'Рабочий день', 'icon': 'timer'},
-            {'name': 'calendar', 'label': 'Календарь', 'icon': 'calendar-days'},
-            {'name': 'notifications', 'label': 'Уведомления', 'icon': 'bell'},
+            {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
+            {'name': 'documents', 'label': 'Документы', 'icon': 'file-text'},
         ),
     },
     {
-        'key': 'crm',
-        'label': 'CRM',
-        'icon': 'users',
+        'key': 'client_app',
+        'label': 'Клиентское приложение',
+        'icon': 'smartphone',
         'items': (
-            {'name': 'leads', 'label': 'Лиды', 'icon': 'radar'},
-            {'name': 'incoming_leads', 'label': 'Потенциальные клиенты', 'icon': 'inbox'},
-            {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
-            {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
-            {
-                'name': 'disk',
-                'label': 'Диск',
-                'icon': 'hard-drive',
-                'url': settings.DISK_WEB_URL,
-                'external': True,
-                'disk_access_only': True,
-            },
-            {
-                'name': 'translate_sl',
-                'label': 'Переводы',
-                'icon': 'languages',
-                'external': True,
-                'disk_access_only': True,
-            },
-            {'name': 'client_chats', 'label': 'Чаты клиентов', 'icon': 'messages-square'},
+            {'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
+            {'name': 'programs', 'label': 'Программы', 'icon': 'library-big'},
+            {'name': 'countries', 'label': 'Страны', 'icon': 'map'},
+            {'name': 'cities', 'label': 'Города', 'icon': 'map-pin'},
+        ),
+    },
+    {
+        'key': 'applications',
+        'label': 'Заявки',
+        'icon': 'clipboard-list',
+        'items': (
             {
                 'name': 'onboarding_submissions',
-                'label': 'Новые заявки',
+                'label': 'Экспресс-анкеты',
                 'icon': 'inbox',
                 'onboarding_only': True,
             },
-            {'name': 'client_questionnaires', 'label': 'Анкеты клиентов', 'icon': 'clipboard-list'},
-            {'name': 'sheets_search', 'label': 'Поиск по учёту', 'icon': 'search'},
-            {'name': 'tasks', 'label': 'Задачи', 'icon': 'check-square'},
-            {'name': 'projects', 'label': 'Проекты', 'icon': 'folder-kanban'},
-            {'name': 'finance', 'label': 'Финансы', 'icon': 'wallet-cards'},
+            {'name': 'client_questionnaires', 'label': 'Полные анкеты', 'icon': 'clipboard-list'},
+            {'name': 'client_chats', 'label': 'Чаты', 'icon': 'messages-square'},
+            {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
         ),
     },
     {
-        'key': 'rating',
-        'label': 'Рейтинг',
-        'icon': 'trophy',
+        'key': 'website_applications',
+        'label': 'Заявки с сайта',
+        'icon': 'globe-2',
         'items': (
-            {'name': 'rating', 'label': 'Рейтинг сотрудников', 'icon': 'trophy'},
-            {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
-            {'name': 'employee_reports', 'label': 'Отчёты сотрудников', 'icon': 'clipboard-list', 'staff_only': True},
-            {'name': 'finance_reports', 'label': 'Балансы', 'icon': 'circle-dollar-sign'},
+            {'name': 'incoming_leads', 'label': 'Заявки с сайта', 'icon': 'inbox'},
         ),
     },
     {
-        'key': 'education',
-        'label': 'Вузы',
-        'icon': 'graduation-cap',
+        'key': 'services',
+        'label': 'Сервисы',
+        'icon': 'blocks',
         'items': (
-            {'name': 'countries', 'label': 'Страны', 'icon': 'map'},
-            {'name': 'cities', 'label': 'Города', 'icon': 'map-pin'},
-            {'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
-            {'name': 'programs', 'label': 'Программы', 'icon': 'library-big'},
-            {'name': 'services', 'label': 'Услуги', 'icon': 'briefcase-business'},
-            {'name': 'knowledge', 'label': 'База знаний', 'icon': 'book-open-check'},
-            {'name': 'documents', 'label': 'Документы', 'icon': 'file-text'},
+            {'name': 'exam_sl', 'label': 'Экзамены', 'icon': 'calendar-check-2', 'url': settings.EXAM_SL_WEB_URL, 'external': True},
+            {'name': 'translate_sl', 'label': 'Переводы', 'icon': 'languages', 'external': True, 'disk_access_only': True},
+            {'name': 'disk', 'label': 'Диск', 'icon': 'hard-drive', 'url': settings.DISK_WEB_URL, 'external': True, 'disk_access_only': True},
+            {'name': 'task_manager', 'label': 'Задачи', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL, 'external': True},
+            {'name': 'webmail', 'label': 'Вебмайл', 'icon': 'mail', 'url': settings.WEBMAIL_WEB_URL, 'external': True},
+            {'name': 'smtp_mailboxes', 'label': 'SMTP ящики', 'icon': 'mail-check', 'url': settings.SMTP_MAILBOXES_WEB_URL, 'external': True},
         ),
     },
     {
@@ -351,18 +336,16 @@ NAV_GROUPS = (
             {'name': 'profile', 'label': 'Профиль', 'icon': 'user-round'},
             {'name': 'settings', 'label': 'Настройки', 'icon': 'settings'},
             {'name': 'help', 'label': 'Помощь', 'icon': 'circle-help'},
-            {'name': 'admin_data_help', 'label': 'Инструкция по админке', 'icon': 'list-checks'},
-            {'name': 'admin', 'label': 'Админка', 'icon': 'shield-check', 'url': '/admin/', 'staff_only': True},
         ),
     },
 )
 
 
 MOBILE_NAV = (
-    {'section': 'dashboard', 'name': 'dashboard', 'label': 'Дашборд', 'icon': 'layout-dashboard'},
-    {'section': 'crm', 'name': 'leads', 'label': 'CRM', 'icon': 'users'},
-    {'section': 'rating', 'name': 'rating', 'label': 'Рейтинг', 'icon': 'trophy'},
-    {'section': 'education', 'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
+    {'section': 'main', 'name': 'dashboard', 'label': 'Дашборд', 'icon': 'layout-dashboard'},
+    {'section': 'applications', 'name': 'onboarding_submissions', 'label': 'Заявки', 'icon': 'clipboard-list'},
+    {'section': 'website_applications', 'name': 'incoming_leads', 'label': 'С сайта', 'icon': 'globe-2'},
+    {'section': 'client_app', 'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
     {'section': 'settings', 'name': 'settings', 'label': 'Настройки', 'icon': 'settings'},
 )
 
@@ -522,7 +505,7 @@ def get_active_section(active_page):
     for group in NAV_GROUPS:
         if any(item['name'] == active_page for item in group['items']):
             return group['key']
-    return 'dashboard'
+    return 'main'
 
 
 def build_mobile_nav(active_page):
@@ -1366,58 +1349,39 @@ class DashboardView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         today = timezone.localdate()
-        week_ago = timezone.now() - timedelta(days=7)
-
-        leads = lead_queryset(user)
         clients = client_queryset(user)
-        applications = application_queryset(user)
-        tasks = task_queryset(user)
-        payments = payment_queryset(user)
-        incomes = income_queryset(user)
-        expenses = expense_queryset(user)
-        projects = project_queryset(user)
+        website_leads = incoming_lead_queryset(user)
+        express_submissions = OnboardingSubmission.objects.select_related('client').order_by('-submitted_at')
+        questionnaires = ClientQuestionnaire.objects.select_related('client').filter(
+            client_id__in=clients.values('id')
+        ).order_by('-updated_at')
         documents = document_queryset(user)
-        notifications = notification_queryset(user)
         workdays = workday_queryset(user)
         employee_profiles = employee_queryset(user)
-        confirmed_payments = payments.filter(is_confirmed=True)
-        confirmed_expenses = expenses.filter(is_confirmed=True)
-        confirmed_incomes = incomes.filter(is_confirmed=True)
-        revenue_month = (
-            confirmed_payments.filter(payment_date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
-        ) + (
-            confirmed_incomes.filter(date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
-        )
-        expense_month = confirmed_expenses.filter(date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
+        active_express_statuses = [
+            OnboardingSubmission.STATUS_SUBMITTED,
+            OnboardingSubmission.STATUS_IN_REVIEW,
+            OnboardingSubmission.STATUS_CHANGES_REQUESTED,
+        ]
 
         context.update({
             'metrics': [
-                {'label': 'Лиды', 'value': leads.exclude(status__in=['converted', 'lost', 'spam']).count(), 'icon': 'radar', 'url': reverse('portal:leads')},
-                {'label': 'Потенциальные', 'value': incoming_lead_queryset(user).filter(manager__isnull=True).count(), 'icon': 'inbox', 'url': reverse('portal:incoming_leads')},
-                {'label': 'Клиенты', 'value': clients.exclude(status__in=['archive', 'rejected']).count(), 'icon': 'users', 'url': reverse('portal:clients')},
-                {'label': 'Заявки', 'value': applications.exclude(status__in=['cancelled', 'rejected', 'enrolled']).count(), 'icon': 'file-check-2', 'url': reverse('portal:applications')},
-                {'label': 'Задачи', 'value': tasks.filter(Q(assigned_to=user) | Q(watchers__user=user)).exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).distinct().count(), 'icon': 'check-square', 'url': reverse('portal:tasks')},
-                {'label': 'Платежи за 7 дней', 'value': payments.filter(is_confirmed=True, created_at__gte=week_ago).count(), 'icon': 'wallet-cards', 'url': reverse('portal:finance')},
+                {'label': 'Экспресс-анкеты', 'value': express_submissions.filter(status__in=active_express_statuses).count(), 'icon': 'inbox', 'url': reverse('portal:onboarding_submissions')},
+                {'label': 'Полные анкеты', 'value': questionnaires.exclude(status=ClientQuestionnaire.STATUS_APPROVED).count(), 'icon': 'clipboard-list', 'url': reverse('portal:client_questionnaires')},
+                {'label': 'Заявки с сайта', 'value': website_leads.filter(manager__isnull=True).count(), 'icon': 'globe-2', 'url': reverse('portal:incoming_leads')},
                 {'label': 'Документы', 'value': documents.filter(status__in=[GeneratedDocument.STATUS_PENDING, GeneratedDocument.STATUS_GENERATED]).count(), 'icon': 'file-text', 'url': reverse('portal:documents')},
-                {'label': 'Уведомления', 'value': notifications.filter(read_at__isnull=True).exclude(status=Notification.STATUS_READ).count(), 'icon': 'bell', 'url': reverse('portal:notifications')},
+                {'label': 'Клиенты', 'value': clients.exclude(status__in=['archive', 'rejected']).count(), 'icon': 'users', 'url': reverse('portal:client_questionnaires')},
+                {'label': 'Вузы', 'value': university_queryset(user).count(), 'icon': 'graduation-cap', 'url': reverse('portal:universities')},
             ],
             'admin_metrics': [
-                {'label': 'Доходы месяца', 'value': revenue_month, 'icon': 'trending-up', 'money': True},
-                {'label': 'Расходы месяца', 'value': expense_month, 'icon': 'trending-down', 'money': True},
-                {'label': 'Прибыль', 'value': revenue_month - expense_month, 'icon': 'chart-no-axes-combined', 'money': True},
                 {'label': 'Сотрудники', 'value': employee_profiles.filter(is_active=True).count(), 'icon': 'id-card'},
                 {'label': 'Начали день', 'value': workdays.filter(date=today).exclude(status=WorkDay.STATUS_NOT_STARTED).count(), 'icon': 'timer'},
-                {'label': 'Открытые проекты', 'value': projects.exclude(status__in=[Project.STATUS_DONE, Project.STATUS_ARCHIVED]).count(), 'icon': 'folder-kanban'},
             ] if is_erp_admin(user) or user.is_staff else [],
-            'my_leads': limit(leads.exclude(status__in=['converted', 'lost', 'spam']).order_by('-created_at'), 6),
-            'my_clients': limit(clients.order_by('-updated_at'), 6),
-            'my_applications': limit(applications.order_by('-updated_at'), 6),
-            'my_tasks': limit(tasks.filter(Q(assigned_to=user) | Q(watchers__user=user)).exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).distinct().order_by('deadline', '-updated_at'), 6),
-            'my_projects': limit(projects.order_by('-updated_at'), 6),
+            'recent_express': limit(express_submissions, 6),
+            'recent_questionnaires': limit(questionnaires, 6),
+            'recent_website_leads': limit(website_leads.order_by('-created_at'), 6),
             'workday': get_today_workday(user),
-            'recent_payments': limit(payments.order_by('-payment_date', '-created_at'), 6),
             'recent_documents': limit(documents.order_by('-created_at'), 6),
-            'notifications': limit(notifications.order_by('-created_at'), 8),
             'birthday_people': employee_profiles.filter(user__dob__month=today.month).order_by('user__dob__day')[:8],
             'is_current_user_birthday': bool(
                 user.dob
@@ -1425,8 +1389,6 @@ class DashboardView(PortalContextMixin, TemplateView):
                 and user.dob.day == today.day
             ),
             'birthday_first_name': user.first_name.strip() if user.first_name else full_name(user),
-            'calendar_events': build_calendar_events(user, limit_count=8),
-            'knowledge_items': limit(knowledge_queryset(user).order_by('-is_featured', '-published_at', '-updated_at'), 5),
             'today': today,
         })
         return context
@@ -1525,14 +1487,6 @@ class SettingsView(PortalContextMixin, TemplateView):
             'students_life_original_url': original_url,
             'current_students_life_api_url': current_students_life_api_url,
             'students_life_api_key_configured': bool(getattr(settings, 'STUDENTS_LIFE_API_KEY', '') or getattr(settings, 'LEADS_API_KEY', '')),
-            'api_links': [
-                {'label': 'CRM API', 'url': '/api/v1/crm/'},
-                {'label': 'Education API', 'url': '/api/v1/education/'},
-                {'label': 'Services API', 'url': '/api/v1/services/'},
-                {'label': 'Finance API', 'url': '/api/v1/finance/'},
-                {'label': 'Documents API', 'url': '/api/v1/documents/'},
-                {'label': 'Attendance API', 'url': '/api/v1/attendance/'},
-            ],
         })
         return context
 
@@ -5085,28 +5039,30 @@ class ReportsView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         month_start = timezone.localdate().replace(day=1)
-        leads = lead_queryset(user)
+        leads = incoming_lead_queryset(user)
         clients = client_queryset(user)
-        applications = application_queryset(user)
-        tasks = task_queryset(user)
-        payments = payment_queryset(user)
-        expenses = expense_queryset(user)
+        questionnaires = ClientQuestionnaire.objects.filter(client_id__in=clients.values('id'))
+        submissions = OnboardingSubmission.objects.all()
+        documents = document_queryset(user)
+        workdays = workday_queryset(user)
         context.update({
             'crm_summary': [
-                {'label': 'New leads', 'value': leads.filter(status='new', created_at__date__gte=month_start).count()},
-                {'label': 'Converted leads', 'value': leads.filter(status='converted', converted_at__date__gte=month_start).count()},
-                {'label': 'Active clients', 'value': clients.exclude(status__in=['archive', 'rejected']).count()},
-                {'label': 'Active applications', 'value': applications.exclude(status__in=['cancelled', 'rejected', 'enrolled']).count()},
+                {'label': 'Новые заявки с сайта', 'value': leads.filter(status='new', created_at__date__gte=month_start).count()},
+                {'label': 'Активные клиенты', 'value': clients.exclude(status__in=['archive', 'rejected']).count()},
+                {'label': 'Вузы в каталоге', 'value': university_queryset(user).count()},
+                {'label': 'Программы в каталоге', 'value': program_queryset(user).count()},
             ],
-            'task_summary': [
-                {'label': 'Open tasks', 'value': tasks.exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).count()},
-                {'label': 'Done tasks', 'value': tasks.filter(status=ProjectTask.STATUS_DONE, completed_at__date__gte=month_start).count()},
-                {'label': 'Overdue tasks', 'value': tasks.exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).filter(deadline__lt=timezone.now()).count()},
+            'application_summary': [
+                {'label': 'Экспресс-анкеты за месяц', 'value': submissions.filter(submitted_at__date__gte=month_start).count()},
+                {'label': 'Полные анкеты', 'value': questionnaires.count()},
+                {'label': 'Полные анкеты на проверке', 'value': questionnaires.filter(status=ClientQuestionnaire.STATUS_SUBMITTED).count()},
+                {'label': 'Одобренные анкеты', 'value': questionnaires.filter(status=ClientQuestionnaire.STATUS_APPROVED).count()},
             ],
-            'finance_summary': [
-                {'label': 'Revenue USD', 'value': payments.filter(is_confirmed=True, payment_date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0},
-                {'label': 'Expenses USD', 'value': expenses.filter(is_confirmed=True, date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0},
-                {'label': 'Closed periods', 'value': FinancialPeriod.objects.filter(is_closed=True).count()},
+            'operations_summary': [
+                {'label': 'Документы на проверке', 'value': documents.filter(status=GeneratedDocument.STATUS_PENDING).count()},
+                {'label': 'Созданные документы', 'value': documents.filter(created_at__date__gte=month_start).count()},
+                {'label': 'Рабочих дней начато', 'value': workdays.filter(date__gte=month_start).exclude(status=WorkDay.STATUS_NOT_STARTED).count()},
+                {'label': 'Рабочих дней закрыто', 'value': workdays.filter(date__gte=month_start, status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()},
             ],
         })
         return context

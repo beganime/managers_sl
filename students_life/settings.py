@@ -244,6 +244,10 @@ DISK_PROVISION_API_URL = os.environ.get(
 )
 DISK_PROVISION_SERVICE_TOKEN = os.environ.get('DISK_PROVISION_SERVICE_TOKEN', '')
 TRANSLATE_SL_URL = os.environ.get('TRANSLATE_SL_URL', 'https://translate.manager-sl.ru').rstrip('/')
+EXAM_SL_WEB_URL = os.environ.get('EXAM_SL_WEB_URL', 'https://exam.stud-life.com').rstrip('/')
+TASK_MANAGER_WEB_URL = os.environ.get('TASK_MANAGER_WEB_URL', 'https://task.manager-sl.ru').rstrip('/')
+WEBMAIL_WEB_URL = os.environ.get('WEBMAIL_WEB_URL', 'https://mail.tmmail.ru').rstrip('/')
+SMTP_MAILBOXES_WEB_URL = os.environ.get('SMTP_MAILBOXES_WEB_URL', 'https://tmmail.ru').rstrip('/')
 TRANSLATE_SL_SSO_SECRET = os.environ.get('TRANSLATE_SL_SSO_SECRET', '')
 TRANSLATE_SL_SSO_MAX_AGE = int(os.environ.get('TRANSLATE_SL_SSO_MAX_AGE', '120'))
 

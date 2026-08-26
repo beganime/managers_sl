@@ -3,26 +3,26 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{{ page_title }} | ManagerSL ERP</title>
+    <title>{{ page_title }} | ManagerSL</title>
     <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
     <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
     <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
     <style>
         :root {
-            --bg: #f6f7f9;
+            --bg: #f4f6f8;
             --panel: #ffffff;
-            --panel-soft: #f1f5f3;
-            --text: #17201c;
-            --muted: #66746e;
-            --line: #dce3df;
-            --accent: #176b53;
-            --accent-2: #0e4f8a;
-            --danger: #b42318;
+            --panel-soft: #f1f4f7;
+            --text: #172033;
+            --muted: #687386;
+            --line: #dce2e9;
+            --accent: #b71d17;
+            --accent-2: #0d416d;
+            --danger: #b71d17;
             --warn: #a15c07;
             --ok: #137333;
-            --nav: #10231d;
-            --nav-active: #173b31;
-            --shadow: 0 1px 2px rgba(16, 24, 40, .06);
+            --nav: #1e293b;
+            --nav-active: #b71d17;
+            --shadow: 0 2px 8px rgba(15, 23, 42, .06);
         }
         * { box-sizing: border-box; }
         html { color-scheme: light; }
@@ -43,7 +43,7 @@
             height: 100vh;
             background: var(--nav);
             color: #f8faf9;
-            border-right: 1px solid #17362d;
+            border-right: 1px solid #2d3b50;
             padding: 18px 14px;
             overflow-y: auto;
         }
@@ -52,14 +52,16 @@
             width: 36px;
             height: 36px;
             border-radius: 8px;
-            background: #d7f2e7;
-            color: #0f4a39;
+            background: #ffffff;
+            color: var(--accent);
             display: grid;
             place-items: center;
             font-weight: 800;
+            overflow: hidden;
         }
+        .brand-mark img { width: 30px; height: 30px; object-fit: contain; }
         .brand-title { font-size: 15px; font-weight: 750; }
-        .brand-subtitle { font-size: 12px; color: #b9c8c2; margin-top: 1px; }
+        .brand-subtitle { font-size: 12px; color: #aeb9ca; margin-top: 1px; }
         .nav { display: grid; gap: 8px; }
         .nav-group {
             border: 1px solid rgba(255, 255, 255, .08);
@@ -74,7 +76,7 @@
             align-items: center;
             gap: 10px;
             cursor: pointer;
-            color: #eef6f3;
+            color: #f4f7fb;
             list-style: none;
             font-weight: 720;
         }
@@ -84,8 +86,8 @@
             width: 8px;
             height: 8px;
             margin-left: auto;
-            border-right: 2px solid #b9c8c2;
-            border-bottom: 2px solid #b9c8c2;
+            border-right: 2px solid #aeb9ca;
+            border-bottom: 2px solid #aeb9ca;
             transform: rotate(45deg);
             transition: transform .16s ease;
         }
@@ -99,9 +101,10 @@
             min-height: 36px;
             padding: 8px 10px;
             border-radius: 8px;
-            color: #d9e5e1;
+            color: #dbe3ee;
         }
-        .nav-sub a:hover, .nav-sub a.active { background: #1e493d; color: #ffffff; }
+        .nav-sub a:hover { background: #2b394e; color: #ffffff; }
+        .nav-sub a.active { background: var(--accent); color: #ffffff; }
         .nav svg, .icon { width: 18px; height: 18px; flex: 0 0 18px; }
         .content { min-width: 0; }
         .topbar {
@@ -111,7 +114,7 @@
             justify-content: space-between;
             gap: 16px;
             padding: 0 28px;
-            background: rgba(246, 247, 249, .94);
+            background: rgba(244, 246, 248, .94);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--line);
             position: sticky;
@@ -186,13 +189,13 @@
             align-items: center;
             margin-bottom: 18px;
             padding: 22px 24px;
-            border: 1px solid #c9d9d2;
+            border: 1px solid #d8e0e8;
             border-radius: 12px;
             background:
-                radial-gradient(circle at 92% 14%, rgba(23, 107, 83, .13) 0 4px, transparent 5px),
-                radial-gradient(circle at 86% 76%, rgba(14, 79, 138, .12) 0 3px, transparent 4px),
-                linear-gradient(135deg, #ffffff 0%, #f2f8f5 100%);
-            box-shadow: 0 8px 24px rgba(16, 35, 29, .08);
+                radial-gradient(circle at 92% 14%, rgba(183, 29, 23, .13) 0 4px, transparent 5px),
+                radial-gradient(circle at 86% 76%, rgba(13, 65, 109, .12) 0 3px, transparent 4px),
+                linear-gradient(135deg, #ffffff 0%, #f4f7fb 100%);
+            box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
         }
         .birthday-celebration::after {
             content: "";
@@ -201,7 +204,7 @@
             height: 150px;
             right: -54px;
             top: -70px;
-            border: 24px solid rgba(23, 107, 83, .07);
+            border: 24px solid rgba(183, 29, 23, .07);
             border-radius: 50%;
         }
         .birthday-celebration-icon {
@@ -212,7 +215,7 @@
             place-items: center;
             background: var(--accent);
             color: #fff;
-            box-shadow: 0 8px 18px rgba(23, 107, 83, .2);
+            box-shadow: 0 8px 18px rgba(183, 29, 23, .2);
         }
         .birthday-celebration-icon svg { width: 27px; height: 27px; }
         .birthday-celebration-title {
@@ -220,11 +223,11 @@
             font-size: 22px;
             line-height: 1.25;
             font-weight: 790;
-            color: #123b30;
+            color: #172033;
         }
         .birthday-celebration-message {
             max-width: 760px;
-            color: #52645d;
+            color: #5f6b7d;
             font-size: 14px;
             line-height: 1.55;
         }
@@ -270,7 +273,7 @@
             border-radius: 8px;
             font-size: 11px;
         }
-        .bottom-nav a.active { color: var(--accent); background: #ecf4f1; font-weight: 720; }
+        .bottom-nav a.active { color: var(--accent); background: #fbeceb; font-weight: 720; }
         .panel {
             background: var(--panel);
             border: 1px solid var(--line);
@@ -322,7 +325,7 @@
             color: var(--text);
             outline: none;
         }
-        .input:focus, .select:focus, .textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(23, 107, 83, .12); }
+        .input:focus, .select:focus, .textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(183, 29, 23, .12); }
         .search-input { width: min(360px, 100%); }
         .btn {
             display: inline-flex;
@@ -340,7 +343,7 @@
         }
         .btn:hover { border-color: #b9c4bf; }
         .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
-        .btn.secondary { background: #ecf4f1; border-color: #cfe1da; color: #0f4a39; }
+        .btn.secondary { background: #edf3f8; border-color: #cbd9e5; color: var(--accent-2); }
         .btn.danger { background: #fff3f0; border-color: #f3b8ad; color: var(--danger); }
         .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; min-width: 760px; }
@@ -386,6 +389,9 @@
             border-bottom: 1px solid var(--line);
         }
         .list-row:last-child { border-bottom: 0; }
+        .workday-summary { grid-template-columns: minmax(220px, 1fr) auto; align-items: center; }
+        .dashboard-workday-time { font-size: 20px; margin-top: 4px; }
+        .compact-metrics { grid-template-columns: repeat(2, minmax(160px, 1fr)); }
         .form-errors { color: var(--danger); font-size: 12px; display: grid; gap: 4px; margin-top: 6px; }
         .messages { display: grid; gap: 8px; margin-bottom: 14px; }
         .message { padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: #fff; }
@@ -416,6 +422,8 @@
             .dropdown { right: -4px; width: min(280px, calc(100vw - 28px)); }
             .mobile-links { grid-template-columns: 1fr; }
             .birthday-celebration { grid-template-columns: 1fr; padding: 20px; }
+            .workday-summary { grid-template-columns: 1fr; }
+            .dashboard-workday-time { font-size: 18px; }
         }
     </style>
     {% block extra_head %}{% endblock %}
@@ -424,10 +432,10 @@
     <div class="shell">
         <aside class="sidebar">
             <div class="brand">
-                <div class="brand-mark">SL</div>
+                <div class="brand-mark"><img src="/static/logo.ico" alt="SL"></div>
                 <div>
                     <div class="brand-title">ManagerSL</div>
-                    <div class="brand-subtitle">ERP cabinet</div>
+                    <div class="brand-subtitle">Students Life</div>
                 </div>
             </div>
             <nav class="nav">
@@ -489,9 +497,6 @@
                             <a href="{% url 'portal:profile' %}"><i data-lucide="user-round"></i>Профиль</a>
                             <a href="{% url 'portal:settings' %}"><i data-lucide="settings"></i>Настройки</a>
                             <a href="{% url 'portal:help' %}"><i data-lucide="circle-help"></i>Помощь</a>
-                            {% if can_access_admin %}
-                                <a href="/admin/"><i data-lucide="shield-check"></i>Админка</a>
-                            {% endif %}
                             <form method="post" action="{% url 'portal:logout' %}">
                                 {% csrf_token %}
                                 <button type="submit"><i data-lucide="log-out"></i>Выйти</button>
@@ -508,7 +513,7 @@
                             <div class="mobile-panel-title">{{ group.label }}</div>
                             <div class="mobile-links">
                                 {% for item in group.items %}
-                                    <a href="{{ item.url }}" class="{% if item.is_active %}active{% endif %}" @click="mobilePanelOpen = false">
+                                    <a href="{{ item.url }}" class="{% if item.is_active %}active{% endif %}" @click="mobilePanelOpen = false"{% if item.external %} target="_blank" rel="noopener noreferrer"{% endif %}>
                                         <i data-lucide="{{ item.icon }}"></i>
                                         <span>{{ item.label }}</span>
                                     </a>

@@ -15,7 +15,34 @@ from apps.client_onboarding.services import review_submission
 from apps.crm.models import Client
 from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
-from apps.portal.views import build_client_disk_url, build_questionnaire_sections
+from apps.portal.views import build_client_disk_url, build_nav_groups, build_questionnaire_sections
+
+
+class PortalNavigationTests(TestCase):
+    def test_manager_navigation_contains_only_approved_business_sections(self):
+        manager = get_user_model().objects.create_user(
+            email='navigation-manager@example.com',
+            password='test-password',
+            is_staff=True,
+        )
+
+        groups = build_nav_groups(manager, 'dashboard')
+        group_keys = [group['key'] for group in groups]
+        item_names = [item['name'] for group in groups for item in group['items']]
+
+        self.assertEqual(
+            group_keys,
+            ['main', 'client_app', 'applications', 'website_applications', 'services', 'settings'],
+        )
+        self.assertNotIn('finance', item_names)
+        self.assertNotIn('projects', item_names)
+        self.assertNotIn('tasks', item_names)
+        self.assertIn('task_manager', item_names)
+        self.assertIn('exam_sl', item_names)
+        self.assertIn('webmail', item_names)
+        self.assertIn('smtp_mailboxes', item_names)
+        self.assertIn('onboarding_submissions', item_names)
+        self.assertIn('client_questionnaires', item_names)
 
 
 class QuestionnairePresentationTests(TestCase):
