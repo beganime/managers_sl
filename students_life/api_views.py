@@ -1,6 +1,7 @@
 # students_life/api_views.py
 from django.db.models import Q
 from django.utils import timezone
+from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -12,6 +13,7 @@ from timetracking.models import WorkShift
 from reports.models import DailyReport
 from leads.models import Lead
 from documents.models import GeneratedDocument
+from apps.crm.models import Client as CRMClient
 from .dashboard import is_admin_user, close_overdue_shifts
 
 
@@ -54,6 +56,135 @@ class AppConfigView(APIView):
                 'health': '/api/health/',
             },
         })
+
+
+def _mobile_exam_client(user, client_id):
+    queryset = CRMClient.objects.select_related('manager', 'company', 'office')
+    if not is_admin_user(user):
+        queryset = queryset.filter(Q(manager=user) | Q(shared_with=user))
+    return queryset.distinct().filter(pk=client_id).first()
+
+
+class ClientExamAPIView(APIView):
+    """Authenticated ManagerSL proxy for a client's Student Life exams."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get_client(self, request, client_id):
+        client = _mobile_exam_client(request.user, client_id)
+        if client:
+            return client, None
+        return None, Response(
+            {'detail': 'Клиент не найден или недоступен этому менеджеру.'},
+            status=status.HTTP_404_NOT_FOUND,
+        )
+
+    @staticmethod
+    def mobile_user_id(client):
+        if client.mobile_app_user_id:
+            return client.mobile_app_user_id
+        data = client.custom_data or {}
+        return data.get('mobile_user_id') or data.get('external_mobile_user_id') or data.get('user_id')
+
+    @staticmethod
+    def client_payload(client):
+        return {
+            'id': client.id,
+            'full_name': client.full_name,
+            'phone': client.phone,
+            'email': client.email,
+            'mobile_app_user_id': ClientExamAPIView.mobile_user_id(client),
+        }
+
+    def get(self, request, client_id):
+        client, error = self.get_client(request, client_id)
+        if error:
+            return error
+        mobile_user_id = self.mobile_user_id(client)
+        if not mobile_user_id:
+            return Response(
+                {'detail': 'У клиента ещё нет аккаунта в мобильном приложении.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        from apps.portal.views import students_life_api_request
+
+        ok, payload = students_life_api_request(
+            f'notifications/clients/{mobile_user_id}/exams/',
+            payload=None,
+            method='GET',
+        )
+        if not ok:
+            return Response(
+                {'detail': payload.get('detail') or 'Не удалось получить экзамены клиента.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response({
+            'client': self.client_payload(client),
+            'exams': payload if isinstance(payload, list) else [],
+        })
+
+    def post(self, request, client_id):
+        client, error = self.get_client(request, client_id)
+        if error:
+            return error
+        mobile_user_id = self.mobile_user_id(client)
+        if not mobile_user_id:
+            return Response(
+                {'detail': 'У клиента ещё нет аккаунта в мобильном приложении.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        subject = str(request.data.get('subject') or '').strip()
+        university = str(request.data.get('university') or '').strip()
+        exam_date = str(request.data.get('exam_date') or '').strip()
+        exam_time = str(request.data.get('exam_time') or '').strip()
+        if not subject or not university or not exam_date or not exam_time:
+            return Response(
+                {'detail': 'Укажите вуз, название экзамена, дату и время.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if len(subject) > 255 or len(university) > 255:
+            return Response(
+                {'detail': 'Название вуза и экзамена не должно превышать 255 символов.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        comment = str(request.data.get('comment') or '').strip()
+        if len(comment) > 1000:
+            return Response(
+                {'detail': 'Комментарий не должен превышать 1000 символов.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payload = {
+            'subject': subject,
+            'university': university,
+            'exam_date': exam_date,
+            'exam_time': exam_time,
+            'timezone': str(request.data.get('timezone') or 'Asia/Ashgabat').strip(),
+            'comment': comment,
+            'repeat_until_acknowledged': bool(request.data.get('repeat_until_acknowledged', True)),
+        }
+        external_id = str(request.data.get('manager_sl_exam_id') or '').strip()
+        if external_id:
+            payload['manager_sl_exam_id'] = external_id[:100]
+
+        from apps.portal.views import students_life_api_request
+
+        ok, remote_payload = students_life_api_request(
+            f'notifications/clients/{mobile_user_id}/exams/',
+            payload=payload,
+            method='POST',
+        )
+        if not ok:
+            return Response(
+                {'detail': remote_payload.get('detail') or 'Не удалось назначить экзамен.'},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+        return Response(
+            {'client': self.client_payload(client), 'exam': remote_payload},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class DashboardSummaryView(APIView):

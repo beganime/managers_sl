@@ -10,7 +10,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.portal.views import PortalHomeView
 from users.auth_views import LoginView, LogoutView
-from students_life.api_views import HealthCheckView, AppConfigView, DashboardSummaryView
+from students_life.api_views import ClientExamAPIView, HealthCheckView, AppConfigView, DashboardSummaryView
 from students_life.mobile_api import (
     CalendarEventDetailView,
     CalendarEventListCreateView,
@@ -43,6 +43,7 @@ urlpatterns = [
     path('api/health/', HealthCheckView.as_view(), name='api_health'),
     path('api/app/config/', AppConfigView.as_view(), name='api_app_config'),
     path('api/app/dashboard/', DashboardSummaryView.as_view(), name='api_app_dashboard'),
+    path('api/app/clients/<int:client_id>/exams/', ClientExamAPIView.as_view(), name='api_app_client_exams'),
 
     path('api/v1/me/', MeView.as_view(), name='api_v1_me'),
     path('api/v1/dashboard/', MobileDashboardView.as_view(), name='api_v1_dashboard'),
