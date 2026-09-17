@@ -6,6 +6,9 @@
         <h2 class="panel-title">{{ table_title }}</h2>
         <div class="filters">
             <span class="pill">{{ total_count }} всего</span>
+            {% for action in secondary_actions %}
+                <a class="btn" href="{{ action.url }}"><i data-lucide="{{ action.icon|default:'arrow-up-right' }}"></i>{{ action.label }}</a>
+            {% endfor %}
             {% if create_url %}
                 <a class="btn primary" href="{{ create_url }}"><i data-lucide="plus"></i>{{ create_label }}</a>
             {% endif %}

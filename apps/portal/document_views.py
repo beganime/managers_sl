@@ -2,8 +2,11 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib import messages
+from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
+from django.views import View
 from django.views.generic import TemplateView
 
 from apps.core.permissions import get_employee_profile
@@ -23,13 +26,75 @@ from .views import (
     application_queryset,
     can_delete_admin,
     client_queryset,
+    contract_document_queryset,
+    contract_template_queryset,
     deal_queryset,
     document_queryset,
     document_template_queryset,
+    upload_client_contract_file,
 )
 
 
 FIELD_PREFIX = 'tplfield__'
+
+
+class ClientLookupView(PortalContextMixin, View):
+    """Small scoped lookup used by document forms instead of rendering every client."""
+
+    http_method_names = ['get']
+
+    def get(self, request, *args, **kwargs):
+        query = str(request.GET.get('q') or '').strip()[:100]
+        if len(query) < 2:
+            return JsonResponse({'results': []})
+
+        clients = (
+            client_queryset(request.user)
+            .filter(Q(full_name__icontains=query) | Q(sl_id__icontains=query))
+            .order_by('full_name', 'id')[:20]
+        )
+        return JsonResponse({
+            'results': [
+                {
+                    'id': client.pk,
+                    'full_name': client.full_name,
+                    'sl_id': client.sl_id or '',
+                    'label': f'{client.full_name} — {client.sl_id or "без SL-ID"}',
+                }
+                for client in clients
+            ],
+        })
+
+TEMPLATE_FIELD_LABELS = {
+    'address': 'Адрес',
+    'client_address': 'Адрес клиента',
+    'client_birth_date': 'Дата рождения',
+    'client_birthday': 'Дата рождения',
+    'client_fio': 'ФИО клиента',
+    'client_national': 'Гражданство',
+    'client_passport': 'Номер паспорта',
+    'client_passport_date': 'Дата оформления паспорта',
+    'contract_date': 'Дата договора',
+    'contract_number': 'Номер договора',
+    'current_date': 'Текущая дата',
+    'doc_price': 'Стоимость услуг',
+    'doc_text': 'Серия договора',
+    'dogovor_balance': 'Стоимость услуг',
+    'email': 'Электронная почта',
+    'passport_address': 'Место выдачи паспорта',
+    'passport_date': 'Дата оформления паспорта',
+    'passport_num': 'Номер паспорта',
+    'passport_number': 'Номер паспорта',
+    'passport_reg_address': 'Место регистрации паспорта',
+    'passport_seria': 'Серия паспорта',
+    'payment_deadline': 'Срок оплаты',
+    'phone': 'Номер телефона',
+    'price_info': 'Стоимость услуг',
+    'sert_num': 'Номер документа',
+    'sert_seria': 'Серия документа',
+    'srok_opkaty': 'Стоимость услуг',
+    'srok_oplaty': 'Срок оплаты',
+}
 
 
 def get_nested_value(data, dotted_key):
@@ -191,8 +256,8 @@ class PortalDocumentGenerateForm(forms.Form):
     def add_template_fields(self, template):
         for template_field in template.fields.all().order_by('sort_order', 'label', 'key'):
             name = f'{FIELD_PREFIX}{template_field.pk}'
-            label = template_field.label or template_field.jinja_key or template_field.key
-            help_text = template_field.help_text or template_field.jinja_key or template_field.key
+            label = TEMPLATE_FIELD_LABELS.get(template_field.key) or template_field.label or template_field.jinja_key or template_field.key
+            help_text = template_field.help_text or ''
             widget = widget_for_template_field(template_field)
 
             if template_field.field_type == template_field.FIELD_TYPE_BOOLEAN:
@@ -299,6 +364,11 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
     page_title = 'Создать документ'
     submit_label = 'Сгенерировать DOCX'
     success_url = reverse_lazy('portal:documents')
+    document_kind = ''
+    auto_submit_for_approval = False
+
+    def get_template_queryset(self):
+        return document_template_queryset(self.request.user)
 
     def get_fixed_client(self):
         return None
@@ -312,8 +382,8 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             return document.template
         raw_template = self.request.POST.get('template') or self.request.GET.get('template')
         if not raw_template:
-            return document_template_queryset(self.request.user).order_by('name').first()
-        return document_template_queryset(self.request.user).filter(pk=raw_template).prefetch_related('fields').first()
+            return self.get_template_queryset().order_by('name').first()
+        return self.get_template_queryset().filter(pk=raw_template).prefetch_related('fields').first()
 
     def get_selected_client(self):
         fixed_client = self.get_fixed_client()
@@ -354,9 +424,9 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
         if client:
             applications = applications.filter(client=client)
             deals = deals.filter(client=client)
-        return PortalDocumentGenerateForm(
+        form = PortalDocumentGenerateForm(
             data=data,
-            templates=document_template_queryset(self.request.user).order_by('name'),
+            templates=self.get_template_queryset().order_by('name'),
             clients=client_queryset(self.request.user).order_by('-updated_at'),
             applications=applications.order_by('-created_at'),
             deals=deals.order_by('-created_at'),
@@ -366,6 +436,11 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             base_context=self.get_base_context_for_form(template=template, client=client),
             existing_document=document,
         )
+        if not data:
+            raw_deal = self.request.GET.get('deal')
+            if raw_deal and deals.filter(pk=raw_deal).exists():
+                form.fields['deal'].initial = raw_deal
+        return form
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -379,13 +454,17 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             'document': document,
             'is_regenerate': bool(document),
             'selected_client_id': client.pk if client else None,
+            'selected_client_label': (
+                f'{client.full_name} — {client.sl_id or "без SL-ID"}' if client else ''
+            ),
             'selected_template': template,
             'selected_template_id': template.pk if template else None,
             'template_fields': form.template_fields_bound,
-            'templates_count': document_template_queryset(self.request.user).count(),
+            'templates_count': self.get_template_queryset().count(),
             'clients_count': client_queryset(self.request.user).count(),
-            'cancel_url': reverse_lazy('portal:documents'),
+            'cancel_url': self.success_url,
             'submit_label': self.submit_label,
+            'is_contract_workflow': self.document_kind == 'contract',
         })
         return context
 
@@ -425,6 +504,9 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             client.full_name if client else '',
             form.cleaned_data.get('title') or '',
         )
+        context_data = form.build_context_data()
+        if self.document_kind:
+            context_data['document_kind'] = self.document_kind
         if existing_document:
             if existing_document.status == GeneratedDocument.STATUS_APPROVED:
                 raise ValueError('Подтверждённый документ нельзя перегенерировать. Создайте новый документ.')
@@ -435,7 +517,7 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             existing_document.office = office
             existing_document.manager = manager
             existing_document.title = title
-            existing_document.context_data = form.build_context_data()
+            existing_document.context_data = context_data
             existing_document.status = GeneratedDocument.STATUS_DRAFT
             existing_document.generation_error = ''
             if existing_document.approved_file:
@@ -456,7 +538,7 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             deal=deal,
             manager=manager,
             title=title,
-            context_data=form.build_context_data(),
+            context_data=context_data,
         )
 
     def post(self, request, *args, **kwargs):
@@ -465,8 +547,22 @@ class DocumentCreateView(PortalContextMixin, TemplateView):
             try:
                 document = self.build_document(form)
                 document.generate_file()
-                messages.success(request, 'Документ сгенерирован. DOCX доступен для скачивания в таблице документов.')
-                return redirect('portal:documents')
+                if document.client_id and document.generated_file and (document.deal_id or self.document_kind == 'contract'):
+                    try:
+                        upload_client_contract_file(
+                            document.client,
+                            document.generated_file,
+                            actor=request.user.email,
+                            event_id=f'contract-document:{document.pk}',
+                        )
+                    except Exception as exc:
+                        messages.warning(request, f'DOCX создан, но копию не удалось отправить в DiskSL: {exc}')
+                if self.auto_submit_for_approval:
+                    document.submit_for_approval(user=request.user, comment='Создан менеджером и отправлен на проверку.')
+                    messages.success(request, 'Договор создан и отправлен администратору на проверку печати.')
+                else:
+                    messages.success(request, 'Документ сгенерирован. DOCX доступен для скачивания в таблице документов.')
+                return redirect(self.success_url)
             except Exception as exc:
                 messages.error(request, f'Ошибка генерации документа: {exc}')
         context = self.get_context_data()
@@ -490,6 +586,35 @@ class ClientDocumentCreateView(DocumentCreateView):
         context['selected_client_id'] = client.pk
         context['cancel_url'] = reverse('portal:client_detail', kwargs={'pk': client.pk})
         return context
+
+
+class ContractDocumentsView(DocumentsView):
+    active_page = 'contracts'
+    page_title = 'Договоры'
+    create_url_name = 'portal:contract_create'
+    create_label = 'Создать договор'
+
+    def get_queryset(self):
+        return contract_document_queryset(self.request.user)
+
+    def get_extra_context(self, qs):
+        context = super().get_extra_context(qs)
+        context['secondary_actions'] = [
+            {'url': reverse('portal:finance_deals'), 'label': 'Финансовый учёт', 'icon': 'wallet-cards'},
+        ]
+        return context
+
+
+class ContractDocumentCreateView(DocumentCreateView):
+    active_page = 'contracts'
+    page_title = 'Создать договор'
+    submit_label = 'Сгенерировать и отправить администратору'
+    success_url = reverse_lazy('portal:contracts')
+    document_kind = 'contract'
+    auto_submit_for_approval = True
+
+    def get_template_queryset(self):
+        return contract_template_queryset(self.request.user)
 
 
 class DocumentRegenerateView(DocumentCreateView):

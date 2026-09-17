@@ -145,6 +145,8 @@ INSTALLED_APPS = [
     'apps.erp_notifications.apps.ErpNotificationsConfig',
     'apps.portal.apps.PortalConfig',
     'apps.client_api.apps.ClientApiConfig',
+    'apps.client_onboarding.apps.ClientOnboardingConfig',
+    'apps.sheets_sync.apps.SheetsSyncConfig',
 ]
 
 MIDDLEWARE = [
@@ -154,6 +156,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.core.middleware.EmployeeActivityMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -187,6 +190,16 @@ if USE_SQLITE:
         }
     }
 else:
+    database_options = {
+        'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10')),
+    }
+    database_sslmode = os.environ.get('DB_SSLMODE', '').strip()
+    database_sslrootcert = os.environ.get('DB_SSLROOTCERT', '').strip()
+    if database_sslmode:
+        database_options['sslmode'] = database_sslmode
+    if database_sslrootcert:
+        database_options['sslrootcert'] = database_sslrootcert
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -196,7 +209,7 @@ else:
             'HOST': os.environ.get('DB_HOST', 'db'),
             'PORT': os.environ.get('DB_PORT', '5432'),
             'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '60')),
-            'OPTIONS': {'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10'))},
+            'OPTIONS': database_options,
         }
     }
 
@@ -214,6 +227,52 @@ STUDENTS_LIFE_DEFAULT_API_BASE_URL = 'https://students-life.ru/api2/api/v1/'
 STUDENTS_LIFE_ORIGINAL_API_BASE_URL = 'https://stud-life.com/api/v1/'
 STUDENTS_LIFE_API_BASE_URL = os.environ.get('STUDENTS_LIFE_API_BASE_URL', STUDENTS_LIFE_DEFAULT_API_BASE_URL)
 STUDENTS_LIFE_API_KEY = os.environ.get('STUDENTS_LIFE_API_KEY', LEADS_API_KEY)
+STUDENTS_LIFE_PROVISION_API_URL = os.environ.get(
+    'STUDENTS_LIFE_PROVISION_API_URL',
+    '',
+)
+STUDENTS_LIFE_PROVISION_TOKEN = os.environ.get('STUDENTS_LIFE_PROVISION_TOKEN', '')
+SECURE_CLIENT_ACTIVATION_ENABLED = os.environ.get('SECURE_CLIENT_ACTIVATION_ENABLED', 'false').lower() in {
+    '1', 'true', 'yes', 'on',
+}
+SMTP_SL_API_BASE_URL = os.environ.get('SMTP_SL_API_BASE_URL', '').rstrip('/')
+SMTP_SL_SERVICE_TOKEN = os.environ.get('SMTP_SL_SERVICE_TOKEN', '')
+SMTP_SL_REGISTRY_TOKEN = os.environ.get('SMTP_SL_REGISTRY_TOKEN', '')
+SERVICE_REQUEST_TIMEOUT = int(os.environ.get('SERVICE_REQUEST_TIMEOUT', '20'))
+AKYLCHAT_API_BASE_URL = os.environ.get('AKYLCHAT_API_BASE_URL', '').rstrip('/')
+AKYLCHAT_SERVICE_TOKEN = os.environ.get('AKYLCHAT_SERVICE_TOKEN', '')
+DISK_AUTH_SERVICE_TOKEN = os.environ.get('DISK_AUTH_SERVICE_TOKEN', '')
+EXAM_SL_AUTH_SERVICE_TOKEN = os.environ.get('EXAM_SL_AUTH_SERVICE_TOKEN', '')
+TRANSLATE_SL_AUTH_SERVICE_TOKEN = os.environ.get('TRANSLATE_SL_AUTH_SERVICE_TOKEN', '')
+DISK_WEB_URL = os.environ.get('DISK_WEB_URL', 'https://disk.manager-sl.ru/web/client/login')
+DISK_USAGE_API_URL = os.environ.get(
+    'DISK_USAGE_API_URL',
+    'https://disk.manager-sl.ru/api/internal/disk/usage',
+)
+DISK_PROVISION_API_URL = os.environ.get(
+    'DISK_PROVISION_API_URL',
+    'https://disk.manager-sl.ru/api/internal/disk/folders',
+)
+DISK_PROVISION_SERVICE_TOKEN = os.environ.get('DISK_PROVISION_SERVICE_TOKEN', '')
+TRANSLATE_SL_URL = os.environ.get('TRANSLATE_SL_URL', 'https://translate.manager-sl.ru').rstrip('/')
+EXAM_SL_WEB_URL = os.environ.get('EXAM_SL_WEB_URL', 'https://exam.stud-life.com').rstrip('/')
+TASK_MANAGER_WEB_URL = os.environ.get('TASK_MANAGER_WEB_URL', 'https://task.manager-sl.ru').rstrip('/')
+WEBMAIL_WEB_URL = os.environ.get('WEBMAIL_WEB_URL', 'https://mail.tmmail.ru').rstrip('/')
+SMTP_MAILBOXES_WEB_URL = os.environ.get('SMTP_MAILBOXES_WEB_URL', 'https://tmmail.ru').rstrip('/')
+TRANSLATE_SL_SSO_SECRET = os.environ.get('TRANSLATE_SL_SSO_SECRET', '')
+TRANSLATE_SL_SSO_MAX_AGE = int(os.environ.get('TRANSLATE_SL_SSO_MAX_AGE', '120'))
+
+GOOGLE_SHEETS_ENABLED = env_bool('GOOGLE_SHEETS_ENABLED', False)
+GOOGLE_SHEETS_SPREADSHEET_ID = os.environ.get('GOOGLE_SHEETS_SPREADSHEET_ID', '')
+GOOGLE_SHEETS_CREDENTIALS_FILE = os.environ.get('GOOGLE_SHEETS_CREDENTIALS_FILE', '')
+GOOGLE_SHEETS_GENERAL_SHEET = os.environ.get('GOOGLE_SHEETS_GENERAL_SHEET', 'Общее')
+GOOGLE_SHEETS_ONBOARDING_SHEET = os.environ.get(
+    'GOOGLE_SHEETS_ONBOARDING_SHEET',
+    'Заявки из анкеты',
+)
+GOOGLE_SHEETS_FINANCE_SHEET = os.environ.get('GOOGLE_SHEETS_FINANCE_SHEET', 'Финансы')
+GOOGLE_SHEETS_REFERENCE_SHEET = os.environ.get('GOOGLE_SHEETS_REFERENCE_SHEET', 'Справочники')
+GOOGLE_SHEETS_EXAMS_SHEET = os.environ.get('GOOGLE_SHEETS_EXAMS_SHEET', 'Экзамены')
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -282,9 +341,22 @@ CELERY_TASK_TIME_LIMIT = int(os.environ.get('CELERY_TASK_TIME_LIMIT', '1800'))
 CELERY_TASK_SOFT_TIME_LIMIT = int(os.environ.get('CELERY_TASK_SOFT_TIME_LIMIT', '1500'))
 CELERY_TASK_ALWAYS_EAGER = env_bool('CELERY_TASK_ALWAYS_EAGER', False)
 
-ATTENDANCE_AUTO_CLOSE_HOUR = int(os.environ.get('ATTENDANCE_AUTO_CLOSE_HOUR', '23'))
+ATTENDANCE_WORKDAY_START_HOUR = int(os.environ.get('ATTENDANCE_WORKDAY_START_HOUR', '9'))
+ATTENDANCE_WORKDAY_START_MINUTE = int(os.environ.get('ATTENDANCE_WORKDAY_START_MINUTE', '0'))
+ATTENDANCE_ACTIVITY_PROTECTION_HOUR = int(os.environ.get('ATTENDANCE_ACTIVITY_PROTECTION_HOUR', '17'))
+ATTENDANCE_AUTO_CLOSE_HOUR = int(os.environ.get('ATTENDANCE_AUTO_CLOSE_HOUR', '18'))
 ATTENDANCE_AUTO_CLOSE_MINUTE = int(os.environ.get('ATTENDANCE_AUTO_CLOSE_MINUTE', '0'))
+ATTENDANCE_REPORT_REMINDER_HOUR = int(os.environ.get('ATTENDANCE_REPORT_REMINDER_HOUR', '17'))
+ATTENDANCE_REPORT_REMINDER_MINUTE = int(os.environ.get('ATTENDANCE_REPORT_REMINDER_MINUTE', '40'))
+ATTENDANCE_CLOSE_REMINDER_HOUR = int(os.environ.get('ATTENDANCE_CLOSE_REMINDER_HOUR', '17'))
+ATTENDANCE_CLOSE_REMINDER_MINUTE = int(os.environ.get('ATTENDANCE_CLOSE_REMINDER_MINUTE', '55'))
+ATTENDANCE_WORKDAYS = tuple(
+    int(value.strip())
+    for value in os.environ.get('ATTENDANCE_WORKDAYS', '0,1,2,3,4,5').split(',')
+    if value.strip()
+)
 TASK_REMINDER_HOURS_AHEAD = int(os.environ.get('TASK_REMINDER_HOURS_AHEAD', '24'))
+EXTERNAL_ACCOUNT_ENCRYPTION_KEY = os.environ.get('EXTERNAL_ACCOUNT_ENCRYPTION_KEY', '')
 
 CACHES = {
     'default': {
@@ -334,6 +406,7 @@ UNFOLD = {
                     {'title': 'Источники лидов', 'icon': 'campaign', 'link': '/admin/crm/leadsource/'},
                     {'title': 'Клиенты', 'icon': 'contacts', 'link': '/admin/crm/client/'},
                     {'title': 'Заявки', 'icon': 'assignment', 'link': '/admin/crm/application/'},
+                    {'title': 'Внешние аккаунты / RUID', 'icon': 'vpn_key', 'link': '/admin/crm/externalaccount/'},
                     {'title': 'Активности', 'icon': 'timeline', 'link': '/admin/crm/clientactivity/'},
                     {'title': 'Заметки', 'icon': 'sticky_note_2', 'link': '/admin/crm/clientnote/'},
                     {'title': 'Файлы клиентов', 'icon': 'folder', 'link': '/admin/crm/clientfile/'},

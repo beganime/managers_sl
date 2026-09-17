@@ -495,7 +495,25 @@ class GeneratedDocument(TimeStampedModel):
                 'client_passport_issued_date': safe_text(client.passport_issued_date),
                 'client_passport_valid_until': safe_text(getattr(client, 'passport_valid_until', '')),
                 'client_passport_birth_place': getattr(client, 'passport_birth_place', ''),
+                # Compatibility aliases used by the existing contract templates.
+                'client_fio': client.full_name,
+                'client_birthday': safe_text(client.dob),
+                'client_birth_date': safe_text(client.dob),
+                'client_national': client.citizenship,
+                'address': client.address or client.address_registration,
+                'passport_address': client.passport_issued_by or client.address_registration,
+                'passport_reg_address': client.address_registration or client.passport_issued_by,
+                'passport_date': safe_text(client.passport_issued_date),
+                'client_passport_date': safe_text(client.passport_issued_date),
+                'client_passport': client.passport_inter_num or client.passport_local_num,
+                'passport_number': client.passport_inter_num or client.passport_local_num,
+                'passport_num': client.passport_inter_num or client.passport_local_num,
+                'phone': client.phone,
+                'email': client.email or '',
             })
+
+        context.setdefault('current_date', safe_text(timezone.localdate()))
+        context.setdefault('contract_date', safe_text(timezone.localdate()))
 
         if application:
             context['application'] = {

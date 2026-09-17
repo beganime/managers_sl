@@ -14,12 +14,12 @@ class WorkDay(TimeStampedModel):
     STATUS_AUTO_CLOSED = 'auto_closed'
     STATUS_MISSED = 'missed'
     STATUS_CHOICES = (
-        (STATUS_NOT_STARTED, 'Not started'),
-        (STATUS_STARTED, 'Started'),
-        (STATUS_REPORT_SUBMITTED, 'Report submitted'),
-        (STATUS_CLOSED, 'Closed'),
-        (STATUS_AUTO_CLOSED, 'Auto closed'),
-        (STATUS_MISSED, 'Missed'),
+        (STATUS_NOT_STARTED, 'Не начат'),
+        (STATUS_STARTED, 'Рабочий день идёт'),
+        (STATUS_REPORT_SUBMITTED, 'Отчёт отправлен'),
+        (STATUS_CLOSED, 'Закрыт сотрудником'),
+        (STATUS_AUTO_CLOSED, 'Закрыт автоматически'),
+        (STATUS_MISSED, 'Не вышел на работу'),
     )
     FINAL_STATUSES = {STATUS_CLOSED, STATUS_AUTO_CLOSED, STATUS_MISSED}
 
@@ -65,6 +65,10 @@ class WorkDay(TimeStampedModel):
     def has_report(self):
         return hasattr(self, 'daily_report') and bool(self.daily_report.submitted_at)
 
+    @property
+    def requires_manual_close(self):
+        return bool((self.custom_data or {}).get('requires_manual_close'))
+
     def recalculate_total(self, save=True):
         total = sum(session.duration_seconds for session in self.sessions.all())
         self.total_work_seconds = total
@@ -73,8 +77,8 @@ class WorkDay(TimeStampedModel):
         return total
 
     def start(self, note=''):
-        if self.status in {self.STATUS_CLOSED, self.STATUS_AUTO_CLOSED}:
-            raise ValueError('Closed workday cannot be started again.')
+        if self.status in self.FINAL_STATUSES:
+            raise ValueError('Завершённый рабочий день нельзя начать повторно.')
 
         now = timezone.now()
         with transaction.atomic():
@@ -130,12 +134,16 @@ class WorkDay(TimeStampedModel):
             self.closed_at = now
             if comment:
                 self.comment = comment
+            custom_data = dict(self.custom_data or {})
+            custom_data.pop('requires_manual_close', None)
+            custom_data.pop('manual_close_reason', None)
+            self.custom_data = custom_data
             if auto:
                 self.status = self.STATUS_AUTO_CLOSED
                 self.auto_closed_at = now
             else:
                 self.status = self.STATUS_CLOSED
-            self.save(update_fields=['status', 'closed_at', 'auto_closed_at', 'total_work_seconds', 'comment', 'updated_at'])
+            self.save(update_fields=['status', 'closed_at', 'auto_closed_at', 'total_work_seconds', 'comment', 'custom_data', 'updated_at'])
 
             if auto:
                 AutoCloseLog.objects.create(

@@ -1,25 +1,185 @@
 {% extends "portal/base.html" %}
 
 {% block content %}
-<section class="panel" style="margin-bottom:16px;">
+<section class="panel client-summary" style="margin-bottom:28px;">
     <div class="panel-header">
         <h2 class="panel-title">{{ client.full_name }}</h2>
         <div class="filters">
+            <form method="post" action="{% url 'portal:client_questionnaire_start' client.id %}" data-disable-on-submit>
+                {% csrf_token %}<button class="btn primary" type="submit">Заполнить анкету</button>
+            </form>
+            {% if client.sl_id %}<a class="btn" href="#client-chat">Чат с клиентом</a>{% endif %}
+            <details><summary class="btn">Документы и другие действия</summary>
+            <div class="filters" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
+            <a class="btn{% if disk_ready %} secondary{% endif %}" href="{{ disk_url }}" target="_blank" rel="noopener"><i data-lucide="folder-open"></i>{% if disk_ready %}Папка клиента{% else %}DiskSL{% endif %}</a>
+            {% if can_access_disk %}<a class="btn secondary" href="{{ translate_url }}" target="_blank" rel="noopener"><i data-lucide="languages"></i>Перевести документ</a>{% endif %}
             <a class="btn secondary" href="{% url 'portal:client_document_create' client.id %}"><i data-lucide="file-plus-2"></i>Создать документ</a>
-            <a class="btn" href="{% url 'portal:clients' %}?edit={{ client.id }}"><i data-lucide="square-pen"></i>Редактировать</a>
+            {% if can_edit_client %}<a class="btn" href="{% url 'portal:client_edit' client.id %}">Редактировать</a>{% endif %}
+            </div></details>
         </div>
     </div>
     <div class="panel-body">
-        <div class="grid cols-4">
+        <div class="grid cols-4"><div><div class="muted small">Доступ</div><strong>{% if client.is_public %}Сотрудники компании{% else %}Личный клиент{% endif %}</strong></div>
+            <div><div class="muted small">SL-ID</div><div class="strong">{{ client.sl_id|default:"Не присвоен" }}</div></div>
+            <div><div class="muted small">Год поступления</div><div class="strong">{{ client.academic_year|default:"-" }}</div></div>
             <div><div class="muted small">Телефон</div><div class="strong">{{ client.phone|default:"-" }}</div></div>
             <div><div class="muted small">Email</div><div class="strong">{{ client.email|default:"-" }}</div></div>
             <div><div class="muted small">Статус</div><span class="pill">{{ client.get_status_display }}</span></div>
             <div><div class="muted small">Менеджер</div><div class="strong">{{ client.manager.get_full_name|default:client.manager.email }}</div></div>
+            <div><div class="muted small">Офис</div><div class="strong">{{ client.office.name|default:"-" }}</div></div>
             <div><div class="muted small">Гражданство</div><div>{{ client.citizenship|default:"-" }}</div></div>
             <div><div class="muted small">Дата рождения</div><div>{{ client.dob|date:"Y-m-d"|default:"-" }}</div></div>
             <div><div class="muted small">Паспорт</div><div>{{ client.passport_inter_num|default:client.passport_local_num|default:"-" }}</div></div>
             <div><div class="muted small">Интерес</div><div>{{ client.interested_university|default:client.interested_program|default:client.get_direction_display|default:"-" }}</div></div>
         </div>
+    </div>
+</section>
+{% include "portal/partials/client_chat_inline.html" %}
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Почта клиента</h2>
+        <span class="pill">{{ student360.emails|length }} писем</span>
+    </div>
+    <div class="panel-body">
+        {% if can_access_disk %}
+        <p class="muted">Привяжите почтовый адрес к этому клиенту. Письма из подключённого ящика SMTPSL будут появляться здесь. Один клиент может иметь несколько ящиков.</p>
+        <form method="post" action="{% url 'portal:client_mailbox_bind' client.id %}" data-disable-on-submit class="toolbar">
+            {% csrf_token %}
+            <div class="filters" style="display:flex;flex-wrap:wrap;gap:10px;">
+                <input class="input" type="email" name="email" required maxlength="254" placeholder="ivan.ivanov@tmmail.ru" aria-label="Почта клиента" style="flex:1;min-width:180px;max-width:100%;">
+                <button class="btn primary" type="submit">Привязать почту</button>
+                <a class="btn" href="https://tmmail.ru/hub/mailboxes/add/" target="_blank" rel="noopener">Подключить ящик в SMTPSL</a>
+            </div>
+        </form>
+        {% for mailbox in mailbox_overview %}
+        <div class="list-row" style="flex-wrap:wrap;gap:8px;margin:12px 0;">
+            <div style="min-width:0;overflow-wrap:anywhere;">
+                <div class="strong">{{ mailbox.email }}</div>
+                {% if mailbox.total %}
+                <div class="muted small">Писем в реестре: {{ mailbox.total }} · Последнее письмо: {{ mailbox.latest|date:"d.m.Y H:i" }}</div>
+                <div class="muted small">Обновление реестра: {{ mailbox.synchronized|date:"d.m.Y H:i" }}. Текущее подключение и ошибки проверяйте в SMTPSL.</div>
+                {% else %}<div class="muted small">Адрес привязан, писем пока нет. Проверьте подключение и синхронизацию в SMTPSL.</div>{% endif %}
+            </div>
+            <a class="btn secondary" href="https://tmmail.ru/hub/mailboxes/" target="_blank" rel="noopener">Проверить ящик</a>
+        </div>
+        {% endfor %}
+        {% endif %}
+        {% if student360.emails %}
+            <div class="list">
+                {% for email in student360.emails %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ email.subject|default:"Без темы" }}</div>
+                            <div class="muted small">
+                                {{ email.sender_name|default:email.sender_email }} · {{ email.received_at|slice:":16" }}
+                                {% if email.university_name %} · {{ email.university_name }}{% endif %}
+                                {% if email.attachment_count %} · вложений: {{ email.attachment_count }}{% endif %}
+                            </div>
+                            {% if email.body_preview %}<div class="muted small" style="margin-top:6px;">{{ email.body_preview|truncatechars:220 }}</div>{% endif %}
+                        </div>
+                        <div class="filters">
+                            {% if email.is_replied %}<span class="pill ok">Отвечено</span>{% elif email.processed %}<span class="pill">Обработано</span>{% else %}<span class="pill warn">Требует внимания</span>{% endif %}
+                            {% if email.source_url %}<a class="btn secondary" href="{{ email.source_url }}" target="_blank" rel="noopener noreferrer">Открыть письмо</a>{% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">Привязанных писем пока нет. Новые письма из SMTP_SL появятся здесь автоматически.</div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">RUID и внешние кабинеты</h2>
+        <span class="pill">{{ external_accounts|length }} аккаунтов</span>
+    </div>
+    <div class="panel-body">
+        <details>
+        <summary class="btn">Добавить RUID или внешний кабинет</summary>
+        <form method="post" action="{% url 'portal:external_account_create' client.id %}" data-disable-on-submit style="margin-top:12px;">
+            {% csrf_token %}
+            <div class="grid cols-3">
+                <select class="input" name="system" required aria-label="Тип внешнего аккаунта">
+                    <option value="">Выберите систему</option>
+                    {% for value, label in external_account_system_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                </select>
+                <input class="input" name="provider_name" maxlength="255" placeholder="Название портала или вуза" required>
+                <select class="input" name="application" aria-label="Заявка в университет">
+                    <option value="">Общий аккаунт студента</option>
+                    {% for application in applications %}
+                        <option value="{{ application.id }}">{{ application.university_name|default:"ВУЗ" }} — {{ application.program_name|default:"программа не указана" }}</option>
+                    {% endfor %}
+                </select>
+                <input class="input" type="url" name="portal_url" maxlength="200" placeholder="https://адрес-входа">
+                <input class="input" type="email" name="email" maxlength="254" placeholder="Email аккаунта">
+                <input class="input" name="login" maxlength="255" autocomplete="off" placeholder="Логин">
+                <input class="input" type="password" name="secret" maxlength="1000" autocomplete="new-password" placeholder="Пароль (хранится зашифрованно)">
+                <select class="input" name="status" required aria-label="Статус внешнего аккаунта">
+                    {% for value, label in external_account_status_choices %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                </select>
+                <input class="input" name="issue" maxlength="1000" placeholder="Проблема, если есть">
+            </div>
+            <div class="filters" style="margin-top:12px;">
+                <input class="input" name="notes" maxlength="1000" placeholder="Комментарий">
+                <button class="btn primary" type="submit"><i data-lucide="key-round"></i>Сохранить аккаунт</button>
+            </div>
+        </form>
+
+        </details>
+        {% if external_accounts %}
+            <div class="list" style="margin-top:16px;">
+                {% for account in external_accounts %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ account.get_system_display }} · {{ account.provider_name }}</div>
+                            <div class="muted small">
+                                {{ account.login|default:account.email|default:"Логин не указан" }}
+                                {% if account.application_id %} · {{ account.application.university_name|default:"Заявка в вуз" }}{% endif %}
+                                · {{ account.get_status_display }}
+                            </div>
+                        </div>
+                        <div class="filters">
+                            {% if account.portal_url %}<a class="btn secondary" href="{{ account.portal_url }}" target="_blank" rel="noopener noreferrer">Открыть</a>{% endif %}
+                            {% if account.has_secret and can_view_external_account_secrets %}
+                                <form method="post" action="{% url 'portal:external_account_secret' client.id account.id %}" target="_blank">
+                                    {% csrf_token %}<button class="btn secondary" type="submit">Показать пароль</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty" style="margin-top:16px;">RUID и университетские кабинеты пока не добавлены.</div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Файлы клиента в DiskSL</h2>
+        <a class="btn" href="{{ disk_url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть DiskSL</a>
+    </div>
+    <div class="panel-body">
+        {% if disk_ready and can_access_disk %}
+            <form class="toolbar" method="post" action="{% url 'portal:client_disk_upload' client.id %}" enctype="multipart/form-data" data-disable-on-submit>
+                {% csrf_token %}
+                <div class="filters">
+                    <select class="input" name="folder" required>
+                        {% for value, label in disk_upload_folders %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
+                    </select>
+                    <input class="input" type="file" name="file" accept=".pdf,.docx,.jpg,.jpeg,.png" required>
+                    <button class="btn primary" type="submit"><i data-lucide="upload"></i>Загрузить до 50 МБ</button>
+                </div>
+            </form>
+        {% elif not can_access_disk %}
+            <div class="empty">У вашей роли нет доступа к паспортам и файлам клиентов.</div>
+        {% else %}
+            <div class="empty">Папка появится после подтверждения полной анкеты и подключения DiskSL.</div>
+        {% endif %}
     </div>
 </section>
 
@@ -51,15 +211,24 @@
     <div class="panel-header">
         <h2 class="panel-title">Экзамены клиента</h2>
         {% if mobile_user_id %}
-            <span class="pill">Mobile user ID: {{ mobile_user_id }}</span>
+            <span class="pill">Приложение подключено</span>
         {% else %}
-            <span class="pill warn">Нет mobile user id</span>
+            <span class="pill warn">Приложение не подключено</span>
         {% endif %}
     </div>
     <div class="panel-body">
+        {% if mobile_user_id and applications %}
         <form class="toolbar" method="post" action="{% url 'portal:client_exam_create' client.id %}">
             {% csrf_token %}
             <div class="filters">
+                <select class="input" name="application_public_id" required>
+                    <option value="">Заявка в университет</option>
+                    {% for application in applications %}
+                        <option value="{{ application.public_id }}">
+                            {{ application.university.abbreviation|default:application.university_name|default:"ВУЗ" }} / {{ application.program.name|default:application.program_name|default:"Программа" }}
+                        </option>
+                    {% endfor %}
+                </select>
                 <input class="input" name="subject" placeholder="Предмет экзамена" required>
                 <input class="input" name="exam_date" type="date" required>
                 <input class="input" name="exam_time" type="time" required>
@@ -69,7 +238,10 @@
                 <button class="btn primary" type="submit"><i data-lucide="calendar-plus"></i>Назначить экзамен</button>
             </div>
         </form>
-        {% if mobile_exams_error %}
+        {% else %}
+        <p class="muted">Для отправки экзамена подключите аккаунт клиента в приложении и добавьте заявку в университет.</p>
+        {% endif %}
+        {% if mobile_exams_error and mobile_user_id %}
             <div class="empty" style="text-align:left; margin-top:12px;">{{ mobile_exams_error }}</div>
         {% endif %}
         {% if mobile_exams %}
@@ -99,7 +271,31 @@
         <div class="panel-header"><h2 class="panel-title">Заявки</h2></div>
         <div class="panel-body">
             {% if applications %}
-                <div class="list">{% for item in applications %}<div class="list-row"><div><div class="strong">{{ item.university_name|default:"ВУЗ не выбран" }}</div><div class="muted small">{{ item.program_name|default:item.country }}</div></div><span class="pill">{{ item.get_status_display }}</span></div>{% endfor %}</div>
+                <div class="list">
+                    {% for application in applications %}
+                        <div class="list-row" style="display:block;">
+                            <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start;">
+                                <div>
+                                    <div class="strong">{{ application.university_name|default:"ВУЗ не выбран" }}</div>
+                                    <div class="muted small">{{ application.program_name|default:application.country }}{% if application.academic_year %} · {{ application.academic_year }}{% endif %}</div>
+                                </div>
+                                <span class="pill">{{ application.get_current_stage_display }}</span>
+                            </div>
+                            <form method="post" action="{% url 'portal:application_transition' client.id application.id %}" data-disable-on-submit style="margin-top:12px;">
+                                {% csrf_token %}
+                                <div class="filters">
+                                    <select class="input" name="stage" required aria-label="Новый этап поступления">
+                                        {% for value, label in application_stage_choices %}
+                                            <option value="{{ value }}"{% if value == application.current_stage %} selected{% endif %}>{{ label }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <input class="input" name="comment" maxlength="1000" placeholder="Комментарий к этапу">
+                                    <button class="btn primary" type="submit"><i data-lucide="milestone"></i>Сменить этап</button>
+                                </div>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
             {% else %}<div class="empty">Заявок пока нет.</div>{% endif %}
         </div>
     </div>
@@ -118,6 +314,30 @@
                 <div class="list">{% for item in documents %}<div class="list-row"><div><div class="strong">{{ item.display_title }}</div><div class="muted small">{{ item.created_at|date:"Y-m-d H:i" }}</div></div><span class="pill">{{ item.get_status_display }}</span></div>{% endfor %}</div>
             {% else %}<div class="empty">Документов пока нет.</div>{% endif %}
         </div>
+    </div>
+</section>
+
+<section class="panel" style="margin-top:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">История клиента</h2>
+        <span class="pill">Последние {{ student360.timeline|length }} событий</span>
+    </div>
+    <div class="panel-body">
+        {% if student360.timeline %}
+            <div class="list">
+                {% for event in student360.timeline %}
+                    <div class="list-row">
+                        <div>
+                            <div class="strong">{{ event.title }}</div>
+                            <div class="muted small">{{ event.detail|default:"Без комментария" }}{% if event.actor %} · {{ event.actor }}{% endif %}</div>
+                        </div>
+                        <span class="pill">{{ event.at|slice:":16" }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="empty">По клиенту пока нет зафиксированных действий.</div>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

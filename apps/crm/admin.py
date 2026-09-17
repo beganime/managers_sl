@@ -2,12 +2,22 @@ from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 
 from .models import (
+    ActivityLog,
     Application,
+    ApplicationExam,
+    ApplicationExamEvent,
+    TranslationEvent,
+    TranslationRecord,
+    ApplicationStageHistory,
     Client,
     ClientActivity,
     ClientFile,
+    ClientFileReviewEvent,
+    ClientFileVersion,
     ClientNote,
     ClientQuestionnaire,
+    EmailRecord,
+    ExternalAccount,
     Lead,
     LeadSource,
     ManagerDocumentCredit,
@@ -142,11 +152,139 @@ class ClientAdmin(ModelAdmin):
 
 @admin.register(Application)
 class ApplicationAdmin(ModelAdmin):
-    list_display = ('client', 'university_name', 'program_name', 'country', 'manager', 'status', 'submitted_at', 'created_at')
-    list_filter = ('status', 'company', 'office', 'country', 'degree', 'language', 'created_at')
+    list_display = ('client', 'university_name', 'program_name', 'country', 'manager', 'current_stage', 'status', 'submitted_at', 'created_at')
+    list_filter = ('current_stage', 'status', 'company', 'office', 'country', 'degree', 'language', 'created_at')
     search_fields = ('client__full_name', 'client__phone', 'university_name', 'program_name', 'country')
     autocomplete_fields = ('client', 'company', 'office', 'manager')
-    readonly_fields = ('created_at', 'updated_at')
+    # Admission stages may only change through crm.workflow so every change is
+    # validated and written to the immutable history/activity tables.
+    readonly_fields = ('current_stage', 'created_at', 'updated_at')
+    date_hierarchy = 'created_at'
+
+
+class ImmutableAuditAdmin(ModelAdmin):
+    """Read-only admin base for append-only workflow audit records."""
+
+    def has_view_permission(self, request, obj=None):
+        return request.user.has_perm(f'{self.opts.app_label}.view_{self.opts.model_name}')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def get_readonly_fields(self, request, obj=None):
+        return tuple(field.name for field in self.model._meta.fields)
+
+
+@admin.register(ApplicationStageHistory)
+class ApplicationStageHistoryAdmin(ImmutableAuditAdmin):
+    list_display = ('application', 'old_stage', 'new_stage', 'actor', 'source_service', 'created_at')
+    list_filter = ('old_stage', 'new_stage', 'source_service', 'created_at')
+    search_fields = ('application__client__full_name', 'application__client__sl_id', 'comment', 'event_id')
+    date_hierarchy = 'created_at'
+
+
+@admin.register(ApplicationExam)
+class ApplicationExamAdmin(ModelAdmin):
+    list_display = ('subject', 'student', 'application', 'scheduled_at', 'status', 'responsible', 'source_service')
+    list_filter = ('status', 'source_service', 'scheduled_at')
+    search_fields = ('student__full_name', 'student__sl_id', 'subject', 'application__university_name')
+    exclude = ('secret_ciphertext',)
+    readonly_fields = (
+        'public_id', 'application', 'student', 'subject', 'scheduled_at', 'timezone',
+        'join_url', 'login', 'status', 'result', 'score', 'retake_at', 'comment',
+        'responsible', 'created_by', 'source_service', 'source_id', 'source_version',
+        'client_acknowledged_at', 'created_at', 'updated_at',
+    )
+    date_hierarchy = 'scheduled_at'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ApplicationExamEvent)
+class ApplicationExamEventAdmin(ImmutableAuditAdmin):
+    list_display = ('action', 'exam', 'actor', 'source_service', 'created_at')
+    list_filter = ('action', 'source_service', 'created_at')
+    search_fields = ('exam__student__full_name', 'exam__student__sl_id', 'event_id')
+    date_hierarchy = 'created_at'
+
+
+@admin.register(TranslationRecord)
+class TranslationRecordAdmin(ModelAdmin):
+    list_display = ('title', 'student', 'status', 'translator', 'reviewer', 'source_service', 'updated_at')
+    list_filter = ('status', 'source_service', 'created_at')
+    search_fields = ('title', 'student__full_name', 'student__sl_id', 'source_id')
+    readonly_fields = (
+        'public_id', 'student', 'application', 'source_document_version', 'title',
+        'source_language', 'target_language', 'template_name', 'version', 'status',
+        'source_storage_path', 'result_storage_path', 'translator', 'reviewer',
+        'source_service', 'source_id', 'source_version', 'created_at', 'updated_at',
+    )
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(TranslationEvent)
+class TranslationEventAdmin(ImmutableAuditAdmin):
+    list_display = ('action', 'translation', 'actor', 'source_service', 'created_at')
+    list_filter = ('action', 'source_service', 'created_at')
+    search_fields = ('translation__title', 'translation__student__full_name', 'translation__student__sl_id', 'event_id')
+    date_hierarchy = 'created_at'
+
+
+@admin.register(EmailRecord)
+class EmailRecordAdmin(ModelAdmin):
+    list_display = ('subject', 'student', 'mailbox', 'sender_email', 'importance', 'processed', 'received_at')
+    list_filter = ('importance', 'category', 'processed', 'is_read', 'is_replied', 'received_at')
+    search_fields = ('student__full_name', 'student__sl_id', 'mailbox', 'sender_email', 'subject', 'university_name')
+    readonly_fields = tuple(field.name for field in EmailRecord._meta.fields)
+    date_hierarchy = 'received_at'
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+
+@admin.register(ActivityLog)
+class ActivityLogAdmin(ImmutableAuditAdmin):
+    list_display = ('action', 'student', 'application', 'actor', 'service', 'created_at')
+    list_filter = ('action', 'service', 'object_type', 'created_at')
+    search_fields = ('student__full_name', 'student__sl_id', 'object_id', 'event_id')
+    date_hierarchy = 'created_at'
+
+
+@admin.register(ExternalAccount)
+class ExternalAccountAdmin(ModelAdmin):
+    list_display = ('system', 'provider_name', 'student', 'application', 'status', 'responsible', 'last_checked_at')
+    list_filter = ('system', 'status', 'created_at', 'last_checked_at')
+    search_fields = ('student__full_name', 'student__sl_id', 'provider_name', 'email', 'login')
+    autocomplete_fields = ('student', 'application', 'responsible', 'created_by')
+    readonly_fields = ('public_id', 'secret_ciphertext', 'secret_updated_at', 'created_by', 'created_at', 'updated_at')
+    exclude = ('secret_ciphertext',)
     date_hierarchy = 'created_at'
 
 
@@ -174,7 +312,23 @@ class ClientFileAdmin(ModelAdmin):
     list_filter = ('file_type', 'source', 'status', 'created_at')
     search_fields = ('title', 'client__full_name', 'client__phone', 'comment', 'external_mobile_document_id', 'external_mobile_user_id')
     autocomplete_fields = ('client', 'application', 'uploaded_by', 'reviewed_by')
-    readonly_fields = ('created_at', 'updated_at')
+    readonly_fields = ('current_version_number', 'created_at', 'updated_at')
+
+
+@admin.register(ClientFileVersion)
+class ClientFileVersionAdmin(ImmutableAuditAdmin):
+    list_display = ('document', 'version_number', 'original_name', 'size_bytes', 'source_service', 'created_at')
+    list_filter = ('source_service', 'mime_type', 'created_at')
+    search_fields = ('document__client__full_name', 'document__client__sl_id', 'original_name', 'storage_path', 'sha256')
+    date_hierarchy = 'created_at'
+
+
+@admin.register(ClientFileReviewEvent)
+class ClientFileReviewEventAdmin(ImmutableAuditAdmin):
+    list_display = ('document', 'version', 'status', 'reviewer', 'source_service', 'created_at')
+    list_filter = ('status', 'source_service', 'created_at')
+    search_fields = ('document__client__full_name', 'document__client__sl_id', 'comment', 'event_id')
+    date_hierarchy = 'created_at'
 
 
 @admin.register(ClientQuestionnaire)

@@ -1,4 +1,8 @@
 # students_life/api_views.py
+from datetime import datetime
+from uuid import uuid4
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import status
@@ -13,7 +17,8 @@ from timetracking.models import WorkShift
 from reports.models import DailyReport
 from leads.models import Lead
 from documents.models import GeneratedDocument
-from apps.crm.models import Client as CRMClient
+from apps.crm.exam_registry import ExamRegistryError, upsert_application_exam
+from apps.crm.models import Application as CRMApplication, Client as CRMClient
 from .dashboard import is_admin_user, close_overdue_shifts
 
 
@@ -156,18 +161,53 @@ class ClientExamAPIView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        applications = CRMApplication.objects.select_related('university', 'program').filter(client=client)
+        application_public_id = str(request.data.get('application_public_id') or '').strip()
+        if application_public_id:
+            application = applications.filter(public_id=application_public_id).first()
+        else:
+            matches = list(applications.filter(
+                Q(university_name__iexact=university)
+                | Q(university__name__iexact=university)
+                | Q(university__abbreviation__iexact=university)
+            )[:2])
+            application = matches[0] if len(matches) == 1 else None
+        if not application:
+            return Response(
+                {'detail': 'Выберите конкретную заявку студента в университет.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        timezone_name = str(request.data.get('timezone') or 'Asia/Ashgabat').strip()
+        try:
+            scheduled_at = timezone.make_aware(
+                datetime.fromisoformat(f'{exam_date}T{exam_time}'), ZoneInfo(timezone_name),
+            )
+        except (ValueError, ZoneInfoNotFoundError):
+            return Response({'detail': 'Некорректная дата, время или timezone.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        source_id = str(request.data.get('manager_sl_exam_id') or '').strip()[:100] or f'manager-api-{uuid4()}'
+        try:
+            canonical_exam, _created = upsert_application_exam(
+                application=application, subject=subject, scheduled_at=scheduled_at,
+                timezone=timezone_name, comment=comment, responsible=request.user,
+                actor=request.user, source_service='manager_sl', source_id=source_id,
+                event_id=request.data.get('event_id') or uuid4(),
+            )
+        except ExamRegistryError as exc:
+            return Response({'detail': str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
         payload = {
             'subject': subject,
             'university': university,
             'exam_date': exam_date,
             'exam_time': exam_time,
-            'timezone': str(request.data.get('timezone') or 'Asia/Ashgabat').strip(),
+            'timezone': timezone_name,
             'comment': comment,
             'repeat_until_acknowledged': bool(request.data.get('repeat_until_acknowledged', True)),
         }
-        external_id = str(request.data.get('manager_sl_exam_id') or '').strip()
-        if external_id:
-            payload['manager_sl_exam_id'] = external_id[:100]
+        payload['manager_sl_exam_id'] = str(canonical_exam.public_id)
+        payload['manager_application_public_id'] = str(application.public_id)
 
         from apps.portal.views import students_life_api_request
 

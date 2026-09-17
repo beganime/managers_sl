@@ -40,7 +40,7 @@
             <div class="list">
                 <div class="list-row"><div><div class="strong">1. Сначала страна и город</div><div class="muted small">Если страны или города нет в списке, добавьте их через админку.</div></div><a class="pill" href="/admin/education/country/add/">Страна</a></div>
                 <div class="list-row"><div><div class="strong">2. Затем ВУЗ</div><div class="muted small">Укажите название, страну, город, сайт и контакты.</div></div><span class="pill ok">Обязательно</span></div>
-                <div class="list-row"><div><div class="strong">3. После ВУЗа добавьте программы</div><div class="muted small">У ВУЗа должны быть программы, стоимость, наборы и документы.</div></div><a class="pill ok" href="{% url 'portal:programs' %}">Программы</a></div>
+                <div class="list-row"><div><div class="strong">3. После ВУЗа добавьте программы</div><div class="muted small">У ВУЗа должны быть программы, наборы и документы.</div></div><a class="pill ok" href="{% url 'portal:programs' %}">Программы</a></div>
                 <div class="list-row"><div><div class="strong">Подробная инструкция</div><div class="muted small">Порядок заполнения всей базы данных описан отдельно.</div></div><a class="pill" href="{% url 'portal:admin_data_help' %}">Открыть</a></div>
             </div>
         </div>
@@ -55,8 +55,24 @@
     <div class="panel-body">
         <form class="toolbar" method="get" hx-get="{{ request.path }}" hx-target="#portal-table" hx-push-url="true">
             <div class="filters">
-                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск по ВУЗу, стране, городу">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Название, аббревиатура, программа, город">
+                <select class="select" name="country">
+                    <option value="">Все страны</option>
+                    {% for country in countries %}<option value="{{ country.id }}" {% if selected_country == country.id|stringformat:"s" %}selected{% endif %}>{{ country.name }}</option>{% endfor %}
+                </select>
+                <select class="select" name="city">
+                    <option value="">Все города</option>
+                    {% for city in cities %}<option value="{{ city.id }}" {% if selected_city == city.id|stringformat:"s" %}selected{% endif %}>{{ city.name }} · {{ city.country.name }}</option>{% endfor %}
+                </select>
+                <select class="select" name="ordering">
+                    <option value="country__name" {% if ordering == 'country__name' %}selected{% endif %}>По стране</option>
+                    <option value="name" {% if ordering == 'name' %}selected{% endif %}>По названию</option>
+                    <option value="city__name" {% if ordering == 'city__name' %}selected{% endif %}>По городу</option>
+                    <option value="-programs_count" {% if ordering == '-programs_count' %}selected{% endif %}>Больше программ</option>
+                    <option value="-updated_at" {% if ordering == '-updated_at' %}selected{% endif %}>Недавно обновлённые</option>
+                </select>
                 <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+                <a class="btn" href="{% url 'portal:universities' %}">Сбросить</a>
             </div>
         </form>
         <div id="portal-table">

@@ -3,9 +3,11 @@ from decimal import Decimal, InvalidOperation
 from django.db.models import Count, DateField, DecimalField, OuterRef, Prefetch, Q, Subquery
 from rest_framework.response import Response
 from rest_framework import permissions, viewsets
+from rest_framework.views import APIView
 
 from apps.education.cache import EDUCATION_CACHE_TTL, education_cache_get, education_cache_set, make_education_cache_key
 from apps.education.models import City, Country, Intake, Program, ProgramFee, RequiredDocument, University, UniversityContact
+from apps.education.priority_catalog import PRIORITY_PROGRAMS, priority_offer_for_name
 from apps.erp_services.models import Service
 
 from .serializers import (
@@ -49,6 +51,36 @@ def text_param(params, *names):
         if value:
             return value
     return ''
+
+
+class ClientPriorityProgramView(APIView):
+    """Public, read-only price list approved by the business owner."""
+
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        search = text_param(request.query_params, 'search', 'q').casefold()
+        degree = text_param(request.query_params, 'degree').casefold()
+        # The source document can contain the same row more than once. Keep the
+        # public catalog stable and return every approved offer only once.
+        seen = set()
+        results = []
+        for code, degree_name, name, price in PRIORITY_PROGRAMS:
+            key = (code, degree_name, name, price)
+            if key in seen:
+                continue
+            seen.add(key)
+            if search and search not in f'{code} {name} {degree_name}'.casefold():
+                continue
+            if degree and degree != degree_name.casefold():
+                continue
+            results.append({
+                'code': code,
+                'degree': degree_name,
+                'name': name,
+                'service_fee_usd': price,
+            })
+        return Response({'count': len(results), 'results': results})
 
 
 class ClientReadOnlyViewSet(viewsets.ReadOnlyModelViewSet):
@@ -140,6 +172,7 @@ class ClientUniversityViewSet(ClientReadOnlyViewSet):
         if search:
             qs = qs.filter(
                 Q(name__icontains=search)
+                | Q(abbreviation__icontains=search)
                 | Q(legal_name__icontains=search)
                 | Q(country__name__icontains=search)
                 | Q(city__name__icontains=search)
@@ -178,6 +211,25 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
         fee = next(iter(program.fees.all()), None)
         intake = next(iter(program.intakes.all()), None)
         tuition_fee = fee.tuition_fee if fee else None
+        priority_offer = priority_offer_for_name(program.name)
+        serialized_fees = ClientProgramFeeSerializer(
+            [fee], many=True, context={'request': request}
+        ).data if fee else []
+        if priority_offer and not any(
+            str(item.get('source') or '').casefold() == 'гослиния' or item.get('priority_code')
+            for item in serialized_fees
+        ):
+            serialized_fees.append({
+                'id': f"priority-{priority_offer['code']}",
+                'currency': 'USD',
+                'currency_symbol': '$',
+                'tuition_fee': None,
+                'service_fee_usd': str(priority_offer['service_fee_usd']),
+                'application_fee': '0',
+                'dormitory_fee': '0',
+                'insurance_fee': '0',
+                'source': 'Гослиния',
+            })
         return {
             'id': program.id,
             'program_id': program.id,
@@ -206,11 +258,12 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
             'converted_tuition_fee': None,
             'selected_currency': '',
             'application_deadline': intake.application_deadline if intake else None,
-            'fees': ClientProgramFeeSerializer([fee], many=True, context={'request': request}).data if fee else [],
+            'fees': serialized_fees,
             'intakes': ClientIntakeSerializer([intake], many=True, context={'request': request}).data if intake else [],
             'required_documents': [],
             'university_logo': absolute_file_url(request, university.logo),
             'university_cover': absolute_file_url(request, university.cover_image),
+            'priority_offer': priority_offer,
         }
 
     def _fallback_retrieve(self, request, pk):
@@ -244,7 +297,7 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
         universities = filter_id_or_name(universities, params.get('university'), 'id', 'name')
         university_name = text_param(params, 'university_name', 'university_search', 'university_q')
         if university_name:
-            universities = universities.filter(Q(name__icontains=university_name) | Q(legal_name__icontains=university_name))
+            universities = universities.filter(Q(name__icontains=university_name) | Q(abbreviation__icontains=university_name) | Q(legal_name__icontains=university_name))
 
         search = (params.get('search') or params.get('q') or '').strip().lower()
         level = (params.get('degree') or params.get('level') or '').strip().lower()
@@ -328,7 +381,7 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
         qs = filter_id_or_name(qs, params.get('university'), 'university_id', 'university__name')
         university_name = text_param(params, 'university_name', 'university_search', 'university_q')
         if university_name:
-            qs = qs.filter(Q(university__name__icontains=university_name) | Q(university__legal_name__icontains=university_name))
+            qs = qs.filter(Q(university__name__icontains=university_name) | Q(university__abbreviation__icontains=university_name) | Q(university__legal_name__icontains=university_name))
         degree = params.get('degree') or params.get('level')
         if degree:
             qs = qs.filter(Q(degree__iexact=degree) | Q(degree__icontains=degree))
@@ -349,6 +402,7 @@ class ClientProgramViewSet(ClientReadOnlyViewSet):
                 | Q(description__icontains=search)
                 | Q(admission_requirements__icontains=search)
                 | Q(university__name__icontains=search)
+                | Q(university__abbreviation__icontains=search)
                 | Q(university__country__name__icontains=search)
                 | Q(university__city__name__icontains=search)
             )

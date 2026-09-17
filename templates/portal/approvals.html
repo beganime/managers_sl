@@ -8,7 +8,7 @@
 </section>
 
 <section class="panel" style="margin-bottom:16px;">
-    <div class="panel-header"><h2 class="panel-title">Доходы на подтверждение</h2><span class="pill">Комиссия 5%</span></div>
+    <div class="panel-header"><h2 class="panel-title">Пополнения на подтверждение</h2><span class="pill">Офисные балансы</span></div>
     <div class="panel-body table-wrap">
         <table>
             <thead><tr><th>Дата</th><th>Доход</th><th>Менеджер</th><th>Клиент/сделка</th><th>Сумма</th><th>Доказательство</th><th>Действия</th></tr></thead>
@@ -24,7 +24,7 @@
                             {% if item.deal %}{{ item.deal.title }}{% elif item.service %}{{ item.service.title }}{% else %}-{% endif %}
                         </div>
                     </td>
-                    <td>${{ item.amount_usd|floatformat:2 }}</td>
+                    <td>{{ item.amount|floatformat:2 }} {{ item.currency.code }}<div class="muted small">{{ item.amount_tmt|floatformat:2 }} TMT</div></td>
                     <td>{% if item.proof_file %}<a class="pill" href="{{ item.proof_file.url }}" target="_blank">Открыть</a>{% else %}<span class="pill warn">Нет файла</span>{% endif %}</td>
                     <td>
                         <div class="filters">
@@ -39,6 +39,16 @@
             </tbody>
         </table>
     </div>
+</section>
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><h2 class="panel-title">Оплаты договоров на подтверждение</h2><span class="pill warn">{{ pending_payments_count }}</span></div>
+    <div class="panel-body table-wrap"><table>
+        <thead><tr><th>Дата</th><th>Договор</th><th>Клиент</th><th>Менеджер</th><th>Сумма</th><th>Фотография</th><th></th></tr></thead>
+        <tbody>{% for item in pending_payments %}<tr>
+            <td>{{ item.payment_date|date:"d.m.Y" }}</td><td><a href="{% url 'portal:contract_detail' item.deal_id %}">{{ item.deal.contract_number|default:item.deal.title }}</a></td><td>{{ item.client.full_name }}</td><td>{{ item.manager.get_full_name|default:item.manager.email }}</td><td>{{ item.amount|floatformat:2 }} {{ item.currency.code }}<div class="muted small">{{ item.amount_tmt|floatformat:2 }} TMT</div></td><td>{% if item.proof_file %}<a class="btn" href="{{ item.proof_file.url }}" target="_blank">Открыть</a>{% else %}<span class="pill danger">Нет фото</span>{% endif %}</td><td><form method="post" data-disable-on-submit>{% csrf_token %}<input type="hidden" name="action" value="confirm_payment"><input type="hidden" name="payment_id" value="{{ item.id }}"><button class="btn primary" type="submit">Подтвердить</button></form></td>
+        </tr>{% empty %}<tr><td colspan="7"><div class="empty">Оплат на подтверждении нет.</div></td></tr>{% endfor %}</tbody>
+    </table></div>
 </section>
 
 <section class="panel">

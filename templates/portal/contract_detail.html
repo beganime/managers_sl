@@ -1,0 +1,75 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <div><h2 class="panel-title">{{ contract.contract_number }}</h2><div class="muted small">{{ contract.title }} · создан {{ contract.contract_date|date:"d.m.Y" }}</div></div>
+        <div class="filters">
+            <a class="btn" href="{{ disk_url }}" target="_blank" rel="noopener"><i data-lucide="hard-drive"></i>Папка в DiskSL</a>
+            <a class="btn primary" href="{% url 'portal:document_create' %}?client={{ contract.client_id }}&deal={{ contract.id }}"><i data-lucide="file-plus-2"></i>Создать документ</a>
+        </div>
+    </div>
+    <div class="panel-body">
+        <div class="grid cols-2">
+            <div class="list">
+                <div class="list-row"><span class="muted">Клиент</span><div style="text-align:right"><div class="strong">{{ contract.client.full_name }}</div><div class="muted small">{{ contract.client.sl_id|default:"Без SL-ID" }}</div></div></div>
+                <div class="list-row"><span class="muted">Ответственный</span><span class="strong">{{ contract.manager.get_full_name|default:contract.manager.email }}</span></div>
+                <div class="list-row"><span class="muted">Офис</span><span class="strong">{{ contract.office.name|default:"Не указан" }}</span></div>
+                <div class="list-row"><span class="muted">Оплатить до</span><span class="strong">{{ contract.payment_due_date|date:"d.m.Y"|default:"Не указан" }}</span></div>
+            </div>
+            <div>
+                <div class="grid cols-2" style="margin-bottom:12px;">
+                    <div class="metric"><div class="metric-top"><span>Всего</span></div><div class="metric-value">${{ contract.total_to_pay_usd|floatformat:2 }}</div></div>
+                    <div class="metric"><div class="metric-top"><span>Осталось</span></div><div class="metric-value">${{ contract.remaining_amount_usd|floatformat:2 }}</div></div>
+                </div>
+                <div class="muted small" style="display:flex;justify-content:space-between"><span>Оплачено ${{ contract.paid_amount_usd|floatformat:2 }}</span><span>{{ contract.payment_progress }}%</span></div>
+                <div style="height:12px;border-radius:999px;background:var(--surface-muted,#e5e7eb);overflow:hidden;margin-top:8px"><div style="height:100%;width:{{ contract.payment_progress }}%;background:var(--primary,#2563eb);border-radius:inherit"></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="grid cols-2" style="margin-bottom:16px;">
+    <div class="panel"><div class="panel-header"><h2 class="panel-title">Добавить оплату</h2><span class="pill warn">Фото обязательно</span></div><div class="panel-body">
+        <form method="post" enctype="multipart/form-data" class="grid" data-disable-on-submit>
+            {% csrf_token %}<input type="hidden" name="action" value="add_payment">{{ payment_form.deal }}
+            {% if payment_form.non_field_errors %}<div class="form-errors">{{ payment_form.non_field_errors }}</div>{% endif %}
+            <div class="grid cols-2">
+                <label><span class="muted small">Сумма *</span>{{ payment_form.amount }}{{ payment_form.amount.errors }}</label>
+                <label><span class="muted small">Валюта *</span>{{ payment_form.currency }}{{ payment_form.currency.errors }}</label>
+                <label><span class="muted small">Дата *</span>{{ payment_form.payment_date }}{{ payment_form.payment_date.errors }}</label>
+                <label><span class="muted small">Способ</span>{{ payment_form.method }}{{ payment_form.method.errors }}</label>
+            </div>
+            <label><span class="muted small">Фотография денег / подтверждение *</span>{{ payment_form.proof_file }}{{ payment_form.proof_file.errors }}</label>
+            <label><span class="muted small">Комментарий</span>{{ payment_form.comment }}{{ payment_form.comment.errors }}</label>
+            {% if can_confirm_finance %}<label style="display:flex;gap:8px;align-items:center"><input type="checkbox" name="confirm_now" value="1"><span>Сразу подтвердить оплату</span></label>{% endif %}
+            <button class="btn primary" type="submit"><i data-lucide="receipt"></i>Сохранить оплату</button>
+        </form>
+    </div></div>
+    <div class="panel"><div class="panel-header"><h2 class="panel-title">Дополнительная услуга</h2></div><div class="panel-body">
+        <form method="post" class="grid" data-disable-on-submit>
+            {% csrf_token %}<input type="hidden" name="action" value="add_service">
+            {% if service_form.non_field_errors %}<div class="form-errors">{{ service_form.non_field_errors }}</div>{% endif %}
+            <label><span class="muted small">Название *</span>{{ service_form.title }}{{ service_form.title.errors }}</label>
+            <div class="grid cols-2"><label><span class="muted small">Сумма *</span>{{ service_form.amount }}{{ service_form.amount.errors }}</label><label><span class="muted small">Валюта *</span>{{ service_form.currency }}{{ service_form.currency.errors }}</label></div>
+            <label><span class="muted small">Комментарий</span>{{ service_form.comment }}{{ service_form.comment.errors }}</label>
+            <button class="btn" type="submit"><i data-lucide="plus"></i>Добавить к договору</button>
+        </form>
+        {% if contract.additional_services.exists %}<div class="list" style="margin-top:16px">{% for item in contract.additional_services.all %}<div class="list-row"><div><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.comment|default:"Без комментария" }}</div></div><span class="pill">{{ item.amount|floatformat:2 }} {{ item.currency.code }}</span></div>{% endfor %}</div>{% endif %}
+    </div></div>
+</section>
+
+<section class="panel" style="margin-bottom:16px;"><div class="panel-header"><h2 class="panel-title">История оплат</h2></div><div class="panel-body table-wrap"><table>
+    <thead><tr><th>Дата</th><th>Сумма</th><th>Принял</th><th>Подтверждение</th><th>Статус</th><th></th></tr></thead>
+    <tbody>{% for item in payments %}<tr><td>{{ item.payment_date|date:"d.m.Y" }}</td><td><div class="strong">{{ item.amount|floatformat:2 }} {{ item.currency.code }}</div><div class="muted small">{{ item.amount_tmt|floatformat:2 }} TMT · ${{ item.amount_usd|floatformat:2 }}</div></td><td>{{ item.manager.get_full_name|default:item.manager.email }}</td><td>{% if item.proof_file %}<a class="btn" href="{{ item.proof_file.url }}" target="_blank">Открыть</a>{% else %}<span class="pill danger">Нет фото</span>{% endif %}</td><td><span class="pill {% if item.is_confirmed %}ok{% else %}warn{% endif %}">{% if item.is_confirmed %}Подтверждена{% else %}Ожидает{% endif %}</span></td><td>{% if not item.is_confirmed and can_confirm_finance %}<form method="post" data-disable-on-submit>{% csrf_token %}<input type="hidden" name="action" value="confirm_payment"><input type="hidden" name="payment_id" value="{{ item.id }}"><button class="btn primary" type="submit">Подтвердить</button></form>{% endif %}</td></tr>{% empty %}<tr><td colspan="6"><div class="empty">Оплат пока нет.</div></td></tr>{% endfor %}</tbody>
+</table></div></section>
+
+<section class="panel"><div class="panel-header"><h2 class="panel-title">Документы договора</h2><a class="btn" href="{% url 'portal:document_create' %}?client={{ contract.client_id }}&deal={{ contract.id }}">Создать по шаблону</a></div><div class="panel-body">
+    <form method="post" enctype="multipart/form-data" class="toolbar" data-disable-on-submit style="margin-bottom:16px">
+        {% csrf_token %}<input type="hidden" name="action" value="upload_contract_file">
+        <div class="filters" style="flex:1"><input class="input" type="file" name="contract_file" accept=".pdf,.docx,.jpg,.jpeg,.png" required><button class="btn" type="submit"><i data-lucide="upload"></i>Загрузить в DiskSL</button></div>
+        <span class="muted small">PDF, DOCX, JPG или PNG · до 50 МБ</span>
+    </form>
+    <div class="list">{% for item in documents %}<div class="list-row"><div><div class="strong">{{ item.display_title }}</div><div class="muted small">{{ item.template.name }} · {{ item.created_at|date:"d.m.Y H:i" }}</div></div><a class="btn" href="{% url 'portal:document_review' item.id %}">Открыть</a></div>{% empty %}<div class="empty">Документы ещё не создавались.</div>{% endfor %}</div>
+</div></section>
+{% endblock %}

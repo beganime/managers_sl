@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils import timezone
@@ -65,10 +66,66 @@ def reminder_recipients(reminder):
         company=reminder.company,
         is_active=True,
         work_status='working',
+        user__is_active=True,
     ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).select_related('user')
     if reminder.office_id:
         employees = employees.filter(Q(office=reminder.office) | Q(office__isnull=True))
     return [employee.user for employee in employees]
+
+
+def attendance_workday_is_scheduled(today):
+    return today.weekday() in set(getattr(settings, 'ATTENDANCE_WORKDAYS', (0, 1, 2, 3, 4, 5)))
+
+
+def ensure_default_attendance_reminders():
+    """Create company-wide defaults while preserving any configured reminder of the same type."""
+    from apps.organizations.models import Company
+
+    definitions = (
+        (
+            AttendanceReminder.REMINDER_START,
+            getattr(settings, 'ATTENDANCE_WORKDAY_START_HOUR', 9),
+            getattr(settings, 'ATTENDANCE_WORKDAY_START_MINUTE', 0),
+            'Рабочий день начинается в 09:00. Отметьте начало дня в ManagerSL.',
+        ),
+        (
+            AttendanceReminder.REMINDER_REPORT,
+            getattr(settings, 'ATTENDANCE_REPORT_REMINDER_HOUR', 17),
+            getattr(settings, 'ATTENDANCE_REPORT_REMINDER_MINUTE', 40),
+            'Подведите итоги дня: заполните короткий отчёт перед завершением работы.',
+        ),
+        (
+            AttendanceReminder.REMINDER_CLOSE,
+            getattr(settings, 'ATTENDANCE_CLOSE_REMINDER_HOUR', 17),
+            getattr(settings, 'ATTENDANCE_CLOSE_REMINDER_MINUTE', 55),
+            'Рабочий день заканчивается в 18:00. Проверьте отчёт и закройте день.',
+        ),
+    )
+    weekdays = list(getattr(settings, 'ATTENDANCE_WORKDAYS', (0, 1, 2, 3, 4, 5)))
+    for company in Company.objects.filter(is_active=True):
+        for reminder_type, hour, minute, message in definitions:
+            if AttendanceReminder.objects.filter(
+                company=company,
+                reminder_type=reminder_type,
+                is_active=True,
+            ).exists():
+                continue
+            AttendanceReminder.objects.create(
+                company=company,
+                reminder_type=reminder_type,
+                scheduled_time=datetime.min.replace(hour=hour, minute=minute).time(),
+                weekdays=weekdays,
+                message=message,
+            )
+
+
+def employee_had_evening_activity(user, today):
+    last_activity = getattr(user, 'last_activity', None)
+    if not last_activity:
+        return False
+    local_activity = timezone.localtime(last_activity)
+    protection_hour = getattr(settings, 'ATTENDANCE_ACTIVITY_PROTECTION_HOUR', 17)
+    return local_activity.date() == today and local_activity.time() >= datetime.min.replace(hour=protection_hour).time()
 
 
 def should_send_attendance_reminder(user, reminder_type, today):
@@ -108,20 +165,63 @@ def send_queued_notifications(limit=100):
 @shared_task(name='erp_notifications.auto_close_workdays')
 def auto_close_workdays():
     today = timezone.localdate()
+    now = timezone.now()
+    if attendance_workday_is_scheduled(today):
+        profiles = EmployeeProfile.objects.select_related('user', 'company', 'office', 'access').filter(
+            is_active=True,
+            work_status='working',
+            user__is_active=True,
+        ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True))
+        for profile in profiles.iterator():
+            WorkDay.objects.get_or_create(
+                company=profile.company,
+                employee=profile.user,
+                date=today,
+                defaults={
+                    'office': profile.office,
+                    'status': WorkDay.STATUS_NOT_STARTED,
+                    'report_required': True,
+                },
+            )
     qs = WorkDay.objects.select_related('company', 'office', 'employee').filter(
         date__lte=today,
         status__in=[WorkDay.STATUS_NOT_STARTED, WorkDay.STATUS_STARTED, WorkDay.STATUS_REPORT_SUBMITTED],
     ).filter(Q(employee__employee_profile__access__must_track_workday=True) | Q(employee__employee_profile__access__isnull=True))
     closed = 0
     missed = 0
+    waiting_manual_close = 0
     failed = 0
     for workday in qs.iterator():
         try:
+            if workday.date == today and workday.status != WorkDay.STATUS_NOT_STARTED and employee_had_evening_activity(workday.employee, today):
+                custom_data = dict(workday.custom_data or {})
+                custom_data.update({
+                    'requires_manual_close': True,
+                    'manual_close_reason': 'Активность в ManagerSL после 17:00',
+                    'auto_close_checked_at': now.isoformat(),
+                })
+                workday.custom_data = custom_data
+                workday.save(update_fields=['custom_data', 'updated_at'])
+                create_notification(
+                    workday.employee,
+                    title='Завершите рабочий день вручную',
+                    body='Вы работали после 17:00, поэтому система не закрыла день автоматически. Отправьте короткий отчёт и нажмите «Закрыть день».',
+                    notification_type=NotificationTemplate.TYPE_ATTENDANCE,
+                    channel=NotificationTemplate.CHANNEL_PUSH,
+                    priority=Notification.PRIORITY_HIGH,
+                    data={'workday_id': workday.id, 'status': workday.status, 'screen': 'workday'},
+                    target_url='/portal/workday/',
+                    related_object=workday,
+                    company=workday.company,
+                    office=workday.office,
+                )
+                waiting_manual_close += 1
+                continue
             if workday.status == WorkDay.STATUS_NOT_STARTED:
                 previous_status = workday.status
                 workday.status = WorkDay.STATUS_MISSED
-                workday.closed_at = timezone.now()
-                workday.comment = workday.comment or 'Marked missed by scheduled auto-close.'
+                workday.closed_at = now
+                workday.comment = workday.comment or 'Рабочий день не был начат до 18:00.'
                 workday.save(update_fields=['status', 'closed_at', 'comment', 'updated_at'])
                 AutoCloseLog.objects.create(
                     workday=workday,
@@ -129,19 +229,24 @@ def auto_close_workdays():
                     office=workday.office,
                     employee=workday.employee,
                     previous_status=previous_status,
-                    reason='Workday was not started before auto-close time.',
+                    reason='Рабочий день не был начат до 18:00.',
                     success=True,
                 )
                 missed += 1
             else:
-                workday.close(auto=True, comment='Auto closed by Celery schedule.')
+                workday.close(auto=True, comment='Автоматически закрыт в 18:00: вечерней активности не было.')
                 closed += 1
 
             create_notification(
                 workday.employee,
-                title='Workday closed automatically',
-                body=f'Workday for {workday.date} was closed by the scheduled job.',
+                title='Рабочий день завершён' if workday.status != WorkDay.STATUS_MISSED else 'Рабочий день не был начат',
+                body=(
+                    'Система закрыла рабочий день автоматически в 18:00.'
+                    if workday.status != WorkDay.STATUS_MISSED
+                    else 'Начало рабочего дня сегодня не отмечено. В учёте день записан как отсутствие.'
+                ),
                 notification_type=NotificationTemplate.TYPE_ATTENDANCE,
+                channel=NotificationTemplate.CHANNEL_PUSH,
                 priority=Notification.PRIORITY_NORMAL,
                 data={'workday_id': workday.id, 'status': workday.status},
                 related_object=workday,
@@ -160,10 +265,11 @@ def auto_close_workdays():
                 success=False,
                 error_message=str(exc),
             )
-    return {'closed': closed, 'missed': missed, 'failed': failed}
+    return {'closed': closed, 'missed': missed, 'waiting_manual_close': waiting_manual_close, 'failed': failed}
 
 
 def send_attendance_reminders(reminder_type):
+    ensure_default_attendance_reminders()
     now = timezone.localtime()
     today = timezone.localdate()
     reminders = AttendanceReminder.objects.select_related('company', 'office', 'employee').filter(
@@ -179,11 +285,17 @@ def send_attendance_reminders(reminder_type):
                 continue
             if not should_send_attendance_reminder(recipient, reminder_type, today):
                 continue
+            reminder_titles = {
+                AttendanceReminder.REMINDER_START: 'Начните рабочий день',
+                AttendanceReminder.REMINDER_REPORT: 'Подведите итоги дня',
+                AttendanceReminder.REMINDER_CLOSE: 'Завершите рабочий день',
+            }
             create_notification(
                 recipient,
-                title=reminder.get_reminder_type_display(),
+                title=reminder_titles.get(reminder_type, 'Рабочий день'),
                 body=reminder.message or reminder.get_reminder_type_display(),
                 notification_type=NotificationTemplate.TYPE_ATTENDANCE,
+                channel=NotificationTemplate.CHANNEL_PUSH,
                 priority=Notification.PRIORITY_NORMAL,
                 data={
                     'reminder_id': reminder.id,

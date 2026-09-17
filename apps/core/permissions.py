@@ -69,6 +69,12 @@ def filter_by_office_scope(queryset, user, company_field: str = 'company', offic
 
 
 def filter_manager_owned(queryset, user, manager_field: str = 'manager'):
+    if queryset.model._meta.label_lower in {'crm.client', 'crm.application'}:
+        from apps.crm.access import visible_clients
+        from apps.crm.models import Client
+        if queryset.model == Client:
+            return visible_clients(queryset, user)
+        return queryset.filter(client_id__in=visible_clients(Client.objects.all(), user).values('pk'))
     if is_erp_admin(user):
         return queryset
 

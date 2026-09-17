@@ -42,7 +42,7 @@ class City(TimeStampedModel, ActiveModel, OrderedModel):
 
 
 class Currency(TimeStampedModel):
-    code = models.CharField('Код валюты', max_length=3, unique=True)
+    code = models.CharField('Код валюты', max_length=8, unique=True)
     name = models.CharField('Название валюты', max_length=80)
     symbol = models.CharField('Символ', max_length=8, default='$')
     rate_to_usd = models.DecimalField('Курс к USD', max_digits=14, decimal_places=6, default=Decimal('1.000000'))
@@ -62,6 +62,7 @@ class University(TimeStampedModel, ActiveModel):
     city = models.ForeignKey(City, verbose_name='Город', on_delete=models.SET_NULL, null=True, blank=True, related_name='universities')
     local_currency = models.ForeignKey(Currency, verbose_name='Валюта страны', on_delete=models.SET_NULL, null=True, blank=True, related_name='universities')
     name = models.CharField('Название ВУЗа', max_length=255, db_index=True)
+    abbreviation = models.CharField('Аббревиатура', max_length=24, blank=True, db_index=True)
     legal_name = models.CharField('Юридическое название', max_length=255, blank=True)
     logo = models.ImageField('Логотип', upload_to='erp/education/university_logos/', blank=True, null=True)
     cover_image = models.ImageField('Главное изображение', upload_to='erp/education/university_covers/', blank=True, null=True)
@@ -90,6 +91,12 @@ class University(TimeStampedModel, ActiveModel):
 
     def __str__(self):
         return f'{self.name} ({self.country.name})'
+
+    def save(self, *args, **kwargs):
+        if not self.abbreviation:
+            from .naming import university_acronym
+            self.abbreviation = university_acronym(self.name)
+        super().save(*args, **kwargs)
 
 
 class Program(TimeStampedModel, ActiveModel):

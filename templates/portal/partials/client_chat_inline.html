@@ -1,0 +1,24 @@
+<section class="panel" id="client-chat" style="margin-bottom:28px" data-url="{% url 'portal:client_chat' client.pk %}">
+    <div class="panel-header"><h2 class="panel-title">Чат с клиентом</h2>{% if client.sl_id %}<button class="btn" type="button" data-load-chat>Обновить</button>{% endif %}</div>
+    <div class="panel-body">
+        {% if client.sl_id %}
+        <p role="status" class="sl-status" data-chat-status></p><div class="client-chat-log" aria-live="polite"></div>
+        <form class="client-chat-compose" enctype="multipart/form-data">{% csrf_token %}
+            <label for="client-message">Сообщение<textarea id="client-message" class="textarea" name="text" maxlength="1000" rows="3" placeholder="Напишите клиенту"></textarea></label>
+            <div class="filters"><input class="input" type="file" name="file" aria-label="Прикрепить файл до 50 МБ"><button class="btn primary" type="submit">Отправить</button></div>
+        </form>
+        {% else %}<p class="muted">Чат появится после создания аккаунта клиента в приложении.</p>{% endif %}
+    </div>
+</section>
+{% if client.sl_id %}
+<script>
+(() => {
+    const panel=document.getElementById('client-chat'), log=panel.querySelector('.client-chat-log'), status=panel.querySelector('[data-chat-status]'), form=panel.querySelector('form');
+    let loading=false;
+    async function load(){if(loading)return;loading=true;status.textContent='Загрузка…';try{const response=await fetch(panel.dataset.url,{credentials:'same-origin'});const data=await response.json();if(!response.ok)throw Error(data.error);log.replaceChildren();for(const message of data.messages){const node=document.createElement('div');node.className='client-chat-message'+(message.sender_role==='manager'?' mine':'');const meta=document.createElement('small');meta.textContent=[message.sender_display_name,message.created_at?new Date(message.created_at).toLocaleString('ru-RU'):''].filter(Boolean).join(' · ');node.append(meta,document.createTextNode(message.text||''));for(const file of message.attachments||[]){let url;try{url=new URL(file.url,location.origin);}catch{continue;}if(!['https:','http:'].includes(url.protocol))continue;const link=document.createElement('a');link.href=url.href;link.textContent=file.name||'Открыть вложение';link.target='_blank';link.rel='noopener noreferrer';node.append(link);}log.append(node);}status.textContent=data.messages.length?'':'Сообщений пока нет.';log.scrollTop=log.scrollHeight;}catch(error){status.textContent=error.message||'Не удалось загрузить чат.';}finally{loading=false;}}
+    panel.querySelector('[data-load-chat]').addEventListener('click',load);
+    form.addEventListener('submit',async event=>{event.preventDefault();const button=form.querySelector('button');if(button.disabled)return;button.disabled=true;status.textContent='Отправка…';try{const response=await fetch(panel.dataset.url,{method:'POST',body:new FormData(form),credentials:'same-origin'});const data=await response.json();if(!response.ok)throw Error(data.error);form.reset();await load();if(!data.push_sent)status.textContent='Сообщение отправлено. Push пока не доставлен.';}catch(error){status.textContent=error.message||'Не удалось подтвердить отправку. Обновите чат перед повтором.';}finally{button.disabled=false;}});
+    const observer=new IntersectionObserver(entries=>{if(entries.some(item=>item.isIntersecting)){load();observer.disconnect();}});observer.observe(panel);
+})();
+</script>
+{% endif %}

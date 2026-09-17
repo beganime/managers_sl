@@ -3,81 +3,84 @@
 {% block content %}
 <section class="grid cols-2" style="margin-bottom:16px;">
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Создать сделку</h2><span class="pill">USD</span></div>
+        <div class="panel-header"><h2 class="panel-title">Создать договор</h2><span class="pill">TMT / USD</span></div>
         <div class="panel-body">
-            <form method="post" class="grid">
+            <form method="post" class="grid" data-disable-on-submit>
                 {% csrf_token %}
                 {% if form.non_field_errors %}<div class="form-errors">{{ form.non_field_errors }}</div>{% endif %}
+                <label><span class="muted small">Поиск клиента по ФИО или SL-ID</span><input class="input" id="contract-client-search" type="search" placeholder="Начните вводить ФИО или SL-ID" autocomplete="off"></label>
                 <div class="grid cols-2">
-                    <label><span class="muted small">Клиент</span>{{ form.client }}{{ form.client.errors }}</label>
-                    <label><span class="muted small">Заявка</span>{{ form.application }}</label>
-                    <label><span class="muted small">Тип сделки</span>{{ form.deal_type }}</label>
-                    <label><span class="muted small">Услуга из базы</span>{{ form.service }}</label>
-                    <label><span class="muted small">Название вручную</span>{{ form.title }}{{ form.title.errors }}</label>
-                    <label><span class="muted small">Валюта</span>{{ form.currency }}{{ form.currency.errors }}</label>
-                    <label><span class="muted small">Цена клиента</span>{{ form.price_client }}</label>
-                    <label><span class="muted small">ВУЗ</span>{{ form.university_name }}</label>
-                    <label><span class="muted small">Программа</span>{{ form.program_name }}</label>
+                    <label><span class="muted small">Клиент *</span>{{ form.client }}{{ form.client.errors }}</label>
+                    <label><span class="muted small">Заявка</span>{{ form.application }}{{ form.application.errors }}</label>
+                    <label><span class="muted small">Тип договора *</span>{{ form.deal_type }}{{ form.deal_type.errors }}</label>
+                    <label><span class="muted small">Услуга из базы</span>{{ form.service }}{{ form.service.errors }}</label>
+                    <label><span class="muted small">Название услуги</span>{{ form.title }}{{ form.title.errors }}</label>
+                    <label><span class="muted small">Сумма договора</span>{{ form.price_client }}{{ form.price_client.errors }}</label>
+                    <label><span class="muted small">Валюта *</span>{{ form.currency }}{{ form.currency.errors }}</label>
+                    <label><span class="muted small">Дата договора *</span>{{ form.contract_date }}{{ form.contract_date.errors }}</label>
+                    <label><span class="muted small">Оплатить до</span>{{ form.payment_due_date }}{{ form.payment_due_date.errors }}</label>
+                    <label><span class="muted small">Вуз</span>{{ form.university_name }}{{ form.university_name.errors }}</label>
+                    <label><span class="muted small">Программа</span>{{ form.program_name }}{{ form.program_name.errors }}</label>
                 </div>
-                <label><span class="muted small">Комментарий</span>{{ form.comment }}</label>
-                <button class="btn primary" type="submit"><i data-lucide="briefcase-business"></i>Создать сделку</button>
+                <label><span class="muted small">Комментарий</span>{{ form.comment }}{{ form.comment.errors }}</label>
+                <button class="btn primary" type="submit"><i data-lucide="file-plus-2"></i>Создать договор</button>
             </form>
         </div>
     </div>
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Как работает</h2></div>
-        <div class="panel-body">
-            <div class="list">
-                <div class="list-row"><div><div class="strong">Можно выбрать услугу</div><div class="muted small">Если услуга выбрана, система подтянет название, цену и валюту из карточки услуги.</div></div><span class="pill ok">Авто</span></div>
-                <div class="list-row"><div><div class="strong">Можно вписать вручную</div><div class="muted small">Если услуги ещё нет в базе, укажите название, цену и валюту прямо в сделке.</div></div><span class="pill">Гибко</span></div>
-            </div>
-        </div>
+        <div class="panel-header"><h2 class="panel-title">Порядок работы</h2></div>
+        <div class="panel-body"><div class="list">
+            <div class="list-row"><div><div class="strong">1. Выберите клиента</div><div class="muted small">ФИО, паспортные и другие данные будут доступны генератору документов.</div></div></div>
+            <div class="list-row"><div><div class="strong">2. Укажите сумму и срок</div><div class="muted small">Оплаты можно вносить частями в TMT или USD, обязательно с фотографией.</div></div></div>
+            <div class="list-row"><div><div class="strong">3. Добавляйте услуги</div><div class="muted small">Аппликационный сбор и другие услуги увеличивают итог договора.</div></div></div>
+            <div class="list-row"><div><div class="strong">4. Все файлы сохраняются</div><div class="muted small">Для клиента автоматически подготавливается папка «договоры» в DiskSL.</div></div></div>
+        </div></div>
     </div>
 </section>
 
 <section class="panel">
     <div class="panel-header">
-        <h2 class="panel-title">Сделки</h2>
-        <a class="pill" href="{% url 'portal:finance_payments' %}">Добавить платёж</a>
+        <h2 class="panel-title">{% if can_manage_all_finance %}Все договоры{% else %}Мои договоры{% endif %}</h2>
+        <span class="pill">{{ page_obj.paginator.count }} записей</span>
     </div>
     <div class="panel-body">
-        <form class="toolbar" method="get">
-            <div class="filters">
-                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Поиск">
-                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
-            </div>
-        </form>
-        <div class="table-wrap">
-            <table>
-                <thead><tr><th>Сделка</th><th>Клиент</th><th>Услуга</th><th>Сумма</th><th>Оплата</th></tr></thead>
-                <tbody>
-                {% for item in deals %}
-                    <tr>
-                        <td><div class="strong">{{ item.title }}</div><div class="muted small">{{ item.get_deal_type_display }}</div></td>
-                        <td>{{ item.client.full_name }}</td>
-                        <td>{{ item.service.title|default:"-" }}</td>
-                        <td>{{ item.price_client|floatformat:2 }} {{ item.currency.code }}<div class="muted small">${{ item.total_to_pay_usd|floatformat:2 }}</div></td>
-                        <td><span class="pill {% if item.payment_status == 'paid_full' %}ok{% elif item.payment_status == 'cancelled' or item.payment_status == 'refunded' %}danger{% else %}warn{% endif %}">{{ item.get_payment_status_display }}</span></td>
-                    </tr>
-                {% empty %}
-                    <tr><td colspan="5"><div class="empty">Сделок пока нет.</div></td></tr>
-                {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        {% if page_obj and page_obj.paginator.num_pages > 1 %}
-            <div class="toolbar" style="margin-top:16px;">
-                <div class="muted small">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</div>
-                <div class="filters">
-                    {% if page_obj.has_previous %}
-                        <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.previous_page_number }}"><i data-lucide="chevron-left"></i>Назад</a>
-                    {% endif %}
-                    {% if page_obj.has_next %}
-                        <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.next_page_number }}">Дальше<i data-lucide="chevron-right"></i></a>
-                    {% endif %}
-                </div>
-            </div>
-        {% endif %}
+        <form class="toolbar" method="get"><div class="filters">
+            <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="Номер, ФИО, SL-ID или услуга">
+            <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+        </div></form>
+        <div class="table-wrap"><table>
+            <thead><tr><th>Договор</th><th>Клиент</th>{% if can_manage_all_finance %}<th>Менеджер</th>{% endif %}<th>Сумма</th><th>Оплачено</th><th>Срок</th><th></th></tr></thead>
+            <tbody>{% for item in deals %}<tr>
+                <td><a class="strong" href="{% url 'portal:contract_detail' item.id %}">{{ item.contract_number|default:"Формируется" }}</a><div class="muted small">{{ item.contract_date|date:"d.m.Y" }} · {{ item.title }}</div></td>
+                <td><div class="strong">{{ item.client.full_name }}</div><div class="muted small">{{ item.client.sl_id|default:"Без SL-ID" }} · {{ item.office.name|default:"Без офиса" }}</div></td>
+                {% if can_manage_all_finance %}<td>{{ item.manager.get_full_name|default:item.manager.email }}</td>{% endif %}
+                <td>${{ item.total_to_pay_usd|floatformat:2 }}</td>
+                <td><div class="strong">${{ item.paid_amount_usd|floatformat:2 }}</div><div class="muted small">{{ item.payment_progress }}%</div></td>
+                <td>{% if item.payment_due_date %}{{ item.payment_due_date|date:"d.m.Y" }}{% else %}<span class="muted">Не указан</span>{% endif %}</td>
+                <td><a class="btn" href="{% url 'portal:contract_detail' item.id %}">Открыть</a></td>
+            </tr>{% empty %}<tr><td colspan="7"><div class="empty">Договоров пока нет.</div></td></tr>{% endfor %}</tbody>
+        </table></div>
+        {% if page_obj.paginator.num_pages > 1 %}<div class="toolbar" style="margin-top:16px;"><div class="muted small">Страница {{ page_obj.number }} из {{ page_obj.paginator.num_pages }}</div><div class="filters">
+            {% if page_obj.has_previous %}<a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.previous_page_number }}">Назад</a>{% endif %}
+            {% if page_obj.has_next %}<a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.next_page_number }}">Дальше</a>{% endif %}
+        </div></div>{% endif %}
     </div>
 </section>
+<script>
+(function () {
+    const search = document.getElementById('contract-client-search');
+    const select = document.getElementById('{{ form.client.id_for_label }}');
+    if (!search || !select) return;
+    const options = Array.from(select.options);
+    search.addEventListener('input', function () {
+        const query = this.value.trim().toLocaleLowerCase('ru');
+        options.forEach(function (option, index) {
+            if (index === 0) return;
+            option.hidden = Boolean(query) && !option.text.toLocaleLowerCase('ru').includes(query);
+        });
+        const visible = options.filter(function (option, index) { return index > 0 && !option.hidden; });
+        if (visible.length === 1) select.value = visible[0].value;
+    });
+})();
+</script>
 {% endblock %}

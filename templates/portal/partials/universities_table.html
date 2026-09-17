@@ -25,12 +25,12 @@
                                     <i data-lucide="graduation-cap"></i>
                                 {% endif %}
                             </div>
-                            <div><div class="strong">{{ item.name }}</div><div class="muted small">{{ item.website|default:item.email }}</div></div>
+                            <div><div class="strong">{{ item.name }}</div>{% if item.abbreviation %}<div class="muted small">{{ item.abbreviation }}</div>{% endif %}<div class="muted small">{{ item.website|default:item.email }}</div></div>
                         </div>
                     </td>
                     <td>{{ item.country.name }}</td>
                     <td>{{ item.city.name|default:"-" }}</td>
-                    <td>{{ item.programs.count }}</td>
+                    <td>{{ item.programs_count }}</td>
                     <td>{{ item.phone|default:"-" }}</td>
                     <td><span class="pill {% if item.is_active %}ok{% else %}danger{% endif %}">{{ item.is_active|yesno:"Активен,Неактивен" }}</span></td>
                     <td>

@@ -7,7 +7,7 @@
         <a class="btn" href="{{ cancel_url }}"><i data-lucide="arrow-left"></i>Назад к списку</a>
     </div>
     <div class="panel-body">
-        <form method="post" enctype="multipart/form-data" class="grid">
+        <form method="post" enctype="multipart/form-data" class="grid" data-workspace-form>
             {% csrf_token %}
             {% if edit_object %}<input type="hidden" name="object_id" value="{{ edit_object.id }}">{% endif %}
             {% for field in form.hidden_fields %}{{ field }}{% endfor %}
@@ -36,4 +36,7 @@
         </form>
     </div>
 </section>
+<script>
+(()=>{const form=document.querySelector('[data-workspace-form]');if(!form)return;form.addEventListener('invalid',e=>{const section=e.target.closest('details');if(section)section.open=true;},true);form.querySelectorAll('.form-errors').forEach(error=>{const section=error.closest('details');if(section)section.open=true;});})();
+</script>
 {% endblock %}

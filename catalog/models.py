@@ -49,7 +49,7 @@ class University(models.Model):
 
 class Program(models.Model):
     university = models.ForeignKey(University, on_delete=models.CASCADE, related_name='programs', verbose_name="Университет")
-    name = models.CharField("Название программы", max_length=255)
+    name = models.CharField("Название программы", max_length=1000)
     degree = models.CharField("Степень", max_length=100, choices=[
         ('bachelor', 'Бакалавр'), 
         ('master', 'Магистр'),
