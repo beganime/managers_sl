@@ -506,9 +506,10 @@ class MobileSearchView(APIView):
 
         document_qs = GeneratedDocument.objects.filter(Q(title__icontains=query) | Q(client__full_name__icontains=query))
         if not is_erp_admin(request.user):
+            from apps.crm.access import visible_clients
             document_qs = document_qs.filter(
-                Q(manager=request.user) |
-                Q(client__shared_with=request.user)
+                Q(client_id__in=visible_clients(Client.objects.all(), request.user).values('pk')) |
+                Q(client__isnull=True, manager=request.user)
             ).distinct()
         for document in document_qs[:8]:
             add('document', document.id, document.title, document.status, f'/(app)/documents-v2/generated/{document.id}')

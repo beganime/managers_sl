@@ -1,9 +1,13 @@
 from urllib.parse import quote
 
+from django.db.models import Q
 from rest_framework import serializers
 from rest_framework.reverse import reverse
 
-from apps.core.permissions import is_erp_admin
+from apps.core.permissions import get_employee_profile, is_erp_admin
+from apps.crm.access import visible_clients
+from apps.crm.models import Application, Client
+from apps.finance.models import Deal
 from .models import (
     DocumentApproval,
     DocumentDownloadLog,
@@ -144,6 +148,52 @@ class GeneratedDocumentSerializer(serializers.ModelSerializer):
             'created_at',
             'updated_at',
         )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        request = self.context.get('request')
+        user = getattr(request, 'user', None)
+        if not user or not user.is_authenticated or is_erp_admin(user):
+            return
+
+        clients = visible_clients(Client.objects.all(), user)
+        self.fields['client'].queryset = clients
+        self.fields['application'].queryset = Application.objects.filter(client__in=clients)
+        self.fields['deal'].queryset = Deal.objects.filter(client__in=clients)
+        # A regular employee must not create a document in somebody else's name
+        # or company by crafting an API request. The view derives these values
+        # from the authenticated employee profile.
+        self.fields['manager'].read_only = True
+        self.fields['company'].read_only = True
+        self.fields['office'].read_only = True
+
+        employee = get_employee_profile(user)
+        if employee and employee.company_id:
+            self.fields['template'].queryset = DocumentTemplate.objects.filter(
+                Q(company_id=employee.company_id) | Q(company__isnull=True)
+            )
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        instance = getattr(self, 'instance', None)
+        client = attrs.get('client', getattr(instance, 'client', None))
+        application = attrs.get('application', getattr(instance, 'application', None))
+        deal = attrs.get('deal', getattr(instance, 'deal', None))
+
+        related_clients = {
+            related_client_id
+            for related_client_id in (
+                getattr(client, 'pk', None),
+                getattr(application, 'client_id', None),
+                getattr(deal, 'client_id', None),
+            )
+            if related_client_id is not None
+        }
+        if len(related_clients) > 1:
+            raise serializers.ValidationError(
+                'Клиент, заявка и договор должны относиться к одной карточке клиента.'
+            )
+        return attrs
 
     def get_generated_file_url(self, obj):
         return build_file_url(self.context.get('request'), obj.generated_file)

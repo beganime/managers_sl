@@ -32,7 +32,8 @@
         <div class="panel-body">
             <div class="list">
                 <div class="list-row"><span class="muted">Название</span><strong>{{ document.title }}</strong></div>
-                <div class="list-row"><span class="muted">Загружен</span><strong>{{ document.created_at|date:"d.m.Y H:i" }}</strong></div>
+                <div class="list-row"><span class="muted">Текущая версия</span><strong>v{{ document.current_version_number|default:"-" }}</strong></div>
+                <div class="list-row"><span class="muted">Загружен</span><strong>{{ document.updated_at|date:"d.m.Y H:i" }}</strong></div>
                 <div class="list-row"><span class="muted">Проверен</span><strong>{{ document.reviewed_at|date:"d.m.Y H:i"|default:"-" }}</strong></div>
                 <div class="list-row"><span class="muted">Проверил</span><strong>{{ document.reviewed_by_display|default:"-" }}</strong></div>
                 {% if document.external_reviewed_by_email %}
@@ -59,6 +60,43 @@
         </div>
     </section>
 </div>
+
+<section class="panel" style="margin-top:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Версии документа</h2>
+        <span class="pill">{{ document_versions|length }}</span>
+    </div>
+    <div class="panel-body">
+        {% if document_versions %}
+            <div class="table-wrap">
+                <table class="table">
+                    <thead><tr><th>Версия</th><th>Файл</th><th>Загружен</th><th>Размер</th><th>Решения</th><th></th></tr></thead>
+                    <tbody>
+                    {% for version in document_versions %}
+                        <tr>
+                            <td><strong>v{{ version.version_number }}</strong>{% if version.version_number == document.current_version_number %} <span class="pill ok">текущая</span>{% endif %}</td>
+                            <td>{{ version.original_name }}</td>
+                            <td>{{ version.created_at|date:"d.m.Y H:i" }}</td>
+                            <td>{{ version.size_bytes|filesizeformat }}</td>
+                            <td>
+                                {% for review in version.review_events.all %}
+                                    <div class="small">
+                                        {{ review.get_status_display }} · {{ review.created_at|date:"d.m.Y H:i" }}
+                                        {% if review.comment %}<br><span class="muted">{{ review.comment }}</span>{% endif %}
+                                    </div>
+                                {% empty %}<span class="muted">На проверке</span>{% endfor %}
+                            </td>
+                            <td>{% if version.folder_url %}<a class="pill" href="{{ version.folder_url }}" target="_blank" rel="noopener">Открыть в DiskSL</a>{% endif %}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="empty">Это legacy-документ без истории версий. Следующая загрузка создаст версию v1.</div>
+        {% endif %}
+    </div>
+</section>
 
 <section class="panel" style="margin-top:16px;">
     <div class="panel-header">

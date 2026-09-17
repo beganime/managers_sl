@@ -28,12 +28,16 @@
             <form method="get" class="toolbar" style="margin-bottom:16px;">
                 <div class="filters">
                     {% if not client %}
-                        <select class="select" name="client" style="min-width:260px;">
-                            <option value="">Клиент не выбран</option>
-                            {% for option in form.fields.client.queryset %}
-                                <option value="{{ option.id }}"{% if selected_client_id == option.id %} selected{% endif %}>{{ option.full_name }}{% if option.phone %} — {{ option.phone }}{% endif %}</option>
-                            {% endfor %}
-                        </select>
+                        <div class="document-client-lookup" style="position:relative; min-width:290px;">
+                            <input type="hidden" name="client" id="document-client-id" value="{{ selected_client_id|default:'' }}">
+                            <input class="input" id="document-client-search" type="search"
+                                   value="{{ selected_client_label }}"
+                                   placeholder="ФИО или SL-ID" autocomplete="off"
+                                   aria-label="Поиск клиента" aria-controls="document-client-results"
+                                   style="width:100%;">
+                            <div id="document-client-results" class="panel" hidden
+                                 style="position:absolute; z-index:20; top:calc(100% + 6px); left:0; right:0; max-height:260px; overflow:auto; padding:6px; box-shadow:0 12px 30px rgba(15,23,42,.16);"></div>
+                        </div>
                     {% endif %}
                     <select class="select" name="template" style="min-width:260px;">
                         <option value="">Выберите шаблон</option>
@@ -51,16 +55,21 @@
                 {{ form.template.as_hidden }}
                 {{ form.client.as_hidden }}
 
-                <label>
-                    <span class="muted small">Заявка (необязательно)</span>
-                    {{ form.application }}
-                    {{ form.application.errors }}
-                </label>
-                <label>
-                    <span class="muted small">Сделка (необязательно)</span>
-                    {{ form.deal }}
-                    {{ form.deal.errors }}
-                </label>
+                {% if not is_contract_workflow %}
+                    <label>
+                        <span class="muted small">Заявка (необязательно)</span>
+                        {{ form.application }}
+                        {{ form.application.errors }}
+                    </label>
+                    <label>
+                        <span class="muted small">Сделка (необязательно)</span>
+                        {{ form.deal }}
+                        {{ form.deal.errors }}
+                    </label>
+                {% else %}
+                    {{ form.application.as_hidden }}
+                    {{ form.deal.as_hidden }}
+                {% endif %}
                 <label>
                     <span class="muted small">Название документа</span>
                     {{ form.title }}
@@ -101,15 +110,111 @@
         <div class="panel-header"><h2 class="panel-title">Как это работает</h2></div>
         <div class="panel-body">
             <div class="list">
-                <div class="list-row"><span class="strong">1</span><span>Выбираете шаблон документа.</span></div>
-                <div class="list-row"><span class="strong">2</span><span>Клиент, заявка и сделка необязательны. Для общего документа можно оставить их пустыми.</span></div>
-                <div class="list-row"><span class="strong">3</span><span>Заполняете поля шаблона и нажимаете генерацию.</span></div>
-                <div class="list-row"><span class="strong">4</span><span>После генерации ссылка на скачивание появляется на странице документов.</span></div>
+                {% if is_contract_workflow %}
+                    <div class="list-row"><span class="strong">1</span><span>Найдите клиента по ФИО или SL-ID. Если карточки нет, оставьте договор без привязки.</span></div>
+                    <div class="list-row"><span class="strong">2</span><span>Выберите шаблон и нажмите «Показать поля».</span></div>
+                    <div class="list-row"><span class="strong">3</span><span>Проверьте автоматически заполненные данные и дополните пустые поля.</span></div>
+                    <div class="list-row"><span class="strong">4</span><span>Договор попадёт администратору. После проверки станет доступен файл с печатью.</span></div>
+                {% else %}
+                    <div class="list-row"><span class="strong">1</span><span>Выбираете шаблон документа.</span></div>
+                    <div class="list-row"><span class="strong">2</span><span>Клиент, заявка и сделка необязательны. Для общего документа можно оставить их пустыми.</span></div>
+                    <div class="list-row"><span class="strong">3</span><span>Заполняете поля шаблона и нажимаете генерацию.</span></div>
+                    <div class="list-row"><span class="strong">4</span><span>После генерации ссылка на скачивание появляется на странице документов.</span></div>
+                {% endif %}
             </div>
             <div class="empty" style="margin-top:12px; text-align:left;">
-                DOCX без печати доступен сразу. PDF с электронной печатью появляется только после подтверждения администратора.
+                {% if is_contract_workflow %}
+                    Если выбран клиент, исходный DOCX и подтверждённая версия с печатью сохраняются в его папке «договоры» в DiskSL.
+                {% else %}
+                    DOCX без печати доступен сразу. PDF с электронной печатью появляется только после подтверждения администратора.
+                {% endif %}
             </div>
         </div>
     </div>
 </section>
+<script>
+(function () {
+    const search = document.getElementById('document-client-search');
+    const clientId = document.getElementById('document-client-id');
+    const results = document.getElementById('document-client-results');
+    if (!search || !clientId || !results) return;
+
+    const endpoint = "{% url 'portal:client_lookup' %}";
+    let timer = null;
+    let controller = null;
+    let selectedLabel = search.value;
+
+    function hideResults() {
+        results.hidden = true;
+        results.innerHTML = '';
+    }
+
+    function showMessage(message) {
+        results.innerHTML = '';
+        const row = document.createElement('div');
+        row.className = 'muted small';
+        row.style.padding = '10px 12px';
+        row.textContent = message;
+        results.appendChild(row);
+        results.hidden = false;
+    }
+
+    function render(items) {
+        results.innerHTML = '';
+        if (!items.length) {
+            showMessage('Клиент не найден');
+            return;
+        }
+        items.forEach(function (item) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = 'btn';
+            button.style.cssText = 'display:block;width:100%;text-align:left;margin:0 0 4px;padding:9px 10px;';
+            button.textContent = item.label;
+            button.addEventListener('click', function () {
+                clientId.value = item.id;
+                search.value = item.label;
+                selectedLabel = item.label;
+                hideResults();
+            });
+            results.appendChild(button);
+        });
+        results.hidden = false;
+    }
+
+    search.addEventListener('input', function () {
+        const query = search.value.trim();
+        if (query !== selectedLabel) clientId.value = '';
+        window.clearTimeout(timer);
+        if (controller) controller.abort();
+        if (query.length < 2) {
+            hideResults();
+            return;
+        }
+        timer = window.setTimeout(function () {
+            controller = new AbortController();
+            showMessage('Ищем…');
+            fetch(endpoint + '?q=' + encodeURIComponent(query), {
+                headers: {'X-Requested-With': 'XMLHttpRequest'},
+                signal: controller.signal
+            })
+                .then(function (response) {
+                    if (!response.ok) throw new Error('lookup');
+                    return response.json();
+                })
+                .then(function (payload) { render(payload.results || []); })
+                .catch(function (error) {
+                    if (error.name !== 'AbortError') showMessage('Поиск временно недоступен');
+                });
+        }, 250);
+    });
+
+    search.addEventListener('focus', function () {
+        if (search.value.trim().length >= 2 && !clientId.value) search.dispatchEvent(new Event('input'));
+    });
+    document.addEventListener('click', function (event) {
+        if (!event.target.closest('.document-client-lookup')) hideResults();
+    });
+})();
+</script>
 {% endblock %}

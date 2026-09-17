@@ -3,7 +3,7 @@
 {% block content %}
 <section class="grid cols-3">
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">CRM</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Клиенты и каталог</h2></div>
         <div class="panel-body">
             <div class="list">
                 {% for item in crm_summary %}
@@ -13,20 +13,20 @@
         </div>
     </div>
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Tasks</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Заявки и анкеты</h2></div>
         <div class="panel-body">
             <div class="list">
-                {% for item in task_summary %}
+                {% for item in application_summary %}
                     <div class="list-row"><span>{{ item.label }}</span><span class="strong">{{ item.value }}</span></div>
                 {% endfor %}
             </div>
         </div>
     </div>
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Finance</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Работа и документы</h2></div>
         <div class="panel-body">
             <div class="list">
-                {% for item in finance_summary %}
+                {% for item in operations_summary %}
                     <div class="list-row"><span>{{ item.label }}</span><span class="strong">{{ item.value }}</span></div>
                 {% endfor %}
             </div>

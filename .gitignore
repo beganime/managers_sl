@@ -1,4 +1,5 @@
 venv/
+.venv/
 __pycache__/
 *.pyc
 db.sqlite3
@@ -7,3 +8,26 @@ db.sqlite3
 media/
 staticfiles/
 *firebase-adminsdk*.json
+*google-service-account*.json
+*google_service_account*.json
+secrets/
+
+# Local/editor/runtime files must never reach GitHub.
+.idea/
+.vscode/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage.xml
+.coverage
+htmlcov/
+*.log
+*.dump
+*.sql
+*.tgz
+*.tar.gz
+*.bak
+*.before-*
+*.orig
+certbot/
+artifacts/

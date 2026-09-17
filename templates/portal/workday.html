@@ -1,71 +1,70 @@
 {% extends "portal/base.html" %}
 
+{% block extra_head %}
+<style>
+    .workday-shell{display:grid;gap:16px}.workday-lead{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);overflow:hidden;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+    .workday-lead-main{padding:26px 28px}.workday-eyebrow{display:flex;align-items:center;gap:8px;color:var(--accent);font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}.workday-lead h2{margin:10px 0 8px;font-size:clamp(25px,3vw,38px);letter-spacing:-.035em;color:#172033}.workday-lead p{max-width:650px;margin:0;color:var(--muted);line-height:1.55}
+    .workday-clock{display:grid;align-content:center;gap:10px;padding:24px;border-left:1px solid var(--line);background:#f6f8fa}.workday-clock-line{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:12px}.workday-clock-line strong{font-size:20px;color:#172033}.workday-rule{height:1px;background:var(--line)}
+    .workday-state{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;margin-top:22px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--line)}.workday-state>div{padding:13px 15px;background:#fff}.workday-state .strong{margin-top:4px;font-size:16px}
+    .manual-close-note{display:flex;gap:12px;align-items:flex-start;margin-top:16px;padding:14px 16px;border-left:3px solid #b71d17;background:#fff5f4;color:#5d211e}.manual-close-note svg{width:19px;flex:0 0 auto;margin-top:1px}
+    .workday-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.report-grid{display:grid;gap:11px}.report-grid .textarea{min-height:136px;resize:vertical}
+    @media(max-width:800px){.workday-lead{grid-template-columns:1fr}.workday-clock{border-left:0;border-top:1px solid var(--line)}.workday-state{grid-template-columns:1fr}.workday-actions,.workday-actions form,.workday-actions .btn{width:100%}}
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="grid cols-2">
-    <div class="panel">
-        <div class="panel-header">
-            <h2 class="panel-title">Сегодня</h2>
-            {% if workday %}
-                <span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span>
-            {% endif %}
+<div class="workday-shell">
+<section class="workday-lead">
+    <div class="workday-lead-main">
+        <div class="workday-eyebrow"><i data-lucide="clock-3"></i>Учёт рабочего времени</div>
+        <h2>Рабочий день без лишних отметок</h2>
+        <p>Начните день утром. Перед уходом отправьте короткий отчёт и закройте смену. Если после 17:00 вы продолжаете работать, система оставит день открытым.</p>
+        {% if workday %}
+        <div class="workday-state">
+            <div><div class="muted small">Дата</div><div class="strong">{{ workday.date|date:"d.m.Y" }}</div></div>
+            <div><div class="muted small">Начало</div><div class="strong">{% if workday.started_at %}{{ workday.started_at|date:"H:i" }}{% else %}Не отмечено{% endif %}</div></div>
+            <div><div class="muted small">Учтено</div><div class="strong">{{ workday.total_work_hours }} ч</div></div>
         </div>
+        {% if workday.requires_manual_close %}<div class="manual-close-note"><i data-lucide="circle-alert"></i><div><strong>Нужно закрыть день вручную</strong><br><span class="small">После 17:00 была рабочая активность. Автозакрытие не прервало вашу смену.</span></div></div>{% endif %}
+        <div class="workday-actions">
+            {% if workday.status == 'not_started' %}
+                <form method="post" action="{% url 'portal:workday_start' %}">{% csrf_token %}<button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button></form>
+            {% elif workday.status == 'closed' or workday.status == 'auto_closed' %}
+                <span class="pill ok">Рабочий день закрыт</span>
+            {% elif workday.status == 'missed' %}
+                <span class="pill danger">День отмечен как отсутствие</span>
+            {% else %}
+                {% if not workday.has_report %}<a class="btn primary" href="#daily-report"><i data-lucide="file-pen-line"></i>Написать отчёт</a>{% endif %}
+                <form method="post" action="{% url 'portal:workday_close' %}">{% csrf_token %}<button class="btn secondary" type="submit"><i data-lucide="square-check-big"></i>Закрыть день</button></form>
+            {% endif %}
+            <a class="btn secondary" href="{% url 'portal:workday_reports' %}"><i data-lucide="history"></i>История</a>
+        </div>
+        {% endif %}
+    </div>
+    <aside class="workday-clock">
+        <div class="workday-clock-line"><i data-lucide="sunrise"></i><div><span class="muted small">Начало</span><br><strong>09:00</strong></div></div>
+        <div class="workday-rule"></div>
+        <div class="workday-clock-line"><i data-lucide="sunset"></i><div><span class="muted small">Завершение</span><br><strong>18:00</strong></div></div>
+        <div class="muted small">Нет начала дня — в учёте фиксируется отсутствие. Нет вечерней активности — смена закрывается автоматически.</div>
+    </aside>
+</section>
+
+<section class="grid cols-2">
+    <div class="panel" id="daily-report">
+        <div class="panel-header"><h2 class="panel-title">Короткий отчёт</h2>{% if workday %}<span class="pill {% if workday.status == 'closed' or workday.status == 'auto_closed' %}ok{% elif workday.status == 'missed' %}danger{% else %}warn{% endif %}">{{ workday.get_status_display }}</span>{% endif %}</div>
         <div class="panel-body">
             {% if workday %}
-                <div class="grid cols-3">
-                    <div><div class="muted small">Дата</div><div class="strong">{{ workday.date|date:"d.m.Y" }}</div></div>
-                    <div><div class="muted small">Начал</div><div class="strong">{% if workday.started_at %}{{ workday.started_at|date:"H:i" }}{% else %}-{% endif %}</div></div>
-                    <div><div class="muted small">Часы</div><div class="strong">{{ workday.total_work_hours }}</div></div>
-                </div>
-                <div style="display:flex; gap:10px; flex-wrap:wrap; margin-top:18px;">
-                    {% if workday.status == 'not_started' %}
-                        <form method="post" action="{% url 'portal:workday_start' %}">
-                            {% csrf_token %}
-                            <button class="btn primary" type="submit"><i data-lucide="play"></i>Начать рабочий день</button>
-                        </form>
-                    {% elif workday.status == 'closed' or workday.status == 'auto_closed' %}
-                        <span class="pill ok">Рабочий день закрыт</span>
-                    {% else %}
-                        {% if workday.has_report %}
-                            <span class="pill ok">Отчёт отправлен</span>
-                        {% else %}
-                            <a class="btn primary" href="#daily-report"><i data-lucide="file-pen-line"></i>Отправить отчёт</a>
-                        {% endif %}
-                        <form method="post" action="{% url 'portal:workday_close' %}">
-                            {% csrf_token %}
-                            <button class="btn danger" type="submit"><i data-lucide="square"></i>Закрыть день</button>
-                        </form>
-                    {% endif %}
-                </div>
-                <div style="margin-top:12px;">
-                    <a class="pill" href="{% url 'portal:workday_reports' %}">Открыть историю отчётов</a>
-                </div>
+                {% if workday.status != 'not_started' and workday.status != 'closed' and workday.status != 'auto_closed' and workday.status != 'missed' %}
+                <form method="post" action="{% url 'portal:workday_report' %}" class="report-grid">{% csrf_token %}<textarea class="textarea" name="content" maxlength="2000" rows="5" placeholder="Что сделано сегодня — коротко и по делу" required></textarea><input class="input" maxlength="500" name="results" placeholder="Главный результат"><input class="input" maxlength="500" name="plans" placeholder="Что продолжить завтра"><input class="input" maxlength="500" name="problems" placeholder="Что мешало работе"><button class="btn primary" type="submit"><i data-lucide="save"></i>{% if workday.has_report %}Сохранить изменения{% else %}Сохранить отчёт{% endif %}</button></form>
+                {% elif workday.status == 'not_started' %}<div class="empty">Форма откроется после начала рабочего дня.</div>
+                {% elif workday.has_report %}<div class="empty">Отчёт сохранён. Он доступен в истории.</div>
+                {% else %}<div class="empty">Сегодня отчёт уже нельзя изменить.</div>{% endif %}
             {% else %}
                 <div class="empty">Для работы нужен профиль сотрудника EmployeeProfile.</div>
             {% endif %}
         </div>
     </div>
-
-    <div class="panel" id="daily-report">
-        <div class="panel-header"><h2 class="panel-title">Ежедневный отчёт</h2></div>
-        <div class="panel-body">
-            {% if workday and workday.status != 'not_started' and workday.status != 'closed' and workday.status != 'auto_closed' %}
-                <form method="post" action="{% url 'portal:workday_report' %}" class="grid">
-                    {% csrf_token %}
-                    <textarea class="textarea" name="content" rows="5" placeholder="Что сделано сегодня"></textarea>
-                    <input class="input" name="results" placeholder="Итоги">
-                    <input class="input" name="plans" placeholder="Планы на следующий день">
-                    <input class="input" name="problems" placeholder="Проблемы / блокеры">
-                    <button class="btn primary" type="submit"><i data-lucide="send"></i>{% if workday.has_report %}Обновить отчёт{% else %}Отправить отчёт{% endif %}</button>
-                </form>
-            {% elif workday and workday.has_report %}
-                <div class="empty">Отчёт за сегодня уже отправлен. Рабочий день закрыт.</div>
-            {% elif workday and workday.status == 'not_started' %}
-                <div class="empty">Сначала начните рабочий день, потом появится форма ежедневного отчёта.</div>
-            {% else %}
-                <div class="empty">Форма отчёта появится после начала рабочего дня.</div>
-            {% endif %}
-        </div>
-    </div>
+    <div class="panel"><div class="panel-header"><h2 class="panel-title">Как учитывается день</h2></div><div class="panel-body list"><div class="list-row"><div><div class="strong">До 09:00</div><div class="muted small">Откройте ManagerSL и нажмите «Начать рабочий день».</div></div><i data-lucide="log-in"></i></div><div class="list-row"><div><div class="strong">В течение дня</div><div class="muted small">Работайте в системе как обычно — активность фиксируется автоматически.</div></div><i data-lucide="mouse-pointer-click"></i></div><div class="list-row"><div><div class="strong">Перед уходом</div><div class="muted small">Сохраните короткий отчёт и закройте рабочий день.</div></div><i data-lucide="log-out"></i></div></div></div>
 </section>
 
 <section class="panel" style="margin-top:16px;">
@@ -165,4 +164,5 @@
         </div>
     </div>
 </section>
+</div>
 {% endblock %}

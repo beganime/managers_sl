@@ -23,7 +23,7 @@
                 <div class="muted small">{{ item.country.name }}{% if item.city %}, {{ item.city.name }}{% endif %}</div>
             </div>
             <div class="item-card-meta">
-                <span>Программ: {{ item.programs.count }}</span>
+                <span>Программ: {{ item.programs_count }}</span>
                 <span>{{ item.website|default:item.email|default:"Контакты не указаны" }}</span>
                 <span>{{ item.description|truncatechars:120|default:"Описание пока не заполнено" }}</span>
             </div>

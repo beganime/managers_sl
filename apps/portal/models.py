@@ -5,6 +5,22 @@ from apps.core.models import ActiveModel, TimeStampedModel
 from apps.organizations.models import Company, Office
 
 
+class EmployeeMood(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='daily_moods')
+    date = models.DateField()
+    slot = models.PositiveSmallIntegerField()
+    score = models.PositiveSmallIntegerField(choices=((1, 'Тяжело'), (2, 'Не очень'), (3, 'Спокойно'), (4, 'Хорошо'), (5, 'Отлично')))
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['date', 'slot']
+        constraints = [
+            models.UniqueConstraint(fields=['user', 'date', 'slot'], name='unique_employee_mood_slot'),
+            models.CheckConstraint(condition=models.Q(slot__gte=1, slot__lte=3), name='employee_mood_three_slots'),
+            models.CheckConstraint(condition=models.Q(score__gte=1, score__lte=5), name='employee_mood_score_range'),
+        ]
+
+
 class CalendarEvent(TimeStampedModel, ActiveModel):
     VISIBILITY_PRIVATE = 'private'
     VISIBILITY_OFFICE = 'office'

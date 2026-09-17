@@ -1,0 +1,39 @@
+<style>
+    .main{padding:clamp(20px,3vw,44px);}.main .panel{box-shadow:none;border-radius:18px}.main .panel-header{padding:22px 26px;gap:16px;flex-wrap:wrap}.main .panel-body{padding:26px}.main .grid{gap:22px}.main .list-row{padding-top:17px;padding-bottom:17px;gap:16px;overflow-wrap:anywhere}.main .btn{min-height:42px;border-radius:10px}.main .input,.main .select,.main .textarea{min-height:44px;border-radius:10px}.main label{display:grid;gap:8px;min-width:0}.main details>summary{padding:14px 0;cursor:pointer}.main form details{border-bottom:1px solid var(--line);padding-bottom:18px}.workspace{display:grid;gap:32px;max-width:1440px;margin:auto}.workspace-heading,.workspace-day{display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}.workspace-heading h2{margin:6px 0;font-size:clamp(25px,3vw,38px);letter-spacing:-.035em}.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted,#667085);margin:0}.workspace-day{padding:24px 28px}.workspace-day h3{margin:6px 0 0}.workspace-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.workspace-stats a{display:grid;grid-template-columns:1fr auto;padding:24px;gap:12px;border-right:1px solid var(--line)}.workspace-stats a:last-child{border-right:0}.workspace-stats span{grid-column:1/-1;color:var(--muted,#667085)}.workspace-stats strong{font-size:42px;font-weight:600;line-height:1.1}.workspace-columns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px}.workspace-services{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.workspace-services a{display:flex;gap:14px;align-items:center;padding:22px 18px;border:1px solid var(--line);border-radius:14px}.workspace-services a svg:last-child{margin-left:auto;width:16px}.workspace-services a:hover,.workspace-stats a:hover{background:var(--soft,#f3f5f7)}.sl-modal{color:var(--text,#172033);background:var(--panel,#fff);width:min(560px,calc(100vw - 28px));border:1px solid var(--line,#ddd);border-radius:22px;padding:28px;max-height:85dvh;overflow:auto}.sl-modal::backdrop{background:rgba(17,24,39,.38)}.sl-modal header{display:flex;align-items:center;justify-content:space-between;gap:16px}.sl-modal h2{margin:0}.mood-options{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:24px 0}.mood-options label{cursor:pointer;text-align:center;border:1px solid var(--line,#ddd);border-radius:12px;padding:14px 2px;font-size:11px}.mood-options label:has(input:checked){border-color:#0d416d;background:#eaf2f8;color:#0d416d}.mood-options span{display:block;font-size:30px;margin-bottom:8px}.sl-status{min-height:24px;margin:12px 0;overflow-wrap:anywhere}.client-chat-log{display:grid;gap:14px;max-height:420px;overflow:auto;overscroll-behavior:contain;padding:12px 0}.client-chat-message{border:1px solid var(--line);border-radius:12px;padding:16px;max-width:90%;white-space:pre-wrap;overflow-wrap:anywhere}.client-chat-message.mine{margin-left:auto}.client-chat-message small{display:block;margin-bottom:8px;color:var(--muted,#667085)}.client-chat-message a{display:block;margin-top:10px}.client-chat-compose{display:grid;gap:12px;margin-top:20px}.profile-intro{display:flex;align-items:center;gap:22px;margin-bottom:30px}.profile-avatar{width:84px;height:84px;border-radius:22px;object-fit:cover;background:var(--soft,#f3f5f7);display:grid;place-items:center;font-size:32px}.profile-intro h2{margin:0 0 8px}.client-summary .grid{row-gap:28px}.client-form-progress{height:4px;width:100%;accent-color:#0d416d}.form-errors{color:var(--danger,#b42318)}
+    @media(max-width:760px){.workspace-columns{grid-template-columns:1fr}.workspace-services{grid-template-columns:repeat(2,minmax(0,1fr))}.main .panel-header,.main .panel-body{padding:18px}.workspace{gap:22px}.workspace-stats a{padding:18px 10px}.workspace-stats strong{font-size:30px}.workspace-stats span{font-size:12px}.workspace-heading .filters{width:100%}.workspace-heading .btn{flex:1}.workspace-day{padding:20px}.main .cols-3,.main .cols-4{grid-template-columns:1fr}.mood-options{gap:4px}.sl-modal{padding:20px}.client-chat-message{max-width:100%}.workspace-services a{padding:18px 12px;font-size:13px}}
+</style>
+<dialog class="sl-modal" id="sl-mood" aria-labelledby="sl-mood-title">
+    <header><h2 id="sl-mood-title">Как вы себя чувствуете?</h2><button type="button" class="btn" data-close-mood aria-label="Закрыть">✕</button></header>
+    <form id="sl-mood-form" action="{% url 'portal:mood' %}">
+        {% csrf_token %}
+        <label style="display:block;margin-top:20px">Отметка за сегодня <select name="slot" class="select"><option value="1">Первая</option><option value="2">Вторая</option><option value="3">Третья</option></select></label>
+        <div class="mood-options">
+            <label><span>😔</span><input type="radio" name="score" value="1" required> Тяжело</label>
+            <label><span>😕</span><input type="radio" name="score" value="2"> Не очень</label>
+            <label><span>😐</span><input type="radio" name="score" value="3"> Спокойно</label>
+            <label><span>🙂</span><input type="radio" name="score" value="4"> Хорошо</label>
+            <label><span>😄</span><input type="radio" name="score" value="5"> Отлично</label>
+        </div>
+        <p class="sl-status" id="sl-mood-status" role="status"></p>
+        <button type="submit" class="btn primary">Сохранить</button>
+    </form>
+    <div id="sl-mood-week"></div>
+</dialog>
+<script>
+(() => {
+    const modal=document.getElementById('sl-mood'), form=document.getElementById('sl-mood-form'), status=document.getElementById('sl-mood-status');
+    const slotInput=form.elements.namedItem('slot');
+    let entries=[];
+    function selectSlot(){form.querySelectorAll('[name=score]').forEach(el=>el.checked=entries.some(item=>item.slot===Number(slotInput.value)&&item.score===Number(el.value)));}
+    async function readMood(){
+        status.textContent='Загрузка…';
+        try{const response=await fetch(form.action,{credentials:'same-origin',headers:{Accept:'application/json'}});if(!response.ok)throw Error();const data=await response.json();entries=data.entries;slotInput.value=String([1,2,3].find(slot=>!entries.some(item=>item.slot===slot))||3);selectSlot();status.textContent=`Отметок сегодня: ${entries.length} из 3`;
+            const week=document.getElementById('sl-mood-week');week.replaceChildren();if(data.week){const title=document.createElement('h3');title.textContent='Команда за неделю';week.append(title);for(const row of data.week){const line=document.createElement('p');line.textContent=`${[row.user__first_name,row.user__last_name].filter(Boolean).join(' ')||row.user__email}: ${Number(row.average).toFixed(1)} / 5 · отметок: ${row.count}`;week.append(line);}}
+        }catch{status.textContent='Не удалось загрузить настроение. Закройте окно и попробуйте снова.';}
+    }
+    document.querySelectorAll('[data-open-mood]').forEach(button=>button.addEventListener('click',()=>{modal.showModal();readMood();}));
+    modal.querySelector('[data-close-mood]').addEventListener('click',()=>modal.close());
+    slotInput.addEventListener('change',selectSlot);
+    form.addEventListener('submit',async event=>{event.preventDefault();const button=form.querySelector('[type=submit]');button.disabled=true;try{const response=await fetch(form.action,{method:'POST',body:new FormData(form),credentials:'same-origin'});const data=await response.json();if(!response.ok)throw Error(data.error||'Не удалось сохранить');entries=data.entries;status.textContent='Сохранено';}catch(error){status.textContent=error.message||'Ошибка сети. Попробуйте ещё раз.';}finally{button.disabled=false;}});
+})();
+</script>

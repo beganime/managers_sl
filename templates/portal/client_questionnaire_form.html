@@ -1,0 +1,34 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<style>
+  .questionnaire-form { max-width: 980px; margin: 0 auto; }
+  .questionnaire-form .panel { background: #fff; border: 1px solid #d7dce2; border-radius: 12px; padding: 24px; }
+  .questionnaire-form h2 { margin: 0 0 8px; color: #111; }
+  .questionnaire-form p { color: #555; margin: 0 0 22px; }
+  .questionnaire-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .questionnaire-field label { display: block; color: #111; font-weight: 700; margin-bottom: 6px; }
+  .questionnaire-field input, .questionnaire-field select, .questionnaire-field textarea { width: 100%; box-sizing: border-box; border: 1px solid #aeb5bd; border-radius: 7px; padding: 10px 12px; background: #fff; color: #111; }
+  .questionnaire-field:has(textarea) { grid-column: 1 / -1; }
+  .questionnaire-actions { display: flex; gap: 10px; margin-top: 22px; }
+  @media (max-width: 760px) { .questionnaire-grid { grid-template-columns: 1fr; } }
+</style>
+<div class="questionnaire-form">
+  <div class="panel">
+    <h2>Анкета клиента</h2>
+    <p>Менеджер может заполнить данные за клиента или обновить их после разговора.</p>
+    <form method="post">
+      {% csrf_token %}
+      <div class="questionnaire-grid">
+        {% for field in form %}
+          <div class="questionnaire-field">{{ field.label_tag }}{{ field }}{{ field.errors }}</div>
+        {% endfor %}
+      </div>
+      <div class="questionnaire-actions">
+        <button class="btn primary" type="submit">Сохранить анкету</button>
+        <a class="btn" href="{% url 'portal:client_questionnaire_detail' view.get_questionnaire.id %}">Отмена</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

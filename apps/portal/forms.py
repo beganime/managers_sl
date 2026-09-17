@@ -7,7 +7,7 @@ from apps.education.models import City, Country, Currency, Program, University
 from apps.erp_documents.models import DocumentTemplate, GeneratedDocument
 from apps.erp_notifications.models import Notification, NotificationBatch
 from apps.erp_services.models import Service, ServiceCategory
-from apps.finance.models import Cashbox, Deal, Expense, ExpenseCategory, Income, Payment
+from apps.finance.models import Deal, DealAdditionalService, Expense, ExpenseCategory, Income, Payment
 from apps.knowledge.models import KnowledgeArticle, KnowledgeAttachment, KnowledgeCategory
 from apps.organizations.models import Office
 from apps.portal.models import CalendarEvent
@@ -244,14 +244,20 @@ class PortalTaskAttachmentForm(PortalFormMixin, forms.ModelForm):
 
 
 class PortalClientForm(PortalFormMixin, forms.ModelForm):
+    is_public = forms.TypedChoiceField(
+        label='Кто видит клиента', choices=(('False', 'Только ответственный и администратор'), ('True', 'Все сотрудники компании')),
+        coerce=lambda value: value == 'True', initial=False,
+    )
     class Meta:
         model = Client
         fields = [
             'full_name',
+            'is_public',
             'phone',
             'email',
             'direction',
             'status',
+            'funding_type',
             'manager',
             'office',
             'lead_source',
@@ -299,6 +305,13 @@ class PortalClientForm(PortalFormMixin, forms.ModelForm):
         self.fields['manager'].required = False
         self.fields['office'].required = False
         self.fields['lead_source'].required = False
+        for field in self.fields.values():
+            if isinstance(field, forms.CharField):
+                maximum = min(field.max_length or 1000, 1000)
+                field.max_length = maximum
+                field.widget.attrs['maxlength'] = maximum
+                from django.core.validators import MaxLengthValidator
+                field.validators.append(MaxLengthValidator(maximum))
         self.style_fields()
 
     def clean(self):
@@ -351,6 +364,18 @@ class PortalServiceForm(PortalFormMixin, forms.ModelForm):
 
 
 class PortalDealForm(PortalFormMixin, forms.ModelForm):
+    contract_date = forms.DateField(
+        label='Дата договора',
+        widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+        input_formats=['%Y-%m-%d'],
+    )
+    payment_due_date = forms.DateField(
+        label='Срок полной оплаты',
+        required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+        input_formats=['%Y-%m-%d'],
+    )
+
     class Meta:
         model = Deal
         fields = [
@@ -363,6 +388,8 @@ class PortalDealForm(PortalFormMixin, forms.ModelForm):
             'program_name',
             'currency',
             'price_client',
+            'contract_date',
+            'payment_due_date',
             'comment',
         ]
         widgets = {'comment': forms.Textarea(attrs={'rows': 3})}
@@ -370,6 +397,9 @@ class PortalDealForm(PortalFormMixin, forms.ModelForm):
     def __init__(self, *args, clients=None, applications=None, services=None, currencies=None, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['client'].queryset = clients if clients is not None else Client.objects.all()
+        self.fields['client'].label_from_instance = lambda client: (
+            f'{client.full_name} — {client.sl_id or "без SL-ID"}'
+        )
         self.fields['application'].queryset = applications if applications is not None else Application.objects.all()
         self.fields['service'].queryset = services if services is not None else Service.objects.all()
         self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
@@ -380,6 +410,7 @@ class PortalDealForm(PortalFormMixin, forms.ModelForm):
         self.fields['title'].required = False
         self.fields['currency'].required = False
         self.fields['price_client'].required = False
+        self.fields['contract_date'].initial = timezone.localdate
         self.style_fields()
 
     def clean(self):
@@ -393,6 +424,25 @@ class PortalDealForm(PortalFormMixin, forms.ModelForm):
         return cleaned_data
 
 
+class PortalDealAdditionalServiceForm(PortalFormMixin, forms.ModelForm):
+    class Meta:
+        model = DealAdditionalService
+        fields = ['title', 'amount', 'currency', 'comment']
+        widgets = {'comment': forms.Textarea(attrs={'rows': 2, 'maxlength': 1000})}
+
+    def __init__(self, *args, currencies=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
+        self.fields['title'].widget.attrs['maxlength'] = 255
+        self.style_fields()
+
+    def clean_amount(self):
+        amount = self.cleaned_data['amount']
+        if amount <= 0:
+            raise forms.ValidationError('Сумма должна быть больше нуля.')
+        return amount
+
+
 class PortalPaymentForm(PortalFormMixin, forms.ModelForm):
     payment_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
@@ -401,14 +451,24 @@ class PortalPaymentForm(PortalFormMixin, forms.ModelForm):
 
     class Meta:
         model = Payment
-        fields = ['deal', 'amount', 'method', 'payment_date', 'proof_file', 'comment']
+        fields = ['deal', 'amount', 'currency', 'method', 'payment_date', 'proof_file', 'comment']
         widgets = {'comment': forms.Textarea(attrs={'rows': 3})}
 
-    def __init__(self, *args, deals=None, **kwargs):
+    def __init__(self, *args, deals=None, currencies=None, require_proof=True, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['deal'].queryset = deals if deals is not None else Deal.objects.all()
-        self.fields['proof_file'].required = False
+        if deals is not None and deals.count() == 1:
+            self.fields['deal'].widget = forms.HiddenInput()
+        self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
+        self.fields['proof_file'].required = require_proof
+        self.fields['comment'].widget.attrs['maxlength'] = 1000
         self.style_fields()
+
+    def clean_amount(self):
+        amount = self.cleaned_data['amount']
+        if amount <= 0:
+            raise forms.ValidationError('Сумма должна быть больше нуля.')
+        return amount
 
 
 class PortalDocumentGenerateForm(PortalFormMixin, forms.Form):
@@ -517,6 +577,7 @@ class PortalCalendarEventForm(PortalFormMixin, forms.ModelForm):
 
 
 class PortalIncomeForm(PortalFormMixin, forms.ModelForm):
+    comment = forms.CharField(required=False, max_length=1000, widget=forms.Textarea(attrs={'rows': 3}))
     date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         input_formats=['%Y-%m-%d'],
@@ -525,12 +586,10 @@ class PortalIncomeForm(PortalFormMixin, forms.ModelForm):
     class Meta:
         model = Income
         fields = [
-            'cashbox',
-            'client',
-            'deal',
-            'service',
+            'office',
             'title',
             'amount',
+            'currency',
             'date',
             'proof_file',
             'comment',
@@ -539,25 +598,31 @@ class PortalIncomeForm(PortalFormMixin, forms.ModelForm):
             'comment': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, cashboxes=None, clients=None, deals=None, services=None, **kwargs):
+    def __init__(self, *args, offices=None, currencies=None, **kwargs):
         super().__init__(*args, **kwargs)
-        cashbox_qs = cashboxes if cashboxes is not None else Cashbox.objects.none()
-        self.fields['cashbox'].queryset = cashbox_qs
-        self.fields['client'].queryset = clients if clients is not None else Client.objects.all()
-        self.fields['deal'].queryset = deals if deals is not None else Deal.objects.all()
-        self.fields['service'].queryset = services if services is not None else Service.objects.all()
-        self.fields['cashbox'].required = cashbox_qs.exists()
-        self.fields['client'].required = False
-        self.fields['deal'].required = False
-        self.fields['service'].required = False
+        self.fields['office'].queryset = offices if offices is not None else Office.objects.none()
+        self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
+        self.fields['office'].required = True
+        if offices is not None and offices.count() == 1:
+            self.fields['office'].initial = offices.first().pk
+        self.fields['currency'].initial = self.fields['currency'].queryset.filter(code='TMT').first()
+        self.fields['currency'].label_from_instance = lambda item: {'TMT': 'TMT — манаты', 'USD': 'USD — доллары'}.get(item.code, item.code)
+        self.fields['amount'].initial = None
+        self.fields['amount'].widget.attrs.update({'placeholder': 'Например, 250', 'min': '0.01'})
         self.fields['proof_file'].required = False
         self.fields['date'].initial = timezone.localdate
-        if cashbox_qs.count() == 1:
-            self.fields['cashbox'].initial = cashbox_qs.first()
+        self.fields['comment'].widget.attrs['maxlength'] = 1000
         self.style_fields()
+
+    def clean_amount(self):
+        amount = self.cleaned_data['amount']
+        if amount <= 0:
+            raise forms.ValidationError('Сумма должна быть больше нуля.')
+        return amount
 
 
 class PortalExpenseForm(PortalFormMixin, forms.ModelForm):
+    comment = forms.CharField(required=False, max_length=1000, widget=forms.Textarea(attrs={'rows': 3}))
     date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
         input_formats=['%Y-%m-%d'],
@@ -566,9 +631,11 @@ class PortalExpenseForm(PortalFormMixin, forms.ModelForm):
     class Meta:
         model = Expense
         fields = [
+            'office',
             'category',
             'title',
             'amount',
+            'currency',
             'date',
             'proof_file',
             'comment',
@@ -577,11 +644,28 @@ class PortalExpenseForm(PortalFormMixin, forms.ModelForm):
             'comment': forms.Textarea(attrs={'rows': 3}),
         }
 
-    def __init__(self, *args, categories=None, **kwargs):
+    def __init__(self, *args, offices=None, currencies=None, categories=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['office'].queryset = offices if offices is not None else Office.objects.none()
+        self.fields['currency'].queryset = currencies if currencies is not None else Currency.objects.all()
         self.fields['category'].queryset = categories if categories is not None else ExpenseCategory.objects.all()
+        self.fields['category'].required = False
+        self.fields['date'].initial = timezone.localdate
+        if offices is not None and offices.count() == 1:
+            self.fields['office'].initial = offices.first().pk
+        self.fields['currency'].initial = self.fields['currency'].queryset.filter(code='TMT').first()
+        self.fields['currency'].label_from_instance = lambda item: {'TMT': 'TMT — манаты', 'USD': 'USD — доллары'}.get(item.code, item.code)
+        self.fields['amount'].initial = None
+        self.fields['amount'].widget.attrs.update({'placeholder': 'Например, 250', 'min': '0.01'})
         self.fields['proof_file'].required = False
+        self.fields['comment'].widget.attrs['maxlength'] = 1000
         self.style_fields()
+
+    def clean_amount(self):
+        amount = self.cleaned_data['amount']
+        if amount <= 0:
+            raise forms.ValidationError('Сумма должна быть больше нуля.')
+        return amount
 
 
 class PortalNotificationForm(PortalFormMixin, forms.Form):
@@ -635,3 +719,34 @@ class PortalNotificationForm(PortalFormMixin, forms.Form):
         if kind == self.TYPE_WARNING:
             return Notification.PRIORITY_NORMAL
         return Notification.PRIORITY_NORMAL
+
+
+class ClientPushNotificationForm(PortalFormMixin, forms.Form):
+    SCOPE_SELECTED = 'selected'
+    SCOPE_ALL = 'all'
+    SCOPE_CHOICES = (
+        (SCOPE_SELECTED, 'Один или несколько клиентов'),
+        (SCOPE_ALL, 'Все активные клиенты с SL-ID'),
+    )
+
+    title = forms.CharField(label='Заголовок', max_length=255)
+    body = forms.CharField(label='Текст уведомления', widget=forms.Textarea(attrs={'rows': 6}))
+    recipient_scope = forms.ChoiceField(label='Получатели', choices=SCOPE_CHOICES, initial=SCOPE_SELECTED)
+    clients = forms.ModelMultipleChoiceField(
+        label='Клиенты',
+        queryset=Client.objects.none(),
+        required=False,
+        widget=forms.SelectMultiple(attrs={'size': 14}),
+        help_text='Для группы удерживайте Ctrl и выберите нескольких клиентов.',
+    )
+
+    def __init__(self, *args, clients=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['clients'].queryset = clients if clients is not None else Client.objects.none()
+        self.style_fields()
+
+    def clean(self):
+        cleaned_data = super().clean()
+        if cleaned_data.get('recipient_scope') == self.SCOPE_SELECTED and not cleaned_data.get('clients'):
+            self.add_error('clients', 'Выберите хотя бы одного клиента.')
+        return cleaned_data

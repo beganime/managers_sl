@@ -125,13 +125,6 @@
                         <div class="item-card-meta">
                             <span>Язык: {{ program.language|default:"Не указан" }}</span>
                             <span>Длительность: {{ program.duration|default:"Не указана" }}</span>
-                            {% for fee in program.fees.all %}
-                                {% if forloop.first %}
-                                    <span>Стоимость: {{ fee.tuition_fee|floatformat:2 }} {{ fee.currency.code }} · услуги ${{ fee.service_fee_usd|floatformat:2 }}</span>
-                                {% endif %}
-                            {% empty %}
-                                <span>Стоимость не указана</span>
-                            {% endfor %}
                             {% for intake in program.intakes.all %}
                                 {% if forloop.first %}
                                     <span>Intake: {{ intake.title }}{% if intake.application_deadline %} · дедлайн {{ intake.application_deadline|date:"d.m.Y" }}{% endif %}</span>

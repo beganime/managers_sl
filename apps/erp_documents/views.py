@@ -244,7 +244,11 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         qs = filter_by_office_scope(qs, self.request.user)
 
         if not is_erp_admin(self.request.user):
-            qs = qs.filter(Q(manager=self.request.user) | Q(client__shared_with=self.request.user)).distinct()
+            from apps.crm.access import visible_clients
+            qs = qs.filter(
+                Q(client_id__in=visible_clients(Client.objects.all(), self.request.user).values('pk')) |
+                Q(client__isnull=True, manager=self.request.user)
+            ).distinct()
 
         qs = apply_common_filters(
             qs,
@@ -257,7 +261,8 @@ class GeneratedDocumentViewSet(viewsets.ModelViewSet):
         data = {}
         if not is_erp_admin(self.request.user):
             data.update(default_company_office(self.request.user))
-        if not serializer.validated_data.get('manager'):
+            data['manager'] = self.request.user
+        elif not serializer.validated_data.get('manager'):
             data['manager'] = self.request.user
         serializer.save(**data)
 

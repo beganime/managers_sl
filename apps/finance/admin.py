@@ -4,14 +4,49 @@ from unfold.admin import ModelAdmin
 from .models import (
     Cashbox,
     Deal,
+    DealAdditionalService,
+    EmployeeBalance,
     EmployeeCommission,
     Expense,
     ExpenseCategory,
     FinancialPeriod,
     Income,
+    FinanceSettings,
     Payment,
     Transaction,
 )
+
+
+class DealAdditionalServiceInline(admin.TabularInline):
+    model = DealAdditionalService
+    extra = 0
+    autocomplete_fields = ('currency', 'created_by')
+    readonly_fields = ('amount_usd', 'created_at', 'updated_at')
+
+
+@admin.register(FinanceSettings)
+class FinanceSettingsAdmin(ModelAdmin):
+    list_display = ('usd_to_tmt', 'updated_by', 'updated_at')
+    readonly_fields = ('updated_at',)
+
+    def has_add_permission(self, request):
+        return not FinanceSettings.objects.exists()
+
+    def has_delete_permission(self, request, obj=None):
+        return False
+
+    def save_model(self, request, obj, form, change):
+        obj.updated_by = request.user
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(EmployeeBalance)
+class EmployeeBalanceAdmin(ModelAdmin):
+    list_display = ('employee', 'office', 'balance_tmt', 'updated_at')
+    list_filter = ('office',)
+    search_fields = ('employee__first_name', 'employee__last_name', 'employee__email', 'office__name')
+    autocomplete_fields = ('employee', 'office')
+    readonly_fields = ('created_at', 'updated_at')
 
 
 @admin.register(Cashbox)
@@ -25,17 +60,18 @@ class CashboxAdmin(ModelAdmin):
 
 @admin.register(Deal)
 class DealAdmin(ModelAdmin):
-    list_display = ('title', 'client', 'manager', 'company', 'office', 'deal_type', 'payment_status', 'total_to_pay_usd', 'paid_amount_usd')
+    list_display = ('contract_number', 'title', 'client', 'manager', 'company', 'office', 'contract_date', 'payment_due_date', 'payment_status', 'total_to_pay_usd', 'paid_amount_usd')
     list_filter = ('payment_status', 'deal_type', 'company', 'office', 'manager', 'created_at')
-    search_fields = ('title', 'client__full_name', 'client__phone', 'university_name', 'program_name', 'service__title')
+    search_fields = ('contract_number', 'title', 'client__full_name', 'client__sl_id', 'client__phone', 'university_name', 'program_name', 'service__title')
     autocomplete_fields = ('company', 'office', 'client', 'application', 'manager', 'service', 'currency')
     readonly_fields = ('total_to_pay_usd', 'paid_amount_usd', 'created_at', 'updated_at')
     date_hierarchy = 'created_at'
+    inlines = (DealAdditionalServiceInline,)
 
 
 @admin.register(Payment)
 class PaymentAdmin(ModelAdmin):
-    list_display = ('client', 'deal', 'amount', 'currency', 'amount_usd', 'method', 'payment_date', 'has_proof', 'is_confirmed')
+    list_display = ('client', 'deal', 'amount', 'currency', 'amount_usd', 'amount_tmt', 'method', 'payment_date', 'has_proof', 'is_confirmed')
     list_filter = ('is_confirmed', 'method', 'company', 'office', 'cashbox', 'payment_date')
     search_fields = ('client__full_name', 'client__phone', 'deal__title', 'comment')
     autocomplete_fields = ('company', 'office', 'deal', 'client', 'manager', 'cashbox', 'currency', 'confirmed_by')
@@ -65,7 +101,7 @@ class ExpenseCategoryAdmin(ModelAdmin):
 
 @admin.register(Expense)
 class ExpenseAdmin(ModelAdmin):
-    list_display = ('title', 'category', 'amount', 'currency', 'amount_usd', 'date', 'company', 'office', 'has_proof', 'is_confirmed')
+    list_display = ('title', 'category', 'amount', 'currency', 'amount_usd', 'amount_tmt', 'date', 'company', 'office', 'has_proof', 'is_confirmed')
     list_filter = ('is_confirmed', 'category', 'company', 'office', 'date')
     search_fields = ('title', 'comment', 'employee__email', 'category__name')
     autocomplete_fields = ('company', 'office', 'category', 'employee', 'cashbox', 'currency', 'confirmed_by')
@@ -86,7 +122,7 @@ class ExpenseAdmin(ModelAdmin):
 
 @admin.register(Income)
 class IncomeAdmin(ModelAdmin):
-    list_display = ('title', 'employee', 'amount', 'currency', 'amount_usd', 'date', 'company', 'office', 'status', 'is_confirmed')
+    list_display = ('title', 'employee', 'amount', 'currency', 'amount_usd', 'amount_tmt', 'date', 'company', 'office', 'status', 'is_confirmed')
     list_filter = ('status', 'is_confirmed', 'company', 'office', 'cashbox', 'currency', 'date')
     search_fields = ('title', 'source', 'comment', 'employee__email', 'client__full_name', 'deal__title', 'service__title')
     autocomplete_fields = ('company', 'office', 'cashbox', 'employee', 'client', 'deal', 'service', 'currency', 'confirmed_by', 'rejected_by')
@@ -108,7 +144,7 @@ class IncomeAdmin(ModelAdmin):
 
 @admin.register(Transaction)
 class TransactionAdmin(ModelAdmin):
-    list_display = ('transaction_type', 'cashbox', 'amount', 'currency', 'amount_usd', 'company', 'office', 'created_at')
+    list_display = ('transaction_type', 'cashbox', 'amount', 'currency', 'amount_usd', 'amount_tmt', 'company', 'office', 'created_by', 'created_at')
     list_filter = ('transaction_type', 'company', 'office', 'cashbox', 'currency', 'created_at')
     search_fields = ('comment', 'related_payment__client__full_name', 'related_expense__title', 'related_income__title')
     autocomplete_fields = ('company', 'office', 'cashbox', 'currency', 'related_payment', 'related_expense', 'related_income', 'created_by')
