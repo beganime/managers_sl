@@ -53,7 +53,7 @@ bash deploy.sh
 
 1. останавливается, если на сервере есть незакоммиченные файлы;
 2. сохраняет текущий Git HEAD, `.env` и итоговую Compose-конфигурацию;
-3. создаёт PostgreSQL dump;
+3. создаёт PostgreSQL dump внешней production-БД через совместимый клиент PostgreSQL 18;
 4. допускает только fast-forward обновление production-ветки;
 5. пересобирает `web`, `celery`, `celery-beat`;
 6. проверяет Docker healthcheck и внешний `/api/health/`;

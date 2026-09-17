@@ -5,6 +5,7 @@ APP_DIR="${APP_DIR:-/opt/sl-system/manager}"
 DEPLOY_BRANCH="${DEPLOY_BRANCH:-rebuild-erp-core}"
 BACKUP_ROOT="${BACKUP_ROOT:-/opt/sl-system/backups/github-deploy}"
 HEALTH_URL="${HEALTH_URL:-https://manager-sl.ru/api/health/}"
+PG_DUMP_IMAGE="${PG_DUMP_IMAGE:-postgres:18-alpine}"
 timestamp="$(date -u +%Y%m%dT%H%M%SZ)"
 backup_dir="$BACKUP_ROOT/$timestamp"
 
@@ -36,9 +37,14 @@ cp -a .env "$backup_dir/.env"
 docker compose config > "$backup_dir/compose.resolved.yml"
 
 echo "Creating PostgreSQL backup in $backup_dir ..."
-docker compose exec -T db sh -lc \
-  'PGPASSWORD="$POSTGRES_PASSWORD" pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB" -Fc' \
+docker run --rm \
+  --env-file "$APP_DIR/.env" \
+  -v "$APP_DIR/secrets:/app/secrets:ro" \
+  --entrypoint sh \
+  "$PG_DUMP_IMAGE" \
+  -lc 'PGPASSWORD="$DB_PASSWORD" exec pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -Fc' \
   > "$backup_dir/database.dump"
+test -s "$backup_dir/database.dump" || fail "PostgreSQL backup is empty."
 
 echo "Fetching origin/$DEPLOY_BRANCH ..."
 git fetch --prune origin "$DEPLOY_BRANCH"
