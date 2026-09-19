@@ -3,9 +3,8 @@ from unittest import mock
 
 from django.test import TestCase, override_settings
 from django.urls import reverse
-from django.core import signing
-
 from users.models import User
+from users.disk_auth import issue_disk_sso_ticket
 
 
 @override_settings(DISK_AUTH_SERVICE_TOKEN='test-disk-token')
@@ -41,19 +40,19 @@ class DiskAuthenticationTests(TestCase):
         self.assertTrue(response.json()['authenticated'])
 
     def test_accepts_short_lived_manager_session_ticket(self):
-        ticket = signing.dumps(
-            {'email': self.user.email, 'purpose': 'disk-login'},
-            salt='manager-sl.disk-sso.v1',
-        )
+        ticket = issue_disk_sso_ticket(self.user.email)
+        self.assertLessEqual(len(ticket.encode()), 72)
         response = self.post({'username': self.user.email, 'password': ticket}, **self.headers)
         self.assertEqual(response.status_code, 200)
         self.assertTrue(response.json()['authenticated'])
 
     def test_rejects_ticket_for_another_username(self):
-        ticket = signing.dumps(
-            {'email': 'other@example.com', 'purpose': 'disk-login'},
-            salt='manager-sl.disk-sso.v1',
-        )
+        ticket = issue_disk_sso_ticket('other@example.com')
+        response = self.post({'username': self.user.email, 'password': ticket}, **self.headers)
+        self.assertEqual(response.status_code, 401)
+
+    def test_rejects_expired_session_ticket(self):
+        ticket = issue_disk_sso_ticket(self.user.email, issued_at=1)
         response = self.post({'username': self.user.email, 'password': ticket}, **self.headers)
         self.assertEqual(response.status_code, 401)
 

@@ -1,12 +1,47 @@
+import hashlib
+import hmac
 import json
 import secrets
+import time
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
-from django.core import signing
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+
+
+DISK_SSO_PREFIX = 's1'
+DISK_SSO_MAX_AGE_SECONDS = 90
+
+
+def issue_disk_sso_ticket(email: str, *, issued_at: int | None = None) -> str:
+    """Return a short, user-bound ticket accepted by SFTPGo's bcrypt layer."""
+    timestamp = int(time.time() if issued_at is None else issued_at)
+    normalized_email = str(email or '').strip().lower()
+    message = f'{DISK_SSO_PREFIX}:{timestamp}:{normalized_email}'.encode()
+    signature = hmac.new(
+        settings.SECRET_KEY.encode(),
+        message,
+        hashlib.sha256,
+    ).hexdigest()[:32]
+    return f'{DISK_SSO_PREFIX}.{timestamp}.{signature}'
+
+
+def verify_disk_sso_ticket(email: str, ticket: str, *, now: int | None = None) -> bool:
+    try:
+        prefix, raw_timestamp, supplied_signature = ticket.split('.', 2)
+        timestamp = int(raw_timestamp)
+    except (AttributeError, TypeError, ValueError):
+        return False
+
+    current_timestamp = int(time.time() if now is None else now)
+    age = current_timestamp - timestamp
+    if prefix != DISK_SSO_PREFIX or age < 0 or age > DISK_SSO_MAX_AGE_SECONDS:
+        return False
+
+    expected = issue_disk_sso_ticket(email, issued_at=timestamp)
+    return secrets.compare_digest(ticket, expected)
 
 
 def can_access_disk(user) -> bool:
@@ -58,14 +93,10 @@ def disk_authenticate(request):
         return JsonResponse({'authenticated': False}, status=401)
 
     user = None
-    try:
-        ticket = signing.loads(password, salt='manager-sl.disk-sso.v1', max_age=90)
-        if (
-            ticket.get('purpose') == 'disk-login'
-            and str(ticket.get('email') or '').strip().lower() == email.lower()
-        ):
+    if password.startswith(f'{DISK_SSO_PREFIX}.'):
+        if verify_disk_sso_ticket(email, password):
             user = get_user_model().objects.filter(email__iexact=email, is_active=True).first()
-    except (signing.BadSignature, signing.SignatureExpired, TypeError, ValueError):
+    else:
         user = authenticate(request=request, email=email, password=password)
     if not can_access_disk(user):
         return JsonResponse({'authenticated': False}, status=401)

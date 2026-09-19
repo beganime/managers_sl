@@ -115,7 +115,7 @@ from apps.sheets_sync.models import SheetSearchSource, SheetSyncRun
 from apps.sheets_sync.search import search_google_sheets
 from apps.sheets_sync.services import enqueue_submission_sync
 from apps.portal.akylchat import AkylChatClient, AkylChatError
-from users.disk_auth import can_access_disk
+from users.disk_auth import can_access_disk, issue_disk_sso_ticket
 
 
 PAGE_SIZE = 25
@@ -419,6 +419,7 @@ NAV_GROUPS = (
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'workday', 'label': 'Рабочий день', 'icon': 'timer'},
             {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
+            {'name': 'documents', 'label': 'Документы', 'icon': 'files'},
             {'name': 'contracts', 'label': 'Договоры', 'icon': 'file-signature'},
             {'name': 'finance', 'label': 'Финансы', 'icon': 'wallet-cards'},
         ),
@@ -2667,11 +2668,7 @@ class DiskSLLoginView(LoginRequiredMixin, View):
             messages.error(request, 'Автоматический вход в DiskSL временно недоступен.')
             return redirect(login_url)
 
-        ticket = signing.dumps(
-            {'email': request.user.email, 'purpose': 'disk-login'},
-            salt='manager-sl.disk-sso.v1',
-            compress=True,
-        )
+        ticket = issue_disk_sso_ticket(request.user.email)
         response = render(request, 'portal/disk_sso.html', {
             'disk_login_url': login_url,
             'disk_username': request.user.email,
