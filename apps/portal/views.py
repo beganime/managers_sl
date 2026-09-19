@@ -2625,7 +2625,7 @@ class TranslateSLLoginView(LoginRequiredMixin, View):
             salt='manager-sl.translate-sso.v1',
             compress=True,
         )
-        translate_path = getattr(settings, 'TRANSLATE_SL_PATH_URL', '/translate').rstrip('/')
+        translate_path = getattr(settings, 'TRANSLATE_SL_PATH_URL', settings.TRANSLATE_SL_URL).rstrip('/')
         target = f'{translate_path}/accounts/manager-sl/?{urlencode({"token": token})}'
         response = redirect(target)
         response['Cache-Control'] = 'no-store'
