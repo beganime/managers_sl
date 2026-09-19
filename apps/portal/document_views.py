@@ -2,6 +2,7 @@ from decimal import Decimal
 
 from django import forms
 from django.contrib import messages
+from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect
@@ -325,8 +326,7 @@ class DocumentReviewView(PortalContextMixin, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if not can_delete_admin(request.user):
-            messages.error(request, 'Проверять документы может только администратор.')
-            return redirect('portal:documents')
+            raise PermissionDenied('Проверять документы может только администратор.')
         return super().dispatch(request, *args, **kwargs)
 
     def get_document(self):
@@ -590,9 +590,9 @@ class ClientDocumentCreateView(DocumentCreateView):
 
 class ContractDocumentsView(DocumentsView):
     active_page = 'contracts'
-    page_title = 'Договоры'
+    page_title = 'Договоры и согласия'
     create_url_name = 'portal:contract_create'
-    create_label = 'Создать договор'
+    create_label = 'Создать документ'
 
     def get_queryset(self):
         return contract_document_queryset(self.request.user)
@@ -607,7 +607,7 @@ class ContractDocumentsView(DocumentsView):
 
 class ContractDocumentCreateView(DocumentCreateView):
     active_page = 'contracts'
-    page_title = 'Создать договор'
+    page_title = 'Создать договор или согласие'
     submit_label = 'Сгенерировать и отправить администратору'
     success_url = reverse_lazy('portal:contracts')
     document_kind = 'contract'

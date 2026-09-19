@@ -277,20 +277,20 @@
         .panel {
             background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 8px;
+            border-radius: 12px;
             box-shadow: var(--shadow);
         }
         .panel-header {
-            padding: 14px 16px;
+            padding: 18px 20px;
             border-bottom: 1px solid var(--line);
             display: flex;
             align-items: center;
             justify-content: space-between;
             gap: 12px;
         }
-        .panel-title { font-size: 15px; font-weight: 720; margin: 0; }
-        .panel-body { padding: 16px; }
-        .grid { display: grid; gap: 16px; }
+        .panel-title { font-size: 16px; font-weight: 760; margin: 0; }
+        .panel-body { padding: 20px; }
+        .grid { display: grid; gap: 18px; }
         .grid.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         .grid.cols-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
         .grid.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
@@ -298,8 +298,8 @@
         .metric {
             background: var(--panel);
             border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 14px;
+            border-radius: 12px;
+            padding: 18px;
             min-height: 92px;
             box-shadow: var(--shadow);
             display: grid;
@@ -369,9 +369,9 @@
         .pill.ok { background: #eaf7ee; color: var(--ok); border-color: #c9ead2; }
         .pill.warn { background: #fff6e7; color: var(--warn); border-color: #f3d6a5; }
         .pill.danger { background: #fff0ed; color: var(--danger); border-color: #f4c4ba; }
-        .empty { padding: 24px; text-align: center; color: var(--muted); }
+        .empty { padding: 28px 20px; text-align: center; color: var(--muted); line-height: 1.55; }
         .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
-        .item-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 14px; display: grid; gap: 10px; min-width: 0; }
+        .item-card { border: 1px solid var(--line); border-radius: 12px; background: #fff; padding: 16px; display: grid; gap: 12px; min-width: 0; }
         .item-card-top { display: flex; gap: 10px; align-items: flex-start; justify-content: space-between; min-width: 0; }
         .item-card-title { font-weight: 760; color: var(--text); overflow-wrap: anywhere; }
         .item-card-meta { display: grid; gap: 4px; color: var(--muted); font-size: 12px; }
@@ -385,8 +385,9 @@
             display: grid;
             grid-template-columns: minmax(0, 1fr) auto;
             gap: 12px;
-            padding: 10px 0;
+            padding: 13px 2px;
             border-bottom: 1px solid var(--line);
+            line-height: 1.45;
         }
         .list-row:last-child { border-bottom: 0; }
         .workday-summary { grid-template-columns: minmax(220px, 1fr) auto; align-items: center; }
@@ -413,6 +414,7 @@
             .topbar h1 { font-size: 18px; }
             .topbar-meta .desktop-only { display: none; }
             .main { padding: 18px 14px 92px; }
+            .panel-header, .panel-body { padding: 16px; }
             .metric-grid, .grid.cols-2, .grid.cols-3, .grid.cols-4 { grid-template-columns: 1fr; }
             .toolbar { align-items: stretch; flex-direction: column; }
             .filters { width: 100%; }

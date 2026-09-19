@@ -1,9 +1,34 @@
 {% extends "portal/base.html" %}
 
+{% block extra_head %}
+<style>
+    .client-profile-hero { border:0; color:#fff; background:linear-gradient(125deg,#0d416d 0%,#12385b 58%,#751d25 100%); box-shadow:0 18px 44px rgba(13,65,109,.18); }
+    .client-profile-hero .panel-header { border-color:rgba(255,255,255,.14); align-items:flex-start; }
+    .client-profile-hero .panel-title { color:#fff; font-size:clamp(22px,3vw,30px); letter-spacing:-.025em; }
+    .client-profile-hero .client-subtitle { color:rgba(255,255,255,.72); margin-top:6px; }
+    .client-profile-hero .btn { background:rgba(255,255,255,.96); border-color:rgba(255,255,255,.45); }
+    .client-profile-hero .btn.primary { color:#fff; background:#b71d17; border-color:#d1423b; }
+    .client-profile-hero .btn.secondary { color:#0d416d; background:#fff; }
+    .client-profile-hero .panel-body { padding:22px; }
+    .client-facts { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+    .client-fact { min-width:0; padding:14px 15px; border:1px solid rgba(255,255,255,.15); border-radius:12px; background:rgba(255,255,255,.08); }
+    .client-fact-label { color:rgba(255,255,255,.68); font-size:12px; margin-bottom:6px; }
+    .client-fact-value { color:#fff; font-weight:720; overflow-wrap:anywhere; line-height:1.4; }
+    .client-profile-hero .pill { color:#fff; background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.2); }
+    .client-section-accent { position:relative; }
+    .client-section-accent::before { content:""; position:absolute; left:0; top:18px; bottom:18px; width:3px; border-radius:0 4px 4px 0; background:linear-gradient(#0d416d,#b71d17); }
+    @media(max-width:1180px){.client-facts{grid-template-columns:repeat(2,minmax(0,1fr));}}
+    @media(max-width:700px){.client-facts{grid-template-columns:1fr}.client-profile-hero .panel-header{display:grid}.client-profile-hero .filters{margin-top:8px}}
+</style>
+{% endblock %}
+
 {% block content %}
-<section class="panel client-summary" style="margin-bottom:28px;">
+<section class="panel client-summary client-profile-hero" style="margin-bottom:28px;">
     <div class="panel-header">
-        <h2 class="panel-title">{{ client.full_name }}</h2>
+        <div>
+            <h2 class="panel-title">{{ client.full_name }}</h2>
+            <div class="client-subtitle">{{ client.sl_id|default:"SL-ID ещё не присвоен" }} · {% if client.is_public %}доступен сотрудникам компании{% else %}личный клиент менеджера{% endif %}</div>
+        </div>
         <div class="filters">
             <form method="post" action="{% url 'portal:client_questionnaire_start' client.id %}" data-disable-on-submit>
                 {% csrf_token %}<button class="btn primary" type="submit">Заполнить анкету</button>
@@ -19,24 +44,21 @@
         </div>
     </div>
     <div class="panel-body">
-        <div class="grid cols-4"><div><div class="muted small">Доступ</div><strong>{% if client.is_public %}Сотрудники компании{% else %}Личный клиент{% endif %}</strong></div>
-            <div><div class="muted small">SL-ID</div><div class="strong">{{ client.sl_id|default:"Не присвоен" }}</div></div>
-            <div><div class="muted small">Год поступления</div><div class="strong">{{ client.academic_year|default:"-" }}</div></div>
-            <div><div class="muted small">Телефон</div><div class="strong">{{ client.phone|default:"-" }}</div></div>
-            <div><div class="muted small">Email</div><div class="strong">{{ client.email|default:"-" }}</div></div>
-            <div><div class="muted small">Статус</div><span class="pill">{{ client.get_status_display }}</span></div>
-            <div><div class="muted small">Менеджер</div><div class="strong">{{ client.manager.get_full_name|default:client.manager.email }}</div></div>
-            <div><div class="muted small">Офис</div><div class="strong">{{ client.office.name|default:"-" }}</div></div>
-            <div><div class="muted small">Гражданство</div><div>{{ client.citizenship|default:"-" }}</div></div>
-            <div><div class="muted small">Дата рождения</div><div>{{ client.dob|date:"Y-m-d"|default:"-" }}</div></div>
-            <div><div class="muted small">Паспорт</div><div>{{ client.passport_inter_num|default:client.passport_local_num|default:"-" }}</div></div>
-            <div><div class="muted small">Интерес</div><div>{{ client.interested_university|default:client.interested_program|default:client.get_direction_display|default:"-" }}</div></div>
+        <div class="client-facts">
+            <div class="client-fact"><div class="client-fact-label">Статус</div><span class="pill">{{ client.get_status_display }}</span></div>
+            <div class="client-fact"><div class="client-fact-label">Ответственный менеджер</div><div class="client-fact-value">{{ client.manager.get_full_name|default:client.manager.email }}</div></div>
+            <div class="client-fact"><div class="client-fact-label">Офис</div><div class="client-fact-value">{{ client.office.name|default:"Не указан" }}</div></div>
+            <div class="client-fact"><div class="client-fact-label">Год поступления</div><div class="client-fact-value">{{ client.academic_year|default:"Не указан" }}</div></div>
+            <div class="client-fact"><div class="client-fact-label">Телефон</div><div class="client-fact-value">{{ client.phone|default:"Не указан" }}</div></div>
+            <div class="client-fact"><div class="client-fact-label">Email</div><div class="client-fact-value">{{ client.email|default:"Не указан" }}</div></div>
+            <div class="client-fact"><div class="client-fact-label">Гражданство и дата рождения</div><div class="client-fact-value">{{ client.citizenship|default:"-" }} · {{ client.dob|date:"d.m.Y"|default:"-" }}</div></div>
+            <div class="client-fact"><div class="client-fact-label">Интерес</div><div class="client-fact-value">{{ client.interested_university|default:client.interested_program|default:client.get_direction_display|default:"Не указан" }}</div></div>
         </div>
     </div>
 </section>
 {% include "portal/partials/client_chat_inline.html" %}
 
-<section class="panel" style="margin-bottom:16px;">
+<section class="panel client-section-accent" style="margin-bottom:16px;">
     <div class="panel-header">
         <h2 class="panel-title">Почта клиента</h2>
         <span class="pill">{{ student360.emails|length }} писем</span>
