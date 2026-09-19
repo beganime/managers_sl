@@ -2,7 +2,8 @@ import json
 import secrets
 
 from django.conf import settings
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model
+from django.core import signing
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
@@ -56,7 +57,16 @@ def disk_authenticate(request):
     if not email or not password or len(email) > 254 or len(password) > 512:
         return JsonResponse({'authenticated': False}, status=401)
 
-    user = authenticate(request=request, email=email, password=password)
+    user = None
+    try:
+        ticket = signing.loads(password, salt='manager-sl.disk-sso.v1', max_age=90)
+        if (
+            ticket.get('purpose') == 'disk-login'
+            and str(ticket.get('email') or '').strip().lower() == email.lower()
+        ):
+            user = get_user_model().objects.filter(email__iexact=email, is_active=True).first()
+    except (signing.BadSignature, signing.SignatureExpired, TypeError, ValueError):
+        user = authenticate(request=request, email=email, password=password)
     if not can_access_disk(user):
         return JsonResponse({'authenticated': False}, status=401)
 

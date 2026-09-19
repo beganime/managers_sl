@@ -1,4 +1,5 @@
 import calendar
+from html import unescape
 import json
 import mimetypes
 import re
@@ -25,7 +26,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.http import FileResponse, Http404
-from django.db.models import Case, Count, IntegerField, Prefetch, Q, Sum, Value, When
+from django.db.models import Avg, Case, Count, IntegerField, Prefetch, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils.dateparse import parse_date, parse_datetime
@@ -107,7 +108,7 @@ from apps.portal.forms import (
     PortalTaskForm,
     PortalUniversityForm,
 )
-from apps.portal.models import CalendarEvent
+from apps.portal.models import CalendarEvent, EmployeeMood
 from apps.portal.questionnaire_forms import PortalClientQuestionnaireForm
 from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAttachment, TaskChecklist, TaskChecklistItem, TaskComment
 from apps.sheets_sync.models import SheetSearchSource, SheetSyncRun
@@ -182,11 +183,10 @@ def build_client_disk_url(client):
     ).order_by('-finished_at', '-id').first()
     root = str((disk_step.response_data if disk_step else {}).get('root') or '').strip('/')
     if not root:
-        return settings.DISK_WEB_URL, False
+        return reverse('portal:disk_sl'), False
 
-    disk_url = urlsplit(settings.DISK_WEB_URL)
-    origin = f'{disk_url.scheme}://{disk_url.netloc}'
-    return f'{origin}/web/client/files?{urlencode({"path": f"/{root}"})}', True
+    next_url = f'/web/client/files?{urlencode({"path": f"/{root}"})}'
+    return f'{reverse("portal:disk_sl")}?{urlencode({"next": next_url})}', True
 
 
 def client_disk_category(client):
@@ -465,7 +465,7 @@ NAV_GROUPS = (
         'items': (
             {'name': 'exam_sl', 'label': 'Экзамены', 'icon': 'calendar-check-2', 'url': settings.EXAM_SL_WEB_URL, 'external': True},
             {'name': 'translate_sl', 'label': 'Переводы', 'icon': 'languages', 'external': True, 'disk_access_only': True},
-            {'name': 'disk', 'label': 'Диск', 'icon': 'hard-drive', 'url': settings.DISK_WEB_URL, 'external': True, 'disk_access_only': True},
+            {'name': 'disk_sl', 'label': 'Диск', 'icon': 'hard-drive', 'disk_access_only': True},
             {'name': 'task_manager', 'label': 'Задачи', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL, 'external': True},
             {'name': 'webmail', 'label': 'Вебмайл', 'icon': 'mail', 'url': settings.WEBMAIL_WEB_URL, 'external': True},
             {'name': 'smtp_mailboxes', 'label': 'SMTP ящики', 'icon': 'mail-check', 'url': settings.SMTP_MAILBOXES_WEB_URL, 'external': True},
@@ -1574,12 +1574,38 @@ class DashboardView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         today = timezone.localdate()
+        employee = get_employee_profile(user)
         clients = client_queryset(user)
         express = OnboardingSubmission.objects.select_related('client').order_by('-submitted_at')
         if not is_erp_admin(user):
             express = express.filter(Q(client__isnull=True) | Q(client_id__in=clients.values('pk')))
+        mood_rows = list(
+            EmployeeMood.objects.filter(user=user, date__gte=today - timedelta(days=6), date__lte=today)
+            .values('date')
+            .annotate(average=Avg('score'), count=Count('id'))
+            .order_by('date')
+        )
+        mood_labels = {
+            1: ('😔', 'Тяжело'), 2: ('😕', 'Не очень'), 3: ('😐', 'Спокойно'),
+            4: ('🙂', 'Хорошо'), 5: ('😄', 'Отлично'),
+        }
+        mood_history = []
+        for row in mood_rows:
+            score = max(1, min(5, round(float(row['average'] or 0))))
+            emoji, label = mood_labels[score]
+            mood_history.append({**row, 'emoji': emoji, 'label': label})
+
+        if employee and employee.role_id:
+            employee_role = employee.role.name
+        elif user.is_superuser or user.role == 'admin':
+            employee_role = 'Администратор'
+        else:
+            employee_role = user.get_role_display()
         context.update({
             'today': today,
+            'employee_role': employee_role,
+            'employee_office': employee.office if employee and employee.office_id else None,
+            'mood_history': mood_history,
             'workday': get_today_workday(user),
             'is_current_user_birthday': bool(user.dob and user.dob.month == today.month and user.dob.day == today.day),
             'birthday_first_name': user.first_name or full_name(user),
@@ -1593,7 +1619,7 @@ class DashboardView(PortalContextMixin, TemplateView):
             'dashboard_services': [
                 {'label': 'Задачи', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL},
                 {'label': 'Переводчик', 'icon': 'languages', 'url': reverse('portal:translate_sl')},
-                {'label': 'Диск', 'icon': 'folder-open', 'url': settings.DISK_WEB_URL},
+                {'label': 'Диск', 'icon': 'folder-open', 'url': reverse('portal:disk_sl')},
                 {'label': 'Экзамены', 'icon': 'calendar-check', 'url': settings.EXAM_SL_WEB_URL},
             ],
         })
@@ -2599,9 +2625,60 @@ class TranslateSLLoginView(LoginRequiredMixin, View):
             salt='manager-sl.translate-sso.v1',
             compress=True,
         )
-        target = f'{settings.TRANSLATE_SL_URL}/accounts/manager-sl/?{urlencode({"token": token})}'
+        translate_path = getattr(settings, 'TRANSLATE_SL_PATH_URL', '/translate').rstrip('/')
+        target = f'{translate_path}/accounts/manager-sl/?{urlencode({"token": token})}'
         response = redirect(target)
         response['Cache-Control'] = 'no-store'
+        response['Referrer-Policy'] = 'no-referrer'
+        return response
+
+
+class DiskSLLoginView(LoginRequiredMixin, View):
+    """Exchange the active ManagerSL session for a short-lived DiskSL login."""
+
+    login_url = reverse_lazy('portal:login')
+
+    def get(self, request):
+        if not can_access_disk(request.user):
+            messages.error(request, 'У вашей роли нет доступа к документам клиентов.')
+            return redirect('portal:dashboard')
+
+        next_url = str(request.GET.get('next') or '/web/client/files').strip()
+        parsed_next = urlsplit(next_url)
+        if (
+            not next_url.startswith('/web/client/')
+            or next_url.startswith('//')
+            or '\\' in next_url
+            or parsed_next.scheme
+            or parsed_next.netloc
+        ):
+            next_url = '/web/client/files'
+
+        disk_url = urlsplit(settings.DISK_WEB_URL)
+        origin = f'{disk_url.scheme}://{disk_url.netloc}'
+        login_url = f'{origin}/web/client/login?{urlencode({"next": next_url})}'
+        try:
+            login_page = requests.get(login_url, timeout=(3, 8))
+            login_page.raise_for_status()
+            match = re.search(r'name="_form_token"\s+value="([^"]+)"', login_page.text)
+            if not match:
+                raise ValueError('DiskSL did not return a login token')
+        except (requests.RequestException, ValueError):
+            messages.error(request, 'Автоматический вход в DiskSL временно недоступен.')
+            return redirect(login_url)
+
+        ticket = signing.dumps(
+            {'email': request.user.email, 'purpose': 'disk-login'},
+            salt='manager-sl.disk-sso.v1',
+            compress=True,
+        )
+        response = render(request, 'portal/disk_sso.html', {
+            'disk_login_url': login_url,
+            'disk_username': request.user.email,
+            'disk_ticket': ticket,
+            'disk_form_token': unescape(match.group(1)),
+        })
+        response['Cache-Control'] = 'no-store, private, max-age=0'
         response['Referrer-Policy'] = 'no-referrer'
         return response
 

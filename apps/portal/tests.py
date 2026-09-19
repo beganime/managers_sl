@@ -74,8 +74,10 @@ class ClientDiskLinkTests(TestCase):
         url, ready = build_client_disk_url(self.crm_client)
 
         self.assertTrue(ready)
-        self.assertEqual(urlsplit(url).path, '/web/client/files')
-        self.assertEqual(parse_qs(urlsplit(url).query)['path'], ['/' + root.rstrip('/')])
+        self.assertEqual(urlsplit(url).path, reverse('portal:disk_sl'))
+        next_url = parse_qs(urlsplit(url).query)['next'][0]
+        self.assertEqual(urlsplit(next_url).path, '/web/client/files')
+        self.assertEqual(parse_qs(urlsplit(next_url).query)['path'], ['/' + root.rstrip('/')])
 
     def create_disk_step(self):
         root = '2027/Контракт/Иванов Иван Иванович (SL-2027-001)/'
@@ -94,7 +96,25 @@ class ClientDiskLinkTests(TestCase):
         url, ready = build_client_disk_url(self.crm_client)
 
         self.assertFalse(ready)
-        self.assertEqual(url, 'https://disk.manager-sl.ru/web/client/login')
+        self.assertEqual(url, reverse('portal:disk_sl'))
+
+    @override_settings(DISK_WEB_URL='https://disk.manager-sl.ru/web/client/login')
+    @patch('apps.portal.views.requests.get')
+    def test_manager_opens_disk_without_reentering_password(self, get):
+        get.return_value.raise_for_status.return_value = None
+        get.return_value.text = '<input type="hidden" name="_form_token" value="sftpgo-csrf">'
+
+        response = self.client.get(
+            reverse('portal:disk_sl'),
+            {'next': '/web/client/files?path=%2F2027'},
+            secure=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'sftpgo-csrf')
+        ticket = response.context['disk_ticket']
+        payload = signing.loads(ticket, salt='manager-sl.disk-sso.v1', max_age=90)
+        self.assertEqual(payload['email'], self.manager.email)
 
     @override_settings(
         DISK_PROVISION_API_URL='https://disk.manager-sl.ru/api/internal/disk/folders',
@@ -146,7 +166,7 @@ class ClientDiskLinkTests(TestCase):
         post.assert_not_called()
 
     @override_settings(
-        TRANSLATE_SL_URL='https://translate.manager-sl.ru',
+        TRANSLATE_SL_PATH_URL='/translate',
         TRANSLATE_SL_SSO_SECRET='shared-test-secret',
     )
     def test_manager_opens_translate_sl_with_signed_identity_and_client(self):
@@ -158,7 +178,7 @@ class ClientDiskLinkTests(TestCase):
 
         self.assertEqual(response.status_code, 302)
         target = urlsplit(response.url)
-        self.assertEqual(target.netloc, 'translate.manager-sl.ru')
+        self.assertEqual(target.path, '/translate/accounts/manager-sl/')
         token = parse_qs(target.query)['token'][0]
         payload = signing.loads(
             token,
@@ -170,7 +190,7 @@ class ClientDiskLinkTests(TestCase):
         self.assertEqual(payload['next'], '/upload/?client=SL-2027-001')
 
     @override_settings(
-        TRANSLATE_SL_URL='https://translate.manager-sl.ru',
+        TRANSLATE_SL_PATH_URL='/translate',
         TRANSLATE_SL_SSO_SECRET='shared-test-secret',
     )
     def test_translate_sl_redirect_rejects_external_next_url(self):
