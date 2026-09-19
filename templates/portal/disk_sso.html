@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Открываем DiskSL</title>
+    <meta name="robots" content="noindex,nofollow">
+</head>
+<body>
+    <form id="disk-login" method="post" action="{{ disk_login_url }}">
+        <input type="hidden" name="username" value="{{ disk_username }}">
+        <input type="hidden" name="password" value="{{ disk_ticket }}">
+        <input type="hidden" name="_form_token" value="{{ disk_form_token }}">
+        <noscript><button type="submit">Открыть DiskSL</button></noscript>
+    </form>
+    <script>document.getElementById('disk-login').submit();</script>
+</body>
+</html>

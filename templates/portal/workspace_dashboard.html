@@ -7,11 +7,16 @@
     .workspace-hero .workspace-heading{position:relative;z-index:1;width:min(100%,720px);margin:0}
     .workspace-hero .eyebrow{color:#9f201b;font-weight:750}
     .workspace-hero h2{font-size:clamp(32px,4vw,48px);line-height:1.04}
+    .workspace-role{display:flex;align-items:center;gap:8px;margin:10px 0 0;color:#435064;font-size:14px;font-weight:650}
+    .workspace-role svg{width:16px;height:16px;color:#9f201b}
     .workspace-day{background:linear-gradient(120deg,#fff 0%,#f7fafc 62%,#edf3f8 100%)}
     .workspace-services a{position:relative;overflow:hidden;background:linear-gradient(145deg,#fff,#f7f9fc);box-shadow:0 8px 24px rgba(15,23,42,.055)}
     .workspace-services a::after{content:"";position:absolute;width:78px;height:78px;right:-34px;bottom:-42px;border-radius:50%;background:rgba(13,65,109,.09)}
     .workspace-services a:nth-child(2)::after,.workspace-services a:nth-child(4)::after{background:rgba(183,29,23,.09)}
     .workspace-services a>*{position:relative;z-index:1}
+    .mood-history{display:flex;align-items:center;gap:10px;overflow-x:auto;padding:14px 0 2px;scrollbar-width:thin}
+    .mood-day{flex:0 0 auto;min-width:116px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel,#fff)}
+    .mood-day time,.mood-day small{display:block;color:var(--muted,#667085);font-size:11px}.mood-day strong{display:block;margin:5px 0 3px;font-size:14px}.mood-day .emoji{font-size:23px;float:right;margin-left:10px}
     @media(max-width:760px){.workspace-hero{min-height:325px;align-items:flex-end;padding:22px;background-position:68% center}.workspace-hero::after{background:linear-gradient(180deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.92) 48%,#fff 76%)}.workspace-hero .workspace-heading{align-items:flex-start}.workspace-hero .filters{width:100%}.workspace-hero h2{font-size:32px}}
 </style>
 {% endblock %}
@@ -19,12 +24,18 @@
 <div class="workspace">
     <section class="workspace-hero">
         <header class="workspace-heading">
-            <div><p class="eyebrow">{{ today|date:"d.m.Y" }}</p><h2>{{ display_name }}</h2></div>
+            <div><p class="eyebrow">{{ today|date:"d.m.Y" }}</p><h2>{{ display_name }}</h2><p class="workspace-role"><i data-lucide="badge-check"></i>{{ employee_role }}{% if employee_office %} · {{ employee_office.name }}{% endif %}</p></div>
             <div class="filters">
                 <button class="btn" type="button" data-open-mood><i data-lucide="smile"></i>Как настроение?</button>
                 <a class="btn primary" href="{% url 'portal:client_create' %}"><i data-lucide="plus"></i>Добавить клиента</a>
             </div>
         </header>
+    </section>
+    <section class="panel">
+        <div class="panel-header"><div><h2 class="panel-title">Моё настроение</h2><div class="muted small">Последние 7 дней</div></div><button class="btn" type="button" data-open-mood>Добавить отметку</button></div>
+        <div class="panel-body"><div class="mood-history">
+            {% for item in mood_history %}<div class="mood-day"><span class="emoji" aria-hidden="true">{{ item.emoji }}</span><time>{{ item.date|date:"d.m, D" }}</time><strong>{{ item.label }}</strong><small>{{ item.average|floatformat:1 }} / 5 · {{ item.count }} отмет.</small></div>{% empty %}<p class="empty">За последние семь дней отметок пока нет.</p>{% endfor %}
+        </div></div>
     </section>
     {% if is_current_user_birthday %}<section class="birthday-celebration" role="status"><div class="birthday-celebration-icon"><i data-lucide="cake-slice"></i></div><div><h2 class="birthday-celebration-title">С днём рождения, {{ birthday_first_name }}!</h2><div class="birthday-celebration-message">Здоровья, радости и удачного года!</div></div></section>{% endif %}
     <section class="workspace-day panel">
@@ -42,7 +53,7 @@
     </section>
     <div class="workspace-columns">
         <section class="panel"><div class="panel-header"><h2 class="panel-title">Последние заявки</h2><a class="btn" href="{% url 'portal:onboarding_submissions' %}">Все заявки</a></div>
-            <div class="panel-body list">{% for item in recent_express %}<a class="list-row" href="{% url 'portal:onboarding_submission_detail' item.pk %}"><div><strong>{{ item.full_name|default:"Без имени" }}</strong><div class="muted small">{{ item.get_status_display }}</div></div><time class="muted small">{{ item.submitted_at|date:"d.m" }}</time></a>{% empty %}<p class="empty">Заявок пока нет.</p>{% endfor %}</div>
+            <div class="panel-body list">{% for item in recent_express %}<a class="list-row" href="{% url 'portal:onboarding_submission_detail' item.pk %}"><div><strong>{{ item.full_name|default:"Без имени" }}</strong><div class="muted small">{{ item.get_stage_display }} · {{ item.get_status_display }}</div></div><time class="muted small">{{ item.submitted_at|date:"d.m.Y H:i" }}</time></a>{% empty %}<p class="empty">Заявок пока нет.</p>{% endfor %}</div>
         </section>
         <section class="panel"><div class="panel-header"><h2 class="panel-title">Мои клиенты</h2><a class="btn" href="{% url 'portal:clients' %}?scope=mine">Все мои</a></div>
             <div class="panel-body list">{% for item in my_clients %}<a class="list-row" href="{% url 'portal:client_detail' item.pk %}"><div><strong>{{ item.full_name }}</strong><div class="muted small">{{ item.sl_id|default:"Без SL-ID" }} · {{ item.get_status_display }}</div></div><i data-lucide="arrow-up-right"></i></a>{% empty %}<p class="empty">Клиентов пока нет.</p>{% endfor %}</div>
