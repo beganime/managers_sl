@@ -6,7 +6,6 @@ from unittest.mock import Mock
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
-from django.core import signing
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -19,6 +18,7 @@ from apps.crm.models import ActivityLog, Application, ApplicationStageHistory, C
 from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
 from apps.portal.views import build_client_disk_url, build_questionnaire_sections
+from users.disk_auth import verify_disk_sso_ticket
 
 
 class QuestionnairePresentationTests(TestCase):
@@ -113,8 +113,8 @@ class ClientDiskLinkTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'sftpgo-csrf')
         ticket = response.context['disk_ticket']
-        payload = signing.loads(ticket, salt='manager-sl.disk-sso.v1', max_age=90)
-        self.assertEqual(payload['email'], self.manager.email)
+        self.assertLessEqual(len(ticket.encode()), 72)
+        self.assertTrue(verify_disk_sso_ticket(self.manager.email, ticket))
 
     @override_settings(
         DISK_PROVISION_API_URL='https://disk.manager-sl.ru/api/internal/disk/folders',
