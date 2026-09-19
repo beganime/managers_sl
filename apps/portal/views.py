@@ -22,7 +22,7 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
 from django.core import signing
-from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.http import FileResponse, Http404
@@ -419,7 +419,6 @@ NAV_GROUPS = (
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'workday', 'label': 'Рабочий день', 'icon': 'timer'},
             {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
-            {'name': 'documents', 'label': 'Документы', 'icon': 'files'},
             {'name': 'contracts', 'label': 'Договоры', 'icon': 'file-signature'},
             {'name': 'finance', 'label': 'Финансы', 'icon': 'wallet-cards'},
         ),
@@ -837,13 +836,15 @@ def document_template_queryset(user):
 
 
 def contract_template_queryset(user):
-    """Active templates that are intended for contracts, not arbitrary documents."""
+    """Active contract and consent templates shown in the unified document workflow."""
     return document_template_queryset(user).filter(
         Q(document_type__iexact='contract') |
         Q(name__icontains='договор') |
         Q(name__icontains='контракт') |
+        Q(name__icontains='соглас') |
         Q(code__icontains='dogovor') |
-        Q(code__icontains='contract')
+        Q(code__icontains='contract') |
+        Q(code__icontains='consent')
     ).distinct()
 
 
@@ -869,8 +870,10 @@ def contract_document_queryset(user):
         Q(template__document_type__iexact='contract') |
         Q(template__name__icontains='договор') |
         Q(template__name__icontains='контракт') |
+        Q(template__name__icontains='соглас') |
         Q(template__code__icontains='dogovor') |
-        Q(template__code__icontains='contract')
+        Q(template__code__icontains='contract') |
+        Q(template__code__icontains='consent')
     ).distinct()
 
 
@@ -1685,8 +1688,7 @@ class SettingsView(PortalContextMixin, TemplateView):
 
     def post(self, request, *args, **kwargs):
         if not (request.user.is_staff or request.user.is_superuser):
-            messages.error(request, 'Менять сервер Student’s Life может только администратор.')
-            return redirect('portal:settings')
+            raise PermissionDenied('Менять сервер Student’s Life может только администратор.')
 
         mode = request.POST.get('students_life_api_mode') or 'proxy'
         proxy_url = getattr(settings, 'STUDENTS_LIFE_DEFAULT_API_BASE_URL', 'https://students-life.ru/api2/api/v1/')
@@ -2209,7 +2211,7 @@ class LeadsView(ListPageMixin):
                 messages.success(request, 'Лид перемещён в архив.')
         elif action == 'restore':
             if not can_delete_admin(request.user):
-                messages.error(request, 'Восстановить лид может только администратор.')
+                raise PermissionDenied('Восстановить лид может только администратор.')
             else:
                 lead.restore_from_archive(user=request.user, note='Восстановлено из портала')
                 messages.success(request, 'Лид восстановлен.')
@@ -3430,8 +3432,7 @@ class OnboardingPortalAccessMixin(PortalContextMixin):
 
     def dispatch(self, request, *args, **kwargs):
         if request.user.is_authenticated and not can_review_onboarding(request.user):
-            messages.error(request, 'У вас нет права проверять входящие анкеты.')
-            return redirect('portal:dashboard')
+            raise PermissionDenied('Проверять входящие анкеты может только администратор или назначенный сотрудник.')
         return super().dispatch(request, *args, **kwargs)
 
 
@@ -4173,8 +4174,7 @@ class FinanceIncomeView(PortalContextMixin, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if not can_confirm_finance(request.user):
-            messages.error(request, 'Пополнять баланс офиса может только администратор или сотрудник с правом управления финансами.')
-            return redirect('portal:finance')
+            raise PermissionDenied('Пополнять баланс офиса может только администратор или сотрудник с правом управления финансами.')
         return super().dispatch(request, *args, **kwargs)
 
     def get_form(self, data=None, files=None):
@@ -4435,7 +4435,7 @@ class ContractDetailView(PortalContextMixin, TemplateView):
 
         if action == 'confirm_payment':
             if not can_confirm_finance(request.user):
-                messages.error(request, 'Подтверждать оплаты может только администратор или сотрудник с правом управления финансами.')
+                raise PermissionDenied('Подтверждать оплаты может только администратор или сотрудник с правом управления финансами.')
             else:
                 payment = get_object_or_404(contract.payments.all(), pk=request.POST.get('payment_id'))
                 payment.confirm(user=request.user)
@@ -4572,8 +4572,7 @@ class ApprovalsView(PortalContextMixin, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if not can_confirm_finance(request.user) and not can_delete_admin(request.user):
-            messages.error(request, 'Недостаточно прав для страницы подтверждений.')
-            return redirect('portal:dashboard')
+            raise PermissionDenied('Страница подтверждений доступна только администратору или сотруднику с финансовыми правами.')
         return super().dispatch(request, *args, **kwargs)
 
     def post(self, request, *args, **kwargs):
@@ -4644,8 +4643,7 @@ class FinanceReportsView(PortalContextMixin, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if not is_erp_admin(request.user):
-            messages.error(request, 'Полный финансовый отчёт доступен только администратору.')
-            return redirect('portal:finance')
+            raise PermissionDenied('Полный финансовый отчёт доступен только администратору.')
         return super().dispatch(request, *args, **kwargs)
 
     def get_context_data(self, **kwargs):
@@ -4790,7 +4788,7 @@ class DocumentActionView(LoginRequiredMixin, View):
                 messages.success(request, 'Документ повторно сгенерирован.')
             elif action == 'approve':
                 if not can_delete_admin(request.user):
-                    raise PermissionError('Недостаточно прав.')
+                    raise PermissionDenied('Подтверждать документы может только администратор.')
                 with_stamp = request.POST.get('with_stamp') == '1'
                 document.approve(
                     user=request.user,
@@ -4811,7 +4809,7 @@ class DocumentActionView(LoginRequiredMixin, View):
                 messages.success(request, 'Документ подтверждён.')
             elif action == 'generate-stamp-preview':
                 if not can_delete_admin(request.user):
-                    raise PermissionError('Недостаточно прав.')
+                    raise PermissionDenied('Создавать предпросмотр с печатью может только администратор.')
                 document.generate_stamp_preview(
                     user=request.user,
                     stamp_options=stamp_options_from_post(request.POST),
@@ -4819,7 +4817,7 @@ class DocumentActionView(LoginRequiredMixin, View):
                 messages.success(request, 'Предпросмотр PDF с печатью создан. Откройте его и проверьте положение печати.')
             elif action == 'approve-stamp-preview':
                 if not can_delete_admin(request.user):
-                    raise PermissionError('Недостаточно прав.')
+                    raise PermissionDenied('Подтверждать предпросмотр с печатью может только администратор.')
                 document.approve_stamp_preview(
                     user=request.user,
                     comment=request.POST.get('comment', ''),
@@ -4837,9 +4835,11 @@ class DocumentActionView(LoginRequiredMixin, View):
                 messages.success(request, 'Проверенный PDF с печатью подтверждён и доступен для скачивания.')
             elif action == 'reject':
                 if not can_delete_admin(request.user):
-                    raise PermissionError('Недостаточно прав.')
+                    raise PermissionDenied('Отклонять документы может только администратор.')
                 document.reject(user=request.user, reason=request.POST.get('reason', ''))
                 messages.success(request, 'Документ отклонён.')
+        except PermissionDenied:
+            raise
         except Exception as exc:
             messages.error(request, str(exc))
         if action in {'approve', 'reject', 'generate-stamp-preview', 'approve-stamp-preview'}:
@@ -4870,8 +4870,7 @@ class DocumentActionView(LoginRequiredMixin, View):
             return response
         if action == 'preview-stamp-preview':
             if not can_delete_admin(request.user):
-                messages.error(request, 'Недостаточно прав.')
-                return redirect('portal:documents')
+                raise PermissionDenied('Предпросмотр документа с печатью доступен только администратору.')
             if not document.stamp_preview_file:
                 messages.error(request, 'Сначала сгенерируйте предпросмотр PDF с печатью.')
                 return redirect('portal:document_review', pk=document.pk)
@@ -5331,8 +5330,7 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if not can_delete_admin(request.user):
-            messages.error(request, 'Эта страница доступна только администратору.')
-            return redirect('portal:dashboard')
+            raise PermissionDenied('Отчёты сотрудников доступны только администратору.')
         return super().dispatch(request, *args, **kwargs)
 
     def get_date_range(self):
@@ -5590,8 +5588,7 @@ class NotificationBatchDetailView(PortalContextMixin, TemplateView):
 
     def dispatch(self, request, *args, **kwargs):
         if not can_delete_admin(request.user):
-            messages.error(request, 'Статистика отправленных уведомлений доступна только администратору.')
-            return redirect('portal:notifications')
+            raise PermissionDenied('Статистика отправленных уведомлений доступна только администратору.')
         return super().dispatch(request, *args, **kwargs)
 
     def get_batch(self):
@@ -5621,8 +5618,7 @@ class NotificationCreateView(PortalFormPageMixin, PortalContextMixin, TemplateVi
 
     def dispatch(self, request, *args, **kwargs):
         if not can_delete_admin(request.user):
-            messages.error(request, 'Создавать уведомления может только администратор.')
-            return redirect('portal:notifications')
+            raise PermissionDenied('Создавать уведомления может только администратор.')
         return super().dispatch(request, *args, **kwargs)
 
     def get_edit_object(self):
@@ -5725,8 +5721,7 @@ class ClientPushNotificationCreateView(PortalFormPageMixin, PortalContextMixin, 
 
     def dispatch(self, request, *args, **kwargs):
         if not can_review_onboarding(request.user):
-            messages.error(request, 'У вас нет права отправлять уведомления клиентам.')
-            return redirect('portal:notifications')
+            raise PermissionDenied('Отправлять уведомления клиентам может только администратор или назначенный сотрудник.')
         return super().dispatch(request, *args, **kwargs)
 
     def get_edit_object(self):
