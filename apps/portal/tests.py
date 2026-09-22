@@ -14,7 +14,7 @@ from django.utils import timezone
 from apps.client_onboarding.models import ClientProvisioningStep, OnboardingReviewEvent, OnboardingSubmission
 from apps.client_onboarding.services import review_submission
 from apps.crm.credentials import decrypt_external_secret
-from apps.crm.models import ActivityLog, Application, ApplicationStageHistory, Client, ExternalAccount
+from apps.crm.models import ActivityLog, Application, ApplicationStageHistory, Client, ClientNote, ExternalAccount
 from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
 from apps.portal.views import build_client_disk_url, build_questionnaire_sections
@@ -265,6 +265,53 @@ class ApplicationWorkflowPortalTests(TestCase):
         )
 
         self.assertEqual(response.status_code, 404)
+
+    def test_manager_adds_shared_note_from_client_card(self):
+        response = self.client.post(
+            reverse('portal:client_note_create', args=[self.crm_client.pk]),
+            {'text': 'Позвонить клиенту после 15:00'},
+            secure=True,
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('portal:client_detail', args=[self.crm_client.pk]),
+            fetch_redirect_response=False,
+        )
+        note = ClientNote.objects.get(client=self.crm_client)
+        self.assertEqual(note.author, self.manager)
+        self.assertFalse(note.is_private)
+        self.assertTrue(ActivityLog.objects.filter(
+            student=self.crm_client, action='CLIENT_NOTE_CREATED',
+        ).exists())
+
+    def test_client_note_rejects_more_than_1000_characters(self):
+        response = self.client.post(
+            reverse('portal:client_note_create', args=[self.crm_client.pk]),
+            {'text': 'x' * 1001},
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertFalse(ClientNote.objects.exists())
+
+    def test_staff_manager_does_not_see_another_managers_private_note(self):
+        other = get_user_model().objects.create_user(
+            email='other-note-author@example.invalid', password='test-password', is_staff=True,
+        )
+        ClientNote.objects.create(
+            client=self.crm_client, author=other, text='Скрытая заметка другого менеджера', is_private=True,
+        )
+        ClientNote.objects.create(
+            client=self.crm_client, author=other, text='Общая заметка', is_private=False,
+        )
+
+        response = self.client.get(
+            reverse('portal:client_detail', args=[self.crm_client.pk]), secure=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, 'Скрытая заметка другого менеджера')
+        self.assertContains(response, 'Общая заметка')
 
 
 PORTAL_EXTERNAL_KEY = base64.urlsafe_b64encode(b'portal-external-account-key-32by').decode('ascii')

@@ -272,6 +272,94 @@ class ApplicationExamSeenServiceView(APIView):
         return Response({'status': 'ok', 'exam_public_id': str(exam.public_id)})
 
 
+class ClientAdmissionStatusServiceView(APIView):
+    """Read-only admission progress for one authenticated mobile-app user.
+
+    The mobile backend calls this endpoint server-to-server.  It intentionally
+    accepts only the numeric mobile user id and never exposes credentials,
+    document URLs or internal comments.
+    """
+
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    @staticmethod
+    def _authorized(request):
+        configured_keys = {
+            str(value) for value in (
+                getattr(settings, 'STUDENTS_LIFE_API_KEY', ''),
+                getattr(settings, 'LEADS_API_KEY', ''),
+            ) if value
+        }
+        supplied = str(request.headers.get('X-API-KEY') or '')
+        return bool(supplied) and any(
+            secrets.compare_digest(key, supplied) for key in configured_keys
+        )
+
+    def get(self, request):
+        if not self._authorized(request):
+            return Response({'detail': 'Forbidden'}, status=status.HTTP_403_FORBIDDEN)
+
+        raw_mobile_user_id = str(request.query_params.get('mobile_user_id') or '').strip()
+        if not raw_mobile_user_id.isdigit() or int(raw_mobile_user_id) < 1:
+            return Response(
+                {'detail': 'Укажите корректный mobile_user_id.'},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        client = Client.objects.filter(mobile_app_user_id=int(raw_mobile_user_id)).first()
+        if client is None:
+            # An empty result is safer than revealing whether another identity
+            # exists and lets a newly approved account render a useful state.
+            return Response({'client': None, 'results': []})
+
+        applications = (
+            Application.objects.filter(client=client)
+            .select_related('university', 'program', 'country_reference', 'manager')
+            .prefetch_related('stage_history')
+            .order_by('-updated_at', '-id')
+        )
+        rows = []
+        for application in applications:
+            rows.append({
+                'id': str(application.public_id),
+                'university': (
+                    getattr(application.university, 'abbreviation', '')
+                    or getattr(application.university, 'name', '')
+                    or application.university_name
+                    or 'Вуз пока не указан'
+                ),
+                'program': (
+                    getattr(application.program, 'name', '')
+                    or application.program_name
+                    or 'Программа пока не указана'
+                ),
+                'country': (
+                    getattr(application.country_reference, 'name', '')
+                    if application.country_reference_id else application.country
+                ),
+                'academic_year': application.academic_year,
+                'stage': application.current_stage,
+                'stage_label': application.get_current_stage_display(),
+                'updated_at': application.updated_at,
+                'history': [
+                    {
+                        'stage': event.new_stage,
+                        'stage_label': event.get_new_stage_display(),
+                        'created_at': event.created_at,
+                    }
+                    for event in application.stage_history.all()[:8]
+                ],
+            })
+        return Response({
+            'client': {
+                'sl_id': client.sl_id,
+                'full_name': client.full_name,
+            },
+            'results': rows,
+        })
+
+
 class TranslationServiceView(APIView):
     """Machine contract joining TranslateSL work to the canonical student card."""
 
@@ -634,7 +722,7 @@ class ClientViewSet(viewsets.ModelViewSet):
         client = self.get_object()
         activities = ClientActivity.objects.filter(client=client).select_related('manager')[:50]
         notes = ClientNote.objects.filter(client=client).select_related('author')[:50]
-        if not is_erp_admin(request.user):
+        if not getattr(request.user, 'is_admin_role', False):
             notes = ClientNote.objects.filter(client=client).filter(Q(is_private=False) | Q(author=request.user)).select_related('author')[:50]
         files = ClientFile.objects.filter(client=client).select_related('uploaded_by')[:50]
         applications = Application.objects.filter(client=client).select_related(
@@ -856,7 +944,7 @@ class ClientNoteViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = ClientNote.objects.select_related('client', 'author', 'client__company', 'client__office')
         qs = qs.filter(client_id__in=client_queryset_for_user(self.request.user).values('pk'))
-        if not is_erp_admin(self.request.user):
+        if not getattr(self.request.user, 'is_admin_role', False):
             qs = qs.filter(Q(is_private=False) | Q(author=self.request.user))
 
         client_id = self.request.query_params.get('client')

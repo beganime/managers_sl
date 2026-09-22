@@ -93,7 +93,7 @@ def build_student_360(client, *, user, include_sensitive=False, limit=DEFAULT_SE
         .order_by('-created_at')[:limit]
     )
     notes_query = ClientNote.objects.filter(client=client).select_related('author')
-    if not getattr(user, 'is_staff', False) and not getattr(user, 'is_superuser', False):
+    if not getattr(user, 'is_admin_role', False):
         notes_query = notes_query.filter(Q(is_private=False) | Q(author=user))
     notes = list(notes_query.order_by('-created_at')[:limit])
     canonical_events = list(

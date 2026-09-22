@@ -292,6 +292,14 @@ class ClientNoteSerializer(ScopedClientRelationMixin, serializers.ModelSerialize
         fields = '__all__'
         read_only_fields = ('created_at', 'updated_at')
 
+    def validate_text(self, value):
+        value = str(value or '').strip()
+        if not value:
+            raise serializers.ValidationError('Введите текст заметки.')
+        if len(value) > 1000:
+            raise serializers.ValidationError('Заметка должна быть не длиннее 1000 символов.')
+        return value
+
 
 class ClientFileSerializer(ScopedClientRelationMixin, serializers.ModelSerializer):
     client_name = serializers.CharField(source='client.full_name', read_only=True)

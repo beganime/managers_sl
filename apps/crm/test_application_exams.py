@@ -167,3 +167,36 @@ class CanonicalApplicationExamTests(TestCase):
         exam.refresh_from_db()
         self.assertIsNotNone(exam.client_acknowledged_at)
         self.assertEqual(exam.events.filter(action='EXAM_ACKNOWLEDGED').count(), 1)
+
+    @override_settings(LEADS_API_KEY='mobile-service-test-key')
+    def test_mobile_client_reads_only_own_admission_progress(self):
+        self.student.mobile_app_user_id = 77
+        self.student.save(update_fields=['mobile_app_user_id'])
+        self.application.current_stage = Application.STAGE_APPLICATION_SUBMITTED
+        self.application.save(update_fields=['current_stage'])
+
+        response = self.client.get(
+            reverse('client_admission_status'),
+            {'mobile_user_id': 77},
+            HTTP_X_API_KEY='mobile-service-test-key',
+        )
+
+        self.assertEqual(response.status_code, 200, response.content)
+        payload = response.json()
+        self.assertEqual(payload['client']['sl_id'], self.student.sl_id)
+        self.assertEqual(len(payload['results']), 1)
+        self.assertEqual(payload['results'][0]['stage'], Application.STAGE_APPLICATION_SUBMITTED)
+        self.assertNotIn('comment', payload['results'][0])
+
+        missing = self.client.get(
+            reverse('client_admission_status'),
+            {'mobile_user_id': 999},
+            HTTP_X_API_KEY='mobile-service-test-key',
+        )
+        self.assertEqual(missing.status_code, 200)
+        self.assertEqual(missing.json()['results'], [])
+
+        forbidden = self.client.get(
+            reverse('client_admission_status'), {'mobile_user_id': 77},
+        )
+        self.assertEqual(forbidden.status_code, 403)

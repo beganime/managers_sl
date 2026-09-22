@@ -320,6 +320,38 @@
     </div>
 </section>
 
+<section class="panel client-section-accent" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <div><h2 class="panel-title">Заметки по клиенту</h2><div class="muted small">Короткая рабочая информация, которая остаётся в карточке.</div></div>
+        <span class="pill">{{ client_notes|length }}</span>
+    </div>
+    <div class="panel-body">
+        <form method="post" action="{% url 'portal:client_note_create' client.id %}" data-disable-on-submit>
+            {% csrf_token %}
+            <div class="filters" style="align-items:flex-start;">
+                <textarea class="input" name="text" maxlength="1000" rows="3" required placeholder="Например: клиент принесёт оригинал паспорта в пятницу" style="flex:1;min-width:240px;resize:vertical;"></textarea>
+                <div style="display:grid;gap:10px;">
+                    <label class="pill" title="Личную заметку видите только вы и администратор"><input type="checkbox" name="is_private"> Только для меня</label>
+                    <button class="btn primary" type="submit"><i data-lucide="notebook-pen"></i>Сохранить заметку</button>
+                </div>
+            </div>
+        </form>
+        {% if client_notes %}
+        <div style="overflow-x:auto;margin-top:16px;">
+            <table class="table" style="min-width:620px;">
+                <thead><tr><th>Заметка</th><th>Автор</th><th>Доступ</th><th>Дата</th></tr></thead>
+                <tbody>{% for note in client_notes %}<tr>
+                    <td style="white-space:pre-wrap;max-width:560px;">{{ note.text }}</td>
+                    <td>{{ note.author.get_full_name|default:note.author.email|default:"Система" }}</td>
+                    <td>{% if note.is_private %}<span class="pill warn">Личная</span>{% else %}<span class="pill ok">Общая</span>{% endif %}</td>
+                    <td>{{ note.created_at|date:"d.m.Y H:i" }}</td>
+                </tr>{% endfor %}</tbody>
+            </table>
+        </div>
+        {% else %}<div class="empty" style="margin-top:16px;">Заметок пока нет.</div>{% endif %}
+    </div>
+</section>
+
 <section class="panel" style="margin-top:16px;">
     <div class="panel-header">
         <h2 class="panel-title">История клиента</h2>

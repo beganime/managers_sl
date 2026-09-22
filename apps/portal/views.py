@@ -49,7 +49,7 @@ from apps.crm.document_versions import DocumentVersionError, record_document_rev
 from apps.crm.external_accounts import ExternalAccountError, create_external_account
 from apps.crm.mailboxes import mailbox_overview
 from apps.crm.exam_registry import ExamRegistryError, upsert_application_exam
-from apps.crm.models import ActivityLog, Application, Client, ClientFile, ClientQuestionnaire, ExternalAccount, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
+from apps.crm.models import ActivityLog, Application, Client, ClientFile, ClientNote, ClientQuestionnaire, ExternalAccount, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
 from apps.crm.student360 import build_student_360
 from apps.crm.workflow import WorkflowTransitionError, transition_application
 from apps.crm.questionnaire_labels import (
@@ -1621,10 +1621,11 @@ class DashboardView(PortalContextMixin, TemplateView):
             'recent_express': express[:6],
             'my_clients': clients.filter(manager=user).order_by('-updated_at')[:6],
             'dashboard_services': [
-                {'label': 'Задачи', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL},
-                {'label': 'Переводчик', 'icon': 'languages', 'url': reverse('portal:translate_sl')},
-                {'label': 'Диск', 'icon': 'folder-open', 'url': reverse('portal:disk_sl')},
-                {'label': 'Экзамены', 'icon': 'calendar-check', 'url': settings.EXAM_SL_WEB_URL},
+                {'label': 'Задачи', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL, 'description': 'Личные и общие задачи команды', 'tone': 'red'},
+                {'label': 'Переводчик', 'icon': 'languages', 'url': reverse('portal:translate_sl'), 'description': 'Перевод по шаблону с привязкой к клиенту', 'tone': 'blue'},
+                {'label': 'Диск', 'icon': 'folder-open', 'url': reverse('portal:disk_sl'), 'description': 'Документы и папки клиентов', 'tone': 'navy'},
+                {'label': 'Экзамены', 'icon': 'calendar-check', 'url': settings.EXAM_SL_WEB_URL, 'description': 'Просмотр расписания экзаменов', 'tone': 'slate'},
+                {'label': 'Включить push', 'icon': 'bell-ring', 'url': f'{settings.TASK_MANAGER_WEB_URL}/push/', 'description': 'Подключить этот браузер к уведомлениям', 'tone': 'blue'},
             ],
         })
         return context
@@ -1729,6 +1730,14 @@ class HelpView(PortalContextMixin, TemplateView):
     template_name = 'portal/help.html'
     active_page = 'help'
     page_title = 'Помощь'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'task_push_url': f'{settings.TASK_MANAGER_WEB_URL}/push/',
+            'exam_sl_url': settings.EXAM_SL_WEB_URL,
+        })
+        return context
 
 
 class AdminDataHelpView(PortalContextMixin, TemplateView):
@@ -2450,6 +2459,9 @@ class ClientDetailView(PortalContextMixin, TemplateView):
         translate_next = '/upload/'
         if client.sl_id:
             translate_next = f'/upload/?{urlencode({"client": client.sl_id})}'
+        notes = ClientNote.objects.filter(client=client).select_related('author')
+        if not getattr(self.request.user, 'is_admin_role', False):
+            notes = notes.filter(Q(is_private=False) | Q(author=self.request.user))
         context.update({
             'client': client,
             'student360': student360,
@@ -2466,6 +2478,7 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             'can_access_disk': can_access_disk(self.request.user),
             'translate_url': f'{reverse("portal:translate_sl")}?{urlencode({"next": translate_next})}',
             'application_stage_choices': Application.STAGE_CHOICES,
+            'client_notes': notes.order_by('-created_at')[:50],
             'external_accounts': ExternalAccount.objects.filter(student=client)
                 .select_related('application', 'responsible').order_by('-created_at'),
             'external_account_system_choices': ExternalAccount.SYSTEM_CHOICES,
@@ -2530,6 +2543,40 @@ class ApplicationTransitionPortalView(LoginRequiredMixin, View):
                 messages.success(request, 'Этап поступления обновлён и записан в историю.')
             else:
                 messages.info(request, 'Этап уже был установлен, изменений нет.')
+        return redirect('portal:client_detail', pk=client.pk)
+
+
+class ClientNoteCreatePortalView(LoginRequiredMixin, View):
+    """Add a shared or private manager note without leaving the client card."""
+
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request, pk):
+        client = get_object_or_404(client_queryset(request.user), pk=pk)
+        text = str(request.POST.get('text') or '').strip()
+        if not text:
+            messages.error(request, 'Введите текст заметки.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if len(text) > 1000:
+            messages.error(request, 'Заметка должна быть не длиннее 1000 символов.')
+            return redirect('portal:client_detail', pk=client.pk)
+
+        note = ClientNote.objects.create(
+            client=client,
+            author=request.user,
+            text=text,
+            is_private=request.POST.get('is_private') == 'on',
+        )
+        ActivityLog.objects.create(
+            actor=request.user,
+            service='manager_portal',
+            student=client,
+            object_type='crm.ClientNote',
+            object_id=str(note.pk),
+            action='CLIENT_NOTE_CREATED',
+            metadata={'is_private': note.is_private},
+        )
+        messages.success(request, 'Заметка сохранена в карточке клиента.')
         return redirect('portal:client_detail', pk=client.pk)
 
 
