@@ -2446,7 +2446,6 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             user=self.request.user,
             include_sensitive=can_access_disk(self.request.user),
         )
-        exams_ok, exams, exams_error = get_client_exams_from_students_life(client)
         disk_url, disk_ready = build_client_disk_url(client)
         translate_next = '/upload/'
         if client.sl_id:
@@ -2460,9 +2459,6 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             'deals': deal_queryset(self.request.user).filter(client=client).order_by('-created_at'),
             'documents': document_queryset(self.request.user).filter(client=client).order_by('-created_at'),
             'questionnaire': getattr(client, 'questionnaire', None),
-            'mobile_exams': exams,
-            'mobile_exams_ok': exams_ok,
-            'mobile_exams_error': exams_error,
             'mobile_user_id': client_mobile_user_id(client),
             'disk_url': disk_url,
             'disk_ready': disk_ready,
@@ -2480,6 +2476,26 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             ),
         })
         return context
+
+
+class ClientExamsPanelView(LoginRequiredMixin, View):
+    """Load the remote exam list separately so a slow service cannot block the client card."""
+
+    login_url = reverse_lazy('portal:login')
+
+    def get(self, request, pk):
+        client = get_object_or_404(client_queryset(request.user), pk=pk)
+        if client_mobile_user_id(client):
+            _ok, exams, error = get_client_exams_from_students_life(client, timeout=5)
+        else:
+            exams, error = [], ''
+        response = render(request, 'portal/partials/client_exams_list.html', {
+            'mobile_exams': exams,
+            'mobile_exams_error': error,
+            'mobile_user_id': client_mobile_user_id(client),
+        })
+        response['Cache-Control'] = 'private, no-store'
+        return response
 
 
 class ApplicationTransitionPortalView(LoginRequiredMixin, View):
@@ -3077,7 +3093,7 @@ def students_life_api_url(path):
     return url
 
 
-def students_life_api_request(path, payload=None, method='POST'):
+def students_life_api_request(path, payload=None, method='POST', timeout=10):
     api_key = getattr(settings, 'STUDENTS_LIFE_API_KEY', '') or getattr(settings, 'LEADS_API_KEY', '')
     url = students_life_api_url(path)
     if not url or not api_key:
@@ -3091,7 +3107,7 @@ def students_life_api_request(path, payload=None, method='POST'):
         method=method.upper(),
     )
     try:
-        raw = urlrequest.urlopen(request, timeout=10).read().decode('utf-8')
+        raw = urlrequest.urlopen(request, timeout=timeout).read().decode('utf-8')
         return True, json.loads(raw) if raw else {}
     except urlerror.HTTPError as exc:
         raw = exc.read().decode('utf-8', errors='replace')
@@ -3111,7 +3127,7 @@ def client_mobile_user_id(client):
     return data.get('mobile_user_id') or data.get('external_mobile_user_id') or data.get('user_id')
 
 
-def get_client_exams_from_students_life(client):
+def get_client_exams_from_students_life(client, *, timeout=10):
     mobile_user_id = client_mobile_user_id(client)
     if not mobile_user_id:
         return False, [], 'У клиента нет mobile user id.'
@@ -3119,9 +3135,11 @@ def get_client_exams_from_students_life(client):
         f'notifications/clients/{mobile_user_id}/exams/',
         payload=None,
         method='GET',
+        timeout=timeout,
     )
     if not ok:
-        return False, [], payload.get('detail') or 'Не удалось получить экзамены из Student Life API.'
+        detail = payload.get('detail') if isinstance(payload, dict) else ''
+        return False, [], detail or 'Не удалось получить экзамены из Student Life API.'
     return True, payload if isinstance(payload, list) else [], ''
 
 
