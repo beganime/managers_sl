@@ -45,11 +45,11 @@
     </div>
 
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Документы и отчёты</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Договоры и отчёты</h2></div>
         <div class="panel-body">
-            <p class="muted">В «Документах» менеджер выбирает клиента и шаблон, проверяет данные и создаёт документ. В «Отчётах» отображается сводка по заявкам, клиентам, документам и рабочим дням.</p>
+            <p class="muted">В «Договорах» менеджер выбирает клиента и шаблон, проверяет данные и создаёт документ. Там же находятся шаблоны согласий. В «Отчётах» отображается сводка по заявкам, клиентам, документам и рабочим дням.</p>
             <div class="row-actions">
-                <a class="btn secondary" href="{% url 'portal:documents' %}">Документы</a>
+                <a class="btn secondary" href="{% url 'portal:contracts' %}">Договоры</a>
                 <a class="btn secondary" href="{% url 'portal:reports' %}">Отчёты</a>
             </div>
         </div>
@@ -64,10 +64,47 @@
     </div>
 
     <div class="panel">
-        <div class="panel-header"><h2 class="panel-title">Сервисы Students Life</h2></div>
+        <div class="panel-header"><h2 class="panel-title">Уведомления в браузере</h2></div>
         <div class="panel-body">
-            <p class="muted">Экзамены, переводы, диск, задачи, вебмайл и SMTP-ящики открываются из одного раздела меню. Каждый сервис запускается в новой вкладке, поэтому ManagerSL остаётся открытым.</p>
-            <p class="muted small" style="margin-bottom:0;">Если сервис не открывается или отсутствует доступ, сообщите администратору название сервиса и свой рабочий email.</p>
+            <ol class="muted" style="padding-left:20px;display:grid;gap:8px;">
+                <li>Нажмите кнопку ниже и войдите в Task Manager SL.</li>
+                <li>Нажмите «Разрешить уведомления» в браузере.</li>
+                <li>Нажмите «Подключить это устройство» и отправьте тест.</li>
+                <li>Повторите на каждом рабочем ноутбуке или телефоне.</li>
+            </ol>
+            <a class="btn primary" href="{{ task_push_url }}" target="_blank" rel="noopener"><i data-lucide="bell-ring"></i>Подключить этот браузер</a>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Как пользоваться DiskSL</h2></div>
+        <div class="panel-body">
+            <ol class="muted" style="padding-left:20px;display:grid;gap:8px;">
+                <li>Откройте карточку клиента и нажмите «Папка клиента».</li>
+                <li>Загружайте файл в подходящую папку: оригиналы, переводы, договоры, университеты или приглашения.</li>
+                <li>Документы клиента загружайте из его карточки — так файл не потеряет связь с SL-ID.</li>
+            </ol>
+            <a class="btn secondary" href="{% url 'portal:disk_sl' %}" target="_blank" rel="noopener">Открыть DiskSL</a>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">Как пользоваться переводчиком</h2></div>
+        <div class="panel-body">
+            <ol class="muted" style="padding-left:20px;display:grid;gap:8px;">
+                <li>Для клиента нажмите «Перевести документ» прямо в его карточке.</li>
+                <li>Выберите исходный файл и шаблон, проверьте распознанный текст.</li>
+                <li>Сохраните готовый перевод в DiskSL. Перевод для стороннего человека можно создать без привязки к клиенту.</li>
+            </ol>
+            <a class="btn secondary" href="{% url 'portal:translate_sl' %}" target="_blank" rel="noopener">Открыть переводчик</a>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="panel-header"><h2 class="panel-title">ExamSL — только просмотр</h2></div>
+        <div class="panel-body">
+            <p class="muted"><strong>Сервис ещё не доработан до конца.</strong> Сейчас используйте ExamSL только для просмотра расписания. Новые экзамены и изменения вносите из карточки клиента в ManagerSL.</p>
+            <a class="btn secondary" href="{{ exam_sl_url }}" target="_blank" rel="noopener">Открыть ExamSL</a>
         </div>
     </div>
 </section>

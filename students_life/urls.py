@@ -12,7 +12,7 @@ from apps.portal.views import PortalHomeView
 from users.auth_views import LoginView, LogoutView
 from users.disk_auth import disk_authenticate
 from users.service_auth import exam_authenticate
-from apps.crm.views import ApplicationExamSeenServiceView, ApplicationExamServiceView, EmailRecordServiceView, TranslationServiceView
+from apps.crm.views import ApplicationExamSeenServiceView, ApplicationExamServiceView, ClientAdmissionStatusServiceView, EmailRecordServiceView, TranslationServiceView
 from students_life.api_views import ClientExamAPIView, HealthCheckView, AppConfigView, DashboardSummaryView
 from students_life.mobile_api import (
     CalendarEventDetailView,
@@ -71,6 +71,7 @@ urlpatterns = [
     path('api/internal/translation/records/', TranslationServiceView.as_view(), name='translation_records'),
     path('api/internal/email/records/', EmailRecordServiceView.as_view(), name='email_records'),
     path('api/internal/exams/<str:external_id>/seen/', ApplicationExamSeenServiceView.as_view(), name='exam_seen'),
+    path('api/internal/client/admissions/', ClientAdmissionStatusServiceView.as_view(), name='client_admission_status'),
 
     path('api/clients/', include('clients.urls')),
     path('api/tasks/', include('tasks.urls')),
