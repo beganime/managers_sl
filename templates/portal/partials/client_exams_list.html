@@ -1,0 +1,22 @@
+{% if mobile_exams_error and mobile_user_id %}
+    <div class="empty" style="text-align:left; margin-top:12px;">{{ mobile_exams_error }}</div>
+{% endif %}
+{% if mobile_exams %}
+    <div class="list" style="margin-top:12px;">
+        {% for exam in mobile_exams %}
+            <div class="list-row">
+                <div>
+                    <div class="strong">{{ exam.subject }}</div>
+                    <div class="muted small">{{ exam.exam_date }} {{ exam.exam_time }} · {{ exam.comment|default:"Без комментария" }}</div>
+                </div>
+                {% if exam.acknowledged_by_user %}
+                    <span class="pill ok">Увидел {{ exam.acknowledged_at|default:"" }}</span>
+                {% else %}
+                    <span class="pill warn">Ожидает подтверждения</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% elif not mobile_exams_error %}
+    <div class="empty" style="margin-top:12px;">Экзамены пока не назначены.</div>
+{% endif %}

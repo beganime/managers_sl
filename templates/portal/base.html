@@ -558,11 +558,28 @@
     </nav>
 
     <script>
+        function loadClientExams(root) {
+            (root || document).querySelectorAll('[data-client-exams-url]').forEach(function (panel) {
+                if (panel.dataset.loading === '1') return;
+                panel.dataset.loading = '1';
+                fetch(panel.dataset.clientExamsUrl, { credentials: 'same-origin', headers: { 'Accept': 'text/html' } })
+                    .then(function (response) {
+                        if (!response.ok) throw new Error('Exam panel unavailable');
+                        return response.text();
+                    })
+                    .then(function (html) { panel.innerHTML = html; })
+                    .catch(function () {
+                        panel.innerHTML = '<div class="empty">Не удалось загрузить экзамены. Обновите страницу и повторите попытку.</div>';
+                    });
+            });
+        }
         document.addEventListener('DOMContentLoaded', function () {
             if (window.lucide) window.lucide.createIcons();
+            loadClientExams(document);
         });
-        document.body.addEventListener('htmx:afterSwap', function () {
+        document.body.addEventListener('htmx:afterSwap', function (event) {
             if (window.lucide) window.lucide.createIcons();
+            loadClientExams(event.detail.target);
         });
         document.addEventListener('submit', function (event) {
             const form = event.target;
