@@ -343,6 +343,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
     EVENT_WEEKLY = 'weekly_summary'
     EVENT_START_REMINDER = 'start_reminder'
     EVENT_CLOSE_REMINDER = 'close_reminder'
+    EVENT_AFTER_HOURS = 'after_hours'
     EVENT_CHOICES = (
         (EVENT_ARRIVAL, 'Приход'),
         (EVENT_DEPARTURE, 'Уход'),
@@ -351,6 +352,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
         (EVENT_WEEKLY, 'Недельный отчёт'),
         (EVENT_START_REMINDER, 'Напоминание о начале дня'),
         (EVENT_CLOSE_REMINDER, 'Напоминание о завершении дня'),
+        (EVENT_AFTER_HOURS, 'Активность после рабочего дня'),
     )
 
     STATUS_PENDING = 'pending'

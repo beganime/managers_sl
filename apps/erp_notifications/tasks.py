@@ -120,15 +120,6 @@ def ensure_default_attendance_reminders():
             )
 
 
-def employee_had_evening_activity(user, today):
-    last_activity = getattr(user, 'last_activity', None)
-    if not last_activity:
-        return False
-    local_activity = timezone.localtime(last_activity)
-    protection_hour = getattr(settings, 'ATTENDANCE_ACTIVITY_PROTECTION_HOUR', 17)
-    return local_activity.date() == today and local_activity.time() >= datetime.min.replace(hour=protection_hour).time()
-
-
 def should_send_attendance_reminder(user, reminder_type, today):
     workday = WorkDay.objects.filter(employee=user, date=today).first()
     if reminder_type == AttendanceReminder.REMINDER_START:
@@ -194,30 +185,6 @@ def auto_close_workdays():
     failed = 0
     for workday in qs.iterator():
         try:
-            if workday.date == today and workday.status != WorkDay.STATUS_NOT_STARTED and employee_had_evening_activity(workday.employee, today):
-                custom_data = dict(workday.custom_data or {})
-                custom_data.update({
-                    'requires_manual_close': True,
-                    'manual_close_reason': 'Активность в ManagerSL после 17:00',
-                    'auto_close_checked_at': now.isoformat(),
-                })
-                workday.custom_data = custom_data
-                workday.save(update_fields=['custom_data', 'updated_at'])
-                create_notification(
-                    workday.employee,
-                    title='Завершите рабочий день вручную',
-                    body='Вы работали после 17:00, поэтому система не закрыла день автоматически. Отправьте короткий отчёт и нажмите «Закрыть день».',
-                    notification_type=NotificationTemplate.TYPE_ATTENDANCE,
-                    channel=NotificationTemplate.CHANNEL_PUSH,
-                    priority=Notification.PRIORITY_HIGH,
-                    data={'workday_id': workday.id, 'status': workday.status, 'screen': 'workday'},
-                    target_url='/portal/workday/',
-                    related_object=workday,
-                    company=workday.company,
-                    office=workday.office,
-                )
-                waiting_manual_close += 1
-                continue
             if workday.status == WorkDay.STATUS_NOT_STARTED:
                 previous_status = workday.status
                 workday.status = WorkDay.STATUS_MISSED
@@ -236,7 +203,7 @@ def auto_close_workdays():
                 register_workday_event(workday, AttendanceTelegramDelivery.EVENT_MISSED)
                 missed += 1
             else:
-                workday.close(auto=True, comment='Автоматически закрыт в 18:00: вечерней активности не было.')
+                workday.close(auto=True, comment='Автоматически закрыт системой в 18:00.')
                 closed += 1
 
             create_notification(
