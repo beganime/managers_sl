@@ -341,12 +341,16 @@ class AttendanceTelegramDelivery(TimeStampedModel):
     EVENT_AUTO_CLOSE = 'auto_close'
     EVENT_MISSED = 'missed'
     EVENT_WEEKLY = 'weekly_summary'
+    EVENT_START_REMINDER = 'start_reminder'
+    EVENT_CLOSE_REMINDER = 'close_reminder'
     EVENT_CHOICES = (
         (EVENT_ARRIVAL, 'Приход'),
         (EVENT_DEPARTURE, 'Уход'),
         (EVENT_AUTO_CLOSE, 'Автоматическое закрытие'),
         (EVENT_MISSED, 'Неявка'),
         (EVENT_WEEKLY, 'Недельный отчёт'),
+        (EVENT_START_REMINDER, 'Напоминание о начале дня'),
+        (EVENT_CLOSE_REMINDER, 'Напоминание о завершении дня'),
     )
 
     STATUS_PENDING = 'pending'
@@ -383,6 +387,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
         blank=True,
     )
     message = models.TextField('Сообщение')
+    target_chat_id = models.BigIntegerField('Получатель Telegram', null=True, blank=True)
     status = models.CharField('Статус', max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
     attempts = models.PositiveSmallIntegerField('Попытки', default=0)
     last_error = models.CharField('Последняя ошибка', max_length=255, blank=True)
@@ -399,3 +404,43 @@ class AttendanceTelegramDelivery(TimeStampedModel):
 
     def __str__(self):
         return f'{self.get_event_type_display()} — {self.event_key}'
+
+
+class EmployeeTelegramAccount(TimeStampedModel, ActiveModel):
+    employee = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='attendance_telegram_account',
+    )
+    telegram_user_id = models.BigIntegerField('Telegram user ID', unique=True)
+    chat_id = models.BigIntegerField('Telegram chat ID', unique=True)
+    username = models.CharField('Telegram username', max_length=64, blank=True)
+    first_name = models.CharField('Имя в Telegram', max_length=128, blank=True)
+    last_name = models.CharField('Фамилия в Telegram', max_length=128, blank=True)
+    linked_at = models.DateTimeField('Подключён', default=timezone.now)
+
+    class Meta:
+        verbose_name = 'Telegram сотрудника'
+        verbose_name_plural = 'Telegram сотрудников'
+
+    def __str__(self):
+        return f'{self.employee} — @{self.username}' if self.username else str(self.employee)
+
+
+class TelegramLinkCode(TimeStampedModel):
+    employee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='attendance_telegram_link_codes',
+    )
+    code_hash = models.CharField('Хеш кода', max_length=64, unique=True)
+    expires_at = models.DateTimeField('Действует до', db_index=True)
+    used_at = models.DateTimeField('Использован', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Код подключения Telegram'
+        verbose_name_plural = 'Коды подключения Telegram'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f'{self.employee} — {self.expires_at}'

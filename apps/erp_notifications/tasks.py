@@ -14,7 +14,7 @@ except ImportError:
         return decorator
 
 from apps.attendance.models import AttendanceReminder, AttendanceTelegramDelivery, AutoCloseLog, WorkDay
-from apps.attendance.telegram import register_workday_event
+from apps.attendance.telegram import register_personal_reminder, register_workday_event
 from apps.employees.models import EmployeeProfile
 from apps.erp_documents.models import DocumentApproval
 from apps.finance.models import Payment
@@ -308,6 +308,7 @@ def send_attendance_reminders(reminder_type):
                 company=reminder.company,
                 office=reminder.office,
             )
+            register_personal_reminder(recipient, reminder_type, today)
             created += 1
         reminder.last_sent_at = timezone.now()
         reminder.save(update_fields=['last_sent_at', 'updated_at'])
