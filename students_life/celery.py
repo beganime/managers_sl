@@ -26,6 +26,14 @@ app.conf.beat_schedule = {
             hour=str(settings.ATTENDANCE_AUTO_CLOSE_HOUR),
         ),
     },
+    'attendance-retry-telegram-deliveries': {
+        'task': 'attendance.retry_telegram_deliveries',
+        'schedule': crontab(minute='*/2'),
+    },
+    'attendance-weekly-office-summary': {
+        'task': 'attendance.send_weekly_summary',
+        'schedule': crontab(minute=30, hour=18, day_of_week='saturday'),
+    },
     'erp-daily-start-reminders': {
         'task': 'erp_notifications.daily_start_reminder',
         'schedule': crontab(minute='*/5'),

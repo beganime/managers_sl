@@ -13,7 +13,8 @@ except ImportError:
             return func
         return decorator
 
-from apps.attendance.models import AttendanceReminder, AutoCloseLog, WorkDay
+from apps.attendance.models import AttendanceReminder, AttendanceTelegramDelivery, AutoCloseLog, WorkDay
+from apps.attendance.telegram import register_workday_event
 from apps.employees.models import EmployeeProfile
 from apps.erp_documents.models import DocumentApproval
 from apps.finance.models import Payment
@@ -232,6 +233,7 @@ def auto_close_workdays():
                     reason='Рабочий день не был начат до 18:00.',
                     success=True,
                 )
+                register_workday_event(workday, AttendanceTelegramDelivery.EVENT_MISSED)
                 missed += 1
             else:
                 workday.close(auto=True, comment='Автоматически закрыт в 18:00: вечерней активности не было.')

@@ -1,6 +1,7 @@
 import calendar
 from html import unescape
 import json
+import logging
 import mimetypes
 import re
 from pathlib import PurePosixPath
@@ -14,6 +15,8 @@ from uuid import uuid4
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 import requests
+
+logger = logging.getLogger(__name__)
 
 from django.conf import settings
 from django.contrib import messages
@@ -1555,6 +1558,16 @@ class PortalLoginView(LoginView):
 
     def get_success_url(self):
         return self.get_redirect_url() or reverse('portal:dashboard')
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        try:
+            from apps.attendance.services import auto_start_workday_for_login
+            auto_start_workday_for_login(self.request.user)
+            self.request.session['attendance_auto_start_date'] = timezone.localdate().isoformat()
+        except Exception:
+            logger.exception('Could not auto-start workday after portal login for user %s.', self.request.user.pk)
+        return response
 
 
 class PortalLogoutView(LoginRequiredMixin, View):

@@ -1,7 +1,7 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 
-from .models import AttendanceReminder, AutoCloseLog, DailyReport, WorkDay, WorkSession
+from .models import AttendanceReminder, AttendanceTelegramDelivery, AutoCloseLog, DailyReport, WorkDay, WorkSession
 
 
 class WorkSessionInline(TabularInline):
@@ -70,3 +70,11 @@ class AutoCloseLogAdmin(ModelAdmin):
     search_fields = ('employee__email', 'reason', 'error_message')
     autocomplete_fields = ('workday', 'company', 'office', 'employee')
     readonly_fields = ('created_at', 'updated_at')
+
+
+@admin.register(AttendanceTelegramDelivery)
+class AttendanceTelegramDeliveryAdmin(ModelAdmin):
+    list_display = ('event_type', 'employee', 'office', 'status', 'attempts', 'sent_at', 'created_at')
+    list_filter = ('event_type', 'status', 'company', 'office')
+    search_fields = ('event_key', 'employee__email', 'employee__first_name', 'employee__last_name', 'message')
+    readonly_fields = ('event_key', 'message', 'attempts', 'last_error', 'sent_at', 'created_at', 'updated_at')
