@@ -10,9 +10,9 @@ from apps.erp_notifications.models import NotificationTemplate
 from apps.erp_notifications.tasks import auto_close_workdays, send_attendance_reminders
 from apps.organizations.models import Company
 
-from .models import AttendanceReminder, AttendanceTelegramDelivery, WorkDay
+from .models import AttendanceReminder, AttendanceTelegramDelivery, EmployeeTelegramAccount, WorkDay
 from .services import auto_start_workday_for_login
-from .telegram import send_weekly_attendance_summary, weekly_summary_messages
+from .telegram import create_employee_link, send_weekly_attendance_summary, weekly_summary_messages
 
 
 @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5, 6), ATTENDANCE_ACTIVITY_PROTECTION_HOUR=17)
@@ -108,6 +108,7 @@ class WorkdayClosingPolicyTests(TestCase):
     ATTENDANCE_TELEGRAM_ENABLED=True,
     ATTENDANCE_TELEGRAM_BOT_TOKEN='test-token',
     ATTENDANCE_TELEGRAM_CHAT_ID='-1001',
+    ATTENDANCE_TELEGRAM_WEBHOOK_SECRET='webhook-test-secret',
 )
 class AttendanceTelegramTests(TestCase):
     def setUp(self):
@@ -170,3 +171,39 @@ class AttendanceTelegramTests(TestCase):
             AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_WEEKLY).count(),
             1,
         )
+
+    def test_employee_links_telegram_with_one_time_start_code(self):
+        link = create_employee_link(self.user)
+        code = link.split('start=', 1)[1]
+        response = self.client.post(
+            '/api/integrations/telegram/attendance/webhook/',
+            data={
+                'message': {
+                    'text': f'/start {code}',
+                    'chat': {'id': 7002, 'type': 'private'},
+                    'from': {'id': 7001, 'username': 'anna_manager', 'first_name': 'Анна'},
+                },
+            },
+            content_type='application/json',
+            HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='webhook-test-secret',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        account = EmployeeTelegramAccount.objects.get(employee=self.user)
+        self.assertEqual(account.telegram_user_id, 7001)
+        self.assertEqual(account.chat_id, 7002)
+
+        repeated = self.client.post(
+            '/api/integrations/telegram/attendance/webhook/',
+            data={
+                'message': {
+                    'text': f'/start {code}',
+                    'chat': {'id': 7002, 'type': 'private'},
+                    'from': {'id': 7001},
+                },
+            },
+            content_type='application/json',
+            HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='webhook-test-secret',
+        )
+        self.assertEqual(repeated.status_code, 200)
+        self.assertIn('недействительна', repeated.json()['text'])

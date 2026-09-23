@@ -1,7 +1,16 @@
 from django.contrib import admin
 from unfold.admin import ModelAdmin, TabularInline
 
-from .models import AttendanceReminder, AttendanceTelegramDelivery, AutoCloseLog, DailyReport, WorkDay, WorkSession
+from .models import (
+    AttendanceReminder,
+    AttendanceTelegramDelivery,
+    AutoCloseLog,
+    DailyReport,
+    EmployeeTelegramAccount,
+    TelegramLinkCode,
+    WorkDay,
+    WorkSession,
+)
 
 
 class WorkSessionInline(TabularInline):
@@ -78,3 +87,18 @@ class AttendanceTelegramDeliveryAdmin(ModelAdmin):
     list_filter = ('event_type', 'status', 'company', 'office')
     search_fields = ('event_key', 'employee__email', 'employee__first_name', 'employee__last_name', 'message')
     readonly_fields = ('event_key', 'message', 'attempts', 'last_error', 'sent_at', 'created_at', 'updated_at')
+
+
+@admin.register(EmployeeTelegramAccount)
+class EmployeeTelegramAccountAdmin(ModelAdmin):
+    list_display = ('employee', 'username', 'telegram_user_id', 'is_active', 'linked_at')
+    list_filter = ('is_active', 'linked_at')
+    search_fields = ('employee__email', 'employee__first_name', 'employee__last_name', 'username')
+    readonly_fields = ('telegram_user_id', 'chat_id', 'linked_at', 'created_at', 'updated_at')
+
+
+@admin.register(TelegramLinkCode)
+class TelegramLinkCodeAdmin(ModelAdmin):
+    list_display = ('employee', 'expires_at', 'used_at', 'created_at')
+    search_fields = ('employee__email', 'employee__first_name', 'employee__last_name')
+    readonly_fields = ('code_hash', 'expires_at', 'used_at', 'created_at', 'updated_at')

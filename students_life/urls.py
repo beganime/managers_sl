@@ -9,6 +9,7 @@ from django.views.generic import RedirectView, TemplateView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.portal.views import PortalHomeView
+from apps.attendance.telegram_views import attendance_telegram_webhook
 from users.auth_views import LoginView, LogoutView
 from users.disk_auth import disk_authenticate
 from users.service_auth import exam_authenticate
@@ -49,6 +50,7 @@ urlpatterns = [
     path('', include('pwa.urls')),
 
     path('api/health/', HealthCheckView.as_view(), name='api_health'),
+    path('api/integrations/telegram/attendance/webhook/', attendance_telegram_webhook, name='attendance_telegram_webhook'),
     path('api/app/config/', AppConfigView.as_view(), name='api_app_config'),
     path('api/app/dashboard/', DashboardSummaryView.as_view(), name='api_app_dashboard'),
     path('api/app/clients/<int:client_id>/exams/', ClientExamAPIView.as_view(), name='api_app_client_exams'),

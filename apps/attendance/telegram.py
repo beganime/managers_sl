@@ -1,4 +1,6 @@
 import logging
+import hashlib
+import secrets
 from datetime import timedelta
 
 import requests
@@ -11,7 +13,7 @@ from django.utils import timezone
 from apps.employees.models import EmployeeProfile
 from apps.organizations.models import Company
 
-from .models import AttendanceTelegramDelivery, WorkDay
+from .models import AttendanceTelegramDelivery, EmployeeTelegramAccount, TelegramLinkCode, WorkDay
 
 logger = logging.getLogger(__name__)
 
@@ -74,12 +76,28 @@ def register_workday_event(workday, event_type):
     )
     if created:
         _enqueue(delivery)
+    account = EmployeeTelegramAccount.objects.filter(employee=workday.employee, is_active=True).first()
+    if account:
+        personal, personal_created = AttendanceTelegramDelivery.objects.get_or_create(
+            event_key=f'personal:{event_key}',
+            defaults={
+                'event_type': event_type,
+                'company': workday.company,
+                'office': workday.office,
+                'employee': workday.employee,
+                'workday': workday,
+                'target_chat_id': account.chat_id,
+                'message': f'Личное уведомление ManagerSL\n\n{workday_message(workday, event_type)}',
+            },
+        )
+        if personal_created:
+            _enqueue(personal)
     return delivery
 
 
-def send_telegram_message(message):
+def send_telegram_message(message, chat_id=None):
     token = settings.ATTENDANCE_TELEGRAM_BOT_TOKEN
-    chat_id = settings.ATTENDANCE_TELEGRAM_CHAT_ID
+    chat_id = chat_id or settings.ATTENDANCE_TELEGRAM_CHAT_ID
     if not settings.ATTENDANCE_TELEGRAM_ENABLED or not token or not chat_id:
         return False, 'Telegram attendance is not configured.'
     base = settings.ATTENDANCE_TELEGRAM_API_BASE.rstrip('/')
@@ -104,7 +122,7 @@ def send_attendance_telegram_delivery(delivery_id):
         if not delivery or delivery.status == AttendanceTelegramDelivery.STATUS_SENT:
             return {'sent': bool(delivery), 'reason': 'already_sent_or_missing'}
         delivery.attempts += 1
-        sent, error = send_telegram_message(delivery.message)
+        sent, error = send_telegram_message(delivery.message, delivery.target_chat_id)
         delivery.status = AttendanceTelegramDelivery.STATUS_SENT if sent else AttendanceTelegramDelivery.STATUS_FAILED
         delivery.last_error = error[:255]
         delivery.sent_at = timezone.now() if sent else None
@@ -123,6 +141,48 @@ def retry_attendance_telegram_deliveries(limit=50):
     for delivery_id in ids:
         _safe_delay(delivery_id)
     return {'queued': len(ids)}
+
+
+def create_employee_link(user, lifetime_minutes=10):
+    raw_code = secrets.token_urlsafe(24)
+    TelegramLinkCode.objects.create(
+        employee=user,
+        code_hash=hashlib.sha256(raw_code.encode()).hexdigest(),
+        expires_at=timezone.now() + timedelta(minutes=lifetime_minutes),
+    )
+    username = settings.ATTENDANCE_TELEGRAM_BOT_USERNAME.lstrip('@')
+    return f'https://t.me/{username}?start={raw_code}'
+
+
+def register_personal_reminder(user, reminder_type, day):
+    if not getattr(settings, 'ATTENDANCE_TELEGRAM_ENABLED', False):
+        return None
+    account = EmployeeTelegramAccount.objects.filter(employee=user, is_active=True).first()
+    profile = getattr(user, 'employee_profile', None)
+    if not account or not profile:
+        return None
+    if reminder_type == 'start_workday':
+        event_type = AttendanceTelegramDelivery.EVENT_START_REMINDER
+        message = '#напоминание_начало\nРабочий день начинается в 09:00. Войдите в ManagerSL — день откроется автоматически.'
+    elif reminder_type == 'close_workday':
+        event_type = AttendanceTelegramDelivery.EVENT_CLOSE_REMINDER
+        message = '#напоминание_уход\nРабочий день заканчивается в 18:00. Заполните короткий отчёт и закройте день.'
+    else:
+        return None
+    delivery, created = AttendanceTelegramDelivery.objects.get_or_create(
+        event_key=f'personal-reminder:{user.pk}:{day}:{event_type}',
+        defaults={
+            'event_type': event_type,
+            'company': profile.company,
+            'office': profile.office,
+            'employee': user,
+            'target_chat_id': account.chat_id,
+            'message': message,
+        },
+    )
+    if created:
+        _enqueue(delivery)
+    return delivery
 
 
 def _summary_period(today):

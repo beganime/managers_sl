@@ -1652,6 +1652,18 @@ class ProfileView(PortalContextMixin, TemplateView):
         user = request.user
         action = request.POST.get('action', 'profile')
 
+        if action == 'telegram_link':
+            from apps.attendance.telegram import create_employee_link
+            request.session['attendance_telegram_link'] = create_employee_link(user)
+            messages.success(request, 'Одноразовая ссылка создана на 10 минут.')
+            return redirect('portal:profile')
+
+        if action == 'telegram_unlink':
+            from apps.attendance.models import EmployeeTelegramAccount
+            EmployeeTelegramAccount.objects.filter(employee=user).update(is_active=False)
+            messages.success(request, 'Telegram отключён от личных уведомлений.')
+            return redirect('portal:profile')
+
         if action == 'password':
             form = PasswordChangeForm(user, request.POST)
             if form.is_valid():
@@ -1688,9 +1700,12 @@ class ProfileView(PortalContextMixin, TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        from apps.attendance.models import EmployeeTelegramAccount
         context.update({
             'work_status_choices': User.STATUS_CHOICES,
             'password_form': PasswordChangeForm(self.request.user),
+            'telegram_account': EmployeeTelegramAccount.objects.filter(employee=self.request.user, is_active=True).first(),
+            'telegram_link': self.request.session.pop('attendance_telegram_link', ''),
         })
         return context
 

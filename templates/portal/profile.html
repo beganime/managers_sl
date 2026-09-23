@@ -107,6 +107,34 @@
                 </div>
             </div>
         </div>
+
+        <div class="panel">
+            <div class="panel-header">
+                <h2 class="panel-title">Telegram-уведомления</h2>
+                {% if telegram_account %}<span class="pill ok">Подключено</span>{% endif %}
+            </div>
+            <div class="panel-body grid">
+                {% if telegram_account %}
+                    <p class="muted" style="margin:0;">Личные напоминания о начале и завершении рабочего дня включены{% if telegram_account.username %} для @{{ telegram_account.username }}{% endif %}.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="telegram_unlink">
+                        <button class="btn danger" type="submit"><i data-lucide="unlink"></i>Отключить Telegram</button>
+                    </form>
+                {% else %}
+                    <p class="muted" style="margin:0;">Пароль вводить в Telegram не нужно. Создайте одноразовую ссылку и откройте её в личном чате с ботом.</p>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="telegram_link">
+                        <button class="btn primary" type="submit"><i data-lucide="send"></i>Подключить Telegram</button>
+                    </form>
+                {% endif %}
+                {% if telegram_link %}
+                    <a class="btn primary" href="{{ telegram_link }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть бота и подтвердить</a>
+                    <div class="muted small">Ссылка действует 10 минут и используется только один раз.</div>
+                {% endif %}
+            </div>
+        </div>
     </div>
 </section>
 {% endblock %}
