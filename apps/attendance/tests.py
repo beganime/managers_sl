@@ -1,4 +1,4 @@
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -10,7 +10,9 @@ from apps.erp_notifications.models import NotificationTemplate
 from apps.erp_notifications.tasks import auto_close_workdays, send_attendance_reminders
 from apps.organizations.models import Company
 
-from .models import AttendanceReminder, WorkDay
+from .models import AttendanceReminder, AttendanceTelegramDelivery, WorkDay
+from .services import auto_start_workday_for_login
+from .telegram import send_weekly_attendance_summary, weekly_summary_messages
 
 
 @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5, 6), ATTENDANCE_ACTIVITY_PROTECTION_HOUR=17)
@@ -98,4 +100,73 @@ class WorkdayClosingPolicyTests(TestCase):
         self.assertEqual({call.args[0] for call in create_notification.call_args_list}, {first, second})
         self.assertTrue(
             all(call.kwargs['channel'] == NotificationTemplate.CHANNEL_PUSH for call in create_notification.call_args_list)
+        )
+
+
+@override_settings(
+    ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5, 6),
+    ATTENDANCE_TELEGRAM_ENABLED=True,
+    ATTENDANCE_TELEGRAM_BOT_TOKEN='test-token',
+    ATTENDANCE_TELEGRAM_CHAT_ID='-1001',
+)
+class AttendanceTelegramTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name='Students Life', country='Туркменистан')
+        self.role = EmployeeRole.objects.create(code='manager', name='Менеджер', role_type='manager')
+        self.user = get_user_model().objects.create_user(
+            email='manager@example.com',
+            password='test-password',
+            first_name='Анна',
+            last_name='Иванова',
+        )
+        EmployeeProfile.objects.create(user=self.user, company=self.company, role=self.role)
+
+    def test_login_starts_workday_and_arrival_is_registered_once(self):
+        first, first_started = auto_start_workday_for_login(self.user)
+        second, second_started = auto_start_workday_for_login(self.user)
+
+        self.assertTrue(first_started)
+        self.assertFalse(second_started)
+        self.assertEqual(first.pk, second.pk)
+        self.assertEqual(first.status, WorkDay.STATUS_STARTED)
+        self.assertEqual(
+            AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_ARRIVAL).count(),
+            1,
+        )
+
+    def test_manual_and_automatic_close_have_distinct_events(self):
+        workday, _ = auto_start_workday_for_login(self.user)
+        workday.close(comment='Завершил работу.')
+
+        self.assertTrue(
+            AttendanceTelegramDelivery.objects.filter(
+                workday=workday,
+                event_type=AttendanceTelegramDelivery.EVENT_DEPARTURE,
+            ).exists()
+        )
+
+    @patch('apps.erp_notifications.tasks.create_notification')
+    def test_missing_employee_registers_absence_event(self, _create_notification):
+        result = auto_close_workdays()
+
+        self.assertEqual(result['missed'], 1)
+        self.assertTrue(
+            AttendanceTelegramDelivery.objects.filter(
+                employee=self.user,
+                event_type=AttendanceTelegramDelivery.EVENT_MISSED,
+            ).exists()
+        )
+
+    def test_weekly_summary_is_grouped_and_created_only_once(self):
+        today = timezone.localdate()
+        period_start = today - timedelta(days=today.weekday())
+        message = '\n'.join(weekly_summary_messages(self.company, period_start, today))
+        self.assertIn('Анна Иванова', message)
+        self.assertIn('#недельный_отчёт', message)
+
+        send_weekly_attendance_summary()
+        send_weekly_attendance_summary()
+        self.assertEqual(
+            AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_WEEKLY).count(),
+            1,
         )

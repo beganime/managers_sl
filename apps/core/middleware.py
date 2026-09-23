@@ -1,6 +1,10 @@
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.utils import timezone
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class EmployeeActivityMiddleware:
@@ -27,4 +31,14 @@ class EmployeeActivityMiddleware:
                 # is therefore not the custom User model and causes a 500 after a
                 # successful login.  Use the configured model explicitly.
                 get_user_model().objects.filter(pk=user.pk).update(last_activity=timezone.now())
+            if request.path.startswith('/portal/') and request.path != '/portal/logout/' and response.status_code < 500:
+                today = timezone.localdate().isoformat()
+                if request.session.get('attendance_auto_start_date') != today:
+                    try:
+                        from apps.attendance.services import auto_start_workday_for_login
+                        auto_start_workday_for_login(user)
+                        request.session['attendance_auto_start_date'] = today
+                    except Exception:
+                        # Attendance must never make a successful login unavailable.
+                        logger.exception('Could not auto-start workday for user %s.', user.pk)
         return response

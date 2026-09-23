@@ -81,6 +81,7 @@ class WorkDay(TimeStampedModel):
             raise ValueError('Завершённый рабочий день нельзя начать повторно.')
 
         now = timezone.now()
+        notify_arrival = not self.started_at and self.status == self.STATUS_NOT_STARTED
         with transaction.atomic():
             active_session = self.sessions.filter(is_active=True).first()
             if not active_session:
@@ -96,6 +97,9 @@ class WorkDay(TimeStampedModel):
             if self.status in {self.STATUS_NOT_STARTED, self.STATUS_MISSED}:
                 self.status = self.STATUS_STARTED
             self.save(update_fields=['started_at', 'status', 'updated_at'])
+        if notify_arrival:
+            from .telegram import register_workday_event
+            register_workday_event(self, AttendanceTelegramDelivery.EVENT_ARRIVAL)
         return self
 
     def submit_report(self, content, **extra):
@@ -155,6 +159,11 @@ class WorkDay(TimeStampedModel):
                     reason=comment or 'Auto closed by scheduled job.',
                     success=True,
                 )
+        from .telegram import register_workday_event
+        register_workday_event(
+            self,
+            AttendanceTelegramDelivery.EVENT_AUTO_CLOSE if auto else AttendanceTelegramDelivery.EVENT_DEPARTURE,
+        )
         return self
 
 
@@ -324,3 +333,69 @@ class AutoCloseLog(TimeStampedModel):
 
     def __str__(self):
         return f'{self.employee} - {self.created_at}'
+
+
+class AttendanceTelegramDelivery(TimeStampedModel):
+    EVENT_ARRIVAL = 'arrival'
+    EVENT_DEPARTURE = 'departure'
+    EVENT_AUTO_CLOSE = 'auto_close'
+    EVENT_MISSED = 'missed'
+    EVENT_WEEKLY = 'weekly_summary'
+    EVENT_CHOICES = (
+        (EVENT_ARRIVAL, 'Приход'),
+        (EVENT_DEPARTURE, 'Уход'),
+        (EVENT_AUTO_CLOSE, 'Автоматическое закрытие'),
+        (EVENT_MISSED, 'Неявка'),
+        (EVENT_WEEKLY, 'Недельный отчёт'),
+    )
+
+    STATUS_PENDING = 'pending'
+    STATUS_SENT = 'sent'
+    STATUS_FAILED = 'failed'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Ожидает'),
+        (STATUS_SENT, 'Отправлено'),
+        (STATUS_FAILED, 'Ошибка'),
+    )
+
+    event_key = models.CharField('Ключ события', max_length=190, unique=True)
+    event_type = models.CharField('Тип события', max_length=32, choices=EVENT_CHOICES, db_index=True)
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='attendance_telegram_deliveries')
+    office = models.ForeignKey(
+        Office,
+        on_delete=models.SET_NULL,
+        related_name='attendance_telegram_deliveries',
+        null=True,
+        blank=True,
+    )
+    employee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        related_name='attendance_telegram_deliveries',
+        null=True,
+        blank=True,
+    )
+    workday = models.ForeignKey(
+        WorkDay,
+        on_delete=models.CASCADE,
+        related_name='telegram_deliveries',
+        null=True,
+        blank=True,
+    )
+    message = models.TextField('Сообщение')
+    status = models.CharField('Статус', max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    attempts = models.PositiveSmallIntegerField('Попытки', default=0)
+    last_error = models.CharField('Последняя ошибка', max_length=255, blank=True)
+    sent_at = models.DateTimeField('Отправлено', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Telegram-событие рабочего дня'
+        verbose_name_plural = 'Telegram-события рабочего дня'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['company', 'event_type', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.get_event_type_display()} — {self.event_key}'
