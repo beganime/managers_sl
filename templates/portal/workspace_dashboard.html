@@ -17,6 +17,7 @@
     .mood-history{display:flex;align-items:center;gap:10px;overflow-x:auto;padding:14px 0 2px;scrollbar-width:thin}
     .mood-day{flex:0 0 auto;min-width:116px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel,#fff)}
     .mood-day time,.mood-day small{display:block;color:var(--muted,#667085);font-size:11px}.mood-day strong{display:block;margin:5px 0 3px;font-size:14px}.mood-day .emoji{font-size:23px;float:right;margin-left:10px}
+    .attendance-table-wrap{overflow-x:auto}.attendance-table{width:100%;min-width:760px;border-collapse:collapse}.attendance-table th,.attendance-table td{padding:13px 14px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}.attendance-table th{color:var(--muted);font-size:12px;font-weight:700}.attendance-person{display:flex;flex-direction:column;gap:3px}.attendance-person small{color:var(--muted)}.attendance-status{display:inline-flex;padding:6px 9px;border-radius:999px;background:#eef2f6;font-size:12px;font-weight:750}.attendance-status.started,.attendance-status.report_submitted{background:#eaf7ef;color:#176b3a}.attendance-status.closed,.attendance-status.auto_closed{background:#edf4ff;color:#174f91}.attendance-status.missed{background:#fff0ef;color:#a8241f}.after-hours{color:#9f201b;font-weight:700}
     @media(max-width:760px){.workspace-hero{min-height:325px;align-items:flex-end;padding:22px;background-position:68% center}.workspace-hero::after{background:linear-gradient(180deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.92) 48%,#fff 76%)}.workspace-hero .workspace-heading{align-items:flex-start}.workspace-hero .filters{width:100%}.workspace-hero h2{font-size:32px}}
 </style>
 {% endblock %}
@@ -48,6 +49,14 @@
             <a class="btn" href="{% url 'portal:finance_expense' %}"><i data-lucide="minus"></i>Расход</a>
         </div>
     </section>
+    {% if attendance_overview %}
+    <section class="panel">
+        <div class="panel-header"><div><h2 class="panel-title">Сотрудники сегодня</h2><div class="muted small">Начало дня, последнее действие и работа после 18:00</div></div><a class="btn" href="{% url 'portal:workday' %}">Полный учёт</a></div>
+        <div class="attendance-table-wrap"><table class="attendance-table"><thead><tr><th>Сотрудник</th><th>Офис</th><th>Статус</th><th>Начал</th><th>Последняя активность</th><th>После 18:00</th></tr></thead><tbody>
+        {% for row in attendance_overview %}<tr><td><span class="attendance-person"><strong>{{ row.employee.get_full_name|default:row.employee.email }}</strong><small>{{ row.role }}</small></span></td><td>{{ row.office|default:"Без офиса" }}</td><td><span class="attendance-status {% if row.workday %}{{ row.workday.status }}{% endif %}">{{ row.status }}</span></td><td>{% if row.workday.started_at %}{{ row.workday.started_at|date:"H:i" }}{% else %}—{% endif %}</td><td>{% if row.employee.last_activity %}{{ row.employee.last_activity|date:"H:i" }}{% else %}—{% endif %}</td><td>{% if row.after_hours_range %}<span class="after-hours">{{ row.after_hours_range }}</span>{% else %}—{% endif %}</td></tr>{% endfor %}
+        </tbody></table></div>
+    </section>
+    {% endif %}
     <section class="workspace-stats" aria-label="Клиенты">
         {% for metric in metrics %}<a href="{{ metric.url }}"><span>{{ metric.label }}</span><strong>{{ metric.value }}</strong><i data-lucide="{{ metric.icon }}"></i></a>{% endfor %}
     </section>

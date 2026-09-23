@@ -30,7 +30,13 @@ class EmployeeActivityMiddleware:
                 # ``request.user`` is normally a SimpleLazyObject.  ``type(user)``
                 # is therefore not the custom User model and causes a 500 after a
                 # successful login.  Use the configured model explicitly.
-                get_user_model().objects.filter(pk=user.pk).update(last_activity=timezone.now())
+                activity_at = timezone.now()
+                get_user_model().objects.filter(pk=user.pk).update(last_activity=activity_at)
+                try:
+                    from apps.attendance.services import record_after_hours_activity
+                    record_after_hours_activity(user, activity_at)
+                except Exception:
+                    logger.exception('Could not record after-hours activity for user %s.', user.pk)
             if request.path.startswith('/portal/') and request.path != '/portal/logout/' and response.status_code < 500:
                 today = timezone.localdate().isoformat()
                 if request.session.get('attendance_auto_start_date') != today:

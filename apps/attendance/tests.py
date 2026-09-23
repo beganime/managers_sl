@@ -11,7 +11,7 @@ from apps.erp_notifications.tasks import auto_close_workdays, send_attendance_re
 from apps.organizations.models import Company
 
 from .models import AttendanceReminder, AttendanceTelegramDelivery, EmployeeTelegramAccount, WorkDay
-from .services import auto_start_workday_for_login
+from .services import auto_start_workday_for_login, record_after_hours_activity
 from .telegram import create_employee_link, send_weekly_attendance_summary, weekly_summary_messages
 
 
@@ -62,7 +62,7 @@ class WorkdayClosingPolicyTests(TestCase):
         self.assertEqual(result['closed'], 1)
 
     @patch('apps.erp_notifications.tasks.create_notification')
-    def test_evening_activity_requires_manual_close(self, _create_notification):
+    def test_evening_activity_is_still_closed_at_18(self, _create_notification):
         user = self.create_employee('active@example.com')
         self.set_activity(user, 17, 30)
         workday = WorkDay.objects.create(
@@ -76,9 +76,37 @@ class WorkdayClosingPolicyTests(TestCase):
         result = auto_close_workdays()
 
         workday.refresh_from_db()
-        self.assertEqual(workday.status, WorkDay.STATUS_STARTED)
-        self.assertTrue(workday.requires_manual_close)
-        self.assertEqual(result['waiting_manual_close'], 1)
+        self.assertEqual(workday.status, WorkDay.STATUS_AUTO_CLOSED)
+        self.assertFalse(workday.requires_manual_close)
+        self.assertEqual(result['closed'], 1)
+
+    def test_activity_after_18_is_recorded_without_reopening_day(self):
+        user = self.create_employee('late@example.com')
+        local_value = timezone.make_aware(
+            datetime.combine(timezone.localdate(), time(18, 25)),
+            timezone.get_current_timezone(),
+        )
+        workday = WorkDay.objects.create(
+            company=self.company,
+            employee=user,
+            date=timezone.localdate(),
+            status=WorkDay.STATUS_AUTO_CLOSED,
+            started_at=local_value - timedelta(hours=9),
+            closed_at=local_value - timedelta(minutes=25),
+        )
+
+        recorded, created = record_after_hours_activity(user, local_value)
+
+        self.assertEqual(recorded.pk, workday.pk)
+        self.assertTrue(created)
+        recorded.refresh_from_db()
+        self.assertEqual(recorded.status, WorkDay.STATUS_AUTO_CLOSED)
+        self.assertEqual(recorded.custom_data['after_hours_activity_count'], 1)
+        self.assertIn('after_hours_first_seen_at', recorded.custom_data)
+
+        record_after_hours_activity(user, local_value + timedelta(seconds=20))
+        recorded.refresh_from_db()
+        self.assertEqual(recorded.custom_data['after_hours_activity_count'], 1)
 
     @patch('apps.erp_notifications.tasks.ensure_default_attendance_reminders')
     @patch('apps.erp_notifications.tasks.create_notification')

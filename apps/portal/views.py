@@ -1618,12 +1618,48 @@ class DashboardView(PortalContextMixin, TemplateView):
             employee_role = 'Администратор'
         else:
             employee_role = user.get_role_display()
+
+        attendance_overview = []
+        if is_erp_admin(user) or user.is_staff or user.is_superuser:
+            profiles = list(
+                EmployeeProfile.objects.select_related('user', 'office', 'role', 'access')
+                .filter(is_active=True, work_status='working', user__is_active=True)
+                .filter(Q(access__must_track_workday=True) | Q(access__isnull=True))
+                .order_by('office__name', 'user__first_name', 'user__last_name', 'user__email')
+            )
+            workdays = {
+                item.employee_id: item
+                for item in WorkDay.objects.select_related('employee', 'office').filter(
+                    date=today,
+                    employee_id__in=[profile.user_id for profile in profiles],
+                )
+            }
+            for profile in profiles:
+                item = workdays.get(profile.user_id)
+                after_hours_first = (item.custom_data or {}).get('after_hours_first_seen_at') if item else None
+                after_hours_last = (item.custom_data or {}).get('after_hours_last_seen_at') if item else None
+                try:
+                    after_hours_range = timezone.localtime(parse_datetime(after_hours_first)).strftime('%H:%M')
+                    last_value = timezone.localtime(parse_datetime(after_hours_last)).strftime('%H:%M')
+                    if last_value != after_hours_range:
+                        after_hours_range = f'{after_hours_range}–{last_value}'
+                except (AttributeError, TypeError, ValueError):
+                    after_hours_range = ''
+                attendance_overview.append({
+                    'employee': profile.user,
+                    'role': profile.role.name if profile.role_id else 'Сотрудник',
+                    'office': profile.office,
+                    'workday': item,
+                    'status': item.get_status_display() if item else 'Не входил',
+                    'after_hours_range': after_hours_range,
+                })
         context.update({
             'today': today,
             'employee_role': employee_role,
             'employee_office': employee.office if employee and employee.office_id else None,
             'mood_history': mood_history,
             'workday': get_today_workday(user),
+            'attendance_overview': attendance_overview,
             'is_current_user_birthday': bool(user.dob and user.dob.month == today.month and user.dob.day == today.day),
             'birthday_first_name': user.first_name or full_name(user),
             'metrics': [
