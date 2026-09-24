@@ -63,6 +63,8 @@ def resolve_company_office(user, data=None):
 
 
 def user_must_track_workday(user):
+    if is_erp_admin(user):
+        return False
     employee = get_employee_profile(user)
     access = getattr(employee, 'access', None) if employee else None
     return bool(not access or access.must_track_workday)
@@ -118,6 +120,8 @@ class WorkDayViewSet(viewsets.ModelViewSet):
         return qs.order_by('-date', '-created_at')
 
     def perform_create(self, serializer):
+        if is_erp_admin(self.request.user):
+            raise PermissionDenied('Администраторы не ведут свой рабочий день.')
         company, office = resolve_company_office(self.request.user, self.request.data)
         serializer.save(
             company=company,
@@ -127,6 +131,8 @@ class WorkDayViewSet(viewsets.ModelViewSet):
         )
 
     def get_or_create_today(self, request):
+        if is_erp_admin(request.user):
+            raise PermissionDenied('Администраторы не ведут свой рабочий день.')
         today = timezone.localdate()
         company, office = resolve_company_office(request.user, request.data if request.method == 'POST' else request.query_params)
         workday, _ = WorkDay.objects.get_or_create(

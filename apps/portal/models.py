@@ -11,6 +11,7 @@ class EmployeeMood(models.Model):
     slot = models.PositiveSmallIntegerField()
     score = models.PositiveSmallIntegerField(choices=((1, 'Тяжело'), (2, 'Не очень'), (3, 'Спокойно'), (4, 'Хорошо'), (5, 'Отлично')))
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['date', 'slot']

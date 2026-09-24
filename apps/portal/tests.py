@@ -16,9 +16,12 @@ from apps.client_onboarding.models import ClientProvisioningStep, OnboardingRevi
 from apps.client_onboarding.services import review_submission
 from apps.crm.credentials import decrypt_external_secret
 from apps.crm.models import ActivityLog, Application, ApplicationStageHistory, Client, ClientNote, ExternalAccount
+from apps.employees.models import EmployeeProfile, EmployeeRole
 from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
+from apps.portal.models import EmployeeMood
 from apps.portal.views import build_client_disk_url, build_questionnaire_sections
+from apps.attendance.models import WorkDay
 from users.disk_auth import verify_disk_sso_ticket
 
 
@@ -628,6 +631,46 @@ class DashboardBirthdayGreetingTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertNotContains(response, 'С днём рождения, Анна!')
+
+
+class AdminMoodDashboardTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name='Mood dashboard company')
+        self.role = EmployeeRole.objects.create(code='mood-manager', name='Менеджер', role_type='manager')
+        self.admin = get_user_model().objects.create_user(
+            email='mood-admin@example.com', password='test-password', role='admin', is_staff=True,
+        )
+        self.employee = get_user_model().objects.create_user(
+            email='employee-mood@example.com', password='test-password', first_name='Олеся', last_name='Цветкова',
+        )
+        EmployeeProfile.objects.create(user=self.employee, company=self.company, role=self.role)
+        self.mood = EmployeeMood.objects.create(
+            user=self.employee, date=timezone.localdate(), slot=1, score=4,
+        )
+        self.client.force_login(self.admin)
+
+    def test_admin_sees_recent_mood_and_weekly_result_without_personal_attendance_controls(self):
+        response = self.client.get(reverse('portal:dashboard'), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.context['is_attendance_admin'])
+        self.assertEqual(response.context['team_mood_recent'][0]['employee'], self.employee)
+        self.assertEqual(response.context['team_mood_recent'][0]['label'], 'Хорошо')
+        self.assertEqual(response.context['team_mood_total']['count'], 1)
+        self.assertContains(response, 'Последние отметки')
+        self.assertContains(response, 'Олеся Цветкова')
+        self.assertContains(response, 'Итог по сотрудникам')
+        self.assertNotContains(response, 'Начать день')
+        self.assertNotContains(response, 'Добавить отметку')
+
+    def test_admin_cannot_submit_mood_or_start_workday(self):
+        mood_response = self.client.post(reverse('portal:mood'), {'slot': 1, 'score': 5}, secure=True)
+        start_response = self.client.post(reverse('portal:workday_start'), secure=True)
+
+        self.assertEqual(mood_response.status_code, 403)
+        self.assertEqual(start_response.status_code, 302)
+        self.assertFalse(EmployeeMood.objects.filter(user=self.admin).exists())
+        self.assertFalse(WorkDay.objects.filter(employee=self.admin).exists())
 
 
 class PortalNotificationsTests(TestCase):

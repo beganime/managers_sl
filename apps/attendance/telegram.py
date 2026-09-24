@@ -236,7 +236,9 @@ def daily_summary_messages(company, report_date=None):
             work_status='working',
             user__is_active=True,
             hire_date__lte=report_date,
-        ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).order_by(
+        ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).exclude(
+            Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
+        ).order_by(
             'office__city', 'office__name', 'user__first_name', 'user__last_name', 'user__email'
         )
     )
@@ -280,7 +282,9 @@ def weekly_summary_messages(company, period_start, period_end):
         work_status='working',
         user__is_active=True,
         hire_date__lte=period_end,
-    ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).order_by(
+    ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).exclude(
+        Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
+    ).order_by(
         'office__city', 'office__name', 'user__first_name', 'user__last_name', 'user__email'
     )
     workdays = {

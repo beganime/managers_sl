@@ -14,6 +14,7 @@
 
 {% block content %}
 <div class="workday-shell">
+{% if not is_attendance_admin %}
 <section class="workday-lead">
     <div class="workday-lead-main">
         <div class="workday-eyebrow"><i data-lucide="clock-3"></i>Учёт рабочего времени</div>
@@ -66,6 +67,7 @@
     </div>
     <div class="panel"><div class="panel-header"><h2 class="panel-title">Как учитывается день</h2></div><div class="panel-body list"><div class="list-row"><div><div class="strong">До 09:00</div><div class="muted small">Откройте ManagerSL и нажмите «Начать рабочий день».</div></div><i data-lucide="log-in"></i></div><div class="list-row"><div><div class="strong">В течение дня</div><div class="muted small">Работайте в системе как обычно — активность фиксируется автоматически.</div></div><i data-lucide="mouse-pointer-click"></i></div><div class="list-row"><div><div class="strong">Перед уходом</div><div class="muted small">Сохраните короткий отчёт и закройте рабочий день.</div></div><i data-lucide="log-out"></i></div></div></div>
 </section>
+{% endif %}
 
 <section class="panel" style="margin-top:16px;">
     <div class="panel-header">
@@ -100,7 +102,8 @@
     </div>
 </section>
 
-<section class="grid cols-2" style="margin-top:16px;">
+<section class="grid{% if not is_attendance_admin %} cols-2{% endif %}" style="margin-top:16px;">
+    {% if not is_attendance_admin %}
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Мои последние отчёты</h2></div>
         <div class="panel-body">
@@ -124,6 +127,7 @@
             </div>
         </div>
     </div>
+    {% endif %}
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">История рабочего дня</h2></div>
         <div class="panel-body">

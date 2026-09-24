@@ -29,7 +29,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.http import FileResponse, Http404
-from django.db.models import Avg, Case, Count, IntegerField, Prefetch, Q, Sum, Value, When
+from django.db.models import Avg, Case, Count, IntegerField, Max, Prefetch, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import NoReverseMatch, reverse, reverse_lazy
 from django.utils.dateparse import parse_date, parse_datetime
@@ -1088,7 +1088,12 @@ def portal_user_queryset(user):
 
 
 def must_track_workday_q():
-    return Q(access__must_track_workday=True) | Q(access__isnull=True)
+    return (
+        (Q(access__must_track_workday=True) | Q(access__isnull=True))
+        & Q(user__is_staff=False)
+        & Q(user__is_superuser=False)
+        & ~Q(user__role='admin')
+    )
 
 
 def can_confirm_finance(user):
@@ -1354,7 +1359,7 @@ def paginate_queryset(request, qs, per_page=PAGE_SIZE):
 
 
 def get_today_workday(user):
-    if not user.is_authenticated:
+    if not user.is_authenticated or is_erp_admin(user):
         return None
     employee = get_employee_profile(user)
     today = timezone.localdate()
@@ -1373,6 +1378,8 @@ def get_today_workday(user):
 
 
 def ensure_today_workday(user):
+    if is_erp_admin(user):
+        raise ValueError('Администраторы не ведут свой рабочий день.')
     employee = get_employee_profile(user)
     if not employee:
         raise ValueError('Employee profile is required.')
@@ -1427,6 +1434,7 @@ class PortalContextMixin(LoginRequiredMixin):
                 ))
                 .order_by('unread_rank', '-created_at')[:5],
             'can_access_admin': can_access_admin,
+            'is_attendance_admin': is_erp_admin(self.request.user),
             'can_confirm_finance': can_confirm_finance(self.request.user),
             'can_manage_all_finance': is_erp_admin(self.request.user),
             'admin_quick_actions': build_admin_quick_actions() if can_access_admin else [],
@@ -1643,6 +1651,55 @@ class DashboardView(PortalContextMixin, TemplateView):
             emoji, label = mood_labels[score]
             mood_history.append({**row, 'emoji': emoji, 'label': label})
 
+        is_attendance_admin = is_erp_admin(user)
+        team_mood_recent = []
+        team_mood_week = []
+        team_mood_total = None
+        if is_attendance_admin:
+            week_start = today - timedelta(days=today.weekday())
+            employee_moods = EmployeeMood.objects.filter(user__is_active=True).exclude(
+                Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
+            )
+            weekday_labels = ('Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье')
+            for entry in employee_moods.select_related('user', 'user__employee_profile__office').order_by('-updated_at')[:24]:
+                emoji, label = mood_labels[entry.score]
+                profile = getattr(entry.user, 'employee_profile', None)
+                team_mood_recent.append({
+                    'employee': entry.user,
+                    'office': profile.office if profile and profile.office_id else None,
+                    'date': entry.date,
+                    'weekday': weekday_labels[entry.date.weekday()],
+                    'time': timezone.localtime(entry.updated_at).strftime('%H:%M'),
+                    'slot': entry.slot,
+                    'score': entry.score,
+                    'emoji': emoji,
+                    'label': label,
+                })
+            weekly_moods = employee_moods.filter(date__gte=week_start, date__lte=today)
+            weekly_rows = weekly_moods.values(
+                'user_id', 'user__first_name', 'user__last_name', 'user__email',
+                'user__employee_profile__office__name',
+            ).annotate(
+                average=Avg('score'), count=Count('id'), last_at=Max('updated_at'),
+            ).order_by('user__last_name', 'user__first_name', 'user__email')
+            for row in weekly_rows:
+                rounded = max(1, min(5, round(float(row['average'] or 0))))
+                emoji, label = mood_labels[rounded]
+                team_mood_week.append({**row, 'emoji': emoji, 'label': label})
+            total = weekly_moods.aggregate(average=Avg('score'), count=Count('id'))
+            if total['count']:
+                rounded = max(1, min(5, round(float(total['average'] or 0))))
+                emoji, label = mood_labels[rounded]
+                team_mood_total = {
+                    'average': total['average'],
+                    'count': total['count'],
+                    'employees': len(team_mood_week),
+                    'emoji': emoji,
+                    'label': label,
+                    'week_start': week_start,
+                    'week_end': week_start + timedelta(days=6),
+                }
+
         if employee and employee.role_id:
             employee_role = employee.role.name
         elif user.is_superuser or user.role == 'admin':
@@ -1656,7 +1713,7 @@ class DashboardView(PortalContextMixin, TemplateView):
             profiles = list(
                 EmployeeProfile.objects.select_related('user', 'office', 'role', 'access')
                 .filter(is_active=True, work_status='working', user__is_active=True)
-                .filter(Q(access__must_track_workday=True) | Q(access__isnull=True))
+                .filter(must_track_workday_q())
                 .order_by('office__name', 'user__first_name', 'user__last_name', 'user__email')
             )
             workdays = {
@@ -1729,6 +1786,10 @@ class DashboardView(PortalContextMixin, TemplateView):
             'employee_role': employee_role,
             'employee_office': employee.office if employee and employee.office_id else None,
             'mood_history': mood_history,
+            'is_attendance_admin': is_attendance_admin,
+            'team_mood_recent': team_mood_recent,
+            'team_mood_week': team_mood_week,
+            'team_mood_total': team_mood_total,
             'workday': get_today_workday(user),
             'attendance_overview': attendance_overview,
             'client_pulse': client_pulse,
