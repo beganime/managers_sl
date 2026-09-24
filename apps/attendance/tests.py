@@ -15,6 +15,8 @@ from .services import auto_start_workday_for_login, record_after_hours_activity
 from .telegram import (
     create_employee_link,
     daily_summary_messages,
+    queue_admin_message,
+    register_personal_reminder,
     send_daily_attendance_summary,
     send_weekly_attendance_summary,
     weekly_summary_messages,
@@ -291,6 +293,27 @@ class AttendanceTelegramTests(TestCase):
             started_at=timezone.now(),
         )
         self.assertIn('(UTC+5)', workday_message(workday, AttendanceTelegramDelivery.EVENT_ARRIVAL))
+
+    @patch('apps.attendance.telegram._enqueue')
+    def test_report_reminder_and_admin_message_are_queued_with_distinct_events(self, enqueue):
+        EmployeeTelegramAccount.objects.create(
+            employee=self.user,
+            telegram_user_id=7101,
+            chat_id=7102,
+        )
+        reminder = register_personal_reminder(self.user, 'daily_report', timezone.localdate())
+        administrator = get_user_model().objects.create_user(
+            email='boss@example.com', password='test-password', first_name='Башлык', role='admin', is_staff=True,
+        )
+        EmployeeProfile.objects.create(user=administrator, company=self.company, role=self.role)
+        admin_delivery = queue_admin_message(administrator, 'Кто сейчас свободен?')
+
+        self.assertEqual(reminder.event_type, AttendanceTelegramDelivery.EVENT_REPORT_REMINDER)
+        self.assertIn('17:30', reminder.message)
+        self.assertEqual(admin_delivery.event_type, AttendanceTelegramDelivery.EVENT_ADMIN_MESSAGE)
+        self.assertIn('#сообщение_руководителя', admin_delivery.message)
+        self.assertIn('Кто сейчас свободен?', admin_delivery.message)
+        self.assertEqual(enqueue.call_count, 2)
 
     def test_employee_links_telegram_with_one_time_start_code(self):
         link = create_employee_link(self.user)
