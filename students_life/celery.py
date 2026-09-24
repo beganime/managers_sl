@@ -34,6 +34,10 @@ app.conf.beat_schedule = {
         'task': 'attendance.send_weekly_summary',
         'schedule': crontab(minute=30, hour=18, day_of_week='saturday'),
     },
+    'attendance-daily-office-summary': {
+        'task': 'attendance.send_daily_summary',
+        'schedule': crontab(minute=30, hour=9),
+    },
     'erp-daily-start-reminders': {
         'task': 'erp_notifications.daily_start_reminder',
         'schedule': crontab(minute='*/5'),

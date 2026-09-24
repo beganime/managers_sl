@@ -1651,6 +1651,7 @@ class DashboardView(PortalContextMixin, TemplateView):
             employee_role = user.get_role_display()
 
         attendance_overview = []
+        client_pulse = None
         if is_erp_admin(user) or user.is_staff or user.is_superuser:
             profiles = list(
                 EmployeeProfile.objects.select_related('user', 'office', 'role', 'access')
@@ -1684,6 +1685,45 @@ class DashboardView(PortalContextMixin, TemplateView):
                     'status': item.get_status_display() if item else 'Не входил',
                     'after_hours_range': after_hours_range,
                 })
+            active_clients = clients.exclude(status='archive')
+            status_counts = {
+                row['status']: row['total']
+                for row in active_clients.values('status').annotate(total=Count('pk'))
+            }
+            in_progress_statuses = ('consultation', 'documents', 'application', 'invitation', 'visa', 'arrived')
+            status_labels = dict(Client.STATUS_CHOICES)
+            client_pulse = {
+                'total': active_clients.count(),
+                'featured': [
+                    {
+                        'label': 'Новые', 'value': status_counts.get('new', 0), 'tone': 'red',
+                        'url': f'{reverse("portal:clients")}?status=new',
+                    },
+                    {
+                        'label': 'В процессе',
+                        'value': sum(status_counts.get(status, 0) for status in in_progress_statuses),
+                        'tone': 'navy', 'url': f'{reverse("portal:clients")}?progress=in_progress',
+                    },
+                    {
+                        'label': 'Приглашение', 'value': status_counts.get('invitation', 0), 'tone': 'gold',
+                        'url': f'{reverse("portal:clients")}?status=invitation',
+                    },
+                    {
+                        'label': 'Завершили', 'value': status_counts.get('success', 0), 'tone': 'green',
+                        'url': f'{reverse("portal:clients")}?status=success',
+                    },
+                ],
+                'stages': [
+                    {
+                        'status': status,
+                        'label': status_labels[status],
+                        'value': status_counts.get(status, 0),
+                        'url': f'{reverse("portal:clients")}?status={status}',
+                    }
+                    for status in ('new', *in_progress_statuses, 'success', 'rejected')
+                    if status_counts.get(status, 0)
+                ],
+            }
         context.update({
             'today': today,
             'employee_role': employee_role,
@@ -1691,6 +1731,7 @@ class DashboardView(PortalContextMixin, TemplateView):
             'mood_history': mood_history,
             'workday': get_today_workday(user),
             'attendance_overview': attendance_overview,
+            'client_pulse': client_pulse,
             'is_current_user_birthday': bool(user.dob and user.dob.month == today.month and user.dob.day == today.day),
             'birthday_first_name': user.first_name or full_name(user),
             'metrics': [
@@ -2463,6 +2504,8 @@ class ClientsView(ListPageMixin):
         qs = client_queryset(self.request.user).select_related('manager')
         if self.request.GET.get('status') != 'archive':
             qs = qs.exclude(status='archive')
+        if self.request.GET.get('progress') == 'in_progress':
+            qs = qs.filter(status__in=('consultation', 'documents', 'application', 'invitation', 'visa', 'arrived'))
         if self.request.GET.get('scope') == 'mine':
             qs = qs.filter(manager=self.request.user)
         elif self.request.GET.get('scope') == 'public':
