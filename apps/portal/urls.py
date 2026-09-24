@@ -29,6 +29,7 @@ from .views import (
     ClientFormView,
     ClientNoteCreatePortalView,
     ClientChatsView,
+    ClientArchiveView,
     ClientDetailView,
     ClientDiskUploadView,
     ClientQuestionnaireDetailView,
@@ -124,6 +125,7 @@ urlpatterns = [
     path('client-chats/', ClientChatsView.as_view(), name='client_chats'),
     path('clients/create/', ClientFormView.as_view(), name='client_create'),
     path('clients/<int:pk>/', ClientDetailView.as_view(), name='client_detail'),
+    path('clients/<int:pk>/archive/', ClientArchiveView.as_view(), name='client_archive'),
     path('clients/<int:pk>/notes/create/', ClientNoteCreatePortalView.as_view(), name='client_note_create'),
     path(
         'clients/<int:pk>/applications/<int:application_pk>/transition/',

@@ -6,6 +6,7 @@ from unittest.mock import Mock
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Permission
+from django.core import signing
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
@@ -39,6 +40,116 @@ class QuestionnairePresentationTests(TestCase):
         self.assertIn('Гослиния', values)
         self.assertNotIn('funding_type', labels)
         self.assertNotIn('unknown_mobile_flag', labels)
+
+
+class ClientManagementPortalTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name='Client management company')
+        self.manager = get_user_model().objects.create_user(
+            email='client-manager@example.invalid',
+            password='test-password',
+            is_staff=True,
+        )
+        self.client.force_login(self.manager)
+
+    def client_payload(self, **overrides):
+        payload = {
+            'full_name': 'Иванов Иван Иванович',
+            'phone': '+993 61 123456',
+            'email': 'student@example.invalid',
+            'direction': 'admission',
+            'status': 'new',
+            'is_public': 'False',
+        }
+        payload.update(overrides)
+        return payload
+
+    @patch('apps.portal.views.fallback_company')
+    def test_duplicate_manual_client_opens_existing_card_without_new_sl_id(self, fallback_company):
+        fallback_company.return_value = self.company
+        existing = Client.objects.create(
+            company=self.company,
+            manager=self.manager,
+            full_name='Иванов Иван Иванович',
+            phone='+99361123456',
+            email='STUDENT@example.invalid',
+            sl_id='SL-2027-000001',
+        )
+
+        response = self.client.post(
+            reverse('portal:client_create'),
+            self.client_payload(),
+            secure=True,
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('portal:client_detail', args=[existing.pk]),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(Client.objects.count(), 1)
+
+    @patch('apps.portal.views.fallback_company')
+    @patch('apps.client_onboarding.services.allocate_sl_id', return_value='SL-2027-000002')
+    def test_new_client_returns_manager_to_dashboard(self, _allocate_sl_id, fallback_company):
+        fallback_company.return_value = self.company
+
+        response = self.client.post(
+            reverse('portal:client_create'),
+            self.client_payload(email='new@example.invalid'),
+            secure=True,
+        )
+
+        created = Client.objects.get(email='new@example.invalid')
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, f'{reverse("portal:dashboard")}?client_created={created.pk}')
+
+    def test_assigned_manager_archives_and_restores_client_without_deleting_history(self):
+        student = Client.objects.create(
+            company=self.company,
+            manager=self.manager,
+            full_name='Клиент для архива',
+            phone='+99361111111',
+        )
+
+        archived = self.client.post(
+            reverse('portal:client_archive', args=[student.pk]),
+            {'action': 'archive'},
+            secure=True,
+        )
+        student.refresh_from_db()
+        self.assertRedirects(archived, reverse('portal:clients'), fetch_redirect_response=False)
+        self.assertEqual(student.status, 'archive')
+        self.assertTrue(ActivityLog.objects.filter(student=student, action='CLIENT_ARCHIVED').exists())
+
+        restored = self.client.post(
+            reverse('portal:client_archive', args=[student.pk]),
+            {'action': 'restore'},
+            secure=True,
+        )
+        student.refresh_from_db()
+        self.assertRedirects(
+            restored,
+            reverse('portal:client_detail', args=[student.pk]),
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(student.status, 'new')
+        self.assertTrue(ActivityLog.objects.filter(student=student, action='CLIENT_RESTORED').exists())
+
+    def test_active_client_list_hides_archive_until_archive_filter_selected(self):
+        Client.objects.create(
+            company=self.company, manager=self.manager, full_name='Активный клиент', phone='+1',
+        )
+        Client.objects.create(
+            company=self.company, manager=self.manager, full_name='Архивный клиент', phone='+2', status='archive',
+        )
+
+        active = self.client.get(reverse('portal:clients'), secure=True)
+        archive = self.client.get(reverse('portal:clients'), {'status': 'archive'}, secure=True)
+
+        self.assertContains(active, 'Активный клиент')
+        self.assertNotContains(active, 'Архивный клиент')
+        self.assertContains(archive, 'Архивный клиент')
 
 
 class ClientDiskLinkTests(TestCase):

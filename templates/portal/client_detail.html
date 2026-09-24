@@ -15,6 +15,23 @@
     .client-fact-label { color:rgba(255,255,255,.68); font-size:12px; margin-bottom:6px; }
     .client-fact-value { color:#fff; font-weight:720; overflow-wrap:anywhere; line-height:1.4; }
     .client-profile-hero .pill { color:#fff; background:rgba(255,255,255,.12); border-color:rgba(255,255,255,.2); }
+    .client-actions { position:relative; align-items:flex-start; }
+    .client-action-details { position:relative; }
+    .client-action-details > summary.btn { padding:10px 14px; list-style:none; white-space:nowrap; }
+    .client-action-details > summary::-webkit-details-marker { display:none; }
+    .client-action-details[open] > summary { box-shadow:0 0 0 3px rgba(255,255,255,.18); }
+    .client-action-menu { position:absolute; z-index:20; right:0; top:calc(100% + 8px); display:grid; gap:8px; width:min(310px,calc(100vw - 40px)); padding:12px; border:1px solid var(--line); border-radius:14px; background:var(--panel,#fff); box-shadow:0 18px 45px rgba(11,31,51,.2); }
+    .client-action-menu .btn { justify-content:flex-start; width:100%; color:var(--text,#172033); background:transparent; border-color:transparent; }
+    .client-action-menu .btn:hover { background:var(--soft,#f3f5f7); }
+    .client-disclosure { border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    .client-disclosure > summary.btn { display:flex; width:100%; min-height:48px; padding:12px 16px; border:0; border-radius:0; list-style:none; justify-content:space-between; background:var(--soft,#f3f5f7); }
+    .client-disclosure > summary::-webkit-details-marker { display:none; }
+    .client-disclosure > form { padding:18px; }
+    .private-note-toggle { display:flex!important; grid-template-columns:auto 1fr!important; align-items:center; gap:9px!important; min-height:44px; padding:10px 14px!important; border:1px solid var(--line); border-radius:12px!important; background:var(--soft,#f3f5f7); }
+    .file-picker { display:flex; min-width:min(100%,280px); max-width:100%; align-items:center; gap:10px; padding:7px; border:1px solid var(--line); border-radius:12px; background:var(--panel,#fff); }
+    .file-picker input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+    .file-picker-button { flex:none; display:inline-flex; min-height:36px; align-items:center; gap:7px; padding:8px 12px; border-radius:9px; color:#fff; background:#0d416d; font-weight:700; cursor:pointer; }
+    .file-picker-name { min-width:0; color:var(--muted,#667085); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .client-section-accent { position:relative; }
     .client-section-accent::before { content:""; position:absolute; left:0; top:18px; bottom:18px; width:3px; border-radius:0 4px 4px 0; background:linear-gradient(#0d416d,#b71d17); }
     @media(max-width:1180px){.client-facts{grid-template-columns:repeat(2,minmax(0,1fr));}}
@@ -29,17 +46,23 @@
             <h2 class="panel-title">{{ client.full_name }}</h2>
             <div class="client-subtitle">{{ client.sl_id|default:"SL-ID ещё не присвоен" }} · {% if client.is_public %}доступен сотрудникам компании{% else %}личный клиент менеджера{% endif %}</div>
         </div>
-        <div class="filters">
+        <div class="filters client-actions">
             <form method="post" action="{% url 'portal:client_questionnaire_start' client.id %}" data-disable-on-submit>
                 {% csrf_token %}<button class="btn primary" type="submit">Заполнить анкету</button>
             </form>
             {% if client.sl_id %}<a class="btn" href="#client-chat">Чат с клиентом</a>{% endif %}
-            <details><summary class="btn">Документы и другие действия</summary>
-            <div class="filters" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;">
+            {% if can_edit_client %}<a class="btn secondary" href="{% url 'portal:client_edit' client.id %}"><i data-lucide="pencil"></i>Редактировать</a>{% endif %}
+            <details class="client-action-details"><summary class="btn">Ещё действия</summary>
+            <div class="client-action-menu">
             <a class="btn{% if disk_ready %} secondary{% endif %}" href="{{ disk_url }}" target="_blank" rel="noopener"><i data-lucide="folder-open"></i>{% if disk_ready %}Папка клиента{% else %}DiskSL{% endif %}</a>
             {% if can_access_disk %}<a class="btn secondary" href="{{ translate_url }}" target="_blank" rel="noopener"><i data-lucide="languages"></i>Перевести документ</a>{% endif %}
             <a class="btn secondary" href="{% url 'portal:client_document_create' client.id %}"><i data-lucide="file-plus-2"></i>Создать документ</a>
-            {% if can_edit_client %}<a class="btn" href="{% url 'portal:client_edit' client.id %}">Редактировать</a>{% endif %}
+            {% if can_archive_client %}
+            <form method="post" action="{% url 'portal:client_archive' client.id %}" onsubmit="return confirm('{% if client.status == 'archive' %}Вернуть клиента в рабочий список?{% else %}Убрать клиента в архив? Документы и история сохранятся.{% endif %}')">
+                {% csrf_token %}<input type="hidden" name="action" value="{% if client.status == 'archive' %}restore{% else %}archive{% endif %}">
+                <button class="btn{% if client.status != 'archive' %} danger{% endif %}" type="submit"><i data-lucide="{% if client.status == 'archive' %}archive-restore{% else %}archive{% endif %}"></i>{% if client.status == 'archive' %}Восстановить{% else %}Удалить клиента{% endif %}</button>
+            </form>
+            {% endif %}
             </div></details>
         </div>
     </div>
@@ -119,7 +142,7 @@
         <span class="pill">{{ external_accounts|length }} аккаунтов</span>
     </div>
     <div class="panel-body">
-        <details>
+        <details class="client-disclosure">
         <summary class="btn">Добавить RUID или внешний кабинет</summary>
         <form method="post" action="{% url 'portal:external_account_create' client.id %}" data-disable-on-submit style="margin-top:12px;">
             {% csrf_token %}
@@ -193,7 +216,11 @@
                     <select class="input" name="folder" required>
                         {% for value, label in disk_upload_folders %}<option value="{{ value }}">{{ label }}</option>{% endfor %}
                     </select>
-                    <input class="input" type="file" name="file" accept=".pdf,.docx,.jpg,.jpeg,.png" required>
+                    <label class="file-picker">
+                        <input type="file" name="file" accept=".pdf,.docx,.jpg,.jpeg,.png" required data-file-input>
+                        <span class="file-picker-button"><i data-lucide="paperclip"></i>Выбрать файл</span>
+                        <span class="file-picker-name" data-file-name>Файл не выбран</span>
+                    </label>
                     <button class="btn primary" type="submit"><i data-lucide="upload"></i>Загрузить до 50 МБ</button>
                 </div>
             </form>
@@ -331,7 +358,7 @@
             <div class="filters" style="align-items:flex-start;">
                 <textarea class="input" name="text" maxlength="1000" rows="3" required placeholder="Например: клиент принесёт оригинал паспорта в пятницу" style="flex:1;min-width:240px;resize:vertical;"></textarea>
                 <div style="display:grid;gap:10px;">
-                    <label class="pill" title="Личную заметку видите только вы и администратор"><input type="checkbox" name="is_private"> Только для меня</label>
+                    <label class="private-note-toggle" title="Личную заметку видите только вы и администратор"><input type="checkbox" name="is_private"><span>Только для меня</span></label>
                     <button class="btn primary" type="submit"><i data-lucide="notebook-pen"></i>Сохранить заметку</button>
                 </div>
             </div>
@@ -375,4 +402,7 @@
         {% endif %}
     </div>
 </section>
+<script>
+document.querySelectorAll('[data-file-input]').forEach(input=>input.addEventListener('change',()=>{const name=input.closest('.file-picker')?.querySelector('[data-file-name]');if(name)name.textContent=input.files?.[0]?.name||'Файл не выбран';}));
+</script>
 {% endblock %}
