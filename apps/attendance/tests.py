@@ -137,6 +137,30 @@ class WorkdayClosingPolicyTests(TestCase):
             all(call.kwargs['channel'] == NotificationTemplate.CHANNEL_PUSH for call in create_notification.call_args_list)
         )
 
+    @patch('apps.erp_notifications.tasks.ensure_default_attendance_reminders')
+    @patch('apps.erp_notifications.tasks.create_notification')
+    def test_administrator_gets_no_attendance_reminder_or_automatic_absence(self, create_notification, _ensure_defaults):
+        administrator = get_user_model().objects.create_user(
+            email='attendance-admin@example.com', password='test-password', role='admin', is_staff=True,
+        )
+        EmployeeProfile.objects.create(user=administrator, company=self.company, role=self.role)
+        now = timezone.localtime()
+        AttendanceReminder.objects.create(
+            company=self.company,
+            reminder_type=AttendanceReminder.REMINDER_START,
+            scheduled_time=now.time().replace(second=0, microsecond=0),
+            weekdays=[now.weekday()],
+            message='Начните рабочий день.',
+        )
+
+        reminders = send_attendance_reminders(AttendanceReminder.REMINDER_START)
+        close_result = auto_close_workdays()
+
+        self.assertEqual(reminders, 0)
+        self.assertEqual(close_result['missed'], 0)
+        create_notification.assert_not_called()
+        self.assertFalse(WorkDay.objects.filter(employee=administrator).exists())
+
 
 @override_settings(
     ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5, 6),
@@ -170,6 +194,28 @@ class AttendanceTelegramTests(TestCase):
             AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_ARRIVAL).count(),
             1,
         )
+
+    def test_administrator_is_excluded_from_workday_and_team_summaries(self):
+        administrator = get_user_model().objects.create_user(
+            email='admin@example.com', password='test-password', first_name='Администратор', is_staff=True,
+        )
+        EmployeeProfile.objects.create(user=administrator, company=self.company, role=self.role)
+
+        workday, started = auto_start_workday_for_login(administrator)
+        daily_message = '\n'.join(daily_summary_messages(self.company, timezone.localdate()))
+        weekly_message = '\n'.join(
+            weekly_summary_messages(
+                self.company,
+                timezone.localdate() - timedelta(days=timezone.localdate().weekday()),
+                timezone.localdate(),
+            )
+        )
+
+        self.assertIsNone(workday)
+        self.assertFalse(started)
+        self.assertFalse(WorkDay.objects.filter(employee=administrator).exists())
+        self.assertNotIn('Администратор', daily_message)
+        self.assertNotIn('Администратор', weekly_message)
 
     def test_manual_and_automatic_close_have_distinct_events(self):
         workday, _ = auto_start_workday_for_login(self.user)

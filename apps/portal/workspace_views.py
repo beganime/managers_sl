@@ -38,6 +38,9 @@ class MoodView(LoginRequiredMixin, View):
         return JsonResponse(data)
 
     def post(self, request):
+        from apps.core.permissions import is_erp_admin
+        if is_erp_admin(request.user):
+            return JsonResponse({'error': 'Администратор видит итоги команды, но не отмечает своё настроение.'}, status=403)
         try:
             save_mood(request.user, int(request.POST.get('score', '')), int(request.POST.get('slot', '')))
         except (ValueError, TypeError) as exc:

@@ -68,7 +68,9 @@ def reminder_recipients(reminder):
         is_active=True,
         work_status='working',
         user__is_active=True,
-    ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).select_related('user')
+    ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).exclude(
+        Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
+    ).select_related('user')
     if reminder.office_id:
         employees = employees.filter(Q(office=reminder.office) | Q(office__isnull=True))
     return [employee.user for employee in employees]
@@ -163,7 +165,9 @@ def auto_close_workdays():
             is_active=True,
             work_status='working',
             user__is_active=True,
-        ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True))
+        ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).exclude(
+            Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
+        )
         for profile in profiles.iterator():
             WorkDay.objects.get_or_create(
                 company=profile.company,
@@ -178,7 +182,9 @@ def auto_close_workdays():
     qs = WorkDay.objects.select_related('company', 'office', 'employee').filter(
         date__lte=today,
         status__in=[WorkDay.STATUS_NOT_STARTED, WorkDay.STATUS_STARTED, WorkDay.STATUS_REPORT_SUBMITTED],
-    ).filter(Q(employee__employee_profile__access__must_track_workday=True) | Q(employee__employee_profile__access__isnull=True))
+    ).filter(Q(employee__employee_profile__access__must_track_workday=True) | Q(employee__employee_profile__access__isnull=True)).exclude(
+        Q(employee__is_staff=True) | Q(employee__is_superuser=True) | Q(employee__role='admin')
+    )
     closed = 0
     missed = 0
     waiting_manual_close = 0
