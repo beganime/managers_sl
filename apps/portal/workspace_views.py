@@ -1,4 +1,6 @@
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.core.exceptions import PermissionDenied
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
@@ -63,8 +65,13 @@ class ClientChatView(LoginRequiredMixin, View):
         try:
             bridge = AkylChatClient()
             data = bridge.messages(client.sl_id)
+            if str(data.get('sl_id') or '').strip().upper() != client.sl_id.strip().upper():
+                raise AkylChatError('Сервис вернул чат другого клиента.')
             bridge.mark_read(client.sl_id)
-            return JsonResponse({'messages': data.get('results', [])})
+            response = JsonResponse({'messages': data.get('results', []), 'sl_id': client.sl_id})
+            response['Cache-Control'] = 'no-store, private'
+            response['Pragma'] = 'no-cache'
+            return response
         except AkylChatError:
             return JsonResponse({'error': 'Чат временно недоступен. Повторите загрузку.'}, status=502)
 
@@ -92,6 +99,32 @@ class ClientChatView(LoginRequiredMixin, View):
         except Exception:
             push_sent = False
         return JsonResponse({'sent': True, 'push_sent': push_sent})
+
+
+class AdminTelegramMessageView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request):
+        from apps.attendance.telegram import queue_admin_message
+        from apps.core.permissions import is_erp_admin
+
+        if not is_erp_admin(request.user):
+            raise PermissionDenied
+        action = str(request.POST.get('action') or 'send')
+        try:
+            queue_admin_message(
+                request.user,
+                request.POST.get('message', ''),
+                is_test=action == 'test',
+            )
+        except ValueError as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(
+                request,
+                'Тест передан боту.' if action == 'test' else 'Сообщение передано в Telegram-группу.',
+            )
+        return redirect('portal:dashboard')
 
 
 def ensure_client_questionnaire(client, actor):

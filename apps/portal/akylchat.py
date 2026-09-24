@@ -1,3 +1,5 @@
+import time
+
 import requests
 
 from django.conf import settings
@@ -44,12 +46,36 @@ class AkylChatClient:
     def rooms(self):
         return self._request('GET', 'internal/sl/support-chats/', params={'actor': 'manager'})
 
-    def messages(self, sl_id):
-        return self._request(
-            'GET', f'internal/sl/support-chats/{sl_id}/messages/', params={'actor': 'manager'}
+    def room(self, sl_id):
+        normalized_sl_id = str(sl_id or '').strip().upper()
+        payload = self._request(
+            'GET',
+            'internal/sl/support-chats/',
+            params={'actor': 'manager', 'sl_id': normalized_sl_id},
         )
+        matches = [
+            item for item in payload.get('results', [])
+            if str(item.get('sl_id') or '').strip().upper() == normalized_sl_id
+        ]
+        if len(matches) != 1 or not matches[0].get('id'):
+            raise AkylChatError('Не удалось однозначно определить чат этого клиента.')
+        return matches[0]
+
+    def messages(self, sl_id):
+        room = self.room(sl_id)
+        payload = self._request(
+            'GET',
+            f'internal/sl/support-chats/{sl_id}/messages/',
+            params={'actor': 'manager', '_': int(time.time() * 1000)},
+        )
+        room_id = str(room['id'])
+        results = payload.get('results', [])
+        if any(str(item.get('room') or '') != room_id for item in results):
+            raise AkylChatError('Сервис вернул сообщения другого клиента.')
+        return {**payload, 'results': results, 'sl_id': room.get('sl_id'), 'room_id': room_id}
 
     def send_message(self, sl_id, *, text='', upload=None, manager_name=''):
+        room = self.room(sl_id)
         files = None
         if upload:
             files = {
@@ -59,12 +85,15 @@ class AkylChatClient:
                     getattr(upload, 'content_type', None) or 'application/octet-stream',
                 )
             }
-        return self._request(
+        payload = self._request(
             'POST',
             f'internal/sl/support-chats/{sl_id}/messages/',
             data={'actor': 'manager', 'text': text, 'manager_name': manager_name},
             files=files,
         )
+        if payload.get('room') and str(payload['room']) != str(room['id']):
+            raise AkylChatError('Сервис подтвердил отправку в другой чат.')
+        return payload
 
     def mark_read(self, sl_id):
         return self._request(

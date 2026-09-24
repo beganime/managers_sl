@@ -21,7 +21,8 @@ from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
 from apps.portal.models import EmployeeMood
 from apps.portal.views import build_client_disk_url, build_questionnaire_sections
-from apps.attendance.models import WorkDay
+from apps.attendance.models import AttendanceTelegramDelivery, WorkDay
+from apps.portal.akylchat import AkylChatClient, AkylChatError
 from users.disk_auth import verify_disk_sso_ticket
 
 
@@ -601,6 +602,46 @@ class PortalClientChatTests(TestCase):
         )
 
 
+class ClientCardChatIsolationTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name='Chat isolation company')
+        self.manager = get_user_model().objects.create_user(
+            email='chat-isolation@example.com', password='test-password', is_staff=True,
+        )
+        self.student = Client.objects.create(
+            company=self.company,
+            manager=self.manager,
+            full_name='Иван Иванов',
+            sl_id='SL-001',
+        )
+        self.client.force_login(self.manager)
+
+    @patch('apps.portal.views.AkylChatClient')
+    def test_client_card_rejects_history_for_another_student(self, client_class):
+        service = Mock()
+        service.messages.return_value = {
+            'sl_id': 'SL-999',
+            'results': [{'text': 'Чужая переписка'}],
+        }
+        client_class.return_value = service
+
+        response = self.client.get(reverse('portal:client_chat', args=[self.student.pk]), secure=True)
+
+        self.assertEqual(response.status_code, 502)
+        self.assertNotContains(response, 'Чужая переписка', status_code=502)
+        service.mark_read.assert_not_called()
+
+    def test_adapter_rejects_messages_from_a_different_room(self):
+        bridge = AkylChatClient()
+        bridge._request = Mock(side_effect=[
+            {'results': [{'id': 'room-1', 'sl_id': 'SL-001'}]},
+            {'results': [{'room': 'room-2', 'text': 'Чужая переписка'}]},
+        ])
+
+        with self.assertRaises(AkylChatError):
+            bridge.messages('SL-001')
+
+
 class DashboardBirthdayGreetingTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user(
@@ -644,6 +685,10 @@ class AdminMoodDashboardTests(TestCase):
             email='employee-mood@example.com', password='test-password', first_name='Олеся', last_name='Цветкова',
         )
         EmployeeProfile.objects.create(user=self.employee, company=self.company, role=self.role)
+        self.employee_without_mood = get_user_model().objects.create_user(
+            email='employee-without-mood@example.com', password='test-password', first_name='Тимур', last_name='Годен',
+        )
+        EmployeeProfile.objects.create(user=self.employee_without_mood, company=self.company, role=self.role)
         self.mood = EmployeeMood.objects.create(
             user=self.employee, date=timezone.localdate(), slot=1, score=4,
         )
@@ -657,6 +702,9 @@ class AdminMoodDashboardTests(TestCase):
         self.assertEqual(response.context['team_mood_recent'][0]['employee'], self.employee)
         self.assertEqual(response.context['team_mood_recent'][0]['label'], 'Хорошо')
         self.assertEqual(response.context['team_mood_total']['count'], 1)
+        self.assertEqual(len(response.context['attendance_overview']), 2)
+        no_mood = next(row for row in response.context['team_mood_week'] if row['user_id'] == self.employee_without_mood.pk)
+        self.assertEqual(no_mood['label'], 'Нет отметок')
         self.assertContains(response, 'Последние отметки')
         self.assertContains(response, 'Олеся Цветкова')
         self.assertContains(response, 'Итог по сотрудникам')
@@ -671,6 +719,17 @@ class AdminMoodDashboardTests(TestCase):
         self.assertEqual(start_response.status_code, 302)
         self.assertFalse(EmployeeMood.objects.filter(user=self.admin).exists())
         self.assertFalse(WorkDay.objects.filter(employee=self.admin).exists())
+
+    @patch('apps.attendance.telegram.queue_admin_message')
+    def test_admin_can_send_test_message_to_telegram(self, queue_admin_message):
+        response = self.client.post(
+            reverse('portal:admin_telegram_message'),
+            {'action': 'test'},
+            secure=True,
+        )
+
+        self.assertRedirects(response, reverse('portal:dashboard'), fetch_redirect_response=False)
+        queue_admin_message.assert_called_once_with(self.admin, '', is_test=True)
 
 
 class PortalNotificationsTests(TestCase):

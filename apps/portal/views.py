@@ -40,7 +40,7 @@ from django.views import View
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import FormView, TemplateView
 
-from apps.attendance.models import DailyReport, WorkDay
+from apps.attendance.models import AttendanceTelegramDelivery, DailyReport, WorkDay
 from apps.client_onboarding.models import ClientProvisioningStep, OnboardingSubmission
 from apps.client_onboarding.permissions import can_review_onboarding
 from apps.client_onboarding.services import review_submission
@@ -1655,8 +1655,15 @@ class DashboardView(PortalContextMixin, TemplateView):
         team_mood_recent = []
         team_mood_week = []
         team_mood_total = None
+        dashboard_profiles = []
         if is_attendance_admin:
             week_start = today - timedelta(days=today.weekday())
+            dashboard_profiles = list(
+                EmployeeProfile.objects.select_related('user', 'office', 'role', 'access')
+                .filter(is_active=True, user__is_active=True)
+                .order_by('office__name', 'user__first_name', 'user__last_name', 'user__email')
+            )
+            mood_profiles = [profile for profile in dashboard_profiles if not is_erp_admin(profile.user)]
             employee_moods = EmployeeMood.objects.filter(user__is_active=True).exclude(
                 Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
             )
@@ -1676,16 +1683,32 @@ class DashboardView(PortalContextMixin, TemplateView):
                     'label': label,
                 })
             weekly_moods = employee_moods.filter(date__gte=week_start, date__lte=today)
-            weekly_rows = weekly_moods.values(
+            weekly_rows = list(weekly_moods.values(
                 'user_id', 'user__first_name', 'user__last_name', 'user__email',
                 'user__employee_profile__office__name',
             ).annotate(
                 average=Avg('score'), count=Count('id'), last_at=Max('updated_at'),
-            ).order_by('user__last_name', 'user__first_name', 'user__email')
-            for row in weekly_rows:
-                rounded = max(1, min(5, round(float(row['average'] or 0))))
-                emoji, label = mood_labels[rounded]
-                team_mood_week.append({**row, 'emoji': emoji, 'label': label})
+            ).order_by('user__last_name', 'user__first_name', 'user__email'))
+            weekly_by_user = {row['user_id']: row for row in weekly_rows}
+            for profile in mood_profiles:
+                row = weekly_by_user.get(profile.user_id)
+                if row:
+                    rounded = max(1, min(5, round(float(row['average'] or 0))))
+                    emoji, label = mood_labels[rounded]
+                    team_mood_week.append({**row, 'emoji': emoji, 'label': label})
+                else:
+                    team_mood_week.append({
+                        'user_id': profile.user_id,
+                        'user__first_name': profile.user.first_name,
+                        'user__last_name': profile.user.last_name,
+                        'user__email': profile.user.email,
+                        'user__employee_profile__office__name': profile.office.name if profile.office_id else '',
+                        'average': None,
+                        'count': 0,
+                        'last_at': None,
+                        'emoji': '—',
+                        'label': 'Нет отметок',
+                    })
             total = weekly_moods.aggregate(average=Avg('score'), count=Count('id'))
             if total['count']:
                 rounded = max(1, min(5, round(float(total['average'] or 0))))
@@ -1710,10 +1733,9 @@ class DashboardView(PortalContextMixin, TemplateView):
         attendance_overview = []
         client_pulse = None
         if is_erp_admin(user) or user.is_staff or user.is_superuser:
-            profiles = list(
+            profiles = dashboard_profiles or list(
                 EmployeeProfile.objects.select_related('user', 'office', 'role', 'access')
-                .filter(is_active=True, work_status='working', user__is_active=True)
-                .filter(must_track_workday_q())
+                .filter(is_active=True, user__is_active=True)
                 .order_by('office__name', 'user__first_name', 'user__last_name', 'user__email')
             )
             workdays = {
@@ -1723,8 +1745,34 @@ class DashboardView(PortalContextMixin, TemplateView):
                     employee_id__in=[profile.user_id for profile in profiles],
                 )
             }
+            history_start = today - timedelta(days=6)
+            history = defaultdict(lambda: {'started': 0, 'closed': 0, 'missed': 0})
+            for history_day in WorkDay.objects.filter(
+                date__gte=history_start,
+                date__lte=today,
+                employee_id__in=[profile.user_id for profile in profiles],
+            ).values('employee_id', 'status'):
+                employee_history = history[history_day['employee_id']]
+                if history_day['status'] == WorkDay.STATUS_MISSED:
+                    employee_history['missed'] += 1
+                elif history_day['status'] in (WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED):
+                    employee_history['started'] += 1
+                    employee_history['closed'] += 1
+                elif history_day['status'] != WorkDay.STATUS_NOT_STARTED:
+                    employee_history['started'] += 1
+            latest_moods = {}
+            for mood in EmployeeMood.objects.filter(
+                user_id__in=[profile.user_id for profile in profiles]
+            ).select_related('user').order_by('user_id', '-updated_at'):
+                latest_moods.setdefault(mood.user_id, mood)
             for profile in profiles:
                 item = workdays.get(profile.user_id)
+                access = getattr(profile, 'access', None)
+                tracked = (
+                    not is_erp_admin(profile.user)
+                    and profile.work_status == 'working'
+                    and (not access or access.must_track_workday)
+                )
                 after_hours_first = (item.custom_data or {}).get('after_hours_first_seen_at') if item else None
                 after_hours_last = (item.custom_data or {}).get('after_hours_last_seen_at') if item else None
                 try:
@@ -1734,13 +1782,26 @@ class DashboardView(PortalContextMixin, TemplateView):
                         after_hours_range = f'{after_hours_range}–{last_value}'
                 except (AttributeError, TypeError, ValueError):
                     after_hours_range = ''
+                latest_mood = latest_moods.get(profile.user_id)
+                latest_mood_display = None
+                if latest_mood:
+                    emoji, label = mood_labels[latest_mood.score]
+                    latest_mood_display = {
+                        'emoji': emoji,
+                        'label': label,
+                        'date': latest_mood.date,
+                        'time': timezone.localtime(latest_mood.updated_at).strftime('%H:%M'),
+                    }
                 attendance_overview.append({
                     'employee': profile.user,
-                    'role': profile.role.name if profile.role_id else 'Сотрудник',
+                    'role': 'Администратор' if is_erp_admin(profile.user) else (profile.role.name if profile.role_id else 'Сотрудник'),
                     'office': profile.office,
                     'workday': item,
-                    'status': item.get_status_display() if item else 'Не входил',
+                    'status': item.get_status_display() if item else ('Без учёта' if not tracked else 'Не входил'),
+                    'tracked': tracked,
                     'after_hours_range': after_hours_range,
+                    'history': history[profile.user_id],
+                    'latest_mood': latest_mood_display,
                 })
             active_clients = clients.exclude(status='archive')
             status_counts = {
@@ -1792,6 +1853,9 @@ class DashboardView(PortalContextMixin, TemplateView):
             'team_mood_total': team_mood_total,
             'workday': get_today_workday(user),
             'attendance_overview': attendance_overview,
+            'telegram_recent': AttendanceTelegramDelivery.objects.filter(
+                event_type=AttendanceTelegramDelivery.EVENT_ADMIN_MESSAGE,
+            ).select_related('employee').order_by('-created_at')[:5] if is_attendance_admin else (),
             'client_pulse': client_pulse,
             'is_current_user_birthday': bool(user.dob and user.dob.month == today.month and user.dob.day == today.day),
             'birthday_first_name': user.first_name or full_name(user),

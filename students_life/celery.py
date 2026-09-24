@@ -44,11 +44,7 @@ app.conf.beat_schedule = {
     },
     'erp-daily-report-reminders': {
         'task': 'erp_notifications.daily_report_reminder',
-        'schedule': crontab(minute='*/5'),
-    },
-    'erp-close-workday-reminders': {
-        'task': 'erp_notifications.close_workday_reminder',
-        'schedule': crontab(minute='*/5'),
+        'schedule': crontab(minute=30, hour=17),
     },
     'erp-task-deadline-reminders': {
         'task': 'erp_notifications.task_reminders',

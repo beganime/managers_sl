@@ -1,6 +1,7 @@
 import logging
 import hashlib
 import secrets
+from uuid import uuid4
 from datetime import datetime, timedelta, timezone as datetime_timezone
 
 import requests
@@ -186,6 +187,9 @@ def register_personal_reminder(user, reminder_type, day):
     elif reminder_type == 'close_workday':
         event_type = AttendanceTelegramDelivery.EVENT_CLOSE_REMINDER
         message = '#напоминание_уход\nРабочий день заканчивается в 18:00 (UTC+5). Заполните короткий отчёт и закройте день.'
+    elif reminder_type == 'daily_report':
+        event_type = AttendanceTelegramDelivery.EVENT_REPORT_REMINDER
+        message = '#напоминание_отчёт\n17:30 (UTC+5). До завершения рабочего дня осталось 30 минут. Заполните короткий отчёт в ManagerSL.'
     else:
         return None
     delivery, created = AttendanceTelegramDelivery.objects.get_or_create(
@@ -201,6 +205,54 @@ def register_personal_reminder(user, reminder_type, day):
     )
     if created:
         _enqueue(delivery)
+    return delivery
+
+
+def register_group_reminder(company, reminder_type, day):
+    if not getattr(settings, 'ATTENDANCE_TELEGRAM_ENABLED', False):
+        return None
+    if reminder_type == 'daily_report':
+        event_type = AttendanceTelegramDelivery.EVENT_REPORT_REMINDER
+        message = '#напоминание_отчёт\n17:30 (UTC+5). До конца рабочего дня 30 минут: заполните короткий отчёт в ManagerSL.'
+    else:
+        return None
+    delivery, created = AttendanceTelegramDelivery.objects.get_or_create(
+        event_key=f'group-reminder:{company.pk}:{day}:{event_type}',
+        defaults={
+            'event_type': event_type,
+            'company': company,
+            'message': message,
+        },
+    )
+    if created:
+        _enqueue(delivery)
+    return delivery
+
+
+def queue_admin_message(user, message='', *, is_test=False):
+    profile = getattr(user, 'employee_profile', None)
+    company = profile.company if profile else Company.objects.filter(is_active=True).order_by('pk').first()
+    if not company:
+        raise ValueError('Не найдена активная компания для отправки сообщения.')
+    clean_message = ' '.join(str(message or '').split()).strip()
+    if is_test:
+        clean_message = clean_message or 'Тестовое уведомление: связь с ботом ManagerSL работает.'
+    if not clean_message:
+        raise ValueError('Введите текст сообщения.')
+    if len(clean_message) > 500:
+        raise ValueError('Сообщение не должно превышать 500 символов.')
+    tag = '#тест_бота' if is_test else '#сообщение_руководителя'
+    sender = employee_name(user)
+    sent_time = timezone.now().astimezone(UTC_PLUS_5).strftime('%d.%m.%Y %H:%M')
+    delivery = AttendanceTelegramDelivery.objects.create(
+        event_key=f'admin-message:{uuid4().hex}',
+        event_type=AttendanceTelegramDelivery.EVENT_ADMIN_MESSAGE,
+        company=company,
+        office=profile.office if profile and profile.office_id else None,
+        employee=user,
+        message=f'{tag}\n{clean_message}\n\nОтправил: {sender}\n{sent_time} (UTC+5)',
+    )
+    _enqueue(delivery)
     return delivery
 
 

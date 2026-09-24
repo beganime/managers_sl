@@ -14,7 +14,7 @@ except ImportError:
         return decorator
 
 from apps.attendance.models import AttendanceReminder, AttendanceTelegramDelivery, AutoCloseLog, WorkDay
-from apps.attendance.telegram import register_personal_reminder, register_workday_event
+from apps.attendance.telegram import register_group_reminder, register_personal_reminder, register_workday_event
 from apps.employees.models import EmployeeProfile
 from apps.erp_documents.models import DocumentApproval
 from apps.finance.models import Payment
@@ -243,7 +243,7 @@ def auto_close_workdays():
     return {'closed': closed, 'missed': missed, 'waiting_manual_close': waiting_manual_close, 'failed': failed}
 
 
-def send_attendance_reminders(reminder_type):
+def send_attendance_reminders(reminder_type, *, force=False):
     ensure_default_attendance_reminders()
     now = timezone.localtime()
     today = timezone.localdate()
@@ -253,8 +253,9 @@ def send_attendance_reminders(reminder_type):
     )
     created = 0
     for reminder in reminders:
-        if not reminder_due(reminder, now):
+        if not force and not reminder_due(reminder, now):
             continue
+        reminder_created = 0
         for recipient in reminder_recipients(reminder):
             if reminder_already_sent(reminder, recipient, reminder_type, today):
                 continue
@@ -283,6 +284,9 @@ def send_attendance_reminders(reminder_type):
             )
             register_personal_reminder(recipient, reminder_type, today)
             created += 1
+            reminder_created += 1
+        if reminder_created:
+            register_group_reminder(reminder.company, reminder_type, today)
         reminder.last_sent_at = timezone.now()
         reminder.save(update_fields=['last_sent_at', 'updated_at'])
     return created
@@ -295,7 +299,7 @@ def daily_start_reminder():
 
 @shared_task(name='erp_notifications.daily_report_reminder')
 def daily_report_reminder():
-    return {'created': send_attendance_reminders(AttendanceReminder.REMINDER_REPORT)}
+    return {'created': send_attendance_reminders(AttendanceReminder.REMINDER_REPORT, force=True)}
 
 
 @shared_task(name='erp_notifications.close_workday_reminder')
