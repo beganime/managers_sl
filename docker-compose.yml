@@ -59,7 +59,7 @@ services:
     networks:
       - app_net
     extra_hosts:
-      - "relay.5-129-225-245.sslip.io:host-gateway"
+      - "relay.5-129-225-245.sslip.io:172.18.0.1"
     healthcheck:
       test:
         [
@@ -95,7 +95,7 @@ services:
     networks:
       - app_net
     extra_hosts:
-      - "relay.5-129-225-245.sslip.io:host-gateway"
+      - "relay.5-129-225-245.sslip.io:172.18.0.1"
 
   celery-beat:
     build: .
@@ -119,7 +119,7 @@ services:
     networks:
       - app_net
     extra_hosts:
-      - "relay.5-129-225-245.sslip.io:host-gateway"
+      - "relay.5-129-225-245.sslip.io:172.18.0.1"
 
   nginx:
     image: nginx:1.25-alpine
