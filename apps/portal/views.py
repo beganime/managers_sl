@@ -1103,6 +1103,37 @@ def can_delete_admin(user):
     return bool(user.is_staff or user.is_superuser or is_erp_admin(user))
 
 
+def _normalized_client_phone(value):
+    return re.sub(r'\D+', '', str(value or ''))
+
+
+def _normalized_client_name(value):
+    return ' '.join(str(value or '').casefold().split())
+
+
+def find_client_duplicate(*, company_id, full_name, phone='', email=''):
+    """Return an existing client only for a strong, human-safe match."""
+
+    normalized_email = str(email or '').strip().casefold()
+    normalized_phone = _normalized_client_phone(phone)
+    normalized_name = _normalized_client_name(full_name)
+    candidates = Client.objects.filter(company_id=company_id).only(
+        'id', 'full_name', 'phone', 'email', 'sl_id',
+    )
+    if normalized_email:
+        email_match = candidates.filter(email__iexact=normalized_email).first()
+        if email_match:
+            return email_match
+    if normalized_phone and normalized_name:
+        for candidate in candidates.exclude(phone=''):
+            if (
+                _normalized_client_phone(candidate.phone) == normalized_phone
+                and _normalized_client_name(candidate.full_name) == normalized_name
+            ):
+                return candidate
+    return None
+
+
 def can_edit_owned(user, owner=None, participants=None):
     if can_delete_admin(user):
         return True
@@ -1861,6 +1892,11 @@ class ListPageMixin(PortalContextMixin, TemplateView):
         ordering = self.request.GET.get('ordering') or self.default_ordering
         ordered_qs = qs.order_by(ordering)
         page_obj, page_query = paginate_queryset(self.request, ordered_qs, self.page_size)
+        page_numbers = list(page_obj.paginator.get_elided_page_range(
+            page_obj.number,
+            on_each_side=2,
+            on_ends=1,
+        ))
         view_mode = self.get_view_mode()
         content_template = self.get_content_template()
         context.update({
@@ -1869,6 +1905,8 @@ class ListPageMixin(PortalContextMixin, TemplateView):
             'page_obj': page_obj,
             'paginator': page_obj.paginator,
             'page_query': page_query,
+            'page_numbers': page_numbers,
+            'pagination_ellipsis': Paginator.ELLIPSIS,
             'table_template': self.table_template,
             'grid_template': self.grid_template,
             'filter_template': self.filter_template,
@@ -2419,9 +2457,12 @@ class ClientsView(ListPageMixin):
     create_label = 'Добавить клиента'
     search_fields = ('full_name', 'sl_id', 'phone', 'email', 'city', 'citizenship', 'comments')
     status_choices = Client.STATUS_CHOICES
+    page_size = 20
 
     def get_queryset(self):
         qs = client_queryset(self.request.user).select_related('manager')
+        if self.request.GET.get('status') != 'archive':
+            qs = qs.exclude(status='archive')
         if self.request.GET.get('scope') == 'mine':
             qs = qs.filter(manager=self.request.user)
         elif self.request.GET.get('scope') == 'public':
@@ -2485,6 +2526,21 @@ class ClientsView(ListPageMixin):
             if not item.manager_id:
                 item.manager = request.user
             with transaction.atomic():
+                if client is None:
+                    item.company.__class__.objects.select_for_update().get(pk=item.company_id)
+                    duplicate = find_client_duplicate(
+                        company_id=item.company_id,
+                        full_name=item.full_name,
+                        phone=item.phone,
+                        email=item.email,
+                    )
+                    if duplicate:
+                        messages.warning(
+                            request,
+                            f'Клиент с такими контактами уже есть: '
+                            f'{duplicate.full_name} ({duplicate.sl_id or "без SL-ID"}).',
+                        )
+                        return redirect('portal:client_detail', pk=duplicate.pk)
                 if not item.sl_id:
                     from apps.client_onboarding.services import allocate_sl_id
                     item.sl_id = allocate_sl_id(timezone.localdate().year, OnboardingSubmission.KIND_APPLICANT)
@@ -2494,6 +2550,8 @@ class ClientsView(ListPageMixin):
             if onboarding:
                 enqueue_submission_sync(onboarding.pk)
             messages.success(request, 'Клиент сохранён.')
+            if client is None:
+                return redirect(f'{reverse("portal:dashboard")}?client_created={item.pk}')
             return redirect('portal:client_detail', pk=item.pk)
         context = self.get_context_data()
         context['form'] = form
@@ -2530,6 +2588,7 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             'client': client,
             'student360': student360,
             'can_edit_client': is_erp_admin(self.request.user) or client.manager_id == self.request.user.pk,
+            'can_archive_client': is_erp_admin(self.request.user) or client.manager_id == self.request.user.pk,
             'mailbox_overview': mailbox_overview(client),
             'applications': application_queryset(self.request.user).filter(client=client).order_by('-created_at'),
             'deals': deal_queryset(self.request.user).filter(client=client).order_by('-created_at'),
@@ -2553,6 +2612,42 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             ),
         })
         return context
+
+
+class ClientArchiveView(LoginRequiredMixin, View):
+    """Soft-delete a client so connected records and the audit trail survive."""
+
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request, pk):
+        client = get_object_or_404(client_queryset(request.user), pk=pk)
+        if not (is_erp_admin(request.user) or client.manager_id == request.user.pk):
+            raise PermissionDenied('У вас нет прав изменять этого клиента.')
+
+        restore = request.POST.get('action') == 'restore'
+        next_status = 'new' if restore else 'archive'
+        if client.status != next_status:
+            previous_status = client.status
+            client.status = next_status
+            if not restore:
+                client.is_public = False
+            client.save(update_fields=['status', 'is_public', 'updated_at'])
+            ActivityLog.objects.create(
+                actor=request.user,
+                service='manager_portal',
+                student=client,
+                object_type='crm.Client',
+                object_id=str(client.pk),
+                action='CLIENT_RESTORED' if restore else 'CLIENT_ARCHIVED',
+                metadata={'previous_status': previous_status, 'new_status': next_status},
+            )
+        messages.success(
+            request,
+            'Клиент восстановлен.' if restore else 'Клиент перемещён в архив.',
+        )
+        if restore:
+            return redirect('portal:client_detail', pk=client.pk)
+        return redirect('portal:clients')
 
 
 class ClientExamsPanelView(LoginRequiredMixin, View):
@@ -4861,6 +4956,11 @@ class ClientFormView(PortalFormPageMixin, ClientsView):
     form_page_title_create = 'Добавить клиента'
     form_page_title_edit = 'Редактировать клиента'
     submit_label = 'Сохранить клиента'
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_client_form'] = True
+        return context
 
     def get_form_groups(self, form):
         base_fields = ['full_name', 'phone', 'email', 'direction', 'status', 'funding_type', 'is_public', 'lead_source', 'comments']

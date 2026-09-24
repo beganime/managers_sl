@@ -58,6 +58,8 @@ services:
       - "8000"
     networks:
       - app_net
+    extra_hosts:
+      - "relay.5-129-225-245.sslip.io:host-gateway"
     healthcheck:
       test:
         [
@@ -92,6 +94,8 @@ services:
     shm_size: "512m"
     networks:
       - app_net
+    extra_hosts:
+      - "relay.5-129-225-245.sslip.io:host-gateway"
 
   celery-beat:
     build: .
@@ -114,6 +118,8 @@ services:
       - ./branding:/app/branding:ro
     networks:
       - app_net
+    extra_hosts:
+      - "relay.5-129-225-245.sslip.io:host-gateway"
 
   nginx:
     image: nginx:1.25-alpine

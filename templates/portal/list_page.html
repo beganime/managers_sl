@@ -55,6 +55,15 @@
                         {% if page_obj.has_previous %}
                             <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.previous_page_number }}"><i data-lucide="chevron-left"></i>Назад</a>
                         {% endif %}
+                        {% for page_number in page_numbers %}
+                            {% if page_number == pagination_ellipsis %}
+                                <span class="pagination-gap" aria-hidden="true">{{ pagination_ellipsis }}</span>
+                            {% elif page_number == page_obj.number %}
+                                <span class="btn primary" aria-current="page">{{ page_number }}</span>
+                            {% else %}
+                                <a class="btn pagination-number" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_number }}" aria-label="Страница {{ page_number }}">{{ page_number }}</a>
+                            {% endif %}
+                        {% endfor %}
                         {% if page_obj.has_next %}
                             <a class="btn" href="?{% if page_query %}{{ page_query }}&{% endif %}page={{ page_obj.next_page_number }}">Дальше<i data-lucide="chevron-right"></i></a>
                         {% endif %}
