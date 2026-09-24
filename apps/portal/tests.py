@@ -151,6 +151,34 @@ class ClientManagementPortalTests(TestCase):
         self.assertNotContains(active, 'Архивный клиент')
         self.assertContains(archive, 'Архивный клиент')
 
+    def test_admin_dashboard_has_compact_client_status_summary(self):
+        statuses = ('new', 'consultation', 'documents', 'invitation', 'success', 'archive')
+        for index, status in enumerate(statuses, 1):
+            Client.objects.create(
+                company=self.company,
+                manager=self.manager,
+                full_name=f'Клиент {index}',
+                phone=f'+9936100000{index}',
+                status=status,
+            )
+
+        response = self.client.get(reverse('portal:dashboard'), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        pulse = response.context['client_pulse']
+        self.assertEqual(pulse['total'], 5)
+        featured = {item['label']: item['value'] for item in pulse['featured']}
+        self.assertEqual(featured['Новые'], 1)
+        self.assertEqual(featured['В процессе'], 3)
+        self.assertEqual(featured['Приглашение'], 1)
+        self.assertEqual(featured['Завершили'], 1)
+        progress = self.client.get(reverse('portal:clients'), {'progress': 'in_progress'}, secure=True)
+        self.assertContains(progress, 'Клиент 2')
+        self.assertContains(progress, 'Клиент 3')
+        self.assertContains(progress, 'Клиент 4')
+        self.assertNotContains(progress, 'Клиент 1')
+        self.assertNotContains(progress, 'Клиент 5')
+
 
 class ClientDiskLinkTests(TestCase):
     def setUp(self):

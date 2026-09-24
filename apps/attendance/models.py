@@ -340,6 +340,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
     EVENT_DEPARTURE = 'departure'
     EVENT_AUTO_CLOSE = 'auto_close'
     EVENT_MISSED = 'missed'
+    EVENT_DAILY = 'daily_summary'
     EVENT_WEEKLY = 'weekly_summary'
     EVENT_START_REMINDER = 'start_reminder'
     EVENT_CLOSE_REMINDER = 'close_reminder'
@@ -349,6 +350,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
         (EVENT_DEPARTURE, 'Уход'),
         (EVENT_AUTO_CLOSE, 'Автоматическое закрытие'),
         (EVENT_MISSED, 'Неявка'),
+        (EVENT_DAILY, 'Ежедневная сводка'),
         (EVENT_WEEKLY, 'Недельный отчёт'),
         (EVENT_START_REMINDER, 'Напоминание о начале дня'),
         (EVENT_CLOSE_REMINDER, 'Напоминание о завершении дня'),

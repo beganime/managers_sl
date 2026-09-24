@@ -12,7 +12,14 @@ from apps.organizations.models import Company
 
 from .models import AttendanceReminder, AttendanceTelegramDelivery, EmployeeTelegramAccount, WorkDay
 from .services import auto_start_workday_for_login, record_after_hours_activity
-from .telegram import create_employee_link, send_weekly_attendance_summary, weekly_summary_messages
+from .telegram import (
+    create_employee_link,
+    daily_summary_messages,
+    send_daily_attendance_summary,
+    send_weekly_attendance_summary,
+    weekly_summary_messages,
+    workday_message,
+)
 
 
 @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5, 6), ATTENDANCE_ACTIVITY_PROTECTION_HOUR=17)
@@ -136,6 +143,7 @@ class WorkdayClosingPolicyTests(TestCase):
     ATTENDANCE_TELEGRAM_ENABLED=True,
     ATTENDANCE_TELEGRAM_BOT_TOKEN='test-token',
     ATTENDANCE_TELEGRAM_CHAT_ID='-1001',
+    ATTENDANCE_TELEGRAM_BOT_USERNAME='manager_sl_test_bot',
     ATTENDANCE_TELEGRAM_WEBHOOK_SECRET='webhook-test-secret',
 )
 class AttendanceTelegramTests(TestCase):
@@ -199,6 +207,44 @@ class AttendanceTelegramTests(TestCase):
             AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_WEEKLY).count(),
             1,
         )
+
+    def test_daily_summary_lists_started_and_not_started_in_utc_plus_five(self):
+        second = get_user_model().objects.create_user(
+            email='second@example.com', password='test-password', first_name='Борис', last_name='Петров',
+        )
+        EmployeeProfile.objects.create(user=second, company=self.company, role=self.role)
+        started_at = timezone.make_aware(datetime.combine(timezone.localdate(), time(9, 15)))
+        WorkDay.objects.create(
+            company=self.company,
+            employee=self.user,
+            date=timezone.localdate(),
+            status=WorkDay.STATUS_STARTED,
+            started_at=started_at,
+        )
+
+        message = '\n'.join(daily_summary_messages(self.company, timezone.localdate()))
+
+        self.assertIn('Начали рабочий день — 1', message)
+        self.assertIn('Анна Иванова — 09:15 (UTC+5)', message)
+        self.assertIn('Ещё не начали — 1', message)
+        self.assertIn('Борис Петров', message)
+
+        send_daily_attendance_summary()
+        send_daily_attendance_summary()
+        self.assertEqual(
+            AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_DAILY).count(),
+            1,
+        )
+
+    def test_workday_event_time_has_explicit_utc_plus_five_label(self):
+        workday = WorkDay.objects.create(
+            company=self.company,
+            employee=self.user,
+            date=timezone.localdate(),
+            status=WorkDay.STATUS_STARTED,
+            started_at=timezone.now(),
+        )
+        self.assertIn('(UTC+5)', workday_message(workday, AttendanceTelegramDelivery.EVENT_ARRIVAL))
 
     def test_employee_links_telegram_with_one_time_start_code(self):
         link = create_employee_link(self.user)

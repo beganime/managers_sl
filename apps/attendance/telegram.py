@@ -1,7 +1,7 @@
 import logging
 import hashlib
 import secrets
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone as datetime_timezone
 
 import requests
 from celery import shared_task
@@ -16,6 +16,7 @@ from apps.organizations.models import Company
 from .models import AttendanceTelegramDelivery, EmployeeTelegramAccount, TelegramLinkCode, WorkDay
 
 logger = logging.getLogger(__name__)
+UTC_PLUS_5 = datetime_timezone(timedelta(hours=5), name='UTC+5')
 
 
 def employee_name(user):
@@ -27,7 +28,15 @@ def office_name(workday):
 
 
 def local_time(value):
-    return timezone.localtime(value).strftime('%H:%M') if value else '—'
+    if not value:
+        return '—'
+    if timezone.is_naive(value):
+        value = timezone.make_aware(value, UTC_PLUS_5)
+    return value.astimezone(UTC_PLUS_5).strftime('%H:%M')
+
+
+def utc5_today():
+    return timezone.now().astimezone(UTC_PLUS_5).date()
 
 
 def workday_message(workday, event_type):
@@ -35,13 +44,13 @@ def workday_message(workday, event_type):
     office = office_name(workday)
     date_text = workday.date.strftime('%d.%m.%Y')
     if event_type == AttendanceTelegramDelivery.EVENT_ARRIVAL:
-        return f'#приход\n{name}\nОфис: {office}\nДата: {date_text}\nНачало: {local_time(workday.started_at)}'
+        return f'#приход\n{name}\nОфис: {office}\nДата: {date_text}\nНачало: {local_time(workday.started_at)} (UTC+5)'
     if event_type == AttendanceTelegramDelivery.EVENT_DEPARTURE:
-        return f'#уход\n{name}\nОфис: {office}\nДата: {date_text}\nЗавершение: {local_time(workday.closed_at)}'
+        return f'#уход\n{name}\nОфис: {office}\nДата: {date_text}\nЗавершение: {local_time(workday.closed_at)} (UTC+5)'
     if event_type == AttendanceTelegramDelivery.EVENT_AUTO_CLOSE:
         return (
             f'#автозакрытие\n{name}\nОфис: {office}\nДата: {date_text}\n'
-            f'День закрыт системой: {local_time(workday.closed_at)}'
+            f'День закрыт системой: {local_time(workday.closed_at)} (UTC+5)'
         )
     if event_type == AttendanceTelegramDelivery.EVENT_MISSED:
         return f'#неявка\n{name}\nОфис: {office}\nДата: {date_text}\nРабочий день не был начат.'
@@ -53,7 +62,7 @@ def workday_message(workday, event_type):
             last_seen_text = 'после 18:00'
         return (
             f'#после_работы\n{name}\nОфис: {office}\nДата: {date_text}\n'
-            f'Зафиксирована активность в ManagerSL: {last_seen_text}'
+            f'Зафиксирована активность в ManagerSL: {last_seen_text} (UTC+5)'
         )
     raise ValueError(f'Unsupported attendance Telegram event: {event_type}')
 
@@ -173,10 +182,10 @@ def register_personal_reminder(user, reminder_type, day):
         return None
     if reminder_type == 'start_workday':
         event_type = AttendanceTelegramDelivery.EVENT_START_REMINDER
-        message = '#напоминание_начало\nРабочий день начинается в 09:00. Войдите в ManagerSL — день откроется автоматически.'
+        message = '#напоминание_начало\nРабочий день начинается в 09:00 (UTC+5). Войдите в ManagerSL — день откроется автоматически.'
     elif reminder_type == 'close_workday':
         event_type = AttendanceTelegramDelivery.EVENT_CLOSE_REMINDER
-        message = '#напоминание_уход\nРабочий день заканчивается в 18:00. Заполните короткий отчёт и закройте день.'
+        message = '#напоминание_уход\nРабочий день заканчивается в 18:00 (UTC+5). Заполните короткий отчёт и закройте день.'
     else:
         return None
     delivery, created = AttendanceTelegramDelivery.objects.get_or_create(
@@ -200,6 +209,62 @@ def _summary_period(today):
     period_end = today - timedelta(days=1) if today.weekday() == 6 else today
     period_start = period_end - timedelta(days=period_end.weekday())
     return period_start, period_end
+
+
+def _split_summary(lines, header):
+    messages = []
+    current = ''
+    continuation = f'{header}\nПродолжение'
+    for line in lines:
+        candidate = f'{current}\n{line}' if current else line
+        if len(candidate) > 3800 and current:
+            messages.append(current)
+            current = f'{continuation}\n{line}'
+        else:
+            current = candidate
+    if current:
+        messages.append(current)
+    return messages
+
+
+def daily_summary_messages(company, report_date=None):
+    report_date = report_date or utc5_today()
+    profiles = list(
+        EmployeeProfile.objects.select_related('user', 'office', 'access').filter(
+            company=company,
+            is_active=True,
+            work_status='working',
+            user__is_active=True,
+            hire_date__lte=report_date,
+        ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).order_by(
+            'office__city', 'office__name', 'user__first_name', 'user__last_name', 'user__email'
+        )
+    )
+    workdays = {
+        row.employee_id: row
+        for row in WorkDay.objects.filter(
+            company=company,
+            date=report_date,
+            employee_id__in=[profile.user_id for profile in profiles],
+        )
+    }
+    started = []
+    not_started = []
+    for profile in profiles:
+        row = workdays.get(profile.user_id)
+        label = employee_name(profile.user)
+        office = str(profile.office) if profile.office_id else 'Без офиса'
+        if row and row.started_at:
+            started.append(f'• {label} — {local_time(row.started_at)} (UTC+5), {office}')
+        else:
+            not_started.append(f'• {label} — {office}')
+
+    header = f'#учёт_сегодня\n{company.name}\n{report_date:%d.%m.%Y} · время UTC+5'
+    lines = [header, f'\n✅ Начали рабочий день — {len(started)}']
+    lines.extend(started or ['• Никто'])
+    lines.append(f'\n⚪ Ещё не начали — {len(not_started)}')
+    lines.extend(not_started or ['• Все отметились'])
+    return _split_summary(lines, header)
 
 
 def weekly_summary_messages(company, period_start, period_end):
@@ -226,7 +291,7 @@ def weekly_summary_messages(company, period_start, period_end):
     for profile in profiles:
         grouped.setdefault(str(profile.office) if profile.office_id else 'Без офиса', []).append(profile)
 
-    header = f'#недельный_отчёт\n{company.name}\n{period_start:%d.%m.%Y}–{period_end:%d.%m.%Y}'
+    header = f'#недельный_отчёт\n{company.name}\n{period_start:%d.%m.%Y}–{period_end:%d.%m.%Y}\nЧасовой пояс: UTC+5'
     lines = [header]
     attended_statuses = {
         WorkDay.STATUS_STARTED,
@@ -252,25 +317,36 @@ def weekly_summary_messages(company, period_start, period_end):
     if len(lines) == 1:
         lines.append('Нет сотрудников для учёта.')
 
-    messages = []
-    current = ''
-    continuation = f'{header}\nПродолжение'
-    for line in lines:
-        candidate = f'{current}\n{line}' if current else line
-        if len(candidate) > 3800 and current:
-            messages.append(current)
-            current = f'{continuation}\n{line}'
-        else:
-            current = candidate
-    messages.append(current)
-    return messages
+    return _split_summary(lines, header)
+
+
+@shared_task(name='attendance.send_daily_summary')
+def send_daily_attendance_summary():
+    if not getattr(settings, 'ATTENDANCE_TELEGRAM_ENABLED', False):
+        return {'created': 0, 'reason': 'disabled'}
+    today = utc5_today()
+    created = 0
+    for company in Company.objects.filter(is_active=True):
+        for index, message in enumerate(daily_summary_messages(company, today), 1):
+            delivery, was_created = AttendanceTelegramDelivery.objects.get_or_create(
+                event_key=f'daily:{company.pk}:{today}:{index}',
+                defaults={
+                    'event_type': AttendanceTelegramDelivery.EVENT_DAILY,
+                    'company': company,
+                    'message': message,
+                },
+            )
+            if was_created:
+                created += 1
+                _enqueue(delivery)
+    return {'created': created, 'date': str(today)}
 
 
 @shared_task(name='attendance.send_weekly_summary')
 def send_weekly_attendance_summary():
     if not getattr(settings, 'ATTENDANCE_TELEGRAM_ENABLED', False):
         return {'created': 0, 'reason': 'disabled'}
-    today = timezone.localdate()
+    today = utc5_today()
     period_start, period_end = _summary_period(today)
     created = 0
     for company in Company.objects.filter(is_active=True):
