@@ -199,7 +199,7 @@ class AttendanceTelegramTests(TestCase):
 
     def test_administrator_is_excluded_from_workday_and_team_summaries(self):
         administrator = get_user_model().objects.create_user(
-            email='admin@example.com', password='test-password', first_name='Администратор', is_staff=True,
+            email='admin@example.com', password='test-password', first_name='Администратор', role='admin', is_staff=True,
         )
         EmployeeProfile.objects.create(user=administrator, company=self.company, role=self.role)
 
@@ -218,6 +218,19 @@ class AttendanceTelegramTests(TestCase):
         self.assertFalse(WorkDay.objects.filter(employee=administrator).exists())
         self.assertNotIn('Администратор', daily_message)
         self.assertNotIn('Администратор', weekly_message)
+
+    def test_staff_manager_still_has_to_track_workday(self):
+        staff_manager = get_user_model().objects.create_user(
+            email='staff-manager@example.com', password='test-password', first_name='Старший менеджер', is_staff=True,
+        )
+        EmployeeProfile.objects.create(user=staff_manager, company=self.company, role=self.role)
+
+        workday, started = auto_start_workday_for_login(staff_manager)
+        daily_message = '\n'.join(daily_summary_messages(self.company, timezone.localdate()))
+
+        self.assertTrue(started)
+        self.assertEqual(workday.status, WorkDay.STATUS_STARTED)
+        self.assertIn('Старший менеджер', daily_message)
 
     def test_manual_and_automatic_close_have_distinct_events(self):
         workday, _ = auto_start_workday_for_login(self.user)

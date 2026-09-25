@@ -3,7 +3,7 @@ from datetime import datetime, time
 from django.conf import settings
 from django.utils import timezone
 
-from apps.core.permissions import get_employee_profile, is_erp_admin
+from apps.core.permissions import get_employee_profile, is_attendance_admin
 
 from .models import AttendanceTelegramDelivery, AutoCloseLog, WorkDay
 
@@ -15,13 +15,10 @@ def is_scheduled_workday(day):
 def should_track_employee(user):
     if not user or not user.is_authenticated or not user.is_active:
         return False
-    if is_erp_admin(user):
+    if is_attendance_admin(user):
         return False
     employee = get_employee_profile(user)
-    if not employee or not employee.is_active or employee.work_status != 'working':
-        return False
-    access = getattr(employee, 'access', None)
-    return bool(not access or access.must_track_workday)
+    return bool(employee and employee.is_active)
 
 
 def workday_close_at(day=None):
