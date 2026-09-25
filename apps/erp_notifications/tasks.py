@@ -14,6 +14,7 @@ except ImportError:
         return decorator
 
 from apps.attendance.models import AttendanceReminder, AttendanceTelegramDelivery, AutoCloseLog, WorkDay
+from apps.attendance.services import should_track_employee
 from apps.attendance.telegram import register_group_reminder, register_personal_reminder, register_workday_event
 from apps.employees.models import EmployeeProfile
 from apps.erp_documents.models import DocumentApproval
@@ -61,15 +62,14 @@ def reminder_due(reminder, now):
 
 def reminder_recipients(reminder):
     if reminder.employee_id:
-        return [reminder.employee]
+        return [reminder.employee] if should_track_employee(reminder.employee) else []
 
     employees = EmployeeProfile.objects.filter(
         company=reminder.company,
         is_active=True,
-        work_status='working',
         user__is_active=True,
-    ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).exclude(
-        Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
+    ).exclude(
+        Q(user__is_superuser=True) | Q(user__role='admin')
     ).select_related('user')
     if reminder.office_id:
         employees = employees.filter(Q(office=reminder.office) | Q(office__isnull=True))
@@ -163,10 +163,9 @@ def auto_close_workdays():
     if attendance_workday_is_scheduled(today):
         profiles = EmployeeProfile.objects.select_related('user', 'company', 'office', 'access').filter(
             is_active=True,
-            work_status='working',
             user__is_active=True,
-        ).filter(Q(access__must_track_workday=True) | Q(access__isnull=True)).exclude(
-            Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
+        ).exclude(
+            Q(user__is_superuser=True) | Q(user__role='admin')
         )
         for profile in profiles.iterator():
             WorkDay.objects.get_or_create(
@@ -182,8 +181,8 @@ def auto_close_workdays():
     qs = WorkDay.objects.select_related('company', 'office', 'employee').filter(
         date__lte=today,
         status__in=[WorkDay.STATUS_NOT_STARTED, WorkDay.STATUS_STARTED, WorkDay.STATUS_REPORT_SUBMITTED],
-    ).filter(Q(employee__employee_profile__access__must_track_workday=True) | Q(employee__employee_profile__access__isnull=True)).exclude(
-        Q(employee__is_staff=True) | Q(employee__is_superuser=True) | Q(employee__role='admin')
+    ).exclude(
+        Q(employee__is_superuser=True) | Q(employee__role='admin')
     )
     closed = 0
     missed = 0

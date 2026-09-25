@@ -46,7 +46,7 @@ from apps.client_onboarding.permissions import can_review_onboarding
 from apps.client_onboarding.services import review_submission
 from apps.client_onboarding.tasks import disk_category_for_submission, post_service, provision_client_services
 from apps.core.models import SystemSetting
-from apps.core.permissions import get_employee_profile, is_erp_admin
+from apps.core.permissions import get_employee_profile, is_attendance_admin, is_erp_admin
 from apps.crm.credentials import decrypt_external_secret
 from apps.crm.document_versions import DocumentVersionError, record_document_review
 from apps.crm.external_accounts import ExternalAccountError, create_external_account
@@ -1088,12 +1088,7 @@ def portal_user_queryset(user):
 
 
 def must_track_workday_q():
-    return (
-        (Q(access__must_track_workday=True) | Q(access__isnull=True))
-        & Q(user__is_staff=False)
-        & Q(user__is_superuser=False)
-        & ~Q(user__role='admin')
-    )
+    return Q(user__is_active=True) & Q(is_active=True) & ~Q(user__is_superuser=True) & ~Q(user__role='admin')
 
 
 def can_confirm_finance(user):
@@ -1359,31 +1354,29 @@ def paginate_queryset(request, qs, per_page=PAGE_SIZE):
 
 
 def get_today_workday(user):
-    if not user.is_authenticated or is_erp_admin(user):
+    if not user.is_authenticated or is_attendance_admin(user):
         return None
     employee = get_employee_profile(user)
     today = timezone.localdate()
     workday = WorkDay.objects.filter(employee=user, date=today).select_related('company', 'office', 'daily_report').first()
     if workday or not employee:
         return workday
-    access = getattr(employee, 'access', None)
     return WorkDay(
         company=employee.company,
         office=employee.office,
         employee=user,
         date=today,
         status=WorkDay.STATUS_NOT_STARTED,
-        report_required=bool(not access or access.must_track_workday),
+        report_required=True,
     )
 
 
 def ensure_today_workday(user):
-    if is_erp_admin(user):
+    if is_attendance_admin(user):
         raise ValueError('Администраторы не ведут свой рабочий день.')
     employee = get_employee_profile(user)
     if not employee:
         raise ValueError('Employee profile is required.')
-    access = getattr(employee, 'access', None)
     today = timezone.localdate()
     workday, _ = WorkDay.objects.get_or_create(
         company=employee.company,
@@ -1392,7 +1385,7 @@ def ensure_today_workday(user):
         defaults={
             'office': employee.office,
             'status': WorkDay.STATUS_NOT_STARTED,
-            'report_required': bool(not access or access.must_track_workday),
+            'report_required': True,
         },
     )
     if employee.office_id and workday.office_id != employee.office_id:
@@ -1434,7 +1427,7 @@ class PortalContextMixin(LoginRequiredMixin):
                 ))
                 .order_by('unread_rank', '-created_at')[:5],
             'can_access_admin': can_access_admin,
-            'is_attendance_admin': is_erp_admin(self.request.user),
+            'is_attendance_admin': is_attendance_admin(self.request.user),
             'can_confirm_finance': can_confirm_finance(self.request.user),
             'can_manage_all_finance': is_erp_admin(self.request.user),
             'admin_quick_actions': build_admin_quick_actions() if can_access_admin else [],
@@ -1651,21 +1644,21 @@ class DashboardView(PortalContextMixin, TemplateView):
             emoji, label = mood_labels[score]
             mood_history.append({**row, 'emoji': emoji, 'label': label})
 
-        is_attendance_admin = is_erp_admin(user)
+        is_attendance_admin_user = is_attendance_admin(user)
         team_mood_recent = []
         team_mood_week = []
         team_mood_total = None
         dashboard_profiles = []
-        if is_attendance_admin:
+        if is_attendance_admin_user:
             week_start = today - timedelta(days=today.weekday())
             dashboard_profiles = list(
                 EmployeeProfile.objects.select_related('user', 'office', 'role', 'access')
                 .filter(is_active=True, user__is_active=True)
                 .order_by('office__name', 'user__first_name', 'user__last_name', 'user__email')
             )
-            mood_profiles = [profile for profile in dashboard_profiles if not is_erp_admin(profile.user)]
+            mood_profiles = [profile for profile in dashboard_profiles if not is_attendance_admin(profile.user)]
             employee_moods = EmployeeMood.objects.filter(user__is_active=True).exclude(
-                Q(user__is_staff=True) | Q(user__is_superuser=True) | Q(user__role='admin')
+                Q(user__is_superuser=True) | Q(user__role='admin')
             )
             weekday_labels = ('Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье')
             for entry in employee_moods.select_related('user', 'user__employee_profile__office').order_by('-updated_at')[:24]:
@@ -1767,11 +1760,8 @@ class DashboardView(PortalContextMixin, TemplateView):
                 latest_moods.setdefault(mood.user_id, mood)
             for profile in profiles:
                 item = workdays.get(profile.user_id)
-                access = getattr(profile, 'access', None)
                 tracked = (
-                    not is_erp_admin(profile.user)
-                    and profile.work_status == 'working'
-                    and (not access or access.must_track_workday)
+                    not is_attendance_admin(profile.user)
                 )
                 after_hours_first = (item.custom_data or {}).get('after_hours_first_seen_at') if item else None
                 after_hours_last = (item.custom_data or {}).get('after_hours_last_seen_at') if item else None
@@ -1794,7 +1784,7 @@ class DashboardView(PortalContextMixin, TemplateView):
                     }
                 attendance_overview.append({
                     'employee': profile.user,
-                    'role': 'Администратор' if is_erp_admin(profile.user) else (profile.role.name if profile.role_id else 'Сотрудник'),
+                    'role': 'Администратор' if is_attendance_admin(profile.user) else (profile.role.name if profile.role_id else 'Сотрудник'),
                     'office': profile.office,
                     'workday': item,
                     'status': item.get_status_display() if item else ('Без учёта' if not tracked else 'Не входил'),
@@ -1847,7 +1837,7 @@ class DashboardView(PortalContextMixin, TemplateView):
             'employee_role': employee_role,
             'employee_office': employee.office if employee and employee.office_id else None,
             'mood_history': mood_history,
-            'is_attendance_admin': is_attendance_admin,
+            'is_attendance_admin': is_attendance_admin_user,
             'team_mood_recent': team_mood_recent,
             'team_mood_week': team_mood_week,
             'team_mood_total': team_mood_total,
@@ -1855,7 +1845,7 @@ class DashboardView(PortalContextMixin, TemplateView):
             'attendance_overview': attendance_overview,
             'telegram_recent': AttendanceTelegramDelivery.objects.filter(
                 event_type=AttendanceTelegramDelivery.EVENT_ADMIN_MESSAGE,
-            ).select_related('employee').order_by('-created_at')[:5] if is_attendance_admin else (),
+            ).select_related('employee').order_by('-created_at')[:5] if is_attendance_admin_user else (),
             'client_pulse': client_pulse,
             'is_current_user_birthday': bool(user.dob and user.dob.month == today.month and user.dob.day == today.day),
             'birthday_first_name': user.first_name or full_name(user),
@@ -5603,7 +5593,7 @@ class WorkdayCloseView(WorkdayActionMixin):
     def post(self, request):
         try:
             workday = self.get_workday()
-            if workday.report_required and not workday.has_report and not is_erp_admin(request.user):
+            if workday.report_required and not workday.has_report and not is_attendance_admin(request.user):
                 messages.error(request, 'Submit daily report before closing the workday.')
             else:
                 workday.close(user=request.user, comment=request.POST.get('comment', ''))
@@ -5851,7 +5841,7 @@ class RatingView(PortalContextMixin, TemplateView):
             workdays = WorkDay.objects.filter(employee=user, date__gte=period_start)
             started_days = workdays.exclude(status=WorkDay.STATUS_NOT_STARTED).count()
             closed_days = workdays.filter(status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()
-            must_track = not access or access.must_track_workday
+            must_track = not is_attendance_admin(user)
             missed_days = workdays.filter(status=WorkDay.STATUS_MISSED).count() if must_track else 0
             last_workday = workdays.order_by('-date').first()
             score = (
