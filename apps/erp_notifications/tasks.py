@@ -194,7 +194,7 @@ def auto_close_workdays():
                 previous_status = workday.status
                 workday.status = WorkDay.STATUS_MISSED
                 workday.closed_at = now
-                workday.comment = workday.comment or 'Рабочий день не был начат до 18:00.'
+                workday.comment = workday.comment or 'Рабочий день не был начат до 20:00.'
                 workday.save(update_fields=['status', 'closed_at', 'comment', 'updated_at'])
                 AutoCloseLog.objects.create(
                     workday=workday,
@@ -202,20 +202,20 @@ def auto_close_workdays():
                     office=workday.office,
                     employee=workday.employee,
                     previous_status=previous_status,
-                    reason='Рабочий день не был начат до 18:00.',
+                    reason='Рабочий день не был начат до 20:00.',
                     success=True,
                 )
                 register_workday_event(workday, AttendanceTelegramDelivery.EVENT_MISSED)
                 missed += 1
             else:
-                workday.close(auto=True, comment='Автоматически закрыт системой в 18:00.')
+                workday.close(auto=True, comment='Автоматически закрыт системой в 20:00.')
                 closed += 1
 
             create_notification(
                 workday.employee,
                 title='Рабочий день завершён' if workday.status != WorkDay.STATUS_MISSED else 'Рабочий день не был начат',
                 body=(
-                    'Система закрыла рабочий день автоматически в 18:00.'
+                    'Система закрыла рабочий день автоматически в 20:00.'
                     if workday.status != WorkDay.STATUS_MISSED
                     else 'Начало рабочего дня сегодня не отмечено. В учёте день записан как отсутствие.'
                 ),

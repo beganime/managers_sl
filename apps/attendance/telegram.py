@@ -58,9 +58,9 @@ def workday_message(workday, event_type):
     if event_type == AttendanceTelegramDelivery.EVENT_AFTER_HOURS:
         last_seen = (workday.custom_data or {}).get('after_hours_last_seen_at')
         try:
-            last_seen_text = local_time(datetime.fromisoformat(last_seen)) if last_seen else 'после 18:00'
+            last_seen_text = local_time(datetime.fromisoformat(last_seen)) if last_seen else 'после 20:00'
         except (TypeError, ValueError):
-            last_seen_text = 'после 18:00'
+            last_seen_text = 'после 20:00'
         return (
             f'#после_работы\n{name}\nОфис: {office}\nДата: {date_text}\n'
             f'Зафиксирована активность в ManagerSL: {last_seen_text} (UTC+5)'

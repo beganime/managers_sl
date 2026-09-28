@@ -1,4 +1,4 @@
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
@@ -11,7 +11,7 @@ from apps.erp_notifications.tasks import auto_close_workdays, send_attendance_re
 from apps.organizations.models import Company
 
 from .models import AttendanceReminder, AttendanceTelegramDelivery, EmployeeTelegramAccount, WorkDay
-from .services import auto_start_workday_for_login, record_after_hours_activity
+from .services import auto_start_workday_for_login, is_scheduled_workday, record_after_hours_activity, workday_close_at
 from .telegram import (
     create_employee_link,
     daily_summary_messages,
@@ -22,6 +22,15 @@ from .telegram import (
     weekly_summary_messages,
     workday_message,
 )
+
+
+@override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5), ATTENDANCE_AUTO_CLOSE_HOUR=20)
+class AttendanceScheduleTests(TestCase):
+    def test_sunday_is_not_a_workday(self):
+        self.assertFalse(is_scheduled_workday(date(2026, 10, 4)))
+
+    def test_automatic_close_is_at_twenty_hundred(self):
+        self.assertEqual(workday_close_at(date(2026, 9, 28)).hour, 20)
 
 
 @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5, 6), ATTENDANCE_ACTIVITY_PROTECTION_HOUR=17)
@@ -53,7 +62,7 @@ class WorkdayClosingPolicyTests(TestCase):
         self.assertEqual(result['missed'], 1)
 
     @patch('apps.erp_notifications.tasks.create_notification')
-    def test_inactive_started_day_is_closed_at_18(self, _create_notification):
+    def test_inactive_started_day_is_closed_at_20(self, _create_notification):
         user = self.create_employee('inactive@example.com')
         self.set_activity(user, 16, 59)
         workday = WorkDay.objects.create(
@@ -71,7 +80,7 @@ class WorkdayClosingPolicyTests(TestCase):
         self.assertEqual(result['closed'], 1)
 
     @patch('apps.erp_notifications.tasks.create_notification')
-    def test_evening_activity_is_still_closed_at_18(self, _create_notification):
+    def test_evening_activity_is_closed_by_automatic_run_at_20(self, _create_notification):
         user = self.create_employee('active@example.com')
         self.set_activity(user, 17, 30)
         workday = WorkDay.objects.create(
@@ -89,10 +98,10 @@ class WorkdayClosingPolicyTests(TestCase):
         self.assertFalse(workday.requires_manual_close)
         self.assertEqual(result['closed'], 1)
 
-    def test_activity_after_18_is_recorded_without_reopening_day(self):
+    def test_activity_after_20_is_recorded_without_reopening_day(self):
         user = self.create_employee('late@example.com')
         local_value = timezone.make_aware(
-            datetime.combine(timezone.localdate(), time(18, 25)),
+            datetime.combine(timezone.localdate(), time(20, 25)),
             timezone.get_current_timezone(),
         )
         workday = WorkDay.objects.create(
@@ -184,7 +193,8 @@ class AttendanceTelegramTests(TestCase):
         )
         EmployeeProfile.objects.create(user=self.user, company=self.company, role=self.role)
 
-    def test_login_starts_workday_and_arrival_is_registered_once(self):
+    @patch('apps.attendance.services.is_after_workday_close', return_value=False)
+    def test_login_starts_workday_and_arrival_is_registered_once(self, _after_close):
         first, first_started = auto_start_workday_for_login(self.user)
         second, second_started = auto_start_workday_for_login(self.user)
 
@@ -219,7 +229,8 @@ class AttendanceTelegramTests(TestCase):
         self.assertNotIn('Администратор', daily_message)
         self.assertNotIn('Администратор', weekly_message)
 
-    def test_staff_manager_still_has_to_track_workday(self):
+    @patch('apps.attendance.services.is_after_workday_close', return_value=False)
+    def test_staff_manager_still_has_to_track_workday(self, _after_close):
         staff_manager = get_user_model().objects.create_user(
             email='staff-manager@example.com', password='test-password', first_name='Старший менеджер', is_staff=True,
         )

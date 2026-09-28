@@ -24,7 +24,7 @@ def should_track_employee(user):
 def workday_close_at(day=None):
     day = day or timezone.localdate()
     close_time = time(
-        getattr(settings, 'ATTENDANCE_AUTO_CLOSE_HOUR', 18),
+        getattr(settings, 'ATTENDANCE_AUTO_CLOSE_HOUR', 20),
         getattr(settings, 'ATTENDANCE_AUTO_CLOSE_MINUTE', 0),
     )
     return timezone.make_aware(datetime.combine(day, close_time), timezone.get_current_timezone())
@@ -37,7 +37,7 @@ def is_after_workday_close(value=None):
 
 
 def record_after_hours_activity(user, value=None):
-    """Record portal activity after 18:00 without reopening a finished workday."""
+    """Record portal activity after automatic closing without reopening the day."""
     value = value or timezone.now()
     today = timezone.localdate(value)
     if not is_scheduled_workday(today) or not should_track_employee(user) or not is_after_workday_close(value):
@@ -52,7 +52,7 @@ def record_after_hours_activity(user, value=None):
             'office': employee.office,
             'status': WorkDay.STATUS_MISSED,
             'closed_at': workday_close_at(today),
-            'comment': 'Рабочий день не был начат до 18:00.',
+            'comment': 'Рабочий день не был начат до 20:00.',
             'report_required': True,
         },
     )
@@ -60,14 +60,14 @@ def record_after_hours_activity(user, value=None):
         previous_status = workday.status
         workday.status = WorkDay.STATUS_MISSED
         workday.closed_at = workday_close_at(today)
-        workday.comment = workday.comment or 'Рабочий день не был начат до 18:00.'
+        workday.comment = workday.comment or 'Рабочий день не был начат до 20:00.'
         AutoCloseLog.objects.create(
             workday=workday,
             company=workday.company,
             office=workday.office,
             employee=workday.employee,
             previous_status=previous_status,
-            reason='Рабочий день не был начат до 18:00.',
+            reason='Рабочий день не был начат до 20:00.',
             success=True,
         )
 
