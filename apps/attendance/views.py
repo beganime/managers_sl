@@ -5,7 +5,7 @@ from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
 
-from apps.core.permissions import get_employee_profile, is_erp_admin
+from apps.core.permissions import get_employee_profile, is_attendance_admin, is_erp_admin
 from apps.organizations.models import Company, Office
 
 from .models import AttendanceReminder, AutoCloseLog, DailyReport, WorkDay
@@ -63,11 +63,14 @@ def resolve_company_office(user, data=None):
 
 
 def user_must_track_workday(user):
-    if is_erp_admin(user):
-        return False
     employee = get_employee_profile(user)
-    access = getattr(employee, 'access', None) if employee else None
-    return bool(not access or access.must_track_workday)
+    return bool(
+        user
+        and user.is_active
+        and employee
+        and employee.is_active
+        and not is_attendance_admin(user)
+    )
 
 
 def apply_common_filters(qs, request, *, date_field='date', search_fields=()):
@@ -120,7 +123,7 @@ class WorkDayViewSet(viewsets.ModelViewSet):
         return qs.order_by('-date', '-created_at')
 
     def perform_create(self, serializer):
-        if is_erp_admin(self.request.user):
+        if is_attendance_admin(self.request.user):
             raise PermissionDenied('Администраторы не ведут свой рабочий день.')
         company, office = resolve_company_office(self.request.user, self.request.data)
         serializer.save(
@@ -131,7 +134,7 @@ class WorkDayViewSet(viewsets.ModelViewSet):
         )
 
     def get_or_create_today(self, request):
-        if is_erp_admin(request.user):
+        if is_attendance_admin(request.user):
             raise PermissionDenied('Администраторы не ведут свой рабочий день.')
         today = timezone.localdate()
         company, office = resolve_company_office(request.user, request.data if request.method == 'POST' else request.query_params)
@@ -224,7 +227,7 @@ class WorkDayViewSet(viewsets.ModelViewSet):
         if workday.status in {WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED}:
             return Response(self.get_serializer(workday).data, status=status.HTTP_200_OK)
 
-        if workday.report_required and not workday.has_report and not is_erp_admin(request.user):
+        if workday.report_required and not workday.has_report and not is_attendance_admin(request.user):
             raise ValidationError({'detail': 'Submit daily report before closing the workday.'})
 
         workday.close(user=request.user, comment=request.data.get('comment', ''))

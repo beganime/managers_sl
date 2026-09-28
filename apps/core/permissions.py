@@ -16,6 +16,22 @@ def is_erp_admin(user) -> bool:
     )
 
 
+def is_attendance_admin(user) -> bool:
+    """Only the actual Administrator role is exempt from attendance and mood checks.
+
+    ``is_staff`` is a technical Django-admin permission and is also granted to some
+    ordinary managers, so it must not be used as an attendance exemption.
+    """
+    return bool(
+        user
+        and getattr(user, 'is_authenticated', False)
+        and (
+            getattr(user, 'is_superuser', False)
+            or getattr(user, 'role', None) == 'admin'
+        )
+    )
+
+
 def get_employee_role_type(user) -> str | None:
     employee = get_employee_profile(user)
     if not employee or not employee.role_id:

@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.attendance.models import WorkDay
-from apps.core.permissions import filter_manager_owned, get_employee_profile, is_erp_admin
+from apps.core.permissions import filter_manager_owned, get_employee_profile, is_attendance_admin, is_erp_admin
 from apps.crm.models import Application, Client, Lead
 from apps.education.models import Program, University
 from apps.employees.models import EmployeeProfile
@@ -605,7 +605,6 @@ class RatingView(APIView):
         rows = []
         for profile in profiles:
             user = profile.user
-            access = getattr(profile, 'access', None)
             can_be_in_leaderboard = bool(not access or access.can_be_in_leaderboard)
             is_hidden_from_rating = not can_be_in_leaderboard
             if is_hidden_from_rating and not include_hidden:
@@ -651,7 +650,7 @@ class RatingView(APIView):
             workdays = WorkDay.objects.filter(employee=user, date__gte=period_start)
             started_days = workdays.exclude(status=WorkDay.STATUS_NOT_STARTED).count()
             closed_days = workdays.filter(status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()
-            must_track = not access or access.must_track_workday
+            must_track = not is_attendance_admin(user)
             missed_days = workdays.filter(status=WorkDay.STATUS_MISSED).count() if must_track else 0
             score = (
                 leads_count * 2

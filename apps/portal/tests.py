@@ -720,6 +720,18 @@ class AdminMoodDashboardTests(TestCase):
         self.assertFalse(EmployeeMood.objects.filter(user=self.admin).exists())
         self.assertFalse(WorkDay.objects.filter(employee=self.admin).exists())
 
+    def test_staff_manager_can_submit_mood(self):
+        staff_manager = get_user_model().objects.create_user(
+            email='staff-mood-manager@example.com', password='test-password', role='manager', is_staff=True,
+        )
+        EmployeeProfile.objects.create(user=staff_manager, company=self.company, role=self.role)
+        self.client.force_login(staff_manager)
+
+        response = self.client.post(reverse('portal:mood'), {'slot': 1, 'score': 5}, secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(EmployeeMood.objects.filter(user=staff_manager, slot=1, score=5).exists())
+
     @patch('apps.attendance.telegram.queue_admin_message')
     def test_admin_can_send_test_message_to_telegram(self, queue_admin_message):
         response = self.client.post(

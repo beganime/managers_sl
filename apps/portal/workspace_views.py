@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Avg, Count
 from datetime import timedelta
 from .models import EmployeeMood
+from apps.core.permissions import get_employee_profile, is_attendance_admin
 
 
 def save_mood(user, score, slot):
@@ -29,10 +30,9 @@ class MoodView(LoginRequiredMixin, View):
     login_url = reverse_lazy('portal:login')
 
     def get(self, request):
-        from apps.core.permissions import is_erp_admin
         today = timezone.localdate()
         data = {'entries': list(EmployeeMood.objects.filter(user=request.user, date=today).values('slot', 'score'))}
-        if is_erp_admin(request.user):
+        if is_attendance_admin(request.user):
             week = today - timedelta(days=today.weekday())
             data['week'] = list(EmployeeMood.objects.filter(date__gte=week, date__lte=today)
                 .values('user__first_name', 'user__last_name', 'user__email')
@@ -40,9 +40,11 @@ class MoodView(LoginRequiredMixin, View):
         return JsonResponse(data)
 
     def post(self, request):
-        from apps.core.permissions import is_erp_admin
-        if is_erp_admin(request.user):
+        if is_attendance_admin(request.user):
             return JsonResponse({'error': 'Администратор видит итоги команды, но не отмечает своё настроение.'}, status=403)
+        profile = get_employee_profile(request.user)
+        if not profile or not profile.is_active:
+            return JsonResponse({'error': 'Для отметки настроения нужен активный профиль сотрудника.'}, status=403)
         try:
             save_mood(request.user, int(request.POST.get('score', '')), int(request.POST.get('slot', '')))
         except (ValueError, TypeError) as exc:
