@@ -1,5 +1,5 @@
 import calendar
-from html import unescape
+import base64
 import json
 import logging
 import mimetypes
@@ -3040,23 +3040,15 @@ class DiskSLLoginView(LoginRequiredMixin, View):
         disk_url = urlsplit(settings.DISK_WEB_URL)
         origin = f'{disk_url.scheme}://{disk_url.netloc}'
         login_url = f'{origin}/web/client/login?{urlencode({"next": next_url})}'
-        try:
-            login_page = requests.get(login_url, timeout=(3, 8))
-            login_page.raise_for_status()
-            match = re.search(r'name="_form_token"\s+value="([^"]+)"', login_page.text)
-            if not match:
-                raise ValueError('DiskSL did not return a login token')
-        except (requests.RequestException, ValueError):
-            messages.error(request, 'Автоматический вход в DiskSL временно недоступен.')
-            return redirect(login_url)
-
         ticket = issue_disk_sso_ticket(request.user.email)
-        response = render(request, 'portal/disk_sso.html', {
-            'disk_login_url': login_url,
-            'disk_username': request.user.email,
-            'disk_ticket': ticket,
-            'disk_form_token': unescape(match.group(1)),
-        })
+        payload = base64.urlsafe_b64encode(json.dumps({
+            'username': request.user.email,
+            'ticket': ticket,
+        }, separators=(',', ':')).encode('utf-8')).decode('ascii').rstrip('=')
+        # The fragment is never sent to nginx/SFTPGo logs. DiskSL's first-party
+        # login page receives its own CSRF cookie/token and the branding script
+        # submits the short-lived ticket from the fragment.
+        response = redirect(f'{login_url}#manager-sso={payload}')
         response['Cache-Control'] = 'no-store, private, max-age=0'
         response['Referrer-Policy'] = 'no-referrer'
         return response
