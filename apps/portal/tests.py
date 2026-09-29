@@ -1,4 +1,5 @@
 import base64
+import json
 from datetime import timedelta
 from urllib.parse import parse_qs, urlsplit
 from unittest.mock import patch
@@ -242,20 +243,22 @@ class ClientDiskLinkTests(TestCase):
         self.assertEqual(url, reverse('portal:disk_sl'))
 
     @override_settings(DISK_WEB_URL='https://disk.manager-sl.ru/web/client/login')
-    @patch('apps.portal.views.requests.get')
-    def test_manager_opens_disk_without_reentering_password(self, get):
-        get.return_value.raise_for_status.return_value = None
-        get.return_value.text = '<input type="hidden" name="_form_token" value="sftpgo-csrf">'
-
+    def test_manager_opens_disk_without_reentering_password(self):
         response = self.client.get(
             reverse('portal:disk_sl'),
             {'next': '/web/client/files?path=%2F2027'},
             secure=True,
         )
 
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'sftpgo-csrf')
-        ticket = response.context['disk_ticket']
+        self.assertEqual(response.status_code, 302)
+        target = response['Location']
+        self.assertTrue(target.startswith('https://disk.manager-sl.ru/web/client/login?'))
+        self.assertIn('#manager-sso=', target)
+        encoded = target.split('#manager-sso=', 1)[1]
+        encoded += '=' * (-len(encoded) % 4)
+        payload = json.loads(base64.urlsafe_b64decode(encoded).decode('utf-8'))
+        self.assertEqual(payload['username'], self.manager.email)
+        ticket = payload['ticket']
         self.assertLessEqual(len(ticket.encode()), 72)
         self.assertTrue(verify_disk_sso_ticket(self.manager.email, ticket))
 
