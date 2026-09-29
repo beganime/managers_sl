@@ -3,6 +3,34 @@
 
     const ownerUsername = 'begenchyagmurow2008@gmail.com';
 
+    function completeManagerSso() {
+        if (window.location.pathname !== '/web/client/login') return false;
+        const prefix = '#manager-sso=';
+        if (!window.location.hash.startsWith(prefix)) return false;
+        try {
+            const encoded = window.location.hash.slice(prefix.length).replace(/-/g, '+').replace(/_/g, '/');
+            const padded = encoded + '='.repeat((4 - encoded.length % 4) % 4);
+            const payload = JSON.parse(window.atob(padded));
+            const username = String(payload.username || '').trim();
+            const ticket = String(payload.ticket || '').trim();
+            if (!username || !ticket.startsWith('s1.') || ticket.length > 96) throw new Error('invalid payload');
+            const form = document.getElementById('sign_in_form');
+            const usernameInput = form?.elements.namedItem('username');
+            const passwordInput = form?.elements.namedItem('password');
+            if (!form || !usernameInput || !passwordInput) throw new Error('login form unavailable');
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            usernameInput.value = username;
+            passwordInput.value = ticket;
+            window.requestAnimationFrame(() => form.submit());
+            return true;
+        } catch (_error) {
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            return false;
+        }
+    }
+
+    if (completeManagerSso()) return;
+
     function getCurrentUsername() {
         const element = document.querySelector('.menu-content .wrap-word');
         return String(element?.textContent || '').trim().toLowerCase();
