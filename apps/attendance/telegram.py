@@ -14,7 +14,14 @@ from django.utils import timezone
 from apps.employees.models import EmployeeProfile
 from apps.organizations.models import Company
 
-from .models import AttendanceTelegramDelivery, EmployeeTelegramAccount, TelegramLinkCode, WorkDay
+from .models import (
+    AttendanceTelegramDelivery,
+    AttendanceTelegramTopic,
+    EmployeeTelegramAccount,
+    TelegramLinkCode,
+    WorkDay,
+    WorkSession,
+)
 
 logger = logging.getLogger(__name__)
 UTC_PLUS_5 = datetime_timezone(timedelta(hours=5), name='UTC+5')
@@ -115,16 +122,50 @@ def register_workday_event(workday, event_type):
     return delivery
 
 
-def send_telegram_message(message, chat_id=None):
+def topic_type_for_event(event_type):
+    if event_type == AttendanceTelegramDelivery.EVENT_DAILY:
+        return AttendanceTelegramTopic.TOPIC_DAILY
+    if event_type == AttendanceTelegramDelivery.EVENT_MISSED:
+        return AttendanceTelegramTopic.TOPIC_ABSENT
+    if event_type in {
+        AttendanceTelegramDelivery.EVENT_ARRIVAL,
+        AttendanceTelegramDelivery.EVENT_DEPARTURE,
+        AttendanceTelegramDelivery.EVENT_AUTO_CLOSE,
+        AttendanceTelegramDelivery.EVENT_AFTER_HOURS,
+        AttendanceTelegramDelivery.EVENT_START_REMINDER,
+        AttendanceTelegramDelivery.EVENT_CLOSE_REMINDER,
+    }:
+        return AttendanceTelegramTopic.TOPIC_TIME
+    return AttendanceTelegramTopic.TOPIC_REPORTS
+
+
+def resolve_group_topic(event_type, chat_id=None):
+    raw_chat_id = chat_id or settings.ATTENDANCE_TELEGRAM_CHAT_ID
+    if not raw_chat_id:
+        return None
+    try:
+        chat_id = int(raw_chat_id)
+    except (TypeError, ValueError):
+        return None
+    return AttendanceTelegramTopic.objects.filter(
+        chat_id=chat_id,
+        topic_type=topic_type_for_event(event_type),
+    ).first()
+
+
+def send_telegram_message(message, chat_id=None, message_thread_id=None):
     token = settings.ATTENDANCE_TELEGRAM_BOT_TOKEN
     chat_id = chat_id or settings.ATTENDANCE_TELEGRAM_CHAT_ID
     if not settings.ATTENDANCE_TELEGRAM_ENABLED or not token or not chat_id:
         return False, 'Telegram attendance is not configured.'
     base = settings.ATTENDANCE_TELEGRAM_API_BASE.rstrip('/')
     try:
+        payload = {'chat_id': chat_id, 'text': message, 'disable_web_page_preview': True}
+        if message_thread_id:
+            payload['message_thread_id'] = int(message_thread_id)
         response = requests.post(
             f'{base}/bot{token}/sendMessage',
-            json={'chat_id': chat_id, 'text': message, 'disable_web_page_preview': True},
+            json=payload,
             timeout=20,
         )
         data = response.json()
@@ -142,11 +183,27 @@ def send_attendance_telegram_delivery(delivery_id):
         if not delivery or delivery.status == AttendanceTelegramDelivery.STATUS_SENT:
             return {'sent': bool(delivery), 'reason': 'already_sent_or_missing'}
         delivery.attempts += 1
-        sent, error = send_telegram_message(delivery.message, delivery.target_chat_id)
+        target_chat_id = delivery.target_chat_id
+        target_thread_id = delivery.target_message_thread_id
+        if not target_chat_id:
+            topic = resolve_group_topic(delivery.event_type)
+            if not topic:
+                sent, error = False, f'telegram_topic_not_configured:{topic_type_for_event(delivery.event_type)}'
+            else:
+                target_chat_id = topic.chat_id
+                target_thread_id = topic.message_thread_id
+                sent, error = send_telegram_message(delivery.message, target_chat_id, target_thread_id)
+                delivery.target_chat_id = target_chat_id
+                delivery.target_message_thread_id = target_thread_id
+        else:
+            sent, error = send_telegram_message(delivery.message, target_chat_id, target_thread_id)
         delivery.status = AttendanceTelegramDelivery.STATUS_SENT if sent else AttendanceTelegramDelivery.STATUS_FAILED
         delivery.last_error = error[:255]
         delivery.sent_at = timezone.now() if sent else None
-        delivery.save(update_fields=['attempts', 'status', 'last_error', 'sent_at', 'updated_at'])
+        delivery.save(update_fields=[
+            'attempts', 'status', 'last_error', 'sent_at', 'target_chat_id',
+            'target_message_thread_id', 'updated_at',
+        ])
     return {'sent': sent}
 
 
@@ -256,6 +313,45 @@ def queue_admin_message(user, message='', *, is_test=False):
     return delivery
 
 
+def report_message(report):
+    submitted = (report.submitted_at or report.updated_at).astimezone(UTC_PLUS_5).strftime('%d.%m.%Y %H:%M')
+    office = str(report.office) if report.office_id else 'Без офиса'
+    parts = [
+        '#отчёт_сотрудника',
+        employee_name(report.employee),
+        f'Офис: {office}',
+        f'Отправлен: {submitted} (UTC+5)',
+        '',
+        report.content.strip(),
+    ]
+    if report.results.strip():
+        parts.extend(['', f'Итоги: {report.results.strip()}'])
+    if report.plans.strip():
+        parts.extend(['', f'Планы: {report.plans.strip()}'])
+    if report.problems.strip():
+        parts.extend(['', f'Проблемы: {report.problems.strip()}'])
+    return '\n'.join(parts)[:3900]
+
+
+def register_report_event(report):
+    if not getattr(settings, 'ATTENDANCE_TELEGRAM_ENABLED', False):
+        return None
+    delivery, created = AttendanceTelegramDelivery.objects.get_or_create(
+        event_key=f'report:{report.pk}:{report.updated_at.isoformat()}',
+        defaults={
+            'event_type': AttendanceTelegramDelivery.EVENT_REPORT_SUBMITTED,
+            'company': report.company,
+            'office': report.office,
+            'employee': report.employee,
+            'workday': report.workday,
+            'message': report_message(report),
+        },
+    )
+    if created:
+        _enqueue(delivery)
+    return delivery
+
+
 def _summary_period(today):
     # The company works Monday-Saturday. On Sunday report the week ending yesterday.
     period_end = today - timedelta(days=1) if today.weekday() == 6 else today
@@ -301,22 +397,51 @@ def daily_summary_messages(company, report_date=None):
             employee_id__in=[profile.user_id for profile in profiles],
         )
     }
+    active_employee_ids = set(
+        WorkSession.objects.filter(
+            workday__company=company,
+            workday__date=report_date,
+            is_active=True,
+        ).values_list('employee_id', flat=True)
+    )
     started = []
+    working_now = []
+    finished = []
     not_started = []
+    report_count = 0
     for profile in profiles:
         row = workdays.get(profile.user_id)
         label = employee_name(profile.user)
         office = str(profile.office) if profile.office_id else 'Без офиса'
         if row and row.started_at:
             started.append(f'• {label} — {local_time(row.started_at)} (UTC+5), {office}')
+            if profile.user_id in active_employee_ids:
+                working_now.append(f'• {label} — {office}')
+            if row.status in {WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED}:
+                finished.append(f'• {label} — {local_time(row.closed_at)} (UTC+5), {office}')
+            if row.has_report:
+                report_count += 1
         else:
             not_started.append(f'• {label} — {office}')
 
-    header = f'#учёт_сегодня\n{company.name}\n{report_date:%d.%m.%Y} · время UTC+5'
-    lines = [header, f'\n✅ Начали рабочий день — {len(started)}']
+    header = f'#итоги_дня\n{company.name}\n{report_date:%d.%m.%Y} · 18:00 · UTC+5'
+    lines = [
+        header,
+        '',
+        f'Всего сотрудников для учёта: {len(profiles)}',
+        f'Вышли на работу: {len(started)}',
+        f'Сейчас работают: {len(working_now)}',
+        f'Уже завершили день: {len(finished)}',
+        f'Не вышли: {len(not_started)}',
+        f'Отчёты отправили: {report_count}',
+        f'Отчёты ожидаются: {max(len(started) - report_count, 0)}',
+        f'\n✅ Вышли на работу — {len(started)}',
+    ]
     lines.extend(started or ['• Никто'])
-    lines.append(f'\n⚪ Ещё не начали — {len(not_started)}')
-    lines.extend(not_started or ['• Все отметились'])
+    lines.append(f'\n🟢 Сейчас на работе — {len(working_now)}')
+    lines.extend(working_now or ['• Никого'])
+    lines.append(f'\n🔴 Не вышли — {len(not_started)}')
+    lines.extend(not_started or ['• Все вышли'])
     return _split_summary(lines, header)
 
 
@@ -379,6 +504,8 @@ def send_daily_attendance_summary():
     if not getattr(settings, 'ATTENDANCE_TELEGRAM_ENABLED', False):
         return {'created': 0, 'reason': 'disabled'}
     today = utc5_today()
+    if today.weekday() not in set(getattr(settings, 'ATTENDANCE_WORKDAYS', (0, 1, 2, 3, 4, 5))):
+        return {'created': 0, 'date': str(today), 'reason': 'non_working_day'}
     created = 0
     for company in Company.objects.filter(is_active=True):
         for index, message in enumerate(daily_summary_messages(company, today), 1):

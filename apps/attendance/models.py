@@ -122,6 +122,8 @@ class WorkDay(TimeStampedModel):
         if self.status not in self.FINAL_STATUSES:
             self.status = self.STATUS_REPORT_SUBMITTED
             self.save(update_fields=['status', 'updated_at'])
+        from .telegram import register_report_event
+        register_report_event(report)
         return report
 
     def close(self, user=None, comment='', auto=False):
@@ -347,6 +349,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
     EVENT_REPORT_REMINDER = 'report_reminder'
     EVENT_AFTER_HOURS = 'after_hours'
     EVENT_ADMIN_MESSAGE = 'admin_message'
+    EVENT_REPORT_SUBMITTED = 'report_submitted'
     EVENT_CHOICES = (
         (EVENT_ARRIVAL, 'Приход'),
         (EVENT_DEPARTURE, 'Уход'),
@@ -359,6 +362,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
         (EVENT_REPORT_REMINDER, 'Напоминание об отчёте'),
         (EVENT_AFTER_HOURS, 'Активность после рабочего дня'),
         (EVENT_ADMIN_MESSAGE, 'Сообщение руководителя'),
+        (EVENT_REPORT_SUBMITTED, 'Отчёт сотрудника'),
     )
 
     STATUS_PENDING = 'pending'
@@ -396,6 +400,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
     )
     message = models.TextField('Сообщение')
     target_chat_id = models.BigIntegerField('Получатель Telegram', null=True, blank=True)
+    target_message_thread_id = models.PositiveBigIntegerField('Тема Telegram', null=True, blank=True)
     status = models.CharField('Статус', max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
     attempts = models.PositiveSmallIntegerField('Попытки', default=0)
     last_error = models.CharField('Последняя ошибка', max_length=255, blank=True)
@@ -412,6 +417,36 @@ class AttendanceTelegramDelivery(TimeStampedModel):
 
     def __str__(self):
         return f'{self.get_event_type_display()} — {self.event_key}'
+
+
+class AttendanceTelegramTopic(TimeStampedModel):
+    TOPIC_DAILY = 'daily'
+    TOPIC_REPORTS = 'reports'
+    TOPIC_ABSENT = 'absent'
+    TOPIC_TIME = 'time'
+    TOPIC_CHOICES = (
+        (TOPIC_DAILY, 'Итоги дня'),
+        (TOPIC_REPORTS, 'Отчёты'),
+        (TOPIC_ABSENT, 'Не пришедшие'),
+        (TOPIC_TIME, 'Время'),
+    )
+
+    chat_id = models.BigIntegerField('Telegram group ID', db_index=True)
+    topic_type = models.CharField('Назначение темы', max_length=16, choices=TOPIC_CHOICES)
+    message_thread_id = models.PositiveBigIntegerField('Telegram topic ID')
+    title = models.CharField('Название темы', max_length=128, blank=True)
+    configured_by_telegram_user_id = models.BigIntegerField('Кто настроил', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Тема Telegram для учёта'
+        verbose_name_plural = 'Темы Telegram для учёта'
+        constraints = [
+            models.UniqueConstraint(fields=('chat_id', 'topic_type'), name='attendance_topic_chat_type_uniq'),
+            models.UniqueConstraint(fields=('chat_id', 'message_thread_id'), name='attendance_topic_chat_thread_uniq'),
+        ]
+
+    def __str__(self):
+        return f'{self.get_topic_type_display()} — {self.chat_id}/{self.message_thread_id}'
 
 
 class EmployeeTelegramAccount(TimeStampedModel, ActiveModel):

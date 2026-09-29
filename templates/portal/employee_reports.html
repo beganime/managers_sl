@@ -34,6 +34,40 @@
     </div>
 </section>
 
+{% if selected_employee_profile %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <div>
+            <div class="muted small">Последний отчёт сотрудника</div>
+            <h2 class="panel-title">{{ selected_employee_profile.user.get_full_name|default:selected_employee_profile.user.email }}</h2>
+        </div>
+        {% if latest_report %}<span class="pill ok">{{ latest_report.date|date:"d.m.Y" }}</span>{% endif %}
+    </div>
+    <div class="panel-body">
+        {% if latest_report %}
+            <div class="list" style="gap:12px;">
+                <div class="list-row">
+                    <div>
+                        <div class="muted small">Отправлен</div>
+                        <div class="strong">{{ latest_report.submitted_at|date:"d.m.Y H:i" }} · {{ latest_report.office.name|default:"Офис не указан" }}</div>
+                    </div>
+                    <span class="pill">{{ latest_report.workday.get_status_display }}</span>
+                </div>
+                <div>
+                    <div class="muted small">Что сделано</div>
+                    <div style="white-space:pre-wrap; margin-top:4px;">{{ latest_report.content }}</div>
+                </div>
+                {% if latest_report.results %}<div><div class="muted small">Результаты</div><div style="white-space:pre-wrap; margin-top:4px;">{{ latest_report.results }}</div></div>{% endif %}
+                {% if latest_report.plans %}<div><div class="muted small">Планы</div><div style="white-space:pre-wrap; margin-top:4px;">{{ latest_report.plans }}</div></div>{% endif %}
+                {% if latest_report.problems %}<div><div class="muted small">Проблемы</div><div style="white-space:pre-wrap; margin-top:4px;">{{ latest_report.problems }}</div></div>{% endif %}
+            </div>
+        {% else %}
+            <div class="empty">Этот сотрудник ещё не отправлял отчёты.</div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
 <section class="grid cols-2" style="margin-bottom:16px;">
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Не отправили отчёт за {{ selected_date|date:"d.m.Y" }}</h2></div>
