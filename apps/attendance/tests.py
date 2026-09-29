@@ -10,7 +10,13 @@ from apps.erp_notifications.models import NotificationTemplate
 from apps.erp_notifications.tasks import auto_close_workdays, send_attendance_reminders
 from apps.organizations.models import Company
 
-from .models import AttendanceReminder, AttendanceTelegramDelivery, EmployeeTelegramAccount, WorkDay
+from .models import (
+    AttendanceReminder,
+    AttendanceTelegramDelivery,
+    AttendanceTelegramTopic,
+    EmployeeTelegramAccount,
+    WorkDay,
+)
 from .services import auto_start_workday_for_login, is_scheduled_workday, record_after_hours_activity, workday_close_at
 from .telegram import (
     create_employee_link,
@@ -18,6 +24,7 @@ from .telegram import (
     queue_admin_message,
     register_personal_reminder,
     send_daily_attendance_summary,
+    send_attendance_telegram_delivery,
     send_weekly_attendance_summary,
     weekly_summary_messages,
     workday_message,
@@ -296,9 +303,9 @@ class AttendanceTelegramTests(TestCase):
 
         message = '\n'.join(daily_summary_messages(self.company, timezone.localdate()))
 
-        self.assertIn('Начали рабочий день — 1', message)
+        self.assertIn('Вышли на работу: 1', message)
         self.assertIn('Анна Иванова — 09:15 (UTC+5)', message)
-        self.assertIn('Ещё не начали — 1', message)
+        self.assertIn('Не вышли: 1', message)
         self.assertIn('Борис Петров', message)
 
         send_daily_attendance_summary()
@@ -307,6 +314,14 @@ class AttendanceTelegramTests(TestCase):
             AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_DAILY).count(),
             1,
         )
+
+    @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5))
+    @patch('apps.attendance.telegram.utc5_today', return_value=date(2026, 10, 4))
+    def test_daily_summary_is_not_created_on_sunday(self, _today):
+        result = send_daily_attendance_summary()
+
+        self.assertEqual(result['reason'], 'non_working_day')
+        self.assertFalse(AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_DAILY).exists())
 
     def test_workday_event_time_has_explicit_utc_plus_five_label(self):
         workday = WorkDay.objects.create(
@@ -374,3 +389,65 @@ class AttendanceTelegramTests(TestCase):
         )
         self.assertEqual(repeated.status_code, 200)
         self.assertIn('недействительна', repeated.json()['text'])
+
+    def test_forum_topic_is_registered_from_inside_the_topic(self):
+        response = self.client.post(
+            '/api/integrations/telegram/attendance/webhook/',
+            data={
+                'message': {
+                    'text': '/topic reports',
+                    'message_thread_id': 42,
+                    'chat': {'id': -1001, 'type': 'supergroup'},
+                    'from': {'id': 7001},
+                },
+            },
+            content_type='application/json',
+            HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='webhook-test-secret',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['message_thread_id'], 42)
+        self.assertTrue(
+            AttendanceTelegramTopic.objects.filter(
+                chat_id=-1001,
+                topic_type=AttendanceTelegramTopic.TOPIC_REPORTS,
+                message_thread_id=42,
+            ).exists()
+        )
+
+    @patch('apps.attendance.telegram.send_telegram_message')
+    def test_group_delivery_never_falls_back_to_general(self, send_message):
+        delivery = AttendanceTelegramDelivery.objects.create(
+            event_key='daily:no-topic',
+            event_type=AttendanceTelegramDelivery.EVENT_DAILY,
+            company=self.company,
+            message='Итоги',
+        )
+
+        result = send_attendance_telegram_delivery(delivery.pk)
+
+        self.assertFalse(result['sent'])
+        send_message.assert_not_called()
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.last_error, 'telegram_topic_not_configured:daily')
+
+    @patch('apps.attendance.telegram.send_telegram_message', return_value=(True, ''))
+    def test_group_delivery_uses_configured_forum_topic(self, send_message):
+        AttendanceTelegramTopic.objects.create(
+            chat_id=-1001,
+            topic_type=AttendanceTelegramTopic.TOPIC_DAILY,
+            message_thread_id=77,
+        )
+        delivery = AttendanceTelegramDelivery.objects.create(
+            event_key='daily:with-topic',
+            event_type=AttendanceTelegramDelivery.EVENT_DAILY,
+            company=self.company,
+            message='Итоги',
+        )
+
+        result = send_attendance_telegram_delivery(delivery.pk)
+
+        self.assertTrue(result['sent'])
+        send_message.assert_called_once_with('Итоги', -1001, 77)
+        delivery.refresh_from_db()
+        self.assertEqual(delivery.target_message_thread_id, 77)

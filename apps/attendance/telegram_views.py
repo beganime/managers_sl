@@ -9,12 +9,28 @@ from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
-from .models import EmployeeTelegramAccount, TelegramLinkCode
+from .models import AttendanceTelegramDelivery, AttendanceTelegramTopic, EmployeeTelegramAccount, TelegramLinkCode
 
 
-def telegram_reply(chat_id, text):
+TOPIC_ALIASES = {
+    'daily': AttendanceTelegramTopic.TOPIC_DAILY,
+    'итоги': AttendanceTelegramTopic.TOPIC_DAILY,
+    'reports': AttendanceTelegramTopic.TOPIC_REPORTS,
+    'отчеты': AttendanceTelegramTopic.TOPIC_REPORTS,
+    'отчёты': AttendanceTelegramTopic.TOPIC_REPORTS,
+    'absent': AttendanceTelegramTopic.TOPIC_ABSENT,
+    'непришедшие': AttendanceTelegramTopic.TOPIC_ABSENT,
+    'time': AttendanceTelegramTopic.TOPIC_TIME,
+    'время': AttendanceTelegramTopic.TOPIC_TIME,
+}
+
+
+def telegram_reply(chat_id, text, message_thread_id=None):
     # Telegram executes this method from the webhook response; no outbound API call is needed.
-    return JsonResponse({'method': 'sendMessage', 'chat_id': chat_id, 'text': text})
+    payload = {'method': 'sendMessage', 'chat_id': chat_id, 'text': text}
+    if message_thread_id:
+        payload['message_thread_id'] = message_thread_id
+    return JsonResponse(payload)
 
 
 @csrf_exempt
@@ -36,8 +52,61 @@ def attendance_telegram_webhook(request):
     telegram_user_id = sender.get('id')
     if not chat_id or not telegram_user_id or not text:
         return JsonResponse({'ok': True})
+    if chat.get('type') in {'group', 'supergroup'}:
+        expected_chat_id = str(settings.ATTENDANCE_TELEGRAM_CHAT_ID or '')
+        thread_id = message.get('message_thread_id')
+        command = text.split(maxsplit=1)
+        command_name = command[0].split('@', 1)[0].lower()
+        if command_name != '/topic' or str(chat_id) != expected_chat_id or not thread_id:
+            # Never answer in General: topic routing must be configured from inside a topic.
+            return JsonResponse({'ok': True})
+        alias = command[1].strip().lower().replace(' ', '') if len(command) > 1 else ''
+        topic_type = TOPIC_ALIASES.get(alias)
+        if not topic_type:
+            return telegram_reply(
+                chat_id,
+                'Укажите назначение: /topic daily, /topic reports, /topic absent или /topic time.',
+                thread_id,
+            )
+        existing_thread = AttendanceTelegramTopic.objects.filter(
+            chat_id=chat_id,
+            message_thread_id=thread_id,
+        ).exclude(topic_type=topic_type).first()
+        if existing_thread:
+            return telegram_reply(chat_id, 'Эта тема уже назначена для другого типа сообщений.', thread_id)
+        AttendanceTelegramTopic.objects.update_or_create(
+            chat_id=chat_id,
+            topic_type=topic_type,
+            defaults={
+                'message_thread_id': thread_id,
+                'title': str(message.get('reply_to_message', {}).get('forum_topic_created', {}).get('name') or '')[:128],
+                'configured_by_telegram_user_id': telegram_user_id,
+            },
+        )
+        from .telegram import _safe_delay, topic_type_for_event
+        waiting_ids = []
+        for delivery in AttendanceTelegramDelivery.objects.filter(
+            target_chat_id__isnull=True,
+            status=AttendanceTelegramDelivery.STATUS_FAILED,
+            attempts__lt=5,
+        ).only('pk', 'event_type'):
+            if topic_type_for_event(delivery.event_type) == topic_type:
+                waiting_ids.append(delivery.pk)
+        if waiting_ids:
+            AttendanceTelegramDelivery.objects.filter(pk__in=waiting_ids).update(
+                status=AttendanceTelegramDelivery.STATUS_PENDING,
+                attempts=0,
+                last_error='',
+            )
+            transaction.on_commit(lambda: [_safe_delay(delivery_id) for delivery_id in waiting_ids])
+        topic_name = dict(AttendanceTelegramTopic.TOPIC_CHOICES)[topic_type]
+        return telegram_reply(
+            chat_id,
+            f'Готово. «{topic_name}» привязана к этой теме (ID {thread_id}).',
+            thread_id,
+        )
     if chat.get('type') != 'private':
-        return telegram_reply(chat_id, 'Подключение аккаунта доступно только в личном чате с ботом.')
+        return JsonResponse({'ok': True})
     if text == '/start':
         return telegram_reply(
             chat_id,

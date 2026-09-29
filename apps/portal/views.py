@@ -5716,7 +5716,7 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
     page_title = 'Отчёты сотрудников'
 
     def dispatch(self, request, *args, **kwargs):
-        if not can_delete_admin(request.user):
+        if not is_attendance_admin(request.user):
             raise PermissionDenied('Отчёты сотрудников доступны только администратору.')
         return super().dispatch(request, *args, **kwargs)
 
@@ -5758,6 +5758,16 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
         )
         missing_reports = profiles.exclude(user_id__in=submitted_user_ids)
         not_started = profiles.exclude(user_id__in=workday_user_ids)
+        selected_employee_profile = profiles.filter(user_id=employee_id).first() if employee_id else None
+        latest_report = None
+        if selected_employee_profile:
+            latest_report = (
+                DailyReport.objects
+                .filter(employee_id=selected_employee_profile.user_id, company=selected_employee_profile.company)
+                .select_related('employee', 'office', 'workday')
+                .order_by('-date', '-submitted_at')
+                .first()
+            )
 
         context.update({
             'start_date': start_date,
@@ -5774,6 +5784,8 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
             'total_count': workdays.count(),
             'missing_reports': missing_reports[:80],
             'not_started': not_started[:80],
+            'selected_employee_profile': selected_employee_profile,
+            'latest_report': latest_report,
         })
         return context
 

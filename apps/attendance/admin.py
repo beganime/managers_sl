@@ -4,6 +4,7 @@ from unfold.admin import ModelAdmin, TabularInline
 from .models import (
     AttendanceReminder,
     AttendanceTelegramDelivery,
+    AttendanceTelegramTopic,
     AutoCloseLog,
     DailyReport,
     EmployeeTelegramAccount,
@@ -83,10 +84,18 @@ class AutoCloseLogAdmin(ModelAdmin):
 
 @admin.register(AttendanceTelegramDelivery)
 class AttendanceTelegramDeliveryAdmin(ModelAdmin):
-    list_display = ('event_type', 'employee', 'office', 'status', 'attempts', 'sent_at', 'created_at')
+    list_display = ('event_type', 'employee', 'office', 'target_message_thread_id', 'status', 'attempts', 'sent_at', 'created_at')
     list_filter = ('event_type', 'status', 'company', 'office')
     search_fields = ('event_key', 'employee__email', 'employee__first_name', 'employee__last_name', 'message')
     readonly_fields = ('event_key', 'message', 'attempts', 'last_error', 'sent_at', 'created_at', 'updated_at')
+
+
+@admin.register(AttendanceTelegramTopic)
+class AttendanceTelegramTopicAdmin(ModelAdmin):
+    list_display = ('topic_type', 'title', 'chat_id', 'message_thread_id', 'updated_at')
+    list_filter = ('topic_type',)
+    search_fields = ('title', 'chat_id', 'message_thread_id')
+    readonly_fields = ('configured_by_telegram_user_id', 'created_at', 'updated_at')
 
 
 @admin.register(EmployeeTelegramAccount)
