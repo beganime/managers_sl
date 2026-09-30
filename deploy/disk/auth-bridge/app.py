@@ -38,6 +38,7 @@ ACTIVITY_LOCK = threading.Lock()
 SL_ID_RE = re.compile(r'^SL-[A-Z0-9-]{1,28}$', re.IGNORECASE)
 ROOT_CATEGORIES = ('Бюджет', 'Контракт', 'Гослиния', 'Магистры')
 CLIENT_FOLDERS = ('оригиналы', 'переводы', 'договоры', 'университеты', 'приглашения')
+STAFF_REPORTS_ROOT = 'Служебные отчёты'
 
 S3_CLIENT = boto3.client(
     's3',
@@ -299,7 +300,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         parsed = urllib.parse.urlsplit(self.path)
-        if parsed.path not in {'/auth/sftpgo', '/internal/folders', '/internal/files', '/events/sftpgo'}:
+        if parsed.path not in {'/auth/sftpgo', '/internal/folders', '/internal/files', '/internal/staff-reports', '/events/sftpgo'}:
             return self.respond(404, {'detail': 'Not found'})
         try:
             length = int(self.headers.get('Content-Length', '0'))
@@ -307,6 +308,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.respond(400, {'detail': 'Invalid request'})
         if parsed.path == '/internal/files':
             return self.handle_file_upload(length)
+        if parsed.path == '/internal/staff-reports':
+            return self.handle_staff_report_upload(length)
         if length <= 0 or length > MAX_BODY_SIZE:
             return self.respond(400, {'detail': 'Invalid request'})
         try:
@@ -339,6 +342,24 @@ class Handler(BaseHTTPRequestHandler):
         if not auth_result:
             return self.respond(401, {'detail': 'Authentication failed'})
         return self.respond(200, sftpgo_user(auth_result))
+
+    def do_DELETE(self):
+        parsed = urllib.parse.urlsplit(self.path)
+        if parsed.path != '/internal/staff-reports':
+            return self.respond(404, {'detail': 'Not found'})
+        if not self.valid_provision_token():
+            return self.respond(401, {'detail': 'Authentication failed'})
+        virtual_path = urllib.parse.parse_qs(parsed.query).get('path', [''])[0].strip()
+        expected_prefix = f'/{STAFF_REPORTS_ROOT}/'
+        if not virtual_path.startswith(expected_prefix) or '..' in PurePosixPath(virtual_path).parts:
+            return self.respond(400, {'detail': 'Invalid report path'})
+        key = f'{S3_KEY_PREFIX}{virtual_path.lstrip("/")}'
+        try:
+            S3_CLIENT.delete_object(Bucket=S3_BUCKET, Key=key)
+        except Exception as exc:
+            print(f'staff report deletion failed: {exc}', flush=True)
+            return self.respond(502, {'detail': 'Storage is temporarily unavailable'})
+        return self.respond(200, {'status': 'deleted'})
 
     def valid_provision_token(self) -> bool:
         supplied_token = self.headers.get('Authorization', '').removeprefix('Bearer ').strip()
@@ -411,6 +432,57 @@ class Handler(BaseHTTPRequestHandler):
             'path': virtual_path,
             'size': length,
         })
+
+    def handle_staff_report_upload(self, length: int):
+        if not self.valid_provision_token():
+            return self.respond(401, {'detail': 'Authentication failed'})
+        if length <= 0 or length > MAX_UPLOAD_SIZE:
+            return self.respond(413, {'detail': 'File must be between 1 byte and 50 MB'})
+        try:
+            filename = safe_upload_name(urllib.parse.unquote(self.headers.get('X-File-Name', '')))
+        except ValueError as exc:
+            return self.respond(400, {'detail': str(exc)})
+        if PurePosixPath(filename).suffix.lower() != '.docx':
+            return self.respond(400, {'detail': 'Weekly report must be a DOCX file'})
+        employee_name = re.sub(
+            r'[\\/\x00-\x1f\x7f]+',
+            ' ',
+            urllib.parse.unquote(self.headers.get('X-Employee-Name', '')),
+        ).strip(' .')
+        period = self.headers.get('X-Report-Period', '').strip()
+        report_id = self.headers.get('X-Report-ID', '').strip()
+        match = re.fullmatch(r'(20\d{2})-(\d{2})-(\d{2})_(20\d{2})-(\d{2})-(\d{2})', period)
+        if not employee_name or len(employee_name) > 180 or not match or not re.fullmatch(r'[1-9][0-9]{0,11}', report_id):
+            return self.respond(400, {'detail': 'Invalid report metadata'})
+        try:
+            datetime.fromisoformat(period.split('_', 1)[0])
+            datetime.fromisoformat(period.split('_', 1)[1])
+        except ValueError:
+            return self.respond(400, {'detail': 'Invalid report period'})
+        relative_folder = f'{STAFF_REPORTS_ROOT}/{match.group(4)}/{match.group(5)}'
+        safe_name = f'{report_id} — {employee_name} — {period}.docx'
+        key = f'{S3_KEY_PREFIX}{relative_folder}/{safe_name}'
+        try:
+            with tempfile.SpooledTemporaryFile(max_size=4 * 1024 * 1024) as temporary:
+                remaining = length
+                while remaining:
+                    chunk = self.rfile.read(min(1024 * 1024, remaining))
+                    if not chunk:
+                        return self.respond(400, {'detail': 'Incomplete upload'})
+                    temporary.write(chunk)
+                    remaining -= len(chunk)
+                temporary.seek(0)
+                S3_CLIENT.upload_fileobj(
+                    temporary,
+                    S3_BUCKET,
+                    key,
+                    ExtraArgs={'ContentType': self.headers.get('Content-Type', '') or 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'},
+                )
+        except Exception as exc:
+            print(f'staff report upload failed: {exc}', flush=True)
+            return self.respond(502, {'detail': 'Storage is temporarily unavailable'})
+        virtual_path = '/' + key.removeprefix(S3_KEY_PREFIX)
+        return self.respond(201, {'status': 'uploaded', 'path': virtual_path, 'size': length})
 
     def handle_folder_provisioning(self, payload: dict):
         if not self.valid_provision_token():
