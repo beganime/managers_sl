@@ -40,7 +40,7 @@ from django.views import View
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import FormView, TemplateView
 
-from apps.attendance.models import AttendanceTelegramDelivery, DailyReport, WeeklyReport, WorkDay
+from apps.attendance.models import AttendanceTelegramDelivery, AttendanceTelegramTopic, DailyReport, WeeklyReport, WorkDay
 from apps.attendance.weekly_reports import current_week_bounds, process_weekly_report
 from apps.client_onboarding.models import ClientProvisioningStep, OnboardingSubmission
 from apps.client_onboarding.permissions import can_review_onboarding
@@ -1846,8 +1846,13 @@ class DashboardView(PortalContextMixin, TemplateView):
             'workday': get_today_workday(user),
             'attendance_overview': attendance_overview,
             'telegram_recent': AttendanceTelegramDelivery.objects.filter(
-                event_type=AttendanceTelegramDelivery.EVENT_ADMIN_MESSAGE,
+                Q(event_type=AttendanceTelegramDelivery.EVENT_ADMIN_MESSAGE)
+                | Q(event_key__startswith='catchup-daily:'),
             ).select_related('employee').order_by('-created_at')[:5] if is_attendance_admin_user else (),
+            'telegram_topics': [
+                {'name': label, 'ready': AttendanceTelegramTopic.objects.filter(topic_type=code).exists()}
+                for code, label in AttendanceTelegramTopic.TOPIC_CHOICES
+            ] if is_attendance_admin_user else (),
             'client_pulse': client_pulse,
             'is_current_user_birthday': bool(user.dob and user.dob.month == today.month and user.dob.day == today.day),
             'birthday_first_name': user.first_name or full_name(user),
