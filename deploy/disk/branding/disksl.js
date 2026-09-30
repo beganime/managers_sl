@@ -19,7 +19,7 @@
             const passwordInput = form?.elements.namedItem('password');
             if (!form || !usernameInput || !passwordInput) throw new Error('login form unavailable');
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
-            window.sessionStorage.setItem('disksl-sso-attempt', String(Date.now()));
+            try { window.sessionStorage.setItem('disksl-sso-attempt', String(Date.now())); } catch (_ignored) { /* optional hint only */ }
             usernameInput.value = username;
             passwordInput.value = ticket;
             window.requestAnimationFrame(() => form.submit());
@@ -35,7 +35,8 @@
     if (window.location.pathname === '/web/client/login') {
         const form = document.getElementById('sign_in_form');
         if (form && !document.getElementById('disksl-login-help')) {
-            const previousAttempt = Number(window.sessionStorage.getItem('disksl-sso-attempt') || 0);
+            let previousAttempt = 0;
+            try { previousAttempt = Number(window.sessionStorage.getItem('disksl-sso-attempt') || 0); } catch (_ignored) { /* optional hint only */ }
             const recentlyFailed = previousAttempt > 0 && Date.now() - previousAttempt < 120000;
             const help = document.createElement('div');
             help.id = 'disksl-login-help';
@@ -48,7 +49,7 @@
         return;
     }
     if (window.location.pathname.startsWith('/web/client/files')) {
-        window.sessionStorage.removeItem('disksl-sso-attempt');
+        try { window.sessionStorage.removeItem('disksl-sso-attempt'); } catch (_ignored) { /* optional hint only */ }
     }
 
     function getCurrentUsername() {
