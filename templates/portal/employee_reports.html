@@ -1,6 +1,48 @@
 {% extends "portal/base.html" %}
 
 {% block content %}
+{% if not can_view_team_reports %}
+<section class="panel report-hero" style="margin-bottom:18px;">
+    <div class="panel-header">
+        <div>
+            <div class="muted small">Неделя {{ week_start|date:"d.m" }}–{{ week_end|date:"d.m.Y" }}</div>
+            <h2 class="panel-title">Еженедельный отчёт</h2>
+        </div>
+        {% if current_weekly_report %}<span class="pill ok">Сохранён {{ current_weekly_report.submitted_at|date:"d.m H:i" }}</span>{% else %}<span class="pill warn">Нужно заполнить</span>{% endif %}
+    </div>
+    <div class="panel-body">
+        <p class="muted" style="margin-top:0;">Заполните отчёт в субботу. После сохранения ManagerSL создаст DOCX, отправит его в тему «Отчёты» и сохранит копию в DiskSL на 30 дней.</p>
+        {% if current_weekly_report %}
+        <div class="report-card">
+            <div>
+                <div class="strong">Отчёт за неделю сохранён</div>
+                <div class="muted small">{{ current_weekly_report.work_done|truncatechars:180 }}</div>
+            </div>
+            {% if current_weekly_report.generated_file %}<a class="btn" href="{% url 'portal:weekly_report_download' current_weekly_report.pk %}"><i data-lucide="download"></i>Скачать DOCX</a>{% endif %}
+        </div>
+        {% else %}
+        <form method="post" action="{% url 'portal:weekly_report_submit' %}" class="weekly-report-form">
+            {% csrf_token %}
+            <div class="weekly-report-grid">
+                <label class="field"><span>Что проделано за неделю? *</span>{{ weekly_form.work_done }}{{ weekly_form.work_done.errors }}</label>
+                <label class="field"><span>Замечания</span>{{ weekly_form.remarks }}{{ weekly_form.remarks.errors }}</label>
+                <label class="field"><span>Планы на следующую неделю *</span>{{ weekly_form.next_week_plans }}{{ weekly_form.next_week_plans.errors }}</label>
+                <label class="field"><span>Что внедрять? Идеи для улучшения</span>{{ weekly_form.improvement_ideas }}{{ weekly_form.improvement_ideas.errors }}</label>
+                <label class="field"><span>Какие сложности есть?</span>{{ weekly_form.difficulties }}{{ weekly_form.difficulties.errors }}</label>
+                <label class="field"><span>Что вам нужно?</span>{{ weekly_form.needs }}{{ weekly_form.needs.errors }}</label>
+                <label class="field"><span>От кого и чего ожидаете?</span>{{ weekly_form.waiting_for }}{{ weekly_form.waiting_for.errors }}</label>
+                <label class="field"><span>Для информации, исключения</span>{{ weekly_form.information }}{{ weekly_form.information.errors }}</label>
+            </div>
+            <div class="toolbar" style="margin-top:14px;">
+                <button class="btn primary" type="submit"><i data-lucide="file-check-2"></i>Сохранить и сформировать DOCX</button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+{% if can_view_team_reports %}
 <section class="panel" style="margin-bottom:16px;">
     <div class="panel-header">
         <h2 class="panel-title">Фильтры</h2>
@@ -33,6 +75,25 @@
         <div class="muted small">Период: {{ start_date|date:"d.m.Y" }} - {{ end_date|date:"d.m.Y" }}</div>
     </div>
 </section>
+{% endif %}
+
+{% if latest_report_cards %}
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header"><h2 class="panel-title">Последний отчёт каждого менеджера</h2></div>
+    <div class="panel-body report-card-list">
+        {% for item in latest_report_cards %}
+        <a class="report-card" href="?employee={{ item.profile.user_id }}">
+            <div>
+                <div class="strong">{{ item.profile.user.get_full_name|default:item.profile.user.email }}</div>
+                <div class="muted small">{{ item.profile.office.name|default:"Без офиса" }}</div>
+                {% if item.report %}<div class="muted small">{{ item.report.content|truncatechars:160 }}</div>{% endif %}
+            </div>
+            {% if item.report %}<span class="pill ok">{{ item.report.date|date:"d.m.Y" }}</span>{% else %}<span class="pill warn">Отчётов нет</span>{% endif %}
+        </a>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
 
 {% if selected_employee_profile %}
 <section class="panel" style="margin-bottom:16px;">
@@ -68,7 +129,7 @@
 </section>
 {% endif %}
 
-<section class="grid cols-2" style="margin-bottom:16px;">
+{% if can_view_team_reports %}<section class="grid cols-2" style="margin-bottom:16px;">
     <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Не отправили отчёт за {{ selected_date|date:"d.m.Y" }}</h2></div>
         <div class="panel-body">
@@ -108,6 +169,35 @@
                 <div class="empty">Все доступные сотрудники начали рабочий день.</div>
             {% endif %}
         </div>
+    </div>
+</section>{% endif %}
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <div>
+            <div class="muted small">Хранятся 30 дней</div>
+            <h2 class="panel-title">Еженедельные документы</h2>
+        </div>
+        <span class="pill">{{ weekly_reports|length }}</span>
+    </div>
+    <div class="panel-body">
+        {% if weekly_reports %}
+        <div class="report-card-list">
+            {% for report in weekly_reports %}
+            <article class="report-card">
+                <div>
+                    <div class="strong">{{ report.employee.get_full_name|default:report.employee.email }}</div>
+                    <div class="muted small">{{ report.period_start|date:"d.m.Y" }}–{{ report.period_end|date:"d.m.Y" }} · {{ report.office.name|default:"Без офиса" }}</div>
+                </div>
+                <div class="filters">
+                    {% if report.telegram_sent_at %}<span class="pill ok">Telegram</span>{% elif report.telegram_error %}<span class="pill danger">Ошибка отправки</span>{% else %}<span class="pill warn">Формируется</span>{% endif %}
+                    {% if report.disk_archived_at %}<span class="pill ok">DiskSL</span>{% endif %}
+                    {% if report.generated_file %}<a class="btn small" href="{% url 'portal:weekly_report_download' report.pk %}"><i data-lucide="download"></i>DOCX</a>{% endif %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% else %}<div class="empty">Еженедельных отчётов пока нет.</div>{% endif %}
     </div>
 </section>
 
@@ -169,4 +259,10 @@
         {% endif %}
     </div>
 </section>
+
+<style>
+.report-hero{border-top:4px solid #c61d18;background:linear-gradient(145deg,rgba(198,29,24,.06),rgba(20,58,104,.04) 45%,var(--surface,#fff) 80%)}
+.weekly-report-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.weekly-report-grid .field{display:flex;flex-direction:column;gap:7px;font-weight:700}.weekly-report-grid .textarea{min-height:116px;font-weight:400;resize:vertical}.report-card-list{display:grid;gap:10px}.report-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:15px 16px;border:1px solid var(--border,#dce2eb);border-radius:16px;background:var(--surface,#fff)}
+@media(max-width:760px){.weekly-report-grid{grid-template-columns:1fr}.report-card{align-items:flex-start;flex-direction:column}.report-card .filters{width:100%}}
+</style>
 {% endblock %}

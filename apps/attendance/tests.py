@@ -1,9 +1,11 @@
 from datetime import date, datetime, time, timedelta
+from io import BytesIO
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase, override_settings
 from django.utils import timezone
+from docx import Document
 
 from apps.employees.models import EmployeeProfile, EmployeeRole
 from apps.erp_notifications.models import NotificationTemplate
@@ -16,6 +18,7 @@ from .models import (
     AttendanceTelegramTopic,
     EmployeeTelegramAccount,
     WorkDay,
+    WeeklyReport,
 )
 from .services import auto_start_workday_for_login, is_scheduled_workday, record_after_hours_activity, workday_close_at
 from .telegram import (
@@ -29,6 +32,7 @@ from .telegram import (
     weekly_summary_messages,
     workday_message,
 )
+from .weekly_reports import render_weekly_report
 
 
 @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5), ATTENDANCE_AUTO_CLOSE_HOUR=20)
@@ -38,6 +42,33 @@ class AttendanceScheduleTests(TestCase):
 
     def test_automatic_close_is_at_twenty_hundred(self):
         self.assertEqual(workday_close_at(date(2026, 9, 28)).hour, 20)
+
+
+class WeeklyReportDocumentTests(TestCase):
+    def test_reference_template_is_filled_with_employee_answers(self):
+        company = Company.objects.create(name='Students Life', country='Туркменистан')
+        user = get_user_model().objects.create_user(
+            email='weekly@example.com',
+            password='test-password',
+            first_name='Анна',
+            last_name='Иванова',
+        )
+        report = WeeklyReport(
+            company=company,
+            employee=user,
+            period_start=date(2026, 9, 28),
+            period_end=date(2026, 10, 3),
+            work_done='Проверила документы клиентов.',
+            next_week_plans='Подготовить новые заявки.',
+            expires_at=timezone.now() + timedelta(days=30),
+        )
+
+        rendered = Document(BytesIO(render_weekly_report(report)))
+
+        self.assertIn('Анна', rendered.paragraphs[0].text)
+        self.assertIn('03.10.2026', rendered.paragraphs[1].text)
+        self.assertIn('Проверила документы клиентов.', rendered.tables[0].cell(0, 0).text)
+        self.assertIn('Подготовить новые заявки.', rendered.tables[0].cell(1, 0).text)
 
 
 @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5, 6), ATTENDANCE_ACTIVITY_PROTECTION_HOUR=17)
@@ -414,6 +445,54 @@ class AttendanceTelegramTests(TestCase):
                 message_thread_id=42,
             ).exists()
         )
+
+    def test_forum_topic_adopts_new_supergroup_id_after_forum_conversion(self):
+        response = self.client.post(
+            '/api/integrations/telegram/attendance/webhook/',
+            data={
+                'message': {
+                    'text': '/topic daily',
+                    'message_thread_id': 84,
+                    'chat': {'id': -1005484558620, 'type': 'supergroup'},
+                    'from': {'id': 7001},
+                },
+            },
+            content_type='application/json',
+            HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='webhook-test-secret',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['message_thread_id'], 84)
+        self.assertTrue(
+            AttendanceTelegramTopic.objects.filter(
+                chat_id=-1005484558620,
+                topic_type=AttendanceTelegramTopic.TOPIC_DAILY,
+            ).exists()
+        )
+
+    def test_forum_topic_rejects_another_group_after_initial_binding(self):
+        AttendanceTelegramTopic.objects.create(
+            chat_id=-1005484558620,
+            topic_type=AttendanceTelegramTopic.TOPIC_DAILY,
+            message_thread_id=84,
+        )
+        response = self.client.post(
+            '/api/integrations/telegram/attendance/webhook/',
+            data={
+                'message': {
+                    'text': '/topic reports',
+                    'message_thread_id': 91,
+                    'chat': {'id': -100999, 'type': 'supergroup'},
+                    'from': {'id': 7001},
+                },
+            },
+            content_type='application/json',
+            HTTP_X_TELEGRAM_BOT_API_SECRET_TOKEN='webhook-test-secret',
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {'ok': True})
+        self.assertFalse(AttendanceTelegramTopic.objects.filter(chat_id=-100999).exists())
 
     @patch('apps.attendance.telegram.send_telegram_message')
     def test_group_delivery_never_falls_back_to_general(self, send_message):

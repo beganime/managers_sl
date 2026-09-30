@@ -2,6 +2,7 @@ from django import forms
 from django.contrib.auth import get_user_model
 from django.utils import timezone
 
+from apps.attendance.models import WeeklyReport
 from apps.crm.models import Application, Client, Lead, LeadSource
 from apps.education.models import City, Country, Currency, Program, University
 from apps.erp_documents.models import DocumentTemplate, GeneratedDocument
@@ -37,6 +38,31 @@ class PortalFormMixin:
                 css_class = ''
             existing = field.widget.attrs.get('class', '')
             field.widget.attrs['class'] = f'{existing} {css_class}'.strip()
+
+
+class WeeklyReportForm(PortalFormMixin, forms.ModelForm):
+    class Meta:
+        model = WeeklyReport
+        fields = (
+            'work_done', 'remarks', 'next_week_plans', 'improvement_ideas',
+            'difficulties', 'needs', 'waiting_for', 'information',
+        )
+        widgets = {
+            'work_done': forms.Textarea(attrs={'rows': 5, 'maxlength': 4000}),
+            'remarks': forms.Textarea(attrs={'rows': 3, 'maxlength': 2000}),
+            'next_week_plans': forms.Textarea(attrs={'rows': 5, 'maxlength': 4000}),
+            'improvement_ideas': forms.Textarea(attrs={'rows': 3, 'maxlength': 2000}),
+            'difficulties': forms.Textarea(attrs={'rows': 3, 'maxlength': 2000}),
+            'needs': forms.Textarea(attrs={'rows': 3, 'maxlength': 2000}),
+            'waiting_for': forms.Textarea(attrs={'rows': 3, 'maxlength': 2000}),
+            'information': forms.Textarea(attrs={'rows': 3, 'maxlength': 2000}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.style_fields()
+        self.fields['work_done'].required = True
+        self.fields['next_week_plans'].required = True
 
 
 class PortalUniversityForm(PortalFormMixin, forms.ModelForm):

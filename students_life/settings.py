@@ -253,6 +253,10 @@ DISK_PROVISION_API_URL = os.environ.get(
     'DISK_PROVISION_API_URL',
     'https://disk.manager-sl.ru/api/internal/disk/folders',
 )
+DISK_REPORTS_API_URL = os.environ.get(
+    'DISK_REPORTS_API_URL',
+    DISK_PROVISION_API_URL.rsplit('/folders', 1)[0] + '/staff-reports' if DISK_PROVISION_API_URL else '',
+)
 DISK_PROVISION_SERVICE_TOKEN = os.environ.get('DISK_PROVISION_SERVICE_TOKEN', '')
 TRANSLATE_SL_URL = os.environ.get('TRANSLATE_SL_URL', 'https://translate.manager-sl.ru').rstrip('/')
 TRANSLATE_SL_PATH_URL = os.environ.get('TRANSLATE_SL_PATH_URL', TRANSLATE_SL_URL).rstrip('/')
@@ -361,6 +365,10 @@ ATTENDANCE_TELEGRAM_BOT_TOKEN = os.environ.get('ATTENDANCE_TELEGRAM_BOT_TOKEN', 
 ATTENDANCE_TELEGRAM_CHAT_ID = os.environ.get('ATTENDANCE_TELEGRAM_CHAT_ID', '')
 ATTENDANCE_TELEGRAM_BOT_USERNAME = os.environ.get('ATTENDANCE_TELEGRAM_BOT_USERNAME', 'manager_sl_timer_bot')
 ATTENDANCE_TELEGRAM_WEBHOOK_SECRET = os.environ.get('ATTENDANCE_TELEGRAM_WEBHOOK_SECRET', '')
+ATTENDANCE_TELEGRAM_DOCUMENT_API_BASE = os.environ.get(
+    'ATTENDANCE_TELEGRAM_DOCUMENT_API_BASE',
+    'https://translate.manager-sl.ru/telegram-relay',
+)
 ATTENDANCE_TELEGRAM_API_BASE = os.environ.get(
     'ATTENDANCE_TELEGRAM_API_BASE',
     os.environ.get('ONBOARDING_TELEGRAM_API_BASE', 'https://api.telegram.org'),
