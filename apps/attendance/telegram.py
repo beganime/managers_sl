@@ -22,6 +22,7 @@ from .models import (
     WorkDay,
     WorkSession,
 )
+from .services import attendance_profile_q
 
 logger = logging.getLogger(__name__)
 UTC_PLUS_5 = datetime_timezone(timedelta(hours=5), name='UTC+5')
@@ -390,12 +391,7 @@ def daily_summary_messages(company, report_date=None, *, catchup=False):
     historical = report_date < utc5_today()
     profiles = list(
         EmployeeProfile.objects.select_related('user', 'office', 'access').filter(
-            company=company,
-            is_active=True,
-            user__is_active=True,
-            hire_date__lte=report_date,
-        ).exclude(
-            Q(user__is_superuser=True) | Q(user__role='admin')
+            attendance_profile_q(), company=company, hire_date__lte=report_date,
         ).order_by(
             'office__city', 'office__name', 'user__first_name', 'user__last_name', 'user__email'
         )
@@ -505,12 +501,7 @@ def weekly_summary_messages(company, period_start, period_end):
         if (period_start + timedelta(days=offset)).weekday() in weekdays
     ]
     profiles = EmployeeProfile.objects.select_related('user', 'office', 'access').filter(
-        company=company,
-        is_active=True,
-        user__is_active=True,
-        hire_date__lte=period_end,
-    ).exclude(
-        Q(user__is_superuser=True) | Q(user__role='admin')
+        attendance_profile_q(), company=company, hire_date__lte=period_end,
     ).order_by(
         'office__city', 'office__name', 'user__first_name', 'user__last_name', 'user__email'
     )

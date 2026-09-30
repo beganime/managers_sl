@@ -33,7 +33,7 @@ class EmployeeAccessInline(admin.StackedInline):
 
 @admin.register(EmployeeProfile)
 class EmployeeProfileAdmin(ModelAdmin):
-    list_display = ('user', 'company', 'office', 'department', 'position', 'role', 'work_status', 'rating', 'is_active')
+    list_display = ('user', 'company', 'office', 'department', 'position', 'role', 'work_status', 'attendance_required', 'rating', 'is_active')
     list_filter = ('company', 'office', 'department', 'role', 'work_status', 'is_active')
     search_fields = ('user__email', 'user__first_name', 'user__last_name', 'company__name', 'office__name')
     autocomplete_fields = ('user', 'company', 'office', 'department', 'position', 'role')
@@ -41,7 +41,7 @@ class EmployeeProfileAdmin(ModelAdmin):
     inlines = [EmployeeAccessInline]
     fieldsets = (
         ('Сотрудник', {
-            'fields': ('user', 'is_active', 'work_status')
+            'fields': ('user', 'is_active', 'work_status', 'attendance_required')
         }),
         ('Организация', {
             'fields': ('company', 'office', 'department', 'position', 'role')

@@ -16,6 +16,7 @@ from docx.shared import Pt
 from apps.employees.models import EmployeeProfile
 
 from .models import AttendanceTelegramDelivery, EmployeeTelegramAccount, WeeklyReport
+from .services import attendance_profile_q
 from .telegram import UTC_PLUS_5, _safe_delay, employee_name, resolve_group_topic
 
 
@@ -215,10 +216,8 @@ def remind_weekly_reports():
     if timezone.now().astimezone(UTC_PLUS_5).date().weekday() != 5:
         return {'queued': 0, 'reason': 'not_saturday'}
     profiles = EmployeeProfile.objects.filter(
-        is_active=True,
-        work_status='working',
-        user__is_active=True,
-    ).exclude(user__is_superuser=True).exclude(user__role='admin').select_related('user', 'company', 'office')
+        attendance_profile_q(), work_status='working',
+    ).select_related('user', 'company', 'office')
     queued = 0
     for profile in profiles:
         if WeeklyReport.objects.filter(employee=profile.user, company=profile.company, period_start=week_start).exists():

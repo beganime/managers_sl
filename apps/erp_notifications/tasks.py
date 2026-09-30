@@ -14,7 +14,7 @@ except ImportError:
         return decorator
 
 from apps.attendance.models import AttendanceReminder, AttendanceTelegramDelivery, AutoCloseLog, WorkDay
-from apps.attendance.services import should_track_employee
+from apps.attendance.services import attendance_profile_q, should_track_employee
 from apps.attendance.telegram import register_group_reminder, register_personal_reminder, register_workday_event
 from apps.employees.models import EmployeeProfile
 from apps.erp_documents.models import DocumentApproval
@@ -65,11 +65,7 @@ def reminder_recipients(reminder):
         return [reminder.employee] if should_track_employee(reminder.employee) else []
 
     employees = EmployeeProfile.objects.filter(
-        company=reminder.company,
-        is_active=True,
-        user__is_active=True,
-    ).exclude(
-        Q(user__is_superuser=True) | Q(user__role='admin')
+        attendance_profile_q(), company=reminder.company,
     ).select_related('user')
     if reminder.office_id:
         employees = employees.filter(Q(office=reminder.office) | Q(office__isnull=True))
@@ -162,10 +158,7 @@ def auto_close_workdays():
     now = timezone.now()
     if attendance_workday_is_scheduled(today):
         profiles = EmployeeProfile.objects.select_related('user', 'company', 'office', 'access').filter(
-            is_active=True,
-            user__is_active=True,
-        ).exclude(
-            Q(user__is_superuser=True) | Q(user__role='admin')
+            attendance_profile_q(),
         )
         for profile in profiles.iterator():
             WorkDay.objects.get_or_create(
@@ -181,8 +174,9 @@ def auto_close_workdays():
     qs = WorkDay.objects.select_related('company', 'office', 'employee').filter(
         date__lte=today,
         status__in=[WorkDay.STATUS_NOT_STARTED, WorkDay.STATUS_STARTED, WorkDay.STATUS_REPORT_SUBMITTED],
-    ).exclude(
-        Q(employee__is_superuser=True) | Q(employee__role='admin')
+    ).filter(
+        Q(employee__employee_profile__attendance_required=True)
+        | (~Q(employee__is_superuser=True) & ~Q(employee__role='admin'))
     )
     closed = 0
     missed = 0
