@@ -129,6 +129,27 @@ class AdminTelegramMessageView(LoginRequiredMixin, View):
         return redirect('portal:dashboard')
 
 
+class AdminAttendanceCatchupView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request):
+        from apps.attendance.telegram import queue_recent_attendance_catchup
+        from apps.core.permissions import is_erp_admin
+
+        if not is_erp_admin(request.user):
+            raise PermissionDenied
+        result = queue_recent_attendance_catchup()
+        if result.get('reason') == 'daily_topic_not_configured':
+            messages.error(request, 'Сначала привяжите тему «Итоги дня»: отправьте в ней /topic daily.')
+        elif result.get('reason') == 'disabled':
+            messages.error(request, 'Telegram-уведомления сейчас выключены.')
+        elif result['created']:
+            messages.success(request, f'Переданы боту {result["created"]} сводки за вчера и сегодня. Статус доставки виден ниже.')
+        else:
+            messages.info(request, 'Сводки за вчера и сегодня уже были переданы боту; повторных сообщений не будет.')
+        return redirect('portal:dashboard')
+
+
 def ensure_client_questionnaire(client, actor):
     with transaction.atomic():
         questionnaire, created = ClientQuestionnaire.objects.get_or_create(client=client, defaults={

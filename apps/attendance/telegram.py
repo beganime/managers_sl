@@ -385,8 +385,9 @@ def _split_summary(lines, header):
     return messages
 
 
-def daily_summary_messages(company, report_date=None):
+def daily_summary_messages(company, report_date=None, *, catchup=False):
     report_date = report_date or utc5_today()
+    historical = report_date < utc5_today()
     profiles = list(
         EmployeeProfile.objects.select_related('user', 'office', 'access').filter(
             company=company,
@@ -407,13 +408,15 @@ def daily_summary_messages(company, report_date=None):
             employee_id__in=[profile.user_id for profile in profiles],
         )
     }
-    active_employee_ids = set(
-        WorkSession.objects.filter(
-            workday__company=company,
-            workday__date=report_date,
-            is_active=True,
-        ).values_list('employee_id', flat=True)
-    )
+    active_employee_ids = set()
+    if not historical:
+        active_employee_ids = set(
+            WorkSession.objects.filter(
+                workday__company=company,
+                workday__date=report_date,
+                is_active=True,
+            ).values_list('employee_id', flat=True)
+        )
     started = []
     working_now = []
     finished = []
@@ -434,25 +437,64 @@ def daily_summary_messages(company, report_date=None):
         else:
             not_started.append(f'• {label} — {office}')
 
-    header = f'#итоги_дня\n{company.name}\n{report_date:%d.%m.%Y} · 18:00 · UTC+5'
+    if catchup:
+        prepared = timezone.now().astimezone(UTC_PLUS_5).strftime('%d.%m.%Y %H:%M')
+        header = f'#итоги_дня #повторная_сводка\n{company.name}\nЗа {report_date:%d.%m.%Y} · составлена {prepared} UTC+5'
+    else:
+        header = f'#итоги_дня\n{company.name}\n{report_date:%d.%m.%Y} · 18:00 · UTC+5'
     lines = [
         header,
         '',
         f'Всего сотрудников для учёта: {len(profiles)}',
         f'Вышли на работу: {len(started)}',
-        f'Сейчас работают: {len(working_now)}',
         f'Уже завершили день: {len(finished)}',
         f'Не вышли: {len(not_started)}',
         f'Отчёты отправили: {report_count}',
         f'Отчёты ожидаются: {max(len(started) - report_count, 0)}',
         f'\n✅ Вышли на работу — {len(started)}',
     ]
+    if not historical:
+        lines.insert(4, f'Сейчас работают: {len(working_now)}')
     lines.extend(started or ['• Никто'])
-    lines.append(f'\n🟢 Сейчас на работе — {len(working_now)}')
-    lines.extend(working_now or ['• Никого'])
+    if not historical:
+        lines.append(f'\n🟢 Сейчас на работе — {len(working_now)}')
+        lines.extend(working_now or ['• Никого'])
     lines.append(f'\n🔴 Не вышли — {len(not_started)}')
     lines.extend(not_started or ['• Все вышли'])
     return _split_summary(lines, header)
+
+
+def queue_recent_attendance_catchup():
+    """Send yesterday/today once to the configured daily topic, never General."""
+    if not getattr(settings, 'ATTENDANCE_TELEGRAM_ENABLED', False):
+        return {'created': 0, 'reason': 'disabled'}
+    topic = resolve_group_topic(AttendanceTelegramDelivery.EVENT_DAILY)
+    if not topic:
+        return {'created': 0, 'reason': 'daily_topic_not_configured'}
+    today = utc5_today()
+    workdays = set(getattr(settings, 'ATTENDANCE_WORKDAYS', (0, 1, 2, 3, 4, 5)))
+    dates = [day for day in (today - timedelta(days=1), today) if day.weekday() in workdays]
+    created = 0
+    existing = 0
+    for company in Company.objects.filter(is_active=True):
+        for day in dates:
+            for index, message in enumerate(daily_summary_messages(company, day, catchup=True), 1):
+                delivery, was_created = AttendanceTelegramDelivery.objects.get_or_create(
+                    event_key=f'catchup-daily:{company.pk}:{day}:{index}',
+                    defaults={
+                        'event_type': AttendanceTelegramDelivery.EVENT_DAILY,
+                        'company': company,
+                        'message': message,
+                        'target_chat_id': topic.chat_id,
+                        'target_message_thread_id': topic.message_thread_id,
+                    },
+                )
+                if was_created:
+                    _enqueue(delivery)
+                    created += 1
+                else:
+                    existing += 1
+    return {'created': created, 'existing': existing, 'dates': [day.isoformat() for day in dates]}
 
 
 def weekly_summary_messages(company, period_start, period_end):

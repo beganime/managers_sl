@@ -24,6 +24,7 @@ from .services import auto_start_workday_for_login, is_scheduled_workday, record
 from .telegram import (
     create_employee_link,
     daily_summary_messages,
+    queue_recent_attendance_catchup,
     queue_admin_message,
     register_personal_reminder,
     retry_attendance_telegram_deliveries,
@@ -345,6 +346,38 @@ class AttendanceTelegramTests(TestCase):
         self.assertEqual(
             AttendanceTelegramDelivery.objects.filter(event_type=AttendanceTelegramDelivery.EVENT_DAILY).count(),
             1,
+        )
+
+    @patch('apps.attendance.telegram.utc5_today', return_value=date(2026, 9, 30))
+    def test_historical_catchup_does_not_claim_current_work(self, _today):
+        message = '\n'.join(daily_summary_messages(self.company, date(2026, 9, 29), catchup=True))
+
+        self.assertIn('За 29.09.2026', message)
+        self.assertIn('#повторная_сводка', message)
+        self.assertNotIn('Сейчас работают', message)
+        self.assertNotIn('Сейчас на работе', message)
+
+    @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5))
+    @patch('apps.attendance.telegram._enqueue')
+    @patch('apps.attendance.telegram.utc5_today', return_value=date(2026, 9, 30))
+    def test_catchup_requires_topic_and_is_idempotent(self, _today, enqueue):
+        missing = queue_recent_attendance_catchup()
+        self.assertEqual(missing['reason'], 'daily_topic_not_configured')
+        self.assertFalse(AttendanceTelegramDelivery.objects.exists())
+
+        AttendanceTelegramTopic.objects.create(
+            chat_id=-1001, topic_type=AttendanceTelegramTopic.TOPIC_DAILY, message_thread_id=5,
+        )
+        first = queue_recent_attendance_catchup()
+        second = queue_recent_attendance_catchup()
+
+        self.assertEqual(first['created'], 2)
+        self.assertEqual(second['created'], 0)
+        self.assertEqual(second['existing'], 2)
+        self.assertEqual(enqueue.call_count, 2)
+        self.assertEqual(
+            set(AttendanceTelegramDelivery.objects.values_list('target_chat_id', 'target_message_thread_id')),
+            {(-1001, 5)},
         )
 
     @override_settings(ATTENDANCE_WORKDAYS=(0, 1, 2, 3, 4, 5))

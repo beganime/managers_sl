@@ -1,6 +1,6 @@
 from django.urls import path
 from .mail_views import ClientMailboxBindView
-from .workspace_views import AdminTelegramMessageView, ClientQuestionnaireStartView, MoodView, ClientChatView
+from .workspace_views import AdminAttendanceCatchupView, AdminTelegramMessageView, ClientQuestionnaireStartView, MoodView, ClientChatView
 
 from .document_views import (
     ClientLookupView,
@@ -114,6 +114,7 @@ urlpatterns = [
     path('logout/', PortalLogoutView.as_view(), name='logout'),
     path('dashboard/', DashboardView.as_view(), name='dashboard'),
     path('dashboard/telegram/', AdminTelegramMessageView.as_view(), name='admin_telegram_message'),
+    path('dashboard/telegram/catchup/', AdminAttendanceCatchupView.as_view(), name='admin_attendance_catchup'),
     path('profile/', ProfileView.as_view(), name='profile'),
     path('settings/', SettingsView.as_view(), name='settings'),
     path('help/', HelpView.as_view(), name='help'),

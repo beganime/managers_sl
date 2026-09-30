@@ -807,6 +807,15 @@ class AdminMoodDashboardTests(TestCase):
         self.assertRedirects(response, reverse('portal:dashboard'), fetch_redirect_response=False)
         queue_admin_message.assert_called_once_with(self.admin, '', is_test=True)
 
+    @patch('apps.attendance.telegram.queue_recent_attendance_catchup')
+    def test_admin_can_queue_recent_attendance_summaries(self, queue_catchup):
+        queue_catchup.return_value = {'created': 2, 'existing': 0}
+
+        response = self.client.post(reverse('portal:admin_attendance_catchup'), secure=True)
+
+        self.assertRedirects(response, reverse('portal:dashboard'), fetch_redirect_response=False)
+        queue_catchup.assert_called_once_with()
+
 
 class PortalNotificationsTests(TestCase):
     def setUp(self):
