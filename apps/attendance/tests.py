@@ -26,6 +26,7 @@ from .telegram import (
     daily_summary_messages,
     queue_admin_message,
     register_personal_reminder,
+    retry_attendance_telegram_deliveries,
     send_daily_attendance_summary,
     send_attendance_telegram_delivery,
     send_weekly_attendance_summary,
@@ -530,3 +531,22 @@ class AttendanceTelegramTests(TestCase):
         send_message.assert_called_once_with('Итоги', -1001, 77)
         delivery.refresh_from_db()
         self.assertEqual(delivery.target_message_thread_id, 77)
+
+    @patch('apps.attendance.telegram._safe_delay')
+    def test_old_unrouted_delivery_is_not_replayed_when_topic_is_bound(self, enqueue):
+        delivery = AttendanceTelegramDelivery.objects.create(
+            event_key='daily:old-no-topic',
+            event_type=AttendanceTelegramDelivery.EVENT_DAILY,
+            company=self.company,
+            message='Старая сводка',
+            status=AttendanceTelegramDelivery.STATUS_FAILED,
+            last_error='telegram_topic_not_configured:daily',
+        )
+        AttendanceTelegramDelivery.objects.filter(pk=delivery.pk).update(
+            created_at=timezone.now() - timedelta(days=1),
+        )
+
+        result = retry_attendance_telegram_deliveries()
+
+        self.assertEqual(result['queued'], 0)
+        enqueue.assert_not_called()

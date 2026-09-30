@@ -221,6 +221,8 @@ def retry_attendance_telegram_deliveries(limit=50):
         AttendanceTelegramDelivery.objects.filter(
             status__in=[AttendanceTelegramDelivery.STATUS_PENDING, AttendanceTelegramDelivery.STATUS_FAILED],
             attempts__lt=5,
+        ).filter(
+            Q(target_chat_id__isnull=False) | Q(created_at__gte=timezone.now() - timedelta(hours=2))
         ).order_by('created_at').values_list('pk', flat=True)[:limit]
     )
     for delivery_id in ids:

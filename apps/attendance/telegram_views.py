@@ -101,7 +101,7 @@ def attendance_telegram_webhook(request):
             target_chat_id__isnull=True,
             status=AttendanceTelegramDelivery.STATUS_FAILED,
             last_error__startswith='telegram_topic_not_configured:',
-            created_at__gte=timezone.now() - timedelta(days=7),
+            created_at__gte=timezone.now() - timedelta(hours=2),
         ).only('pk', 'event_type'):
             if topic_type_for_event(delivery.event_type) == topic_type:
                 waiting_ids.append(delivery.pk)
