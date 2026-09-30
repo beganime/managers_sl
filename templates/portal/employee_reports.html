@@ -1,7 +1,7 @@
 {% extends "portal/base.html" %}
 
 {% block content %}
-{% if not can_view_team_reports %}
+{% if tracks_workday %}
 <section class="panel report-hero" style="margin-bottom:18px;">
     <div class="panel-header">
         <div>

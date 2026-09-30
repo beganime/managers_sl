@@ -90,6 +90,7 @@ class EmployeeProfile(TimeStampedModel, ActiveModel):
         related_name='employees',
     )
     work_status = models.CharField('Рабочий статус', max_length=32, choices=WORK_STATUS_CHOICES, default='working')
+    attendance_required = models.BooleanField('Учитывать рабочий день при роли администратора', default=False)
     hire_date = models.DateField('Дата приёма', default=timezone.localdate)
     fired_date = models.DateField('Дата увольнения', null=True, blank=True)
     salary_type = models.CharField('Тип зарплаты', max_length=32, choices=SALARY_TYPE_CHOICES, default='mixed')

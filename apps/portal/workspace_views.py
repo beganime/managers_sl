@@ -13,6 +13,7 @@ from django.db.models import Avg, Count
 from datetime import timedelta
 from .models import EmployeeMood
 from apps.core.permissions import get_employee_profile, is_attendance_admin
+from apps.attendance.services import should_track_employee
 
 
 def save_mood(user, score, slot):
@@ -40,7 +41,7 @@ class MoodView(LoginRequiredMixin, View):
         return JsonResponse(data)
 
     def post(self, request):
-        if is_attendance_admin(request.user):
+        if not should_track_employee(request.user):
             return JsonResponse({'error': 'Администратор видит итоги команды, но не отмечает своё настроение.'}, status=403)
         profile = get_employee_profile(request.user)
         if not profile or not profile.is_active:

@@ -270,6 +270,30 @@ class AttendanceTelegramTests(TestCase):
         self.assertNotIn('Администратор', weekly_message)
 
     @patch('apps.attendance.services.is_after_workday_close', return_value=False)
+    def test_explicitly_enrolled_administrator_is_in_workday_and_summaries(self, _after_close):
+        administrator = get_user_model().objects.create_user(
+            email='admin-worker@example.com', password='test-password',
+            first_name='Регина', last_name='Сабитова', role='admin', is_staff=True,
+        )
+        EmployeeProfile.objects.create(
+            user=administrator, company=self.company, role=self.role,
+            attendance_required=True,
+        )
+
+        workday, started = auto_start_workday_for_login(administrator)
+        daily_message = '\n'.join(daily_summary_messages(self.company, timezone.localdate()))
+        weekly_message = '\n'.join(weekly_summary_messages(
+            self.company,
+            timezone.localdate() - timedelta(days=timezone.localdate().weekday()),
+            timezone.localdate(),
+        ))
+
+        self.assertTrue(started)
+        self.assertEqual(workday.status, WorkDay.STATUS_STARTED)
+        self.assertIn('Регина Сабитова', daily_message)
+        self.assertIn('Регина Сабитова', weekly_message)
+
+    @patch('apps.attendance.services.is_after_workday_close', return_value=False)
     def test_staff_manager_still_has_to_track_workday(self, _after_close):
         staff_manager = get_user_model().objects.create_user(
             email='staff-manager@example.com', password='test-password', first_name='Старший менеджер', is_staff=True,

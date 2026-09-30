@@ -1,6 +1,7 @@
 from datetime import datetime, time
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.permissions import get_employee_profile, is_attendance_admin
@@ -15,10 +16,16 @@ def is_scheduled_workday(day):
 def should_track_employee(user):
     if not user or not user.is_authenticated or not user.is_active:
         return False
-    if is_attendance_admin(user):
-        return False
     employee = get_employee_profile(user)
-    return bool(employee and employee.is_active)
+    return bool(employee and employee.is_active and (not is_attendance_admin(user) or employee.attendance_required))
+
+
+def attendance_profile_q():
+    """Active employee roster; an administrator needs an explicit opt-in."""
+    return (
+        Q(is_active=True, user__is_active=True)
+        & ((~Q(user__is_superuser=True) & ~Q(user__role='admin')) | Q(attendance_required=True))
+    )
 
 
 def workday_close_at(day=None):
