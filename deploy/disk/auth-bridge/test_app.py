@@ -23,6 +23,26 @@ import app  # noqa: E402
 
 class UploadHelpersTests(unittest.TestCase):
     @mock.patch.object(app, 'S3_CLIENT')
+    def test_weekly_report_upload_uses_private_archive_prefix(self, storage):
+        handler = object.__new__(app.Handler)
+        handler.headers = {
+            'X-File-Name': 'weekly-report.docx',
+            'X-Employee-Name': 'Иван Иванов',
+            'X-Report-Period': '2026-09-28_2026-10-03',
+            'X-Report-ID': '42',
+            'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        }
+        handler.rfile = io.BytesIO(b'PK\x03\x04test')
+        handler.valid_provision_token = lambda: True
+        handler.respond = lambda status, payload: (status, payload)
+
+        status, payload = handler.handle_staff_report_upload(8)
+
+        self.assertEqual(status, 201)
+        self.assertEqual(payload['path'], '/Служебные отчёты/2026/10/42 — Иван Иванов — 2026-09-28_2026-10-03.docx')
+        self.assertEqual(storage.upload_fileobj.call_args.args[1], 'test-bucket')
+
+    @mock.patch.object(app, 'S3_CLIENT')
     def test_storage_usage_paginates_and_calculates_free_space(self, storage):
         storage.list_objects_v2.side_effect = [
             {
