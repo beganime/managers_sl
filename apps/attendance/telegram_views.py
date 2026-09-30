@@ -1,6 +1,7 @@
 import hashlib
 import json
 import secrets
+from datetime import timedelta
 
 from django.conf import settings
 from django.db import transaction
@@ -57,7 +58,18 @@ def attendance_telegram_webhook(request):
         thread_id = message.get('message_thread_id')
         command = text.split(maxsplit=1)
         command_name = command[0].split('@', 1)[0].lower()
-        if command_name != '/topic' or str(chat_id) != expected_chat_id or not thread_id:
+        configured_chat_ids = set(
+            AttendanceTelegramTopic.objects.values_list('chat_id', flat=True).distinct()
+        )
+        # Telegram changes a regular group's numeric id when it becomes a forum
+        # supergroup. On the first /topic command we adopt that new id; after the
+        # first topic is stored, commands from every other group are rejected.
+        chat_is_allowed = (
+            str(chat_id) == expected_chat_id
+            or chat_id in configured_chat_ids
+            or not configured_chat_ids
+        )
+        if command_name != '/topic' or not chat_is_allowed or not thread_id:
             # Never answer in General: topic routing must be configured from inside a topic.
             return JsonResponse({'ok': True})
         alias = command[1].strip().lower().replace(' ', '') if len(command) > 1 else ''
@@ -88,7 +100,8 @@ def attendance_telegram_webhook(request):
         for delivery in AttendanceTelegramDelivery.objects.filter(
             target_chat_id__isnull=True,
             status=AttendanceTelegramDelivery.STATUS_FAILED,
-            attempts__lt=5,
+            last_error__startswith='telegram_topic_not_configured:',
+            created_at__gte=timezone.now() - timedelta(days=7),
         ).only('pk', 'event_type'):
             if topic_type_for_event(delivery.event_type) == topic_type:
                 waiting_ids.append(delivery.pk)

@@ -4,7 +4,7 @@ import json
 import logging
 import mimetypes
 import re
-from pathlib import PurePosixPath
+from pathlib import Path, PurePosixPath
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 from decimal import Decimal
@@ -40,7 +40,8 @@ from django.views import View
 from django.views.decorators.csrf import ensure_csrf_cookie
 from django.views.generic import FormView, TemplateView
 
-from apps.attendance.models import AttendanceTelegramDelivery, DailyReport, WorkDay
+from apps.attendance.models import AttendanceTelegramDelivery, DailyReport, WeeklyReport, WorkDay
+from apps.attendance.weekly_reports import current_week_bounds, process_weekly_report
 from apps.client_onboarding.models import ClientProvisioningStep, OnboardingSubmission
 from apps.client_onboarding.permissions import can_review_onboarding
 from apps.client_onboarding.services import review_submission
@@ -110,6 +111,7 @@ from apps.portal.forms import (
     PortalTaskCommentForm,
     PortalTaskForm,
     PortalUniversityForm,
+    WeeklyReportForm,
 )
 from apps.portal.models import CalendarEvent, EmployeeMood
 from apps.portal.questionnaire_forms import PortalClientQuestionnaireForm
@@ -5704,13 +5706,8 @@ class CalendarView(PortalContextMixin, TemplateView):
 
 class EmployeeReportsView(PortalContextMixin, TemplateView):
     template_name = 'portal/employee_reports.html'
-    active_page = 'employee_reports'
-    page_title = 'Отчёты сотрудников'
-
-    def dispatch(self, request, *args, **kwargs):
-        if not is_attendance_admin(request.user):
-            raise PermissionDenied('Отчёты сотрудников доступны только администратору.')
-        return super().dispatch(request, *args, **kwargs)
+    active_page = 'reports'
+    page_title = 'Отчёты'
 
     def get_date_range(self):
         today = timezone.localdate()
@@ -5730,11 +5727,16 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
         employee_id = self.request.GET.get('employee') or ''
         office_id = self.request.GET.get('office') or ''
 
+        can_view_team = is_attendance_admin(self.request.user)
         profiles = employee_queryset(self.request.user).filter(is_active=True).filter(must_track_workday_q()).order_by('office__name', 'user__first_name', 'user__last_name')
+        if not can_view_team:
+            profiles = profiles.filter(user=self.request.user)
         if office_id:
             profiles = profiles.filter(office_id=office_id)
 
         workdays = workday_queryset(self.request.user).filter(date__gte=start_date, date__lte=end_date).select_related('employee', 'office', 'daily_report').order_by('-date', 'office__name', 'employee__first_name')
+        if not can_view_team:
+            workdays = workdays.filter(employee=self.request.user)
         if employee_id:
             workdays = workdays.filter(employee_id=employee_id)
         if office_id:
@@ -5750,6 +5752,8 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
         )
         missing_reports = profiles.exclude(user_id__in=submitted_user_ids)
         not_started = profiles.exclude(user_id__in=workday_user_ids)
+        if not employee_id and not can_view_team:
+            employee_id = str(self.request.user.pk)
         selected_employee_profile = profiles.filter(user_id=employee_id).first() if employee_id else None
         latest_report = None
         if selected_employee_profile:
@@ -5760,6 +5764,27 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
                 .order_by('-date', '-submitted_at')
                 .first()
             )
+
+        week_start, week_end = current_week_bounds()
+        current_profile = get_employee_profile(self.request.user)
+        current_weekly_report = WeeklyReport.objects.filter(
+            company=current_profile.company,
+            employee=self.request.user,
+            period_start=week_start,
+        ).first() if not can_view_team and current_profile else None
+        weekly_reports = WeeklyReport.objects.filter(
+            employee_id__in=profiles.values('user_id'),
+        ).select_related('employee', 'office').order_by('-period_end', 'employee__first_name')
+        if employee_id:
+            weekly_reports = weekly_reports.filter(employee_id=employee_id)
+        latest_report_cards = []
+        if can_view_team and not employee_id:
+            for profile in profiles.select_related('user', 'office'):
+                latest = DailyReport.objects.filter(
+                    employee_id=profile.user_id,
+                    company=profile.company,
+                ).order_by('-date', '-submitted_at').first()
+                latest_report_cards.append({'profile': profile, 'report': latest})
 
         context.update({
             'start_date': start_date,
@@ -5778,8 +5803,63 @@ class EmployeeReportsView(PortalContextMixin, TemplateView):
             'not_started': not_started[:80],
             'selected_employee_profile': selected_employee_profile,
             'latest_report': latest_report,
+            'can_view_team_reports': can_view_team,
+            'weekly_form': WeeklyReportForm(instance=current_weekly_report) if not can_view_team else None,
+            'current_weekly_report': current_weekly_report,
+            'week_start': week_start,
+            'week_end': week_end,
+            'weekly_reports': weekly_reports[:40],
+            'latest_report_cards': latest_report_cards,
         })
         return context
+
+
+class WeeklyReportSubmitView(LoginRequiredMixin, View):
+    def post(self, request):
+        if is_attendance_admin(request.user):
+            raise PermissionDenied('Администратору не требуется сдавать еженедельный отчёт.')
+        profile = get_employee_profile(request.user)
+        if not profile or not profile.is_active:
+            raise PermissionDenied('Нужен активный профиль сотрудника.')
+        period_start, period_end = current_week_bounds()
+        existing = WeeklyReport.objects.filter(
+            company=profile.company,
+            employee=request.user,
+            period_start=period_start,
+        ).first()
+        if existing:
+            messages.info(request, 'Отчёт за эту неделю уже сохранён.')
+            return redirect('portal:reports')
+        form = WeeklyReportForm(request.POST, instance=existing)
+        if not form.is_valid():
+            messages.error(request, 'Проверьте обязательные поля еженедельного отчёта.')
+            return redirect('portal:reports')
+        report = form.save(commit=False)
+        report.company = profile.company
+        report.office = profile.office
+        report.employee = request.user
+        report.period_start = period_start
+        report.period_end = period_end
+        report.submitted_at = timezone.now()
+        report.expires_at = timezone.now() + timedelta(days=30)
+        report.save()
+        transaction.on_commit(lambda: process_weekly_report.delay(report.pk))
+        messages.success(request, 'Еженедельный отчёт сохранён. Документ формируется и отправляется в тему «Отчёты».')
+        return redirect('portal:reports')
+
+
+class WeeklyReportDownloadView(LoginRequiredMixin, View):
+    def get(self, request, pk):
+        report = get_object_or_404(WeeklyReport.objects.select_related('employee'), pk=pk)
+        if report.employee_id != request.user.pk and not is_attendance_admin(request.user):
+            raise PermissionDenied('Этот отчёт вам недоступен.')
+        if not report.generated_file:
+            raise Http404('Документ ещё формируется.')
+        return FileResponse(
+            report.generated_file.open('rb'),
+            as_attachment=True,
+            filename=Path(report.generated_file.name).name,
+        )
 
 
 class RatingView(PortalContextMixin, TemplateView):
@@ -6162,39 +6242,5 @@ class ClientPushNotificationCreateView(PortalFormPageMixin, PortalContextMixin, 
         return self.render_to_response(context)
 
 
-class ReportsView(PortalContextMixin, TemplateView):
-    template_name = 'portal/reports.html'
-    active_page = 'reports'
-    page_title = 'Отчёты'
-
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        user = self.request.user
-        month_start = timezone.localdate().replace(day=1)
-        leads = incoming_lead_queryset(user)
-        clients = client_queryset(user)
-        questionnaires = ClientQuestionnaire.objects.filter(client_id__in=clients.values('id'))
-        submissions = OnboardingSubmission.objects.all()
-        documents = document_queryset(user)
-        workdays = workday_queryset(user)
-        context.update({
-            'crm_summary': [
-                {'label': 'Новые заявки с сайта', 'value': leads.filter(status='new', created_at__date__gte=month_start).count()},
-                {'label': 'Активные клиенты', 'value': clients.exclude(status__in=['archive', 'rejected']).count()},
-                {'label': 'Вузы в каталоге', 'value': university_queryset(user).count()},
-                {'label': 'Программы в каталоге', 'value': program_queryset(user).count()},
-            ],
-            'application_summary': [
-                {'label': 'Экспресс-анкеты за месяц', 'value': submissions.filter(submitted_at__date__gte=month_start).count()},
-                {'label': 'Полные анкеты', 'value': questionnaires.count()},
-                {'label': 'Полные анкеты на проверке', 'value': questionnaires.filter(status=ClientQuestionnaire.STATUS_SUBMITTED).count()},
-                {'label': 'Одобренные анкеты', 'value': questionnaires.filter(status=ClientQuestionnaire.STATUS_APPROVED).count()},
-            ],
-            'operations_summary': [
-                {'label': 'Документы на проверке', 'value': documents.filter(status=GeneratedDocument.STATUS_PENDING).count()},
-                {'label': 'Созданные документы', 'value': documents.filter(created_at__date__gte=month_start).count()},
-                {'label': 'Рабочих дней начато', 'value': workdays.filter(date__gte=month_start).exclude(status=WorkDay.STATUS_NOT_STARTED).count()},
-                {'label': 'Рабочих дней закрыто', 'value': workdays.filter(date__gte=month_start, status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()},
-            ],
-        })
-        return context
+class ReportsView(EmployeeReportsView):
+    """Canonical report screen kept at the historic /portal/reports/ URL."""

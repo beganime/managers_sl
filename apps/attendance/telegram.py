@@ -147,10 +147,18 @@ def resolve_group_topic(event_type, chat_id=None):
         chat_id = int(raw_chat_id)
     except (TypeError, ValueError):
         return None
-    return AttendanceTelegramTopic.objects.filter(
+    topic_type = topic_type_for_event(event_type)
+    topic = AttendanceTelegramTopic.objects.filter(
         chat_id=chat_id,
-        topic_type=topic_type_for_event(event_type),
+        topic_type=topic_type,
     ).first()
+    if topic:
+        return topic
+    # A forum conversion changes the Telegram chat id. Once the new forum has
+    # been explicitly configured with /topic, it becomes the authoritative
+    # destination even while the old numeric id remains in the environment.
+    candidates = list(AttendanceTelegramTopic.objects.filter(topic_type=topic_type)[:2])
+    return candidates[0] if len(candidates) == 1 else None
 
 
 def send_telegram_message(message, chat_id=None, message_thread_id=None):

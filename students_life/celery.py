@@ -34,6 +34,18 @@ app.conf.beat_schedule = {
         'task': 'attendance.send_weekly_summary',
         'schedule': crontab(minute=30, hour=18, day_of_week='saturday'),
     },
+    'attendance-cleanup-weekly-report-archives': {
+        'task': 'attendance.cleanup_weekly_report_archives',
+        'schedule': crontab(minute=20, hour=1),
+    },
+    'attendance-retry-weekly-report-delivery': {
+        'task': 'attendance.retry_weekly_report_delivery',
+        'schedule': crontab(minute='*/30'),
+    },
+    'attendance-remind-weekly-reports': {
+        'task': 'attendance.remind_weekly_reports',
+        'schedule': crontab(minute=0, hour=16, day_of_week='saturday'),
+    },
     'attendance-daily-office-summary': {
         'task': 'attendance.send_daily_summary',
         'schedule': crontab(minute=0, hour=18),

@@ -22,7 +22,7 @@ from apps.erp_notifications.models import Notification
 from apps.organizations.models import Company
 from apps.portal.models import EmployeeMood
 from apps.portal.views import build_client_disk_url, build_questionnaire_sections
-from apps.attendance.models import AttendanceTelegramDelivery, WorkDay
+from apps.attendance.models import AttendanceTelegramDelivery, WeeklyReport, WorkDay
 from apps.portal.akylchat import AkylChatClient, AkylChatError
 from users.disk_auth import verify_disk_sso_ticket
 
@@ -45,6 +45,67 @@ class QuestionnairePresentationTests(TestCase):
         self.assertIn('Гослиния', values)
         self.assertNotIn('funding_type', labels)
         self.assertNotIn('unknown_mobile_flag', labels)
+
+
+class WeeklyReportsPortalTests(TestCase):
+    def setUp(self):
+        self.company = Company.objects.create(name='Students Life')
+        self.role = EmployeeRole.objects.create(code='weekly-manager', name='Менеджер', role_type='manager')
+        self.manager = get_user_model().objects.create_user(
+            email='weekly-manager@example.invalid',
+            password='test-password',
+            first_name='Анна',
+        )
+        EmployeeProfile.objects.create(user=self.manager, company=self.company, role=self.role)
+
+    def test_reports_url_uses_employee_report_screen(self):
+        self.client.force_login(self.manager)
+
+        response = self.client.get(reverse('portal:reports'), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Еженедельный отчёт')
+        self.assertNotContains(response, 'Клиенты и каталог')
+
+    @patch('apps.portal.views.process_weekly_report.delay')
+    def test_employee_submits_weekly_report_for_generation(self, delay):
+        self.client.force_login(self.manager)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.post(
+                reverse('portal:weekly_report_submit'),
+                {
+                    'work_done': 'Проверила документы.',
+                    'remarks': '',
+                    'next_week_plans': 'Подать заявки.',
+                    'improvement_ideas': '',
+                    'difficulties': '',
+                    'needs': '',
+                    'waiting_for': '',
+                    'information': '',
+                },
+                secure=True,
+            )
+
+        self.assertRedirects(response, reverse('portal:reports'), fetch_redirect_response=False)
+        report = WeeklyReport.objects.get(employee=self.manager)
+        self.assertEqual(report.work_done, 'Проверила документы.')
+        delay.assert_called_once_with(report.pk)
+
+    def test_administrator_sees_team_reports_without_own_weekly_form(self):
+        admin = get_user_model().objects.create_user(
+            email='weekly-admin@example.invalid',
+            password='test-password',
+            role='admin',
+        )
+        EmployeeProfile.objects.create(user=admin, company=self.company, role=self.role)
+        self.client.force_login(admin)
+
+        response = self.client.get(reverse('portal:reports'), secure=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Отчёты по дням')
+        self.assertNotContains(response, 'Сохранить и сформировать DOCX')
 
 
 class ClientManagementPortalTests(TestCase):

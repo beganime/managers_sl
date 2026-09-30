@@ -254,6 +254,58 @@ class DailyReport(TimeStampedModel):
         super().save(*args, **kwargs)
 
 
+class WeeklyReport(TimeStampedModel):
+    company = models.ForeignKey(Company, on_delete=models.PROTECT, related_name='weekly_employee_reports')
+    office = models.ForeignKey(
+        Office,
+        on_delete=models.SET_NULL,
+        related_name='weekly_employee_reports',
+        null=True,
+        blank=True,
+    )
+    employee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='weekly_employee_reports',
+    )
+    period_start = models.DateField('Начало недели', db_index=True)
+    period_end = models.DateField('Конец недели', db_index=True)
+    work_done = models.TextField('Что проделано за неделю', max_length=4000)
+    remarks = models.TextField('Замечания', max_length=2000, blank=True)
+    next_week_plans = models.TextField('Планы на следующую неделю', max_length=4000)
+    improvement_ideas = models.TextField('Идеи для улучшения', max_length=2000, blank=True)
+    difficulties = models.TextField('Сложности', max_length=2000, blank=True)
+    needs = models.TextField('Что нужно', max_length=2000, blank=True)
+    waiting_for = models.TextField('От кого и чего ожидает', max_length=2000, blank=True)
+    information = models.TextField('Для информации, исключения', max_length=2000, blank=True)
+    generated_file = models.FileField(upload_to='attendance/weekly/%Y/%m/', blank=True)
+    disk_path = models.CharField(max_length=500, blank=True)
+    disk_archived_at = models.DateTimeField(null=True, blank=True)
+    telegram_sent_at = models.DateTimeField(null=True, blank=True)
+    telegram_error = models.CharField(max_length=255, blank=True)
+    submitted_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+
+    class Meta:
+        verbose_name = 'Еженедельный отчёт сотрудника'
+        verbose_name_plural = 'Еженедельные отчёты сотрудников'
+        ordering = ['-period_end', '-submitted_at']
+        constraints = [
+            models.UniqueConstraint(
+                fields=('company', 'employee', 'period_start'),
+                name='attendance_weekly_report_employee_period_uniq',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=('company', 'period_end')),
+            models.Index(fields=('employee', 'period_end')),
+            models.Index(fields=('expires_at',)),
+        ]
+
+    def __str__(self):
+        return f'{self.employee} — {self.period_start:%d.%m.%Y}–{self.period_end:%d.%m.%Y}'
+
+
 class AttendanceReminder(TimeStampedModel, ActiveModel):
     REMINDER_START = 'start_workday'
     REMINDER_REPORT = 'daily_report'

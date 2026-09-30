@@ -9,6 +9,7 @@ from .models import (
     DailyReport,
     EmployeeTelegramAccount,
     TelegramLinkCode,
+    WeeklyReport,
     WorkDay,
     WorkSession,
 )
@@ -62,6 +63,15 @@ class DailyReportAdmin(ModelAdmin):
     autocomplete_fields = ('workday', 'company', 'office', 'employee')
     readonly_fields = ('submitted_at', 'created_at', 'updated_at')
     date_hierarchy = 'date'
+
+
+@admin.register(WeeklyReport)
+class WeeklyReportAdmin(ModelAdmin):
+    list_display = ('employee', 'period_start', 'period_end', 'office', 'telegram_sent_at', 'disk_archived_at')
+    list_filter = ('company', 'office', 'period_end')
+    search_fields = ('employee__email', 'employee__first_name', 'employee__last_name', 'work_done', 'next_week_plans')
+    autocomplete_fields = ('company', 'office', 'employee')
+    readonly_fields = ('generated_file', 'disk_path', 'disk_archived_at', 'telegram_sent_at', 'telegram_error', 'submitted_at', 'expires_at', 'created_at', 'updated_at')
 
 
 @admin.register(AttendanceReminder)

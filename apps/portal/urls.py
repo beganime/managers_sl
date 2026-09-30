@@ -98,6 +98,8 @@ from .views import (
     WorkdayReportsView,
     WorkdayStartView,
     WorkdayView,
+    WeeklyReportDownloadView,
+    WeeklyReportSubmitView,
 )
 
 app_name = 'portal'
@@ -215,6 +217,8 @@ urlpatterns = [
     path('workday/close/', WorkdayCloseView.as_view(), name='workday_close'),
     path('rating/', RatingView.as_view(), name='rating'),
     path('employee-reports/', EmployeeReportsView.as_view(), name='employee_reports'),
+    path('reports/weekly/submit/', WeeklyReportSubmitView.as_view(), name='weekly_report_submit'),
+    path('reports/weekly/<int:pk>/download/', WeeklyReportDownloadView.as_view(), name='weekly_report_download'),
     path('notifications/', NotificationsView.as_view(), name='notifications'),
     path('notifications/create/', NotificationCreateView.as_view(), name='notification_create'),
     path('notifications/clients/create/', ClientPushNotificationCreateView.as_view(), name='client_notification_create'),
