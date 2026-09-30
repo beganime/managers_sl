@@ -19,6 +19,7 @@
             const passwordInput = form?.elements.namedItem('password');
             if (!form || !usernameInput || !passwordInput) throw new Error('login form unavailable');
             window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            window.sessionStorage.setItem('disksl-sso-attempt', String(Date.now()));
             usernameInput.value = username;
             passwordInput.value = ticket;
             window.requestAnimationFrame(() => form.submit());
@@ -30,6 +31,25 @@
     }
 
     if (completeManagerSso()) return;
+
+    if (window.location.pathname === '/web/client/login') {
+        const form = document.getElementById('sign_in_form');
+        if (form && !document.getElementById('disksl-login-help')) {
+            const previousAttempt = Number(window.sessionStorage.getItem('disksl-sso-attempt') || 0);
+            const recentlyFailed = previousAttempt > 0 && Date.now() - previousAttempt < 120000;
+            const help = document.createElement('div');
+            help.id = 'disksl-login-help';
+            help.setAttribute('role', 'status');
+            help.innerHTML = `<strong>${recentlyFailed ? 'Автоматический вход не завершился' : 'Ваши документы в DiskSL'}</strong><span>Введите email и пароль от ManagerSL. Отдельный аккаунт создавать не нужно.</span><a href="https://manager-sl.ru/portal/dashboard/">Вернуться в ManagerSL</a>`;
+            const logo = form.querySelector('.container.mb-10');
+            if (logo) logo.after(help);
+            else form.prepend(help);
+        }
+        return;
+    }
+    if (window.location.pathname.startsWith('/web/client/files')) {
+        window.sessionStorage.removeItem('disksl-sso-attempt');
+    }
 
     function getCurrentUsername() {
         const element = document.querySelector('.menu-content .wrap-word');

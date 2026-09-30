@@ -91,6 +91,22 @@ body { min-height: 100%; background: var(--disksl-bg) !important; color: var(--d
     border: 1px solid var(--disksl-border);
     box-shadow: 0 8px 26px rgba(3, 39, 74, .12);
 }
+#disksl-login-help {
+    display: grid;
+    gap: 5px;
+    margin: 0 0 20px;
+    padding: 15px 17px;
+    border: 1px solid var(--disksl-border);
+    border-left: 4px solid var(--bs-primary);
+    border-radius: 12px;
+    background: var(--disksl-surface-soft);
+    color: var(--disksl-text);
+    font-size: 13px;
+    line-height: 1.45;
+}
+#disksl-login-help strong { font-size: 15px; }
+#disksl-login-help span { color: var(--disksl-muted); }
+#disksl-login-help a { width: fit-content; font-weight: 700; }
 
 /* Search, activity and usage blocks inserted by disksl.js. */
 .disksl-tools-panel, .disksl-activity-panel, .disksl-usage {
