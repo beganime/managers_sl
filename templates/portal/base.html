@@ -1,12 +1,13 @@
+{% load static %}
 <!doctype html>
 <html lang="ru">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ page_title }} | ManagerSL</title>
-    <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
-    <script src="https://unpkg.com/alpinejs@3.14.1/dist/cdn.min.js" defer></script>
-    <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" defer></script>
+    <script src="{% static 'vendor/htmx-1.9.12.min.js' %}" defer></script>
+    <script src="{% static 'vendor/alpine-3.14.1.min.js' %}" defer></script>
+    <script src="{% static 'vendor/lucide-0.468.0.min.js' %}" defer></script>
     <style>
         :root {
             --bg: #f4f6f8;
@@ -427,6 +428,7 @@
             .workday-summary { grid-template-columns: 1fr; }
             .dashboard-workday-time { font-size: 18px; }
         }
+        .page-load-status{position:fixed;right:18px;bottom:18px;z-index:1200;display:flex;align-items:center;gap:10px;max-width:min(340px,calc(100vw - 32px));padding:11px 15px;border-radius:12px;background:#17283d;color:#fff;box-shadow:0 7px 22px rgba(16,30,49,.2);font-size:13px;font-weight:650;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .18s,transform .18s}.page-load-status.is-visible{opacity:1;transform:translateY(0)}.page-load-status-spinner{width:15px;height:15px;flex:none;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:page-load-spin .8s linear infinite}@keyframes page-load-spin{to{transform:rotate(360deg)}}@media(max-width:760px){.page-load-status{bottom:78px;right:12px}}
     </style>
     {% block extra_head %}{% endblock %}
 </head>
@@ -557,7 +559,42 @@
         {% endfor %}
     </nav>
 
+    <div class="page-load-status" id="page-load-status" role="status" aria-live="polite" aria-hidden="true"><span class="page-load-status-spinner" aria-hidden="true"></span><span>Загружаем, подождите…</span></div>
+
     <script>
+        (function () {
+            const notice = document.getElementById('page-load-status');
+            let pending;
+            let safety;
+            function hideLoadStatus() {
+                clearTimeout(pending);
+                clearTimeout(safety);
+                notice.classList.remove('is-visible');
+                notice.setAttribute('aria-hidden', 'true');
+            }
+            function showLoadStatus() {
+                clearTimeout(pending);
+                pending = setTimeout(function () {
+                    notice.classList.add('is-visible');
+                    notice.setAttribute('aria-hidden', 'false');
+                    safety = setTimeout(hideLoadStatus, 30000);
+                }, 250);
+            }
+            document.addEventListener('click', function (event) {
+                const link = event.target.closest('a[href]');
+                if (!link || event.defaultPrevented || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || link.target === '_blank' || link.hasAttribute('download') || link.hasAttribute('data-no-loading')) return;
+                const destination = new URL(link.href, window.location.href);
+                if (destination.origin !== window.location.origin || (destination.pathname === window.location.pathname && destination.search === window.location.search && destination.hash)) return;
+                showLoadStatus();
+            });
+            document.addEventListener('submit', function (event) {
+                setTimeout(function () { if (!event.defaultPrevented) showLoadStatus(); }, 0);
+            });
+            document.body.addEventListener('htmx:beforeRequest', showLoadStatus);
+            document.body.addEventListener('htmx:afterRequest', hideLoadStatus);
+            document.body.addEventListener('htmx:responseError', hideLoadStatus);
+            window.addEventListener('pageshow', hideLoadStatus);
+        }());
         function loadClientExams(root) {
             (root || document).querySelectorAll('[data-client-exams-url]').forEach(function (panel) {
                 if (panel.dataset.loading === '1') return;

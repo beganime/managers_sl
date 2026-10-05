@@ -32,6 +32,7 @@
     @media(max-width:900px){.client-pulse-layout{grid-template-columns:1fr}.client-pulse-lead{min-height:150px;border-right:0;border-bottom:1px solid rgba(255,255,255,.12)}.client-pulse-featured{grid-template-columns:1fr 1fr}}
     @media(max-width:1100px){.team-mood-grid{grid-template-columns:1fr 1fr}.team-mood-summary{grid-column:1/-1;min-height:190px}.team-mood-column:nth-child(2){border-right:1px solid rgba(19,40,61,.11)}}
     @media(max-width:760px){.workspace-hero{min-height:325px;align-items:flex-end;padding:22px;background-position:68% center}.workspace-hero::after{background:linear-gradient(180deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.92) 48%,#fff 76%)}.workspace-hero .workspace-heading{align-items:flex-start}.workspace-hero .filters{width:100%}.workspace-hero h2{font-size:32px}.client-pulse-lead,.client-pulse-body{padding:22px}.client-pulse-featured{grid-template-columns:1fr}.client-pulse-total strong{font-size:46px}.team-mood-grid,.telegram-console{grid-template-columns:1fr}.telegram-catchup{align-items:flex-start;flex-direction:column}.team-mood-summary{grid-column:auto;min-height:220px}.team-mood-column{padding:22px;border-right:0;border-bottom:1px solid rgba(19,40,61,.11)}.team-mood-column:last-child{border-bottom:0}}
+    .disk-overview{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 24px}.disk-overview h2{margin:0 0 7px;font-size:19px}.disk-overview p{margin:0;color:var(--muted)}.disk-overview-content{flex:1;min-width:0}.disk-meter{height:8px;margin-top:13px;border-radius:999px;background:#e4eaf0;overflow:hidden}.disk-meter span{display:block;width:0;height:100%;border-radius:inherit;background:var(--accent);transition:width .3s ease}.disk-overview-actions{display:flex;gap:8px;flex-wrap:wrap}.disk-overview [data-disk-retry]{display:none}.disk-overview.is-error [data-disk-retry]{display:inline-flex}@media(max-width:680px){.disk-overview{align-items:stretch;flex-direction:column}}
 </style>
 {% endblock %}
 {% block content %}
@@ -127,6 +128,16 @@
     <section class="workspace-stats" aria-label="Клиенты">
         {% for metric in metrics %}<a href="{{ metric.url }}"><span>{{ metric.label }}</span><strong>{{ metric.value }}</strong><i data-lucide="{{ metric.icon }}"></i></a>{% endfor %}
     </section>
+    {% if can_access_disk %}
+    <section class="panel disk-overview" data-disk-usage-url="{% url 'portal:dashboard_disk_usage' %}" aria-label="Хранилище DiskSL">
+        <div class="disk-overview-content">
+            <h2>Хранилище DiskSL</h2>
+            <p data-disk-usage-status role="status">Проверяем свободное место…</p>
+            <div class="disk-meter" role="progressbar" aria-label="Занято место на диске" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span></span></div>
+        </div>
+        <div class="disk-overview-actions"><button class="btn" type="button" data-disk-retry>Повторить</button><a class="btn" href="{% url 'portal:disk_sl' %}">Открыть диск</a></div>
+    </section>
+    {% endif %}
     <div class="workspace-columns">
         <section class="panel"><div class="panel-header"><h2 class="panel-title">Последние заявки</h2><a class="btn" href="{% url 'portal:onboarding_submissions' %}">Все заявки</a></div>
             <div class="panel-body list">{% for item in recent_express %}<a class="list-row" href="{% url 'portal:onboarding_submission_detail' item.pk %}"><div><strong>{{ item.full_name|default:"Без имени" }}</strong><div class="muted small">{{ item.get_stage_display }} · {{ item.get_status_display }}</div></div><time class="muted small">{{ item.submitted_at|date:"d.m.Y H:i" }}</time></a>{% empty %}<p class="empty">Заявок пока нет.</p>{% endfor %}</div>
@@ -139,4 +150,35 @@
         {% for service in dashboard_services %}<a href="{{ service.url }}" target="_blank" rel="noopener"><i data-lucide="{{ service.icon }}"></i><strong>{{ service.label }}</strong><i data-lucide="arrow-up-right"></i></a>{% endfor %}
     </section>
 </div>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const panel = document.querySelector('[data-disk-usage-url]');
+    if (!panel) return;
+    const status = panel.querySelector('[data-disk-usage-status]');
+    const meter = panel.querySelector('.disk-meter');
+    const bar = meter.querySelector('span');
+    const retry = panel.querySelector('[data-disk-retry]');
+    async function refreshUsage() {
+        panel.classList.remove('is-error');
+        status.textContent = 'Проверяем свободное место…';
+        retry.disabled = true;
+        try {
+            const response = await fetch(panel.dataset.diskUsageUrl, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error('usage unavailable');
+            const data = await response.json();
+            const percent = Math.max(0, Math.min(Number(data.percent) || 0, 100));
+            status.textContent = 'Свободно ' + data.free + ' · занято ' + data.used + ' из ' + data.total;
+            bar.style.width = percent + '%';
+            meter.setAttribute('aria-valuenow', String(percent));
+        } catch (_error) {
+            status.textContent = 'Не удалось получить данные о хранилище. Попробуйте ещё раз.';
+            panel.classList.add('is-error');
+        } finally {
+            retry.disabled = false;
+        }
+    }
+    retry.addEventListener('click', refreshUsage);
+    refreshUsage();
+});
+</script>
 {% endblock %}

@@ -28,7 +28,7 @@ from django.core import signing
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
-from django.http import FileResponse, Http404
+from django.http import FileResponse, Http404, JsonResponse
 from django.db.models import Avg, Case, Count, IntegerField, Max, Prefetch, Q, Sum, Value, When
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import NoReverseMatch, reverse, reverse_lazy
@@ -179,6 +179,18 @@ def dashboard_disk_usage():
         }
     except (requests.RequestException, TypeError, ValueError):
         return None
+
+
+class DashboardDiskUsageView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def get(self, request):
+        if not can_access_disk(request.user):
+            return JsonResponse({'detail': 'Нет доступа к DiskSL.'}, status=403)
+        usage = dashboard_disk_usage()
+        response = JsonResponse(usage if usage else {'detail': 'Хранилище временно недоступно.'}, status=200 if usage else 503)
+        response['Cache-Control'] = 'no-store, private'
+        return response
 
 
 def build_client_disk_url(client):
@@ -1874,6 +1886,7 @@ class DashboardView(PortalContextMixin, TemplateView):
                 {'label': 'Экзамены', 'icon': 'calendar-check', 'url': settings.EXAM_SL_WEB_URL, 'description': 'Просмотр расписания экзаменов', 'tone': 'slate'},
                 {'label': 'Включить push', 'icon': 'bell-ring', 'url': f'{settings.TASK_MANAGER_WEB_URL}/push/', 'description': 'Подключить этот браузер к уведомлениям', 'tone': 'blue'},
             ],
+            'can_access_disk': can_access_disk(user),
         })
         return context
 
