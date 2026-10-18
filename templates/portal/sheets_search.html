@@ -1,0 +1,49 @@
+{% extends "portal/base.html" %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-header"><h2 class="panel-title">Единый поиск по учёту</h2></div>
+    <div class="panel-body">
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="ФИО или SL-ID" minlength="2" required autofocus>
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        {% if query and not results %}<div class="empty">По запросу «{{ query }}» ничего не найдено.</div>{% endif %}
+        <div class="card-grid">
+            {% for result in results %}
+            <article class="item-card">
+                <div class="item-card-top">
+                    <div>
+                        <div class="item-card-title">{{ result.source }} · {{ result.sheet }}</div>
+                        <div class="item-card-meta"><span>Строка {{ result.row }}</span></div>
+                    </div>
+                    <a class="btn" target="_blank" rel="noopener" href="https://docs.google.com/spreadsheets/d/{{ result.spreadsheet_id }}/edit">Открыть</a>
+                </div>
+                <div class="item-card-meta">
+                    {% for item in result.values %}<span><strong>{{ item.label }}:</strong> {{ item.value }}</span>{% endfor %}
+                </div>
+            </article>
+            {% endfor %}
+        </div>
+        {% for error in search_errors %}<div class="empty" style="margin-top:10px;">{{ error }}</div>{% endfor %}
+    </div>
+</section>
+
+{% if can_manage_sources %}
+<section class="panel" style="margin-top:16px;">
+    <div class="panel-header"><h2 class="panel-title">Дополнительные книги</h2></div>
+    <div class="panel-body">
+        <form class="filters" method="post">{% csrf_token %}
+            <input class="input" name="title" maxlength="160" placeholder="Название книги" required>
+            <input class="input search-input" name="spreadsheet_id" maxlength="300" placeholder="Ссылка или ID Google Sheets" required>
+            <button class="btn primary" type="submit">Добавить</button>
+        </form>
+        <div class="item-card-meta" style="margin-top:12px;">
+            {% for source in sources %}<span>{{ source.title }} · {{ source.spreadsheet_id }}</span>{% empty %}<span>Дополнительных книг нет.</span>{% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

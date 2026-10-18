@@ -34,7 +34,7 @@
                 <div style="margin-top:6px;">{{ batch.message|linebreaksbr }}</div>
             </div>
             <div class="list">
-                <div class="list-row"><div class="muted">Кто отправил</div><div class="strong">{{ batch.sender.get_full_name|default:batch.sender.email|default:"Система" }}</div></div>
+                <div class="list-row"><div class="muted">Кто отправил</div><div class="strong">{% if batch.sender %}{{ batch.sender.get_full_name|default:batch.sender.email }}{% else %}Система{% endif %}</div></div>
                 <div class="list-row"><div class="muted">Кому отправлено</div><div class="strong">{{ batch.get_target_type_display }}</div></div>
                 <div class="list-row"><div class="muted">Цель</div><div class="strong">{% if batch.target_user %}{{ batch.target_user.get_full_name|default:batch.target_user.email }}{% elif batch.target_office %}{{ batch.target_office.name }}{% else %}Все сотрудники{% endif %}</div></div>
                 <div class="list-row"><div class="muted">Дата отправки</div><div class="strong">{{ batch.sent_at|default:batch.created_at|date:"d.m.Y H:i" }}</div></div>

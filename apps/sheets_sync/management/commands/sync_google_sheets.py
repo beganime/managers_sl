@@ -2,7 +2,10 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.sheets_sync.client import GoogleSheetsGateway
 from apps.sheets_sync.services import (
+    import_onboarding_decisions,
+    import_public_client_statuses,
     sheets_sync_enabled,
+    sync_onboarding_inbox,
     sync_pending_submissions,
     sync_reference_data,
     sync_submission,
@@ -15,7 +18,10 @@ class Command(BaseCommand):
     def add_arguments(self, parser):
         parser.add_argument('--check', action='store_true', help='Только проверить доступ к книге.')
         parser.add_argument('--references', action='store_true', help='Обновить справочники.')
+        parser.add_argument('--onboarding-inbox', action='store_true', help='Записать входящие анкеты в отдельный лист.')
+        parser.add_argument('--import-onboarding', action='store_true', help='Применить решения из листа входящих анкет.')
         parser.add_argument('--pending', action='store_true', help='Добавить ещё не синхронизированные анкеты.')
+        parser.add_argument('--import-public', action='store_true', help='Импортировать безопасные статусы клиентов.')
         parser.add_argument('--submission', type=int, help='Синхронизировать одну одобренную анкету по ID.')
         parser.add_argument('--limit', type=int, default=100, help='Лимит для --pending (по умолчанию 100).')
 
@@ -27,7 +33,15 @@ class Command(BaseCommand):
             )
 
         requested = any(
-            (options['check'], options['references'], options['pending'], options['submission'])
+            (
+                options['check'],
+                options['references'],
+                options['onboarding_inbox'],
+                options['import_onboarding'],
+                options['pending'],
+                options['import_public'],
+                options['submission'],
+            )
         )
         if not requested:
             options['check'] = True
@@ -43,9 +57,18 @@ class Command(BaseCommand):
         if options['references']:
             result = sync_reference_data(gateway=gateway)
             self.stdout.write(self.style.SUCCESS(f"Справочники: {result}."))
+        if options['onboarding_inbox']:
+            result = sync_onboarding_inbox(limit=max(options['limit'], 1), gateway=gateway)
+            self.stdout.write(self.style.SUCCESS(f"Входящие анкеты: {result}."))
+        if options['import_onboarding']:
+            result = import_onboarding_decisions(limit=max(options['limit'], 1), gateway=gateway)
+            self.stdout.write(self.style.SUCCESS(f"Решения по анкетам: {result}."))
         if options['pending']:
             result = sync_pending_submissions(limit=max(options['limit'], 1), gateway=gateway)
             self.stdout.write(self.style.SUCCESS(f"Очередь анкет: {result}."))
+        if options['import_public']:
+            result = import_public_client_statuses(limit=max(options['limit'], 1), gateway=gateway)
+            self.stdout.write(self.style.SUCCESS(f"Публичные статусы: {result}."))
         if options['submission']:
             result = sync_submission(options['submission'], gateway=gateway)
             self.stdout.write(self.style.SUCCESS(f"Анкета: {result}."))

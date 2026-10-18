@@ -189,6 +189,16 @@ if USE_SQLITE:
         }
     }
 else:
+    database_options = {
+        'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10')),
+    }
+    database_sslmode = os.environ.get('DB_SSLMODE', '').strip()
+    database_sslrootcert = os.environ.get('DB_SSLROOTCERT', '').strip()
+    if database_sslmode:
+        database_options['sslmode'] = database_sslmode
+    if database_sslrootcert:
+        database_options['sslrootcert'] = database_sslrootcert
+
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
@@ -198,7 +208,7 @@ else:
             'HOST': os.environ.get('DB_HOST', 'db'),
             'PORT': os.environ.get('DB_PORT', '5432'),
             'CONN_MAX_AGE': int(os.environ.get('DB_CONN_MAX_AGE', '60')),
-            'OPTIONS': {'connect_timeout': int(os.environ.get('DB_CONNECT_TIMEOUT', '10'))},
+            'OPTIONS': database_options,
         }
     }
 
@@ -216,11 +226,44 @@ STUDENTS_LIFE_DEFAULT_API_BASE_URL = 'https://students-life.ru/api2/api/v1/'
 STUDENTS_LIFE_ORIGINAL_API_BASE_URL = 'https://stud-life.com/api/v1/'
 STUDENTS_LIFE_API_BASE_URL = os.environ.get('STUDENTS_LIFE_API_BASE_URL', STUDENTS_LIFE_DEFAULT_API_BASE_URL)
 STUDENTS_LIFE_API_KEY = os.environ.get('STUDENTS_LIFE_API_KEY', LEADS_API_KEY)
+STUDENTS_LIFE_PROVISION_API_URL = os.environ.get(
+    'STUDENTS_LIFE_PROVISION_API_URL',
+    '',
+)
+STUDENTS_LIFE_PROVISION_TOKEN = os.environ.get('STUDENTS_LIFE_PROVISION_TOKEN', '')
+SMTP_SL_API_BASE_URL = os.environ.get('SMTP_SL_API_BASE_URL', '').rstrip('/')
+SMTP_SL_SERVICE_TOKEN = os.environ.get('SMTP_SL_SERVICE_TOKEN', '')
+SERVICE_REQUEST_TIMEOUT = int(os.environ.get('SERVICE_REQUEST_TIMEOUT', '20'))
+AKYLCHAT_API_BASE_URL = os.environ.get('AKYLCHAT_API_BASE_URL', '').rstrip('/')
+AKYLCHAT_SERVICE_TOKEN = os.environ.get('AKYLCHAT_SERVICE_TOKEN', '')
+DISK_AUTH_SERVICE_TOKEN = os.environ.get('DISK_AUTH_SERVICE_TOKEN', '')
+EXAM_SL_AUTH_SERVICE_TOKEN = os.environ.get('EXAM_SL_AUTH_SERVICE_TOKEN', '')
+DISK_WEB_URL = os.environ.get('DISK_WEB_URL', 'https://disk.manager-sl.ru/web/client/login')
+DISK_USAGE_API_URL = os.environ.get(
+    'DISK_USAGE_API_URL',
+    'https://disk.manager-sl.ru/api/internal/disk/usage',
+)
+DISK_PROVISION_API_URL = os.environ.get(
+    'DISK_PROVISION_API_URL',
+    'https://disk.manager-sl.ru/api/internal/disk/folders',
+)
+DISK_PROVISION_SERVICE_TOKEN = os.environ.get('DISK_PROVISION_SERVICE_TOKEN', '')
+TRANSLATE_SL_URL = os.environ.get('TRANSLATE_SL_URL', 'https://translate.manager-sl.ru').rstrip('/')
+EXAM_SL_WEB_URL = os.environ.get('EXAM_SL_WEB_URL', 'https://exam.stud-life.com').rstrip('/')
+TASK_MANAGER_WEB_URL = os.environ.get('TASK_MANAGER_WEB_URL', 'https://task.manager-sl.ru').rstrip('/')
+WEBMAIL_WEB_URL = os.environ.get('WEBMAIL_WEB_URL', 'https://mail.tmmail.ru').rstrip('/')
+SMTP_MAILBOXES_WEB_URL = os.environ.get('SMTP_MAILBOXES_WEB_URL', 'https://tmmail.ru').rstrip('/')
+TRANSLATE_SL_SSO_SECRET = os.environ.get('TRANSLATE_SL_SSO_SECRET', '')
+TRANSLATE_SL_SSO_MAX_AGE = int(os.environ.get('TRANSLATE_SL_SSO_MAX_AGE', '120'))
 
 GOOGLE_SHEETS_ENABLED = env_bool('GOOGLE_SHEETS_ENABLED', False)
 GOOGLE_SHEETS_SPREADSHEET_ID = os.environ.get('GOOGLE_SHEETS_SPREADSHEET_ID', '')
 GOOGLE_SHEETS_CREDENTIALS_FILE = os.environ.get('GOOGLE_SHEETS_CREDENTIALS_FILE', '')
 GOOGLE_SHEETS_GENERAL_SHEET = os.environ.get('GOOGLE_SHEETS_GENERAL_SHEET', 'Общее')
+GOOGLE_SHEETS_ONBOARDING_SHEET = os.environ.get(
+    'GOOGLE_SHEETS_ONBOARDING_SHEET',
+    'Заявки из анкеты',
+)
 GOOGLE_SHEETS_FINANCE_SHEET = os.environ.get('GOOGLE_SHEETS_FINANCE_SHEET', 'Финансы')
 GOOGLE_SHEETS_REFERENCE_SHEET = os.environ.get('GOOGLE_SHEETS_REFERENCE_SHEET', 'Справочники')
 GOOGLE_SHEETS_EXAMS_SHEET = os.environ.get('GOOGLE_SHEETS_EXAMS_SHEET', 'Экзамены')

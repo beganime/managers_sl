@@ -117,3 +117,20 @@ def send_push(notification):
                 error_message=str(exc),
             )
     return sent
+
+
+def send_push_to_token(token, title, body='', data=None):
+    """Send a Firebase notification before an app account exists."""
+    token = str(token or '').strip()
+    if not token or not init_firebase():
+        return False
+
+    from firebase_admin import messaging
+
+    message = messaging.Message(
+        token=token,
+        notification=messaging.Notification(title=title, body=body),
+        data={str(key): str(value) for key, value in (data or {}).items()},
+    )
+    messaging.send(message)
+    return True

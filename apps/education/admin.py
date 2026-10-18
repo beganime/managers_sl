@@ -315,15 +315,15 @@ class ProgramRequiredDocumentInline(TabularInline):
 
 @admin.register(University)
 class UniversityAdmin(ModelAdmin):
-    list_display = ('name', 'country', 'city', 'website', 'is_active', 'updated_at')
+    list_display = ('name', 'abbreviation', 'country', 'city', 'website', 'is_active', 'updated_at')
     list_filter = ('is_active', 'country', 'city')
-    search_fields = ('name', 'legal_name', 'country__name', 'city__name', 'website', 'email')
+    search_fields = ('name', 'abbreviation', 'legal_name', 'country__name', 'city__name', 'website', 'email')
     autocomplete_fields = ('company', 'country', 'city', 'local_currency', 'added_by')
     readonly_fields = ('logo_preview', 'cover_preview', 'program_fee_hint', 'created_at', 'updated_at')
     inlines = [ProgramInline, UniversityRequiredDocumentInline, UniversityContactInline]
     fieldsets = (
         ('Основное', {
-            'fields': ('company', 'name', 'legal_name', 'country', 'city', 'local_currency', 'is_active'),
+            'fields': ('company', 'name', 'abbreviation', 'legal_name', 'country', 'city', 'local_currency', 'is_active'),
             'description': 'Если страны, города или валюты ещё нет, добавьте её через плюс рядом с полем или через раздел «ВУЗы и программы».',
         }),
         ('Контакты', {'fields': ('website', 'email', 'phone', 'address')}),

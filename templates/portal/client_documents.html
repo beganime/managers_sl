@@ -12,12 +12,18 @@
     <div class="panel-header">
         <h2 class="panel-title">Документы клиентов</h2>
         <div class="contact-actions">
-            <a class="btn" href="{% url 'portal:document_upload_rating' %}"><i data-lucide="trophy"></i>Рейтинг загрузок</a>
-            <span class="pill">{{ documents_page_obj.paginator.count }} файлов</span>
+            {% if selected_client %}<a class="btn" href="{% url 'portal:client_documents' %}"><i data-lucide="arrow-left"></i>Все клиенты</a>{% endif %}
+            <span class="pill">{% if selected_client %}{{ documents_page_obj.paginator.count }} файлов{% else %}{{ client_folders|length }} папок{% endif %}</span>
         </div>
     </div>
     <div class="panel-body">
+        {% if selected_client %}
+        <article class="item-card" style="margin-bottom:14px;">
+            <div class="item-card-title">{{ selected_client.full_name }}{% if selected_client.sl_id %} ({{ selected_client.sl_id }}){% endif %}</div>
+            <div class="item-card-meta"><span>{{ selected_client.phone|default:"-" }}</span><span>{{ selected_client.email|default:"" }}</span></div>
+        </article>
         <form class="toolbar" method="get">
+            <input type="hidden" name="client" value="{{ selected_client.id }}">
             <div class="filters">
                 <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="ФИО, телефон, email или документ">
                 <input class="input" style="max-width:240px;" type="search" name="type" value="{{ type_query }}" placeholder="Тип документа">
@@ -88,6 +94,27 @@
                     {% endif %}
                 </div>
             </div>
+        {% endif %}
+        {% else %}
+        <form class="toolbar" method="get">
+            <div class="filters">
+                <input class="input search-input" type="search" name="q" value="{{ query }}" placeholder="ФИО, телефон или email">
+                <button class="btn primary" type="submit"><i data-lucide="search"></i>Найти</button>
+            </div>
+        </form>
+        <div class="card-grid">
+            {% for client in client_folders %}
+            <a class="item-card" href="?client={{ client.id }}">
+                <div class="item-card-top">
+                    <div>
+                        <div class="item-card-title">{{ client.full_name }}{% if client.sl_id %} ({{ client.sl_id }}){% endif %}</div>
+                        <div class="item-card-meta"><span>{{ client.phone|default:"-" }}</span><span>{{ client.documents_count }} документов</span></div>
+                    </div>
+                    {% if client.pending_count %}<span class="pill warn">{{ client.pending_count }} на проверке</span>{% endif %}
+                </div>
+            </a>
+            {% empty %}<div class="empty">Папок с документами пока нет.</div>{% endfor %}
+        </div>
         {% endif %}
     </div>
 </section>

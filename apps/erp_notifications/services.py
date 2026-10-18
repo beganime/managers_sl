@@ -28,7 +28,7 @@ def get_user_scope(user):
 
 def get_admin_users(company=None, office=None):
     User = get_user_model()
-    qs = User.objects.filter(Q(is_superuser=True) | Q(is_staff=True) | Q(role='admin')).distinct()
+    recipient_filter = Q(is_superuser=True) | Q(is_staff=True) | Q(role='admin')
     employee_ids = []
     if company:
         employee_qs = EmployeeProfile.objects.filter(company=company, is_active=True)
@@ -36,8 +36,11 @@ def get_admin_users(company=None, office=None):
             employee_qs = employee_qs.filter(Q(office=office) | Q(office__isnull=True))
         employee_ids = list(employee_qs.values_list('user_id', flat=True))
     if employee_ids:
-        qs = (qs | User.objects.filter(id__in=employee_ids, employee_profile__access__can_manage_documents=True)).distinct()
-    return qs
+        recipient_filter |= Q(
+            id__in=employee_ids,
+            employee_profile__access__can_manage_documents=True,
+        )
+    return User.objects.filter(recipient_filter).distinct()
 
 
 def find_template(code=None, notification_type=None, company=None):

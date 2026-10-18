@@ -1,11 +1,16 @@
 import calendar
 import json
+import mimetypes
+import re
+from pathlib import PurePosixPath
 from collections import defaultdict
 from datetime import date, timedelta
 from decimal import Decimal
 from urllib import error as urlerror
 from urllib import request as urlrequest
-from urllib.parse import urljoin, urlsplit
+from urllib.parse import quote, urlencode, urljoin, urlsplit
+
+import requests
 
 from django.conf import settings
 from django.contrib import messages
@@ -13,6 +18,8 @@ from django.contrib.auth import get_user_model, logout, update_session_auth_hash
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.views import LoginView
+from django.core import signing
+from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.core.paginator import Paginator
 from django.http import FileResponse, Http404
@@ -25,12 +32,22 @@ from django.utils.text import slugify
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.views.decorators.csrf import ensure_csrf_cookie
-from django.views.generic import TemplateView
+from django.views.generic import FormView, TemplateView
 
 from apps.attendance.models import DailyReport, WorkDay
+from apps.client_onboarding.models import ClientProvisioningStep, OnboardingSubmission
+from apps.client_onboarding.permissions import can_review_onboarding
+from apps.client_onboarding.services import review_submission
+from apps.client_onboarding.tasks import disk_category_for_submission, post_service, provision_client_services
 from apps.core.models import SystemSetting
 from apps.core.permissions import get_employee_profile, is_erp_admin
 from apps.crm.models import Application, Client, ClientFile, ClientQuestionnaire, Lead, LeadSource, ManagerDocumentCredit, ManagerDocumentPlan
+from apps.crm.questionnaire_labels import (
+    QUESTIONNAIRE_DOCUMENT_LABELS,
+    QUESTIONNAIRE_INTERNAL_FIELDS,
+    questionnaire_field_label,
+    questionnaire_value_label,
+)
 from apps.education.cache import education_cache_get, education_cache_set, make_education_cache_key
 from apps.education.models import City, Country, Currency, Program, ProgramFee, University
 from apps.erp_documents.models import DocumentDownloadLog, DocumentTemplate, GeneratedDocument
@@ -42,6 +59,7 @@ from apps.knowledge.models import KnowledgeArticle, KnowledgeCategory, Knowledge
 from apps.organizations.models import Company, Office
 from apps.portal.forms import (
     PortalCalendarEventForm,
+    ClientPushNotificationForm,
     PortalClientForm,
     PortalDealForm,
     PortalDocumentGenerateForm,
@@ -63,11 +81,85 @@ from apps.portal.forms import (
     PortalUniversityForm,
 )
 from apps.portal.models import CalendarEvent
+from apps.portal.questionnaire_forms import PortalClientQuestionnaireForm
 from apps.projects_v2.models import Project, ProjectSection, ProjectTask, TaskAttachment, TaskChecklist, TaskChecklistItem, TaskComment
+from apps.sheets_sync.models import SheetSearchSource, SheetSyncRun
+from apps.sheets_sync.search import search_google_sheets
+from apps.sheets_sync.services import enqueue_submission_sync
+from apps.portal.akylchat import AkylChatClient, AkylChatError
+from users.disk_auth import can_access_disk
 
 
 PAGE_SIZE = 25
 User = get_user_model()
+
+DISK_UPLOAD_FOLDERS = (
+    ('оригиналы', 'Оригиналы'),
+    ('переводы', 'Переводы'),
+    ('договоры', 'Договоры'),
+    ('университеты', 'Университеты'),
+    ('приглашения', 'Приглашения'),
+)
+DISK_UPLOAD_EXTENSIONS = {'.pdf', '.docx', '.jpg', '.jpeg', '.png'}
+DISK_UPLOAD_MAX_SIZE = 50 * 1024 * 1024
+
+
+def format_storage_size(value):
+    size = max(int(value or 0), 0)
+    units = ('Б', 'КБ', 'МБ', 'ГБ', 'ТБ')
+    amount = float(size)
+    unit = units[0]
+    for candidate in units:
+        unit = candidate
+        if amount < 1024 or candidate == units[-1]:
+            break
+        amount /= 1024
+    precision = 0 if unit == 'Б' else (1 if amount >= 10 else 2)
+    return f'{amount:.{precision}f} {unit}'
+
+
+def dashboard_disk_usage():
+    endpoint = str(getattr(settings, 'DISK_USAGE_API_URL', '') or '').strip()
+    token = str(getattr(settings, 'DISK_PROVISION_SERVICE_TOKEN', '') or '').strip()
+    if not endpoint or not token:
+        return None
+    try:
+        response = requests.get(
+            endpoint,
+            headers={'Authorization': f'Bearer {token}'},
+            timeout=(3, 8),
+        )
+        response.raise_for_status()
+        payload = response.json()
+        used = max(int(payload.get('used_bytes') or 0), 0)
+        total = max(int(payload.get('total_bytes') or 0), 1)
+        free = max(int(payload.get('free_bytes') or total - used), 0)
+        percent = max(0.0, min(float(payload.get('usage_percent') or used / total * 100), 100.0))
+        return {
+            'used': format_storage_size(used),
+            'free': format_storage_size(free),
+            'total': format_storage_size(total),
+            'percent': round(percent, 1),
+            'degrees': round(percent * 3.6, 1),
+            'objects': max(int(payload.get('objects') or 0), 0),
+        }
+    except (requests.RequestException, TypeError, ValueError):
+        return None
+
+
+def build_client_disk_url(client):
+    """Return the client's DiskSL folder when provisioning has completed."""
+    disk_step = client.provisioning_steps.filter(
+        step=ClientProvisioningStep.STEP_DISK,
+        status=ClientProvisioningStep.STATUS_SUCCESS,
+    ).order_by('-finished_at', '-id').first()
+    root = str((disk_step.response_data if disk_step else {}).get('root') or '').strip('/')
+    if not root:
+        return settings.DISK_WEB_URL, False
+
+    disk_url = urlsplit(settings.DISK_WEB_URL)
+    origin = f'{disk_url.scheme}://{disk_url.netloc}'
+    return f'{origin}/web/client/files?{urlencode({"path": f"/{root}"})}', True
 
 QUESTIONNAIRE_FIELD_LABELS = {
     'form_type': 'Тип заявки',
@@ -76,6 +168,7 @@ QUESTIONNAIRE_FIELD_LABELS = {
     'full_name': 'Полное ФИО',
     'birth_date': 'Дата рождения',
     'gender': 'Пол',
+    'is_conscript': 'Призывник',
     'citizenship': 'Гражданство',
     'marital_status': 'Семейное положение',
     'face_photo_url': 'Фотография лица',
@@ -130,16 +223,17 @@ QUESTIONNAIRE_FIELD_LABELS = {
     'generated_document_url': 'Документ анкеты',
     'generated_document_at': 'Дата формирования документа',
 }
+QUESTIONNAIRE_FIELD_LABELS = {**QUESTIONNAIRE_FIELD_LABELS, **QUESTIONNAIRE_DOCUMENT_LABELS}
 
 QUESTIONNAIRE_SECTIONS = (
-    ('Личные данные', ('full_name', 'birth_date', 'gender', 'citizenship', 'marital_status')),
-    ('Адрес проживания', ('residence_country', 'residence_region', 'residence_city', 'residence_street', 'residence_house', 'residence_postal_code')),
-    ('Паспортные данные', ('passport_number', 'passport_issued_by', 'passport_issue_date', 'passport_expiry_date', 'has_international_passport')),
+    ('Личные данные', ('form_type', 'application_type', 'stage', 'academic_year', 'full_name', 'birth_date', 'date_of_birth', 'gender', 'is_conscript', 'citizenship', 'marital_status')),
+    ('Адрес проживания', ('residence_country', 'residence_region', 'residence_city', 'residence_street', 'residence_house', 'residence_postal_code', 'current_residence', 'current_location')),
+    ('Паспортные данные', ('passport_number', 'passport_issued_by', 'passport_issue_date', 'passport_expiry_date', 'has_international_passport', 'passport_pending')),
     ('Контакты', ('phone', 'email', 'extra_phone', 'imo', 'telegram', 'preferred_contact_method')),
-    ('Родители / представители', ('parent_full_name', 'parent_relation', 'parent_contacts', 'parent_workplace', 'family_members')),
+    ('Родители / представители', ('parent_full_name', 'parent_name', 'parent_relation', 'parent_contacts', 'parent_phone', 'parent_messenger', 'parent_workplace', 'family_members')),
     ('Образование', ('education_status', 'education_level', 'school_class', 'school_name', 'school_country', 'school_city', 'graduation_year')),
     ('Достижения и языки', ('achievements', 'languages')),
-    ('Поступление', ('desired_program', 'admission_goal', 'desired_country', 'desired_city', 'desired_language', 'desired_education_level', 'admission_urgency', 'help_needed')),
+    ('Поступление', ('funding_type', 'requested_services', 'request_text', 'desired_universities', 'university_choices', 'desired_program', 'admission_goal', 'desired_country', 'desired_city', 'desired_language', 'desired_education_level', 'admission_urgency', 'help_needed')),
     ('Виза', ('has_visa', 'visa_country', 'visa_city', 'visa_valid_until')),
     ('Дополнительно', ('hobbies', 'applicant_comment', 'referral_source', 'data_processing_consent')),
 )
@@ -161,13 +255,17 @@ def questionnaire_value_display(value):
                 elif language:
                     lines.append(str(language))
                 else:
-                    lines.append(', '.join(f'{QUESTIONNAIRE_FIELD_LABELS.get(str(key), key)}: {questionnaire_value_display(val)}' for key, val in item.items()))
+                    lines.append(', '.join(f'{questionnaire_field_label(key)}: {questionnaire_value_display(val)}' for key, val in item.items()))
             else:
-                lines.append(str(item))
+                lines.append(str(questionnaire_value_label(item)))
         return '\n'.join(lines) if lines else '-'
     if isinstance(value, dict):
-        return '\n'.join(f'{QUESTIONNAIRE_FIELD_LABELS.get(str(key), key)}: {questionnaire_value_display(val)}' for key, val in value.items())
-    return str(value)
+        return '\n'.join(
+            f'{questionnaire_field_label(key)}: {questionnaire_value_display(val)}'
+            for key, val in value.items()
+            if key not in QUESTIONNAIRE_INTERNAL_FIELDS
+        )
+    return str(questionnaire_value_label(value))
 
 
 def build_questionnaire_sections(data):
@@ -181,29 +279,20 @@ def build_questionnaire_sections(data):
                 continue
             used_fields.add(field)
             rows.append({
-                'label': QUESTIONNAIRE_FIELD_LABELS.get(field, field),
+                'label': questionnaire_field_label(field),
                 'value': questionnaire_value_display(data.get(field)),
                 'filled': data.get(field) not in (None, '', [], {}),
             })
         if rows:
             sections.append({'title': title, 'rows': rows})
 
-    ignored_fields = {
-        'id',
-        'document_file',
-        'generated_document_url',
-        'generated_document_at',
-        'missing_required_fields',
-        'missing_required_field_labels',
-        'updated_at',
-        'attachments',
-    }
+    ignored_fields = QUESTIONNAIRE_INTERNAL_FIELDS
     extra_rows = []
     for key, value in sorted(data.items()):
         if key in used_fields or key in ignored_fields:
             continue
         extra_rows.append({
-            'label': QUESTIONNAIRE_FIELD_LABELS.get(key, key),
+            'label': questionnaire_field_label(key),
             'value': questionnaire_value_display(value),
             'filled': value not in (None, '', [], {}),
         })
@@ -224,57 +313,62 @@ def questionnaire_generated_document_url(questionnaire):
 
 NAV_GROUPS = (
     {
-        'key': 'dashboard',
-        'label': 'Дашборд',
+        'key': 'main',
+        'label': 'Основное',
         'icon': 'layout-dashboard',
         'items': (
-            {'name': 'dashboard', 'label': 'Главная', 'icon': 'layout-dashboard'},
+            {'name': 'dashboard', 'label': 'Дашборд', 'icon': 'layout-dashboard'},
             {'name': 'workday', 'label': 'Рабочий день', 'icon': 'timer'},
-            {'name': 'calendar', 'label': 'Календарь', 'icon': 'calendar-days'},
-            {'name': 'notifications', 'label': 'Уведомления', 'icon': 'bell'},
-        ),
-    },
-    {
-        'key': 'crm',
-        'label': 'CRM',
-        'icon': 'users',
-        'items': (
-            {'name': 'leads', 'label': 'Лиды', 'icon': 'radar'},
-            {'name': 'incoming_leads', 'label': 'Потенциальные клиенты', 'icon': 'inbox'},
-            {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
-            {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
-            {'name': 'document_upload_rating', 'label': 'Рейтинг загрузок', 'icon': 'badge-plus'},
-            {'name': 'client_questionnaires', 'label': 'Анкеты клиентов', 'icon': 'clipboard-list'},
-            {'name': 'applications', 'label': 'Заявки', 'icon': 'file-check-2'},
-            {'name': 'tasks', 'label': 'Задачи', 'icon': 'check-square'},
-            {'name': 'projects', 'label': 'Проекты', 'icon': 'folder-kanban'},
-            {'name': 'finance', 'label': 'Финансы', 'icon': 'wallet-cards'},
-        ),
-    },
-    {
-        'key': 'rating',
-        'label': 'Рейтинг',
-        'icon': 'trophy',
-        'items': (
-            {'name': 'rating', 'label': 'Рейтинг сотрудников', 'icon': 'trophy'},
-            {'name': 'approvals', 'label': 'Подтверждения', 'icon': 'badge-check'},
             {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
-            {'name': 'employee_reports', 'label': 'Отчёты сотрудников', 'icon': 'clipboard-list', 'staff_only': True},
-            {'name': 'finance_reports', 'label': 'Балансы', 'icon': 'circle-dollar-sign'},
+            {'name': 'documents', 'label': 'Документы', 'icon': 'file-text'},
         ),
     },
     {
-        'key': 'education',
-        'label': 'Вузы',
-        'icon': 'graduation-cap',
+        'key': 'client_app',
+        'label': 'Клиентское приложение',
+        'icon': 'smartphone',
         'items': (
-            {'name': 'countries', 'label': 'Страны', 'icon': 'map'},
-            {'name': 'cities', 'label': 'Города', 'icon': 'map-pin'},
             {'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
             {'name': 'programs', 'label': 'Программы', 'icon': 'library-big'},
-            {'name': 'services', 'label': 'Услуги', 'icon': 'briefcase-business'},
-            {'name': 'knowledge', 'label': 'База знаний', 'icon': 'book-open-check'},
-            {'name': 'documents', 'label': 'Документы', 'icon': 'file-text'},
+            {'name': 'countries', 'label': 'Страны', 'icon': 'map'},
+            {'name': 'cities', 'label': 'Города', 'icon': 'map-pin'},
+        ),
+    },
+    {
+        'key': 'applications',
+        'label': 'Заявки',
+        'icon': 'clipboard-list',
+        'items': (
+            {
+                'name': 'onboarding_submissions',
+                'label': 'Экспресс-анкеты',
+                'icon': 'inbox',
+                'onboarding_only': True,
+            },
+            {'name': 'client_questionnaires', 'label': 'Полные анкеты', 'icon': 'clipboard-list'},
+            {'name': 'client_chats', 'label': 'Чаты', 'icon': 'messages-square'},
+            {'name': 'client_documents', 'label': 'Документы клиентов', 'icon': 'file-check-2'},
+        ),
+    },
+    {
+        'key': 'website_applications',
+        'label': 'Заявки с сайта',
+        'icon': 'globe-2',
+        'items': (
+            {'name': 'incoming_leads', 'label': 'Заявки с сайта', 'icon': 'inbox'},
+        ),
+    },
+    {
+        'key': 'services',
+        'label': 'Сервисы',
+        'icon': 'blocks',
+        'items': (
+            {'name': 'exam_sl', 'label': 'Экзамены', 'icon': 'calendar-check-2', 'url': settings.EXAM_SL_WEB_URL, 'external': True},
+            {'name': 'translate_sl', 'label': 'Переводы', 'icon': 'languages', 'external': True, 'disk_access_only': True},
+            {'name': 'disk', 'label': 'Диск', 'icon': 'hard-drive', 'url': settings.DISK_WEB_URL, 'external': True, 'disk_access_only': True},
+            {'name': 'task_manager', 'label': 'Задачи', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL, 'external': True},
+            {'name': 'webmail', 'label': 'Вебмайл', 'icon': 'mail', 'url': settings.WEBMAIL_WEB_URL, 'external': True},
+            {'name': 'smtp_mailboxes', 'label': 'SMTP ящики', 'icon': 'mail-check', 'url': settings.SMTP_MAILBOXES_WEB_URL, 'external': True},
         ),
     },
     {
@@ -285,17 +379,16 @@ NAV_GROUPS = (
             {'name': 'profile', 'label': 'Профиль', 'icon': 'user-round'},
             {'name': 'settings', 'label': 'Настройки', 'icon': 'settings'},
             {'name': 'help', 'label': 'Помощь', 'icon': 'circle-help'},
-            {'name': 'admin_data_help', 'label': 'Инструкция по админке', 'icon': 'list-checks'},
-            {'name': 'admin', 'label': 'Админка', 'icon': 'shield-check', 'url': '/admin/', 'staff_only': True},
         ),
     },
 )
 
+
 MOBILE_NAV = (
-    {'section': 'dashboard', 'name': 'dashboard', 'label': 'Дашборд', 'icon': 'layout-dashboard'},
-    {'section': 'crm', 'name': 'leads', 'label': 'CRM', 'icon': 'users'},
-    {'section': 'rating', 'name': 'rating', 'label': 'Рейтинг', 'icon': 'trophy'},
-    {'section': 'education', 'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
+    {'section': 'main', 'name': 'dashboard', 'label': 'Дашборд', 'icon': 'layout-dashboard'},
+    {'section': 'applications', 'name': 'onboarding_submissions', 'label': 'Заявки', 'icon': 'clipboard-list'},
+    {'section': 'website_applications', 'name': 'incoming_leads', 'label': 'С сайта', 'icon': 'globe-2'},
+    {'section': 'client_app', 'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
     {'section': 'settings', 'name': 'settings', 'label': 'Настройки', 'icon': 'settings'},
 )
 
@@ -438,6 +531,10 @@ def build_nav_groups(user, active_page):
         for item in group['items']:
             if item.get('staff_only') and not (user.is_staff or user.is_superuser):
                 continue
+            if item.get('onboarding_only') and not can_review_onboarding(user):
+                continue
+            if item.get('disk_access_only') and not can_access_disk(user):
+                continue
             resolved = {**item, 'url': resolve_nav_url(item)}
             resolved['is_active'] = item['name'] == active_page
             is_group_active = is_group_active or resolved['is_active']
@@ -451,7 +548,7 @@ def get_active_section(active_page):
     for group in NAV_GROUPS:
         if any(item['name'] == active_page for item in group['items']):
             return group['key']
-    return 'dashboard'
+    return 'main'
 
 
 def build_mobile_nav(active_page):
@@ -1137,6 +1234,117 @@ class PortalContextMixin(LoginRequiredMixin):
         return context
 
 
+class ClientChatsView(PortalContextMixin, TemplateView):
+    template_name = 'portal/client_chats.html'
+    active_page = 'client_chats'
+    page_title = 'Чаты клиентов'
+
+    def post(self, request, *args, **kwargs):
+        sl_id = str(request.POST.get('sl_id') or '').strip().upper()
+        text = str(request.POST.get('text') or '').strip()
+        upload = request.FILES.get('file')
+        if not sl_id:
+            messages.error(request, 'Выберите клиента.')
+            return redirect('portal:client_chats')
+        target = f'{reverse("portal:client_chats")}?sl_id={sl_id}'
+        if not text and not upload:
+            messages.error(request, 'Введите сообщение или выберите файл.')
+            return redirect(target)
+        if upload and upload.size > 50 * 1024 * 1024:
+            messages.error(request, 'Размер файла не должен превышать 50 МБ.')
+            return redirect(target)
+        try:
+            AkylChatClient().send_message(
+                sl_id,
+                text=text,
+                upload=upload,
+                manager_name=full_name(request.user),
+            )
+        except AkylChatError as exc:
+            messages.error(request, str(exc))
+        else:
+            try:
+                manager = full_name(request.user)
+                post_service(
+                    settings.STUDENTS_LIFE_PROVISION_API_URL.replace('/provision/', '/notify/'),
+                    settings.STUDENTS_LIFE_PROVISION_TOKEN,
+                    {
+                        'sl_id': sl_id,
+                        'title': f'Менеджер {manager} ответил в чате',
+                        'body': text or 'Менеджер отправил вам файл.',
+                        'notification_type': 'chat_message',
+                    },
+                )
+            except Exception:
+                messages.warning(request, 'Сообщение отправлено в чат, но push-уведомление не доставлено.')
+        return redirect(target)
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        client = AkylChatClient()
+        rooms = []
+        chat_messages = []
+        selected_sl_id = str(self.request.GET.get('sl_id') or '').strip().upper()
+        integration_error = ''
+        try:
+            rooms = client.rooms().get('results', [])
+            if not selected_sl_id and rooms:
+                selected_sl_id = str(rooms[0].get('sl_id') or '').strip().upper()
+            if selected_sl_id:
+                chat_messages = client.messages(selected_sl_id).get('results', [])
+                client.mark_read(selected_sl_id)
+        except AkylChatError as exc:
+            integration_error = str(exc)
+        context.update({
+            'chat_rooms': rooms,
+            'chat_messages': chat_messages,
+            'selected_sl_id': selected_sl_id,
+            'selected_room': next(
+                (room for room in rooms if str(room.get('sl_id') or '').upper() == selected_sl_id),
+                None,
+            ),
+            'integration_error': integration_error,
+            'max_upload_mb': 50,
+        })
+        return context
+
+
+class SheetsSearchView(PortalContextMixin, TemplateView):
+    template_name = 'portal/sheets_search.html'
+    active_page = 'sheets_search'
+    page_title = 'Поиск по Google Sheets'
+
+    def post(self, request, *args, **kwargs):
+        if not is_erp_admin(request.user):
+            raise Http404
+        title = str(request.POST.get('title') or '').strip()[:160]
+        raw_id = str(request.POST.get('spreadsheet_id') or '').strip()
+        match = re.search(r'/spreadsheets/d/([A-Za-z0-9_-]+)', raw_id)
+        spreadsheet_id = (match.group(1) if match else raw_id)[:160]
+        if not title or not re.fullmatch(r'[A-Za-z0-9_-]{20,160}', spreadsheet_id):
+            messages.error(request, 'Укажите название и корректную ссылку или ID Google Sheets.')
+        else:
+            SheetSearchSource.objects.update_or_create(
+                spreadsheet_id=spreadsheet_id,
+                defaults={'title': title, 'is_active': True},
+            )
+            messages.success(request, 'Книга добавлена в общий поиск. Не забудьте открыть доступ сервисному аккаунту.')
+        return redirect('portal:sheets_search')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        query = str(self.request.GET.get('q') or '').strip()
+        results, errors = search_google_sheets(query) if len(query) >= 2 else ([], [])
+        context.update({
+            'query': query,
+            'results': results,
+            'search_errors': errors,
+            'sources': SheetSearchSource.objects.order_by('title'),
+            'can_manage_sources': is_erp_admin(self.request.user),
+        })
+        return context
+
+
 class PortalIndexView(LoginRequiredMixin, View):
     login_url = reverse_lazy('portal:login')
 
@@ -1184,61 +1392,105 @@ class DashboardView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         today = timezone.localdate()
-        week_ago = timezone.now() - timedelta(days=7)
-
-        leads = lead_queryset(user)
         clients = client_queryset(user)
-        applications = application_queryset(user)
-        tasks = task_queryset(user)
-        payments = payment_queryset(user)
-        incomes = income_queryset(user)
-        expenses = expense_queryset(user)
-        projects = project_queryset(user)
+        website_leads = incoming_lead_queryset(user)
+        express_submissions = OnboardingSubmission.objects.select_related('client').order_by('-submitted_at')
+        questionnaires = ClientQuestionnaire.objects.select_related('client').filter(
+            client_id__in=clients.values('id')
+        ).order_by('-updated_at')
         documents = document_queryset(user)
-        notifications = notification_queryset(user)
         workdays = workday_queryset(user)
         employee_profiles = employee_queryset(user)
-        confirmed_payments = payments.filter(is_confirmed=True)
-        confirmed_expenses = expenses.filter(is_confirmed=True)
-        confirmed_incomes = incomes.filter(is_confirmed=True)
-        revenue_month = (
-            confirmed_payments.filter(payment_date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
-        ) + (
-            confirmed_incomes.filter(date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
-        )
-        expense_month = confirmed_expenses.filter(date__gte=today.replace(day=1)).aggregate(total=Sum('amount_usd'))['total'] or 0
+        active_express_statuses = [
+            OnboardingSubmission.STATUS_SUBMITTED,
+            OnboardingSubmission.STATUS_IN_REVIEW,
+            OnboardingSubmission.STATUS_CHANGES_REQUESTED,
+        ]
+        express_counts = {
+            row['status']: row['total']
+            for row in express_submissions.values('status').annotate(total=Count('id'))
+        }
+        express_chart = [
+            {'label': 'Ожидают', 'value': express_counts.get(OnboardingSubmission.STATUS_SUBMITTED, 0), 'color': '#b71d17'},
+            {'label': 'На проверке', 'value': express_counts.get(OnboardingSubmission.STATUS_IN_REVIEW, 0), 'color': '#0d416d'},
+            {'label': 'Исправления', 'value': express_counts.get(OnboardingSubmission.STATUS_CHANGES_REQUESTED, 0), 'color': '#d97706'},
+            {'label': 'Одобрены', 'value': express_counts.get(OnboardingSubmission.STATUS_APPROVED, 0), 'color': '#198754'},
+        ]
+        express_total = max(sum(item['value'] for item in express_chart), 1)
+        for item in express_chart:
+            item['percent'] = round(item['value'] / express_total * 100, 1)
+
+        active_employees = employee_profiles.filter(is_active=True).count()
+        started_today = workdays.filter(date=today).exclude(status=WorkDay.STATUS_NOT_STARTED).count()
+        workday_percent = round(min(started_today / max(active_employees, 1) * 100, 100), 1)
+        disk_usage = dashboard_disk_usage()
+        task_manager_url = settings.TASK_MANAGER_WEB_URL.rstrip('/')
 
         context.update({
             'metrics': [
-                {'label': 'Лиды', 'value': leads.exclude(status__in=['converted', 'lost', 'spam']).count(), 'icon': 'radar', 'url': reverse('portal:leads')},
-                {'label': 'Потенциальные', 'value': incoming_lead_queryset(user).filter(manager__isnull=True).count(), 'icon': 'inbox', 'url': reverse('portal:incoming_leads')},
-                {'label': 'Клиенты', 'value': clients.exclude(status__in=['archive', 'rejected']).count(), 'icon': 'users', 'url': reverse('portal:clients')},
-                {'label': 'Заявки', 'value': applications.exclude(status__in=['cancelled', 'rejected', 'enrolled']).count(), 'icon': 'file-check-2', 'url': reverse('portal:applications')},
-                {'label': 'Задачи', 'value': tasks.filter(Q(assigned_to=user) | Q(watchers__user=user)).exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).distinct().count(), 'icon': 'check-square', 'url': reverse('portal:tasks')},
-                {'label': 'Платежи за 7 дней', 'value': payments.filter(is_confirmed=True, created_at__gte=week_ago).count(), 'icon': 'wallet-cards', 'url': reverse('portal:finance')},
+                {'label': 'Экспресс-анкеты', 'value': express_submissions.filter(status__in=active_express_statuses).count(), 'icon': 'inbox', 'url': reverse('portal:onboarding_submissions')},
+                {'label': 'Полные анкеты', 'value': questionnaires.exclude(status=ClientQuestionnaire.STATUS_APPROVED).count(), 'icon': 'clipboard-list', 'url': reverse('portal:client_questionnaires')},
+                {'label': 'Заявки с сайта', 'value': website_leads.filter(manager__isnull=True).count(), 'icon': 'globe-2', 'url': reverse('portal:incoming_leads')},
                 {'label': 'Документы', 'value': documents.filter(status__in=[GeneratedDocument.STATUS_PENDING, GeneratedDocument.STATUS_GENERATED]).count(), 'icon': 'file-text', 'url': reverse('portal:documents')},
-                {'label': 'Уведомления', 'value': notifications.filter(read_at__isnull=True).exclude(status=Notification.STATUS_READ).count(), 'icon': 'bell', 'url': reverse('portal:notifications')},
+                {'label': 'Клиенты', 'value': clients.exclude(status__in=['archive', 'rejected']).count(), 'icon': 'users', 'url': reverse('portal:client_questionnaires')},
+                {'label': 'Вузы', 'value': university_queryset(user).count(), 'icon': 'graduation-cap', 'url': reverse('portal:universities')},
             ],
             'admin_metrics': [
-                {'label': 'Доходы месяца', 'value': revenue_month, 'icon': 'trending-up', 'money': True},
-                {'label': 'Расходы месяца', 'value': expense_month, 'icon': 'trending-down', 'money': True},
-                {'label': 'Прибыль', 'value': revenue_month - expense_month, 'icon': 'chart-no-axes-combined', 'money': True},
                 {'label': 'Сотрудники', 'value': employee_profiles.filter(is_active=True).count(), 'icon': 'id-card'},
                 {'label': 'Начали день', 'value': workdays.filter(date=today).exclude(status=WorkDay.STATUS_NOT_STARTED).count(), 'icon': 'timer'},
-                {'label': 'Открытые проекты', 'value': projects.exclude(status__in=[Project.STATUS_DONE, Project.STATUS_ARCHIVED]).count(), 'icon': 'folder-kanban'},
             ] if is_erp_admin(user) or user.is_staff else [],
-            'my_leads': limit(leads.exclude(status__in=['converted', 'lost', 'spam']).order_by('-created_at'), 6),
-            'my_clients': limit(clients.order_by('-updated_at'), 6),
-            'my_applications': limit(applications.order_by('-updated_at'), 6),
-            'my_tasks': limit(tasks.filter(Q(assigned_to=user) | Q(watchers__user=user)).exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).distinct().order_by('deadline', '-updated_at'), 6),
-            'my_projects': limit(projects.order_by('-updated_at'), 6),
+            'recent_express': limit(express_submissions, 6),
+            'recent_questionnaires': limit(questionnaires, 6),
+            'recent_website_leads': limit(website_leads.order_by('-created_at'), 6),
             'workday': get_today_workday(user),
-            'recent_payments': limit(payments.order_by('-payment_date', '-created_at'), 6),
             'recent_documents': limit(documents.order_by('-created_at'), 6),
-            'notifications': limit(notifications.order_by('-created_at'), 8),
             'birthday_people': employee_profiles.filter(user__dob__month=today.month).order_by('user__dob__day')[:8],
-            'calendar_events': build_calendar_events(user, limit_count=8),
-            'knowledge_items': limit(knowledge_queryset(user).order_by('-is_featured', '-published_at', '-updated_at'), 5),
+            'is_current_user_birthday': bool(
+                user.dob
+                and user.dob.month == today.month
+                and user.dob.day == today.day
+            ),
+            'birthday_first_name': user.first_name.strip() if user.first_name else full_name(user),
+            'express_chart': express_chart,
+            'express_total': sum(item['value'] for item in express_chart),
+            'workday_stats': {
+                'started': started_today,
+                'total': active_employees,
+                'percent': workday_percent,
+                'degrees': round(workday_percent * 3.6, 1),
+            },
+            'disk_usage': disk_usage,
+            'dashboard_services': [
+                {
+                    'label': 'Укажите настроение',
+                    'description': 'Отметьте, как проходит рабочий день.',
+                    'icon': 'smile-plus',
+                    'url': f'{task_manager_url}/mood',
+                    'tone': 'red',
+                },
+                {
+                    'label': 'Перевести документ',
+                    'description': 'Откройте TranslateSL и выберите шаблон.',
+                    'icon': 'languages',
+                    'url': settings.TRANSLATE_SL_URL,
+                    'tone': 'blue',
+                },
+                {
+                    'label': 'Экзамены',
+                    'description': 'Расписание и уведомления клиентов.',
+                    'icon': 'calendar-check-2',
+                    'url': settings.EXAM_SL_WEB_URL,
+                    'tone': 'navy',
+                },
+                {
+                    'label': 'Рабочие задачи',
+                    'description': 'Личные и общие задачи команды.',
+                    'icon': 'list-checks',
+                    'url': task_manager_url,
+                    'tone': 'slate',
+                },
+            ],
+            'disk_url': settings.DISK_WEB_URL,
             'today': today,
         })
         return context
@@ -1337,14 +1589,6 @@ class SettingsView(PortalContextMixin, TemplateView):
             'students_life_original_url': original_url,
             'current_students_life_api_url': current_students_life_api_url,
             'students_life_api_key_configured': bool(getattr(settings, 'STUDENTS_LIFE_API_KEY', '') or getattr(settings, 'LEADS_API_KEY', '')),
-            'api_links': [
-                {'label': 'CRM API', 'url': '/api/v1/crm/'},
-                {'label': 'Education API', 'url': '/api/v1/education/'},
-                {'label': 'Services API', 'url': '/api/v1/services/'},
-                {'label': 'Finance API', 'url': '/api/v1/finance/'},
-                {'label': 'Documents API', 'url': '/api/v1/documents/'},
-                {'label': 'Attendance API', 'url': '/api/v1/attendance/'},
-            ],
         })
         return context
 
@@ -2007,6 +2251,9 @@ class ClientsView(ListPageMixin):
                 item.manager = request.user
             item.save()
             form.save_m2m()
+            onboarding = OnboardingSubmission.objects.filter(client=item).first()
+            if onboarding:
+                enqueue_submission_sync(onboarding.pk)
             messages.success(request, 'Клиент сохранён.')
             return redirect('portal:clients')
         context = self.get_context_data()
@@ -2027,6 +2274,10 @@ class ClientDetailView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         client = self.get_client()
         exams_ok, exams, exams_error = get_client_exams_from_students_life(client)
+        disk_url, disk_ready = build_client_disk_url(client)
+        translate_next = '/upload/'
+        if client.sl_id:
+            translate_next = f'/upload/?{urlencode({"client": client.sl_id})}'
         context.update({
             'client': client,
             'applications': application_queryset(self.request.user).filter(client=client).order_by('-created_at'),
@@ -2037,8 +2288,119 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             'mobile_exams_ok': exams_ok,
             'mobile_exams_error': exams_error,
             'mobile_user_id': client_mobile_user_id(client),
+            'disk_url': disk_url,
+            'disk_ready': disk_ready,
+            'disk_upload_folders': DISK_UPLOAD_FOLDERS,
+            'can_access_disk': can_access_disk(self.request.user),
+            'translate_url': f'{reverse("portal:translate_sl")}?{urlencode({"next": translate_next})}',
         })
         return context
+
+
+class TranslateSLLoginView(LoginRequiredMixin, View):
+    """Open TranslateSL with a short-lived, signed ManagerSL identity."""
+
+    login_url = reverse_lazy('portal:login')
+
+    def get(self, request):
+        if not can_access_disk(request.user):
+            messages.error(request, 'У вашей роли нет доступа к документам клиентов.')
+            return redirect('portal:dashboard')
+
+        if not settings.TRANSLATE_SL_SSO_SECRET:
+            messages.error(request, 'Связь с TranslateSL пока не настроена.')
+            return redirect('portal:dashboard')
+
+        next_url = (request.GET.get('next') or '/').strip()
+        parsed_next = urlsplit(next_url)
+        if (
+            not next_url.startswith('/')
+            or next_url.startswith('//')
+            or '\\' in next_url
+            or parsed_next.scheme
+            or parsed_next.netloc
+        ):
+            next_url = '/'
+
+        token = signing.dumps(
+            {
+                'email': request.user.email,
+                'first_name': request.user.first_name,
+                'last_name': request.user.last_name,
+                'is_staff': bool(request.user.is_superuser or request.user.role == 'admin'),
+                'next': next_url,
+            },
+            key=settings.TRANSLATE_SL_SSO_SECRET,
+            salt='manager-sl.translate-sso.v1',
+            compress=True,
+        )
+        target = f'{settings.TRANSLATE_SL_URL}/accounts/manager-sl/?{urlencode({"token": token})}'
+        response = redirect(target)
+        response['Cache-Control'] = 'no-store'
+        response['Referrer-Policy'] = 'no-referrer'
+        return response
+
+
+class ClientDiskUploadView(LoginRequiredMixin, View):
+    login_url = reverse_lazy('portal:login')
+
+    def post(self, request, pk):
+        if not can_access_disk(request.user):
+            messages.error(request, 'У вас нет доступа к файлам клиентов.')
+            return redirect('portal:client_detail', pk=pk)
+
+        client = get_object_or_404(client_queryset(request.user), pk=pk)
+        _disk_url, disk_ready = build_client_disk_url(client)
+        submission = getattr(client, 'onboarding_submission', None)
+        uploaded_file = request.FILES.get('file')
+        folder = request.POST.get('folder', '').strip()
+        allowed_folders = {value for value, _label in DISK_UPLOAD_FOLDERS}
+        if not disk_ready or not submission:
+            messages.error(request, 'Папка клиента ещё не создана в DiskSL. Повторите подключение систем в анкете.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if not uploaded_file:
+            messages.error(request, 'Выберите файл для загрузки.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if folder not in allowed_folders:
+            messages.error(request, 'Выберите допустимую папку DiskSL.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if uploaded_file.size <= 0 or uploaded_file.size > DISK_UPLOAD_MAX_SIZE:
+            messages.error(request, 'Размер файла должен быть от 1 байта до 50 МБ.')
+            return redirect('portal:client_detail', pk=client.pk)
+        if PurePosixPath(uploaded_file.name).suffix.lower() not in DISK_UPLOAD_EXTENSIONS:
+            messages.error(request, 'Допустимы только PDF, DOCX, JPG и PNG.')
+            return redirect('portal:client_detail', pk=client.pk)
+
+        endpoint = settings.DISK_PROVISION_API_URL.rsplit('/folders', 1)[0] + '/files'
+        category = disk_category_for_submission(submission)
+        headers = {
+            'Authorization': f'Bearer {settings.DISK_PROVISION_SERVICE_TOKEN}',
+            'Content-Type': uploaded_file.content_type or mimetypes.guess_type(uploaded_file.name)[0] or 'application/octet-stream',
+            'Content-Length': str(uploaded_file.size),
+            'X-Academic-Year': str(client.academic_year),
+            'X-SL-ID': quote(client.sl_id or '', safe=''),
+            'X-Client-Name': quote(client.full_name, safe=''),
+            'X-Disk-Category': quote(category, safe=''),
+            'X-Disk-Folder': quote(folder, safe=''),
+            'X-File-Name': quote(uploaded_file.name, safe=''),
+            'X-Actor': quote(request.user.email, safe=''),
+        }
+        try:
+            uploaded_file.file.seek(0)
+            response = requests.post(
+                endpoint,
+                data=uploaded_file.file,
+                headers=headers,
+                timeout=(5, 120),
+            )
+            response.raise_for_status()
+            result = response.json()
+        except (requests.RequestException, ValueError) as exc:
+            messages.error(request, f'Не удалось загрузить файл в DiskSL: {exc}')
+            return redirect('portal:client_detail', pk=client.pk)
+
+        messages.success(request, f'Файл загружен в DiskSL: {result.get("path", uploaded_file.name)}')
+        return redirect('portal:client_detail', pk=client.pk)
 
 
 class ClientExamPortalView(LoginRequiredMixin, View):
@@ -2433,6 +2795,9 @@ class ClientDocumentsView(PortalContextMixin, TemplateView):
             .filter(source='students_life_mobile_app', client_id__in=allowed_clients)
             .order_by('-created_at', '-updated_at')
         )
+        client_id = str(self.request.GET.get('client') or '').strip()
+        if client_id.isdigit():
+            qs = qs.filter(client_id=int(client_id))
         status_value = self.request.GET.get('status') or ''
         if status_value in {ClientFile.STATUS_PENDING, ClientFile.STATUS_APPROVED, ClientFile.STATUS_REJECTED}:
             qs = qs.filter(status=status_value)
@@ -2453,6 +2818,26 @@ class ClientDocumentsView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         documents_page, documents_query = paginate_queryset(self.request, self.get_documents(), 24)
         base_qs = ClientFile.objects.filter(source='students_life_mobile_app', client_id__in=client_queryset(self.request.user).values('id'))
+        selected_client_id = str(self.request.GET.get('client') or '').strip()
+        selected_client = client_queryset(self.request.user).filter(pk=selected_client_id).first() if selected_client_id.isdigit() else None
+        client_folders = (
+            client_queryset(self.request.user)
+            .filter(files__source='students_life_mobile_app')
+            .annotate(
+                documents_count=Count('files', filter=Q(files__source='students_life_mobile_app')),
+                pending_count=Count('files', filter=Q(files__source='students_life_mobile_app', files__status=ClientFile.STATUS_PENDING)),
+            )
+            .distinct()
+            .order_by('full_name')
+        )
+        folder_query = str(self.request.GET.get('q') or '').strip()
+        if folder_query and not selected_client:
+            client_folders = client_folders.filter(
+                Q(full_name__icontains=folder_query)
+                | Q(phone__icontains=folder_query)
+                | Q(email__icontains=folder_query)
+                | Q(sl_id__icontains=folder_query)
+            )
         context.update({
             'documents': documents_page.object_list,
             'documents_page_obj': documents_page,
@@ -2470,6 +2855,8 @@ class ClientDocumentsView(PortalContextMixin, TemplateView):
             'pending_documents': base_qs.filter(status=ClientFile.STATUS_PENDING).count(),
             'approved_documents': base_qs.filter(status=ClientFile.STATUS_APPROVED).count(),
             'rejected_documents': base_qs.filter(status=ClientFile.STATUS_REJECTED).count(),
+            'client_folders': client_folders,
+            'selected_client': selected_client,
         })
         return context
 
@@ -2638,6 +3025,165 @@ class DocumentUploadRatingView(PortalContextMixin, TemplateView):
         return context
 
 
+class OnboardingPortalAccessMixin(PortalContextMixin):
+    active_page = 'onboarding_submissions'
+
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not can_review_onboarding(request.user):
+            messages.error(request, 'У вас нет права проверять входящие анкеты.')
+            return redirect('portal:dashboard')
+        return super().dispatch(request, *args, **kwargs)
+
+
+class OnboardingSubmissionsView(OnboardingPortalAccessMixin, TemplateView):
+    template_name = 'portal/onboarding_submissions.html'
+    page_title = 'Входящие анкеты'
+
+    def get_queryset(self):
+        queryset = (
+            OnboardingSubmission.objects.select_related('reviewed_by', 'client')
+            .prefetch_related('university_choices__university', 'university_choices__programs')
+        )
+        query = (self.request.GET.get('q') or '').strip()
+        if query:
+            queryset = queryset.filter(
+                Q(full_name__icontains=query)
+                | Q(phone__icontains=query)
+                | Q(email__icontains=query)
+                | Q(client__sl_id__icontains=query)
+            )
+
+        status_value = self.request.GET.get('status', 'active')
+        valid_statuses = {value for value, _ in OnboardingSubmission.STATUS_CHOICES}
+        if status_value == 'active':
+            queryset = queryset.filter(
+                status__in=[
+                    OnboardingSubmission.STATUS_SUBMITTED,
+                    OnboardingSubmission.STATUS_IN_REVIEW,
+                    OnboardingSubmission.STATUS_CHANGES_REQUESTED,
+                ]
+            )
+        elif status_value in valid_statuses:
+            queryset = queryset.filter(status=status_value)
+
+        kind_value = self.request.GET.get('kind', '')
+        if kind_value in {value for value, _ in OnboardingSubmission.KIND_CHOICES}:
+            queryset = queryset.filter(kind=kind_value)
+        return queryset.order_by('-submitted_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        page_obj, query = paginate_queryset(self.request, self.get_queryset(), 24)
+        context.update({
+            'submissions': page_obj.object_list,
+            'page_obj': page_obj,
+            'page_query': query,
+            'query': self.request.GET.get('q', ''),
+            'status_filter': self.request.GET.get('status', 'active'),
+            'kind_filter': self.request.GET.get('kind', ''),
+            'status_choices': (
+                ('active', 'Требуют внимания'),
+                ('', 'Все'),
+                *OnboardingSubmission.STATUS_CHOICES,
+            ),
+            'kind_choices': (('', 'Все типы'), *OnboardingSubmission.KIND_CHOICES),
+        })
+        return context
+
+
+class OnboardingSubmissionDetailView(OnboardingPortalAccessMixin, TemplateView):
+    template_name = 'portal/onboarding_submission_detail.html'
+    page_title = 'Проверка входящей анкеты'
+
+    def get_submission(self):
+        return get_object_or_404(
+            OnboardingSubmission.objects.select_related(
+                'reviewed_by', 'client', 'service_identity'
+            ).prefetch_related(
+                'university_choices__university',
+                'university_choices__programs',
+                'provisioning_steps',
+                'review_events__actor',
+            ),
+            pk=self.kwargs['pk'],
+        )
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        submission = self.get_submission()
+        context.update({
+            'submission': submission,
+            'payload_sections': build_questionnaire_sections(submission.payload or {}),
+            'latest_sheet_sync': SheetSyncRun.objects.filter(
+                kind=SheetSyncRun.KIND_SUBMISSION,
+                object_ref=str(submission.pk),
+            ).first(),
+            'can_decide': submission.status in {
+                OnboardingSubmission.STATUS_SUBMITTED,
+                OnboardingSubmission.STATUS_IN_REVIEW,
+            },
+        })
+        return context
+
+
+class OnboardingSubmissionReviewView(OnboardingPortalAccessMixin, View):
+    def post(self, request, pk):
+        submission = get_object_or_404(OnboardingSubmission, pk=pk)
+        decision = request.POST.get('decision', '')
+        comment = request.POST.get('comment', '')
+        labels = {
+            'start_review': 'Анкета взята на проверку.',
+            'approve': 'Анкета одобрена. Клиент и заявки созданы.',
+            'request_changes': 'Клиенту отправлен запрос на исправление анкеты.',
+            'reject': 'Анкета отклонена.',
+        }
+        try:
+            submission = review_submission(
+                submission,
+                request.user,
+                decision,
+                comment=comment,
+            )
+        except ValidationError as exc:
+            messages.error(request, ' '.join(exc.messages))
+        else:
+            messages.success(request, labels.get(decision, 'Решение сохранено.'))
+        return redirect('portal:onboarding_submission_detail', pk=submission.pk)
+
+
+class OnboardingProvisioningRetryView(OnboardingPortalAccessMixin, View):
+    def post(self, request, pk):
+        submission = get_object_or_404(
+            OnboardingSubmission.objects.select_related('client'),
+            pk=pk,
+            status=OnboardingSubmission.STATUS_APPROVED,
+            client__isnull=False,
+        )
+        target = request.POST.get('target', 'all')
+        queued = []
+        try:
+            if target in {'services', 'all'}:
+                provision_client_services.delay(submission.client_id, str(submission.public_id))
+                queued.append('аккаунт и почта')
+            if target in {'sheets', 'all'}:
+                latest = SheetSyncRun.objects.filter(
+                    kind=SheetSyncRun.KIND_SUBMISSION,
+                    object_ref=str(submission.pk),
+                    status=SheetSyncRun.STATUS_RUNNING,
+                    created_at__gte=timezone.now() - timedelta(minutes=5),
+                ).exists()
+                if not latest and enqueue_submission_sync(submission.pk):
+                    queued.append('Google Sheets')
+        except Exception as exc:
+            messages.error(request, f'Не удалось поставить повтор в очередь: {exc}')
+        else:
+            if queued:
+                messages.success(request, f'Повтор запущен: {", ".join(queued)}.')
+            else:
+                messages.warning(request, 'Повтор уже выполняется или интеграция пока отключена.')
+        return redirect('portal:onboarding_submission_detail', pk=submission.pk)
+
+
 class ClientQuestionnairesView(PortalContextMixin, TemplateView):
     template_name = 'portal/client_questionnaires.html'
     active_page = 'client_questionnaires'
@@ -2707,6 +3253,66 @@ class ClientQuestionnaireDetailView(PortalContextMixin, TemplateView):
         context['questionnaire_sections'] = build_questionnaire_sections(context['data'])
         context['student_life_document_url'] = questionnaire_generated_document_url(questionnaire)
         return context
+
+
+class ClientQuestionnaireEditView(PortalContextMixin, FormView):
+    template_name = 'portal/client_questionnaire_form.html'
+    form_class = PortalClientQuestionnaireForm
+    active_page = 'client_questionnaires'
+    page_title = 'Заполнение анкеты клиента'
+
+    def get_questionnaire(self):
+        return get_object_or_404(
+            ClientQuestionnaire.objects.select_related('client').filter(
+                client_id__in=client_queryset(self.request.user).values('id')
+            ),
+            pk=self.kwargs['pk'],
+        )
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['questionnaire'] = self.get_questionnaire()
+        return kwargs
+
+    def form_valid(self, form):
+        questionnaire = self.get_questionnaire()
+        cleaned = dict(form.cleaned_data)
+        for key, value in list(cleaned.items()):
+            if hasattr(value, 'isoformat'):
+                cleaned[key] = value.isoformat()
+        data = dict(questionnaire.data or {})
+        data.update(cleaned)
+        questionnaire.data = data
+        for name in ('full_name', 'phone', 'email', 'citizenship', 'desired_country', 'desired_city', 'desired_program'):
+            setattr(questionnaire, name, form.cleaned_data.get(name) or '')
+        questionnaire.status = ClientQuestionnaire.STATUS_UPDATED
+        questionnaire.submitted_at = timezone.now()
+        questionnaire.last_synced_at = timezone.now()
+        questionnaire.source = 'manager_sl'
+        questionnaire.save()
+
+        client = questionnaire.client
+        client.full_name = questionnaire.full_name
+        client.phone = questionnaire.phone
+        client.email = questionnaire.email or None
+        client.citizenship = questionnaire.citizenship
+        client.dob = form.cleaned_data.get('birth_date')
+        client.interested_country = questionnaire.desired_country
+        client.interested_program = questionnaire.desired_program
+        client.save()
+
+        submission = OnboardingSubmission.objects.filter(client=client).first()
+        if submission:
+            submission.payload = data
+            submission.full_name = questionnaire.full_name
+            submission.phone = questionnaire.phone
+            submission.email = questionnaire.email or ''
+            submission.date_of_birth = form.cleaned_data.get('birth_date')
+            submission.citizenship = questionnaire.citizenship
+            submission.stage = OnboardingSubmission.STAGE_FULL
+            submission.save()
+        messages.success(self.request, 'Анкета клиента сохранена.')
+        return redirect('portal:client_questionnaire_detail', pk=questionnaire.pk)
 
 
 class ClientQuestionnaireDownloadView(PortalContextMixin, View):
@@ -3516,7 +4122,7 @@ class ClientFormView(PortalFormPageMixin, ClientsView):
     submit_label = 'Сохранить клиента'
 
     def get_form_groups(self, form):
-        base_fields = ['full_name', 'phone', 'email', 'direction', 'status', 'lead_source', 'comments']
+        base_fields = ['full_name', 'phone', 'email', 'direction', 'status', 'funding_type', 'lead_source', 'comments']
         if is_erp_admin(self.request.user) or self.request.user.is_staff:
             base_fields.extend(['manager', 'office'])
         return [
@@ -4318,6 +4924,7 @@ class NotificationsView(PortalContextMixin, TemplateView):
             'unread_count': unread_count,
             'read_count': read_count,
             'can_create_notifications': can_create,
+            'can_notify_clients': can_review_onboarding(self.request.user),
         })
         return context
 
@@ -4465,6 +5072,66 @@ class NotificationCreateView(PortalFormPageMixin, PortalContextMixin, TemplateVi
         return self.render_to_response(context)
 
 
+class ClientPushNotificationCreateView(PortalFormPageMixin, PortalContextMixin, TemplateView):
+    active_page = 'notifications'
+    page_title = 'Уведомление клиентам'
+    cancel_url_name = 'portal:notifications'
+    form_page_title_create = 'Отправить уведомление клиентам'
+    submit_label = 'Отправить'
+
+    def dispatch(self, request, *args, **kwargs):
+        if not can_review_onboarding(request.user):
+            messages.error(request, 'У вас нет права отправлять уведомления клиентам.')
+            return redirect('portal:notifications')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_edit_object(self):
+        return None
+
+    def get_form(self, data=None, instance=None):
+        clients = client_queryset(self.request.user).filter(
+            sl_id__isnull=False,
+        ).exclude(status__in=['archive', 'rejected']).exclude(sl_id='').order_by('full_name')
+        return ClientPushNotificationForm(data=data, clients=clients)
+
+    def get_form_groups(self, form):
+        return [
+            {'title': 'Сообщение', 'open': True, 'fields': form_fields(form, ('title', 'body'))},
+            {'title': 'Получатели', 'open': True, 'fields': form_fields(form, ('recipient_scope', 'clients'))},
+        ]
+
+    def post(self, request, *args, **kwargs):
+        form = self.get_form(data=request.POST)
+        if form.is_valid():
+            target_all = form.cleaned_data['recipient_scope'] == ClientPushNotificationForm.SCOPE_ALL
+            sl_ids = [] if target_all else [client.sl_id for client in form.cleaned_data['clients']]
+            try:
+                response = post_service(
+                    settings.STUDENTS_LIFE_PROVISION_API_URL.replace('/provision/', '/notify-bulk/'),
+                    settings.STUDENTS_LIFE_PROVISION_TOKEN,
+                    {
+                        'title': form.cleaned_data['title'],
+                        'body': form.cleaned_data['body'],
+                        'target_all': target_all,
+                        'sl_ids': sl_ids,
+                    },
+                )
+            except Exception as exc:
+                messages.error(request, f'Не удалось отправить уведомление: {exc}')
+            else:
+                recipients = int(response.get('recipients') or 0)
+                active_tokens = int(response.get('active_tokens') or 0)
+                messages.success(
+                    request,
+                    f'Уведомление сохранено для {recipients} клиент(ов). Активных устройств: {active_tokens}.',
+                )
+                return redirect('portal:notifications')
+        context = self.get_context_data()
+        context['form'] = form
+        context['form_groups'] = self.get_form_groups(form)
+        return self.render_to_response(context)
+
+
 class ReportsView(PortalContextMixin, TemplateView):
     template_name = 'portal/reports.html'
     active_page = 'reports'
@@ -4474,28 +5141,30 @@ class ReportsView(PortalContextMixin, TemplateView):
         context = super().get_context_data(**kwargs)
         user = self.request.user
         month_start = timezone.localdate().replace(day=1)
-        leads = lead_queryset(user)
+        leads = incoming_lead_queryset(user)
         clients = client_queryset(user)
-        applications = application_queryset(user)
-        tasks = task_queryset(user)
-        payments = payment_queryset(user)
-        expenses = expense_queryset(user)
+        questionnaires = ClientQuestionnaire.objects.filter(client_id__in=clients.values('id'))
+        submissions = OnboardingSubmission.objects.all()
+        documents = document_queryset(user)
+        workdays = workday_queryset(user)
         context.update({
             'crm_summary': [
-                {'label': 'New leads', 'value': leads.filter(status='new', created_at__date__gte=month_start).count()},
-                {'label': 'Converted leads', 'value': leads.filter(status='converted', converted_at__date__gte=month_start).count()},
-                {'label': 'Active clients', 'value': clients.exclude(status__in=['archive', 'rejected']).count()},
-                {'label': 'Active applications', 'value': applications.exclude(status__in=['cancelled', 'rejected', 'enrolled']).count()},
+                {'label': 'Новые заявки с сайта', 'value': leads.filter(status='new', created_at__date__gte=month_start).count()},
+                {'label': 'Активные клиенты', 'value': clients.exclude(status__in=['archive', 'rejected']).count()},
+                {'label': 'Вузы в каталоге', 'value': university_queryset(user).count()},
+                {'label': 'Программы в каталоге', 'value': program_queryset(user).count()},
             ],
-            'task_summary': [
-                {'label': 'Open tasks', 'value': tasks.exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).count()},
-                {'label': 'Done tasks', 'value': tasks.filter(status=ProjectTask.STATUS_DONE, completed_at__date__gte=month_start).count()},
-                {'label': 'Overdue tasks', 'value': tasks.exclude(status__in=[ProjectTask.STATUS_DONE, ProjectTask.STATUS_CANCELLED]).filter(deadline__lt=timezone.now()).count()},
+            'application_summary': [
+                {'label': 'Экспресс-анкеты за месяц', 'value': submissions.filter(submitted_at__date__gte=month_start).count()},
+                {'label': 'Полные анкеты', 'value': questionnaires.count()},
+                {'label': 'Полные анкеты на проверке', 'value': questionnaires.filter(status=ClientQuestionnaire.STATUS_SUBMITTED).count()},
+                {'label': 'Одобренные анкеты', 'value': questionnaires.filter(status=ClientQuestionnaire.STATUS_APPROVED).count()},
             ],
-            'finance_summary': [
-                {'label': 'Revenue USD', 'value': payments.filter(is_confirmed=True, payment_date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0},
-                {'label': 'Expenses USD', 'value': expenses.filter(is_confirmed=True, date__gte=month_start).aggregate(total=Sum('amount_usd'))['total'] or 0},
-                {'label': 'Closed periods', 'value': FinancialPeriod.objects.filter(is_closed=True).count()},
+            'operations_summary': [
+                {'label': 'Документы на проверке', 'value': documents.filter(status=GeneratedDocument.STATUS_PENDING).count()},
+                {'label': 'Созданные документы', 'value': documents.filter(created_at__date__gte=month_start).count()},
+                {'label': 'Рабочих дней начато', 'value': workdays.filter(date__gte=month_start).exclude(status=WorkDay.STATUS_NOT_STARTED).count()},
+                {'label': 'Рабочих дней закрыто', 'value': workdays.filter(date__gte=month_start, status__in=[WorkDay.STATUS_CLOSED, WorkDay.STATUS_AUTO_CLOSED]).count()},
             ],
         })
         return context

@@ -1,0 +1,73 @@
+services:
+  auth-bridge:
+    build: ./auth-bridge
+    container_name: sl_disk_auth_bridge
+    restart: unless-stopped
+    env_file:
+      - .env
+    networks:
+      - disk_net
+    ports:
+      - "127.0.0.1:8111:9000"
+    volumes:
+      - disk_activity:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:9000/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+
+  sftpgo:
+    image: drakkan/sftpgo:v2.7.1
+    container_name: sl_disk
+    restart: unless-stopped
+    depends_on:
+      auth-bridge:
+        condition: service_healthy
+    environment:
+      SFTPGO_COMMON__DEFENDER__ENABLED: "true"
+      SFTPGO_COMMON__DEFENDER__DRIVER: memory
+      SFTPGO_COMMON__DEFENDER__THRESHOLD: "20"
+      SFTPGO_COMMON__DEFENDER__BAN_TIME: "15"
+      SFTPGO_DATA_PROVIDER__EXTERNAL_AUTH_HOOK: http://auth-bridge:9000/auth/sftpgo
+      SFTPGO_DATA_PROVIDER__EXTERNAL_AUTH_SCOPE: "1"
+      SFTPGO_DATA_PROVIDER__PASSWORD_CACHING: "false"
+      SFTPGO_COMMON__ACTIONS__EXECUTE_ON: upload,download,delete,rename,mkdir,rmdir,copy
+      SFTPGO_COMMON__ACTIONS__HOOK: http://auth-bridge:9000/events/sftpgo?token=${DISK_ACTIVITY_HOOK_TOKEN}
+      SFTPGO_DATA_PROVIDER__CREATE_DEFAULT_ADMIN: "true"
+      SFTPGO_DEFAULT_ADMIN_USERNAME: ${SFTPGO_DEFAULT_ADMIN_USERNAME}
+      SFTPGO_DEFAULT_ADMIN_PASSWORD: ${SFTPGO_DEFAULT_ADMIN_PASSWORD}
+      SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_ADMIN: "false"
+      SFTPGO_HTTPD__BINDINGS__0__ENABLE_WEB_CLIENT: "true"
+      SFTPGO_HTTPD__BINDINGS__0__ENABLE_REST_API: "true"
+      SFTPGO_HTTPD__BINDINGS__0__LANGUAGES: ru-RU,en
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__NAME: "DiskSL"
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__SHORT_NAME: "DiskSL"
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__LOGO_PATH: /branding/disksl-logo.png
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__FAVICON_PATH: /branding/disksl-logo.png
+      SFTPGO_HTTPD__BINDINGS__0__BRANDING__WEB_CLIENT__EXTRA_CSS: /branding/disksl.css
+      SFTPGO_HTTPD__MAX_UPLOAD_FILE_SIZE: "52428800"
+      SFTPGO_HTTPD__COOKIE_LIFETIME: "720"
+      SFTPGO_HTTPD__HIDE_SUPPORT_LINK: "true"
+      SFTPGO_SFTPD__BINDINGS__0__PORT: "0"
+    volumes:
+      - sftpgo_data:/srv/sftpgo
+      - ./branding:/usr/share/sftpgo/static/branding:ro
+    ports:
+      - "127.0.0.1:8110:8080"
+    networks:
+      - disk_net
+    healthcheck:
+      test: ["CMD", "sftpgo", "ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+volumes:
+  sftpgo_data:
+  disk_activity:
+
+networks:
+  disk_net:
+    driver: bridge
