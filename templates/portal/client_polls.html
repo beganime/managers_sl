@@ -1,0 +1,14 @@
+{% extends 'portal/base.html' %}
+{% block content %}
+<section class="panel"><div class="panel-header"><h2>Новый опрос</h2><a class="btn" href="{% url 'portal:client_content' %}">К приложению</a></div><div class="panel-body">
+<p>Один ответ на аккаунт клиента. Результаты — общие, без списка имён. После первого ответа вопрос и варианты нельзя менять.</p>
+<form method="post" data-disable-on-submit>{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}<label style="display:block;margin-bottom:20px"><span style="display:block;margin-bottom:8px">{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endfor %}
+<button class="btn primary" type="submit">Сохранить опрос</button></form></div></section>
+{% for item in items %}<section class="panel" style="margin-top:24px"><div class="panel-header"><h2>{{ item.question }}</h2><span class="pill">Ответов: {{ item.total }}</span></div><div class="panel-body">
+{% for label, count in item.results %}<div style="padding:12px 0;border-bottom:1px solid var(--border)">{{ label }} — <strong>{{ count }}</strong></div>{% endfor %}
+<form method="post" style="margin-top:20px" data-disable-on-submit>{% csrf_token %}<input type="hidden" name="poll_id" value="{{ item.id }}">
+<label>Статус <select class="input" name="status"><option value="draft" {% if item.status == 'draft' %}selected{% endif %}>Черновик</option><option value="published" {% if item.status == 'published' %}selected{% endif %}>Опубликован</option><option value="closed" {% if item.status == 'closed' %}selected{% endif %}>Закрыт</option></select></label>
+<button class="btn" type="submit">Изменить статус</button></form></div></section>{% empty %}<p>Опросов пока нет или список недоступен.</p>{% endfor %}
+<div style="margin-top:20px">{% if previous_page %}<a class="btn" href="?page={{ previous_page }}">Назад</a>{% endif %} {% if next_page %}<a class="btn" href="?page={{ next_page }}">Далее</a>{% endif %}</div>
+{% endblock %}

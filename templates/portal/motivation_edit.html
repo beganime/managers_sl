@@ -1,0 +1,2 @@
+{% extends 'portal/base.html' %}
+{% block content %}<a class="btn" href="{% url 'portal:client_detail' client.pk %}#motivation">Вернуться в карточку {{ client.full_name }}</a>{% include 'portal/partials/client_motivation.html' %}{% endblock %}

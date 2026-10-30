@@ -36,6 +36,11 @@
 </style>
 {% endblock %}
 {% block content %}
+{% include 'portal/partials/engagement.html' %}
+{% if not telegram_connected %}
+<section class="telegram-connect-banner" aria-label="Подключение уведомлений"><div><strong>Будьте на связи в Telegram</strong><p>Подключите бота, чтобы получать личные напоминания о рабочем дне. Нажмите кнопку, затем откройте одноразовую ссылку в профиле и нажмите «Старт» в боте. Пароль боту не нужен.</p></div><form method="post" action="{% url 'portal:profile' %}">{% csrf_token %}<input type="hidden" name="action" value="telegram_link"><button class="btn primary" type="submit">Подключить Telegram</button></form></section>
+{% endif %}
+<style>.telegram-connect-banner{display:flex;align-items:center;justify-content:space-between;gap:24px;background:#eaf5fa;border:1px solid #b6d9e7;border-left:5px solid #2587ab;border-radius:16px;padding:24px;margin-bottom:24px;color:#163f55}.telegram-connect-banner strong{font-size:23px}.telegram-connect-banner p{margin:8px 0 0;line-height:1.5;max-width:750px}.telegram-connect-banner form{flex-shrink:0}.workspace-services a:nth-child(3n+1){background:#edf5fc;border-color:#bed4ea}.workspace-services a:nth-child(3n+2){background:#fdf1ed;border-color:#ebc9be}.workspace-services a:nth-child(3n){background:#edf6f0;border-color:#bfdbca}@media(max-width:650px){.telegram-connect-banner{flex-direction:column;align-items:stretch;padding:20px}.telegram-connect-banner button{width:100%}}</style>
 <div class="workspace">
     <section class="workspace-hero">
         <header class="workspace-heading">
@@ -98,16 +103,17 @@
     {% endif %}
     {% if is_attendance_admin %}
     <section class="panel">
-        <div class="panel-header"><div><h2 class="panel-title">Telegram команды</h2><div class="muted small">Сообщения и учёт рабочего дня по темам группы</div></div></div>
+        <div class="panel-header"><div><h2 class="panel-title">Сообщение команде в Telegram</h2><div class="muted small">Напишите здесь — бот отправит сообщение в рабочую группу. Команды вводить не нужно.</div></div></div>
         <div class="panel-body">
-            <div class="telegram-topics" aria-label="Привязанные темы">{% for topic in telegram_topics %}<span class="telegram-topic{% if topic.ready %} ready{% endif %}">{{ topic.name }} · {% if topic.ready %}готово{% else %}не привязано{% endif %}</span>{% endfor %}</div>
-            <div class="telegram-catchup"><div><strong>Сводка за вчера и сегодня</strong><p>Отправляется только в тему «Итоги дня». Повторное нажатие не создаёт дубли.</p></div><form method="post" action="{% url 'portal:admin_attendance_catchup' %}">{% csrf_token %}<button class="btn" type="submit"><i data-lucide="calendar-check"></i>Передать боту</button></form></div>
+            <p>Личные напоминания подключаются отдельно: откройте <a href="{% url 'portal:profile' %}">свой профиль</a>, нажмите «Подключить Telegram», перейдите по ссылке и нажмите «Старт» в боте. Логин и пароль боту отправлять не нужно.</p>
+            <details style="margin:16px 0"><summary>Куда приходят отчёты и как проверить настройку?</summary><p>Рабочий день и отчёты отправляются ботом в темы группы автоматически. Итоги дня — в 18:00 по UTC+5, воскресенье — выходной. Зелёная отметка ниже означает, что тема привязана, но не гарантирует доставку: результат виден в «Последних отправках».</p><div class="telegram-topics" aria-label="Привязанные темы">{% for topic in telegram_topics %}<span class="telegram-topic{% if topic.ready %} ready{% endif %}">{{ topic.name }} · {% if topic.ready %}привязана{% else %}нужно настроить{% endif %}</span>{% endfor %}</div></details>
+            <div class="telegram-catchup"><div><strong>Не получили последние итоги дня?</strong><p>Поставить сводки за вчера и сегодня в очередь для темы «Итоги дня». Уже отправленные сводки повторно не отправляются.</p></div><form method="post" action="{% url 'portal:admin_attendance_catchup' %}">{% csrf_token %}<button class="btn" type="submit"><i data-lucide="calendar-check"></i>Отправить недостающие сводки</button></form></div>
             <div class="telegram-console">
-            <form method="post" action="{% url 'portal:admin_telegram_message' %}">{% csrf_token %}
+            <div><form method="post" action="{% url 'portal:admin_telegram_message' %}">{% csrf_token %}
                 <label for="telegram-message"><strong>Сообщение руководителя</strong></label>
                 <textarea class="textarea" id="telegram-message" name="message" maxlength="500" placeholder="Например: кто сейчас свободен — ответьте в группе"></textarea>
-                <div class="telegram-console-actions"><button class="btn primary" type="submit" name="action" value="send"><i data-lucide="send"></i>Отправить в группу</button><button class="btn" type="submit" name="action" value="test"><i data-lucide="radio"></i>Тест бота</button></div>
-            </form>
+                <p class="muted small">До 500 символов. Сообщение увидят участники рабочей группы, это не личная переписка.</p><div class="telegram-console-actions"><button class="btn primary" type="submit" name="action" value="send"><i data-lucide="send"></i>Отправить мой текст в группу</button></div>
+            </form><form method="post" action="{% url 'portal:admin_telegram_message' %}" style="margin-top:16px">{% csrf_token %}<p class="muted small">Проверка отправит стандартное тестовое сообщение. Текст из поля выше не отправляется.</p><button class="btn" type="submit" name="action" value="test"><i data-lucide="radio"></i>Отправить проверочное сообщение</button></form></div>
             <div><strong>Последние отправки</strong><div class="telegram-history">{% for item in telegram_recent %}<div class="telegram-history-item"><strong>{{ item.get_event_type_display }} · {{ item.get_status_display }}</strong><small>{{ item.created_at|date:"d.m.Y H:i" }}{% if item.employee %} · {{ item.employee.get_full_name|default:item.employee.email }}{% endif %}{% if item.last_error %} · {{ item.last_error }}{% endif %}</small></div>{% empty %}<p class="muted small">Отправок пока не было.</p>{% endfor %}</div></div>
             </div>
         </div>
@@ -150,6 +156,8 @@
         {% for service in dashboard_services %}<a href="{{ service.url }}" target="_blank" rel="noopener"><i data-lucide="{{ service.icon }}"></i><strong>{{ service.label }}</strong><i data-lucide="arrow-up-right"></i></a>{% endfor %}
     </section>
 </div>
+<section class="panel" style="margin-top:24px" hx-get="{% url 'portal:client_tracks' %}" hx-trigger="load" hx-swap="innerHTML"><div class="panel-body"><a class="btn" href="{% url 'portal:client_tracks' %}">Посмотреть направления клиентов</a></div></section>
+{% include 'portal/partials/mood_support.html' %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const panel = document.querySelector('[data-disk-usage-url]');

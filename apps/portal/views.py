@@ -201,6 +201,9 @@ def build_client_disk_url(client):
     ).order_by('-finished_at', '-id').first()
     root = str((disk_step.response_data if disk_step else {}).get('root') or '').strip('/')
     if not root:
+        from .models import ClientWorkspaceProfile
+        root = ClientWorkspaceProfile.objects.filter(client=client).values_list('disk_root', flat=True).first() or ''
+    if not root:
         return reverse('portal:disk_sl'), False
 
     next_url = f'/web/client/files?{urlencode({"path": f"/{root}"})}'
@@ -446,6 +449,8 @@ NAV_GROUPS = (
         'label': 'Клиентское приложение',
         'icon': 'smartphone',
         'items': (
+            {'name': 'client_content', 'label': 'Управление приложением', 'icon': 'settings'},
+            {'name': 'client_news', 'label': 'Новости', 'icon': 'newspaper'},
             {'name': 'universities', 'label': 'Вузы', 'icon': 'graduation-cap'},
             {'name': 'programs', 'label': 'Программы', 'icon': 'library-big'},
             {'name': 'countries', 'label': 'Страны', 'icon': 'map'},
@@ -676,11 +681,17 @@ def resolve_nav_url(item):
 def build_nav_groups(user, active_page):
     groups = []
     for group in NAV_GROUPS:
-        if group['key'] in {'client_app', 'website_applications'} and not is_erp_admin(user):
+        if group['key'] == 'website_applications' and not is_erp_admin(user):
+            continue
+        if group['key'] == 'client_app' and not can_manage_catalog(user):
             continue
         items = []
         is_group_active = False
         for item in group['items']:
+            if item.get('administrator_only') and not is_attendance_admin(user):
+                continue
+            if group['key'] == 'client_app' and not is_erp_admin(user) and item['name'] not in {'client_content', 'universities', 'programs'}:
+                continue
             if item.get('staff_only') and not (user.is_staff or user.is_superuser):
                 continue
             if item.get('onboarding_only') and not can_review_onboarding(user):
@@ -709,7 +720,7 @@ def build_mobile_nav(active_page):
         {
             **item,
             'url': safe_reverse(f'portal:{item["name"]}'),
-            'is_active': item['section'] == active_section,
+            'is_active': item['name'] == active_page or (item['section'] != 'main' and item['section'] == active_section),
         }
         for item in MOBILE_NAV
     ]
@@ -994,6 +1005,13 @@ def office_queryset(user):
     if employee.office_id:
         return qs.filter(company=employee.company, id=employee.office_id)
     return qs.filter(company=employee.company)
+
+
+def can_manage_catalog(user):
+    employee = get_employee_profile(user)
+    return bool(user.is_authenticated and user.is_active and (is_erp_admin(user) or
+        (employee and employee.is_active and employee.work_status == 'working' and
+         (not employee.role_id or employee.role.role_type != 'viewer'))))
 
 
 def university_queryset(user):
@@ -1416,7 +1434,11 @@ class PortalContextMixin(LoginRequiredMixin):
 
     @method_decorator(ensure_csrf_cookie)
     def dispatch(self, request, *args, **kwargs):
-        return super().dispatch(request, *args, **kwargs)
+        response = super().dispatch(request, *args, **kwargs)
+        if request.user.is_authenticated and request.method == 'GET' and response.status_code == 200 and request.headers.get('HX-Request') != 'true':
+            from .models import PortalPresence
+            PortalPresence.objects.update_or_create(user=request.user, defaults={'section': str(self.page_title or self.active_page or 'Страница сайта')[:100]})
+        return response
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -1442,6 +1464,7 @@ class PortalContextMixin(LoginRequiredMixin):
                 ))
                 .order_by('unread_rank', '-created_at')[:5],
             'can_access_admin': can_access_admin,
+            'can_remove_catalog': is_erp_admin(self.request.user),
             'is_attendance_admin': is_attendance_admin(self.request.user),
             'tracks_workday': should_track_employee(self.request.user),
             'can_confirm_finance': can_confirm_finance(self.request.user),
@@ -1638,6 +1661,10 @@ class DashboardView(PortalContextMixin, TemplateView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         user = self.request.user
+        from apps.attendance.models import EmployeeTelegramAccount
+        context['telegram_connected'] = EmployeeTelegramAccount.objects.filter(employee=user, is_active=True).exists()
+        from .engagement import daily_context
+        context.update(daily_context(user))
         today = timezone.localdate()
         employee = get_employee_profile(user)
         clients = client_queryset(user)
@@ -2198,6 +2225,11 @@ class CitiesView(ListPageMixin):
 
 
 class UniversitiesView(ListPageMixin):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not can_manage_catalog(request.user):
+            raise PermissionDenied('Управление каталогом доступно активным менеджерам.')
+        return super().dispatch(request, *args, **kwargs)
+
     active_page = 'universities'
     page_title = 'Вузы'
     table_template = 'portal/partials/universities_table.html'
@@ -2242,11 +2274,12 @@ class UniversitiesView(ListPageMixin):
         edit_id = self.kwargs.get('pk') or self.request.GET.get('edit') or self.request.POST.get('object_id')
         if not edit_id:
             return None
-        return self.get_queryset().filter(pk=edit_id).first()
+        return get_object_or_404(university_queryset(self.request.user), pk=edit_id)
 
     def get_form(self, data=None, instance=None):
         return PortalUniversityForm(
             data=data,
+            files=self.request.FILES if data is not None else None,
             instance=instance,
             countries=Country.objects.filter(is_active=True).order_by('sort_order', 'name'),
             cities=City.objects.select_related('country').filter(is_active=True).order_by('country__name', 'name'),
@@ -2272,9 +2305,9 @@ class UniversitiesView(ListPageMixin):
         if form.is_valid():
             university = form.save(commit=False)
             employee = get_employee_profile(request.user)
-            if not is_erp_admin(request.user) and employee:
+            if not edit_object and not is_erp_admin(request.user) and employee:
                 university.company = employee.company
-            elif not university.company_id and employee:
+            elif not edit_object and not university.company_id and employee:
                 university.company = employee.company
             university.added_by = request.user
             university.save()
@@ -2314,12 +2347,17 @@ class UniversityDetailView(PortalContextMixin, TemplateView):
             'programs': university.programs.all(),
             'contacts': university.contact_people.all(),
             'documents': university.required_documents.filter(program__isnull=True, is_active=True),
-            'can_manage_university': is_erp_admin(self.request.user) or self.request.user.is_staff,
+            'can_manage_university': can_manage_catalog(self.request.user),
         })
         return context
 
 
 class ProgramsView(ListPageMixin):
+    def dispatch(self, request, *args, **kwargs):
+        if request.user.is_authenticated and not can_manage_catalog(request.user):
+            raise PermissionDenied('Управление каталогом доступно активным менеджерам.')
+        return super().dispatch(request, *args, **kwargs)
+
     active_page = 'programs'
     page_title = 'Программы'
     table_template = 'portal/partials/programs_table.html'
@@ -2343,7 +2381,7 @@ class ProgramsView(ListPageMixin):
         edit_id = self.kwargs.get('pk') or self.request.GET.get('edit') or self.request.POST.get('object_id')
         if not edit_id:
             return None
-        return self.get_queryset().filter(pk=edit_id).first()
+        return get_object_or_404(program_queryset(self.request.user), pk=edit_id)
 
     def get_form(self, data=None, instance=None):
         initial = {}
@@ -5094,7 +5132,9 @@ class UniversityFormView(PortalFormPageMixin, UniversitiesView):
 
     def get_form_groups(self, form):
         return [
-            {'title': 'Основное', 'open': True, 'fields': form_fields(form, ('country', 'city', 'local_currency', 'name', 'legal_name', 'website', 'email', 'phone', 'address', 'is_active'))},
+            {'title': 'Основное', 'open': True, 'fields': form_fields(form, ('country', 'city', 'local_currency', 'name', 'abbreviation', 'legal_name', 'website', 'email', 'phone', 'address', 'is_active'))},
+            {'title': 'Изображения в приложении', 'open': True, 'fields': form_fields(form, ('logo', 'cover_image'))},
+            {'title': 'Обучение и проживание', 'open': True, 'fields': form_fields(form, ('languages', 'education_levels', 'dormitory_info'))},
             {'title': 'Описание и поступление', 'open': True, 'fields': form_fields(form, ('description', 'admission_requirements'))},
         ]
 

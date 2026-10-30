@@ -402,6 +402,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
     EVENT_AFTER_HOURS = 'after_hours'
     EVENT_ADMIN_MESSAGE = 'admin_message'
     EVENT_REPORT_SUBMITTED = 'report_submitted'
+    EVENT_MOOD_SUPPORT = 'mood_support'
     EVENT_CHOICES = (
         (EVENT_ARRIVAL, 'Приход'),
         (EVENT_DEPARTURE, 'Уход'),
@@ -415,6 +416,7 @@ class AttendanceTelegramDelivery(TimeStampedModel):
         (EVENT_AFTER_HOURS, 'Активность после рабочего дня'),
         (EVENT_ADMIN_MESSAGE, 'Сообщение руководителя'),
         (EVENT_REPORT_SUBMITTED, 'Отчёт сотрудника'),
+        (EVENT_MOOD_SUPPORT, 'Поддержка коллеги'),
     )
 
     STATUS_PENDING = 'pending'

@@ -1,0 +1,18 @@
+<section class="panel" id="client-workspace" style="margin:24px 0;scroll-margin-top:100px">
+<div class="panel-header"><h2 class="panel-title">Личный кабинет и документы</h2></div>
+<div class="panel-body" style="display:grid;gap:24px">
+<div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+<img src="{% url 'portal:client_avatar' client.pk %}" alt="Фото клиента" width="88" height="88" style="border-radius:50%;object-fit:cover">
+{% if can_manage %}<form method="post" enctype="multipart/form-data" action="{% url 'portal:client_workspace' client.pk %}" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center">{% csrf_token %}<input type="hidden" name="action" value="avatar"><label class="btn">Выбрать фотографию<input type="file" name="avatar" accept="image/jpeg,image/png,image/webp" required style="max-width:210px;margin-left:12px"></label><button class="btn" type="submit">Сохранить фото</button><span class="muted small">JPG, PNG, WebP · до 5 МБ</span></form>{% endif %}
+</div>
+<div><h3>Клиентское приложение</h3><p>Логин: <strong>{{ client.sl_id|default:'Будет присвоен при создании' }}</strong></p>
+{% if account_ready %}<span class="pill">Аккаунт подключён</span>{% elif account_pending %}<p role="status">Создание аккаунта отправлено. Обновите карточку через несколько секунд.</p>{% elif workspace_profile.account_status == 'uncertain' %}<p>Результат создания не подтверждён. Можно проверить повторно — пароль существующего аккаунта не изменится.</p>{% else %}<p class="muted">Создайте доступ, чтобы клиент мог войти в приложение и загрузить документы.</p>{% endif %}
+{% if can_manage %}<div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:16px">
+{% if not account_ready and not account_pending %}<form method="post" action="{% url 'portal:client_workspace' client.pk %}" data-disable-on-submit>{% csrf_token %}<input type="hidden" name="action" value="account"><button class="btn primary" type="submit">{% if workspace_profile.account_status == 'uncertain' %}Проверить подключение{% else %}Создать аккаунт в приложении{% endif %}</button></form>{% endif %}
+<form method="post" action="{% url 'portal:client_workspace' client.pk %}" target="_blank">{% csrf_token %}<input type="hidden" name="action" value="reveal"><button class="btn" type="submit">Посмотреть данные входа</button></form></div>{% endif %}
+</div>
+<div><div style="display:flex;gap:12px;justify-content:space-between;flex-wrap:wrap"><h3>Загружено клиентом · {{ uploaded_count }}</h3>{% if can_view_files %}<a class="btn" href="{% url 'portal:client_documents' %}?client={{ client.pk }}">Все документы</a>{% endif %}</div>
+{% if can_view_files %}<div class="list">{% for item in uploaded_documents %}<a class="list-row" href="{% url 'portal:client_document_review' item.pk %}"><div><strong>{{ item.title }}</strong><div class="muted small">{{ item.created_at|date:'d.m.Y H:i' }}</div></div><span class="pill">{{ item.get_status_display }}</span></a>{% empty %}<p class="muted">Документы из приложения пока не получены.</p>{% endfor %}</div>
+{% if client_folder_ready %}<a class="btn primary" href="{{ client_folder_url }}" target="_blank" rel="noopener">Открыть папку клиента в DiskSL</a>{% elif can_manage %}<form method="post" action="{% url 'portal:client_workspace' client.pk %}" data-disable-on-submit>{% csrf_token %}<input type="hidden" name="action" value="folder"><button class="btn" type="submit">Подготовить папку в DiskSL</button></form>{% endif %}
+{% else %}<p class="muted">Для просмотра документов требуется право доступа к DiskSL.</p>{% endif %}</div>
+</div></section>

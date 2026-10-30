@@ -36,6 +36,7 @@
                     <td>
                         <div class="filters">
                             <a class="pill" href="{% url 'portal:university_detail' item.id %}">Открыть</a>
+                            {% if can_remove_catalog %}<a class="pill" href="{% url 'portal:catalog_remove' 'university' item.id %}">Удалить из приложения</a>{% endif %}
                             <a class="pill" href="{% url 'portal:university_edit' item.id %}">Редактировать</a>
                             <a class="pill ok" href="{% url 'portal:university_program_create' item.id %}">Добавить программу</a>
                         </div>

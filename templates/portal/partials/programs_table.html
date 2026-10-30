@@ -2,13 +2,13 @@
     <table>
         <thead>
             <tr>
-                <th>Program</th>
-                <th>University</th>
-                <th>Degree</th>
-                <th>Language</th>
-                <th>Duration</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>Программа</th>
+                <th>Вуз</th>
+                <th>Уровень</th>
+                <th>Язык</th>
+                <th>Длительность</th>
+                <th>Публикация</th>
+                <th>Действия</th>
             </tr>
         </thead>
         <tbody>
@@ -19,11 +19,11 @@
                     <td><span class="pill">{{ item.get_degree_display }}</span></td>
                     <td>{{ item.language|default:"-" }}</td>
                     <td>{{ item.duration|default:"-" }}</td>
-                    <td><span class="pill {% if item.is_active and not item.is_archived %}ok{% else %}warn{% endif %}">{% if item.is_archived %}Archived{% else %}{{ item.is_active|yesno:"Active,Inactive" }}{% endif %}</span></td>
-                    <td><a class="pill" href="{% url 'portal:program_edit' item.id %}">Edit</a></td>
+                    <td><span class="pill {% if item.is_active and not item.is_archived %}ok{% else %}warn{% endif %}">{% if item.is_archived %}Архив{% else %}{{ item.is_active|yesno:"Опубликована,Скрыта" }}{% endif %}</span></td>
+                    <td><a class="pill" href="{% url 'portal:program_edit' item.id %}">Просмотр / редактирование</a> {% if can_remove_catalog %}<a class="pill" href="{% url 'portal:catalog_remove' 'program' item.id %}">Удалить из приложения</a>{% endif %}</td>
                 </tr>
             {% empty %}
-                <tr><td colspan="7"><div class="empty">No programs found.</div></td></tr>
+                <tr><td colspan="7"><div class="empty">Программы не найдены.</div></td></tr>
             {% endfor %}
         </tbody>
     </table>

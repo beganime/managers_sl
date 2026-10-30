@@ -2,6 +2,7 @@
     {% for item in items %}
         <div class="item-card">
             <div class="item-card-top">
+                <img src="{% url 'portal:client_avatar' item.pk %}" width="48" height="48" loading="lazy" alt="" style="border-radius:50%;object-fit:cover;flex-shrink:0">
                 <div>
                     <a class="item-card-title" href="{% url 'portal:client_detail' item.id %}">{{ item.full_name }}</a>
                     <div class="muted small">{{ item.get_status_display }}</div>

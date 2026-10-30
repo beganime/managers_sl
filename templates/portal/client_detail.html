@@ -43,7 +43,7 @@
 <section class="panel client-summary client-profile-hero" style="margin-bottom:28px;">
     <div class="panel-header">
         <div>
-            <h2 class="panel-title">{{ client.full_name }}</h2>
+            <h2 class="panel-title" style="display:flex;gap:16px;align-items:center"><img src="{% url 'portal:client_avatar' client.pk %}" width="64" height="64" alt="" style="border-radius:50%;object-fit:cover;flex-shrink:0">{{ client.full_name }}</h2>
             <div class="client-subtitle">{{ client.sl_id|default:"SL-ID ещё не присвоен" }} · {% if client.is_public %}доступен сотрудникам компании{% else %}личный клиент менеджера{% endif %}</div>
         </div>
         <div class="filters client-actions">
@@ -79,7 +79,12 @@
         </div>
     </div>
 </section>
-{% include "portal/partials/client_chat_inline.html" %}
+<nav class="client-section-nav" aria-label="Разделы клиента"><a href="#motivation">Знакомство и цели</a><a href="#client-chat-section">Чат с клиентом</a><a href="#client-workspace-rest">Почта и документы</a></nav>
+<div hx-get="{% url 'portal:client_motivation' client.pk %}" hx-trigger="load" hx-swap="innerHTML"><a class="btn" href="{% url 'portal:client_motivation' client.pk %}">Открыть анкету для мотивационного письма</a></div>
+<div hx-get="{% url 'portal:client_workspace' client.pk %}" hx-trigger="load" hx-swap="innerHTML"><a class="btn" href="{% url 'portal:client_workspace' client.pk %}">Аккаунт, фото и документы</a></div>
+<div id="client-chat-section" style="scroll-margin-top:100px">{% include "portal/partials/client_chat_inline.html" %}</div>
+<div id="client-workspace-rest" style="scroll-margin-top:100px"></div>
+<style>.client-section-nav{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}.client-section-nav a{padding:12px 18px;background:var(--panel,#fff);border:1px solid var(--line,#dce3eb);border-radius:12px;text-decoration:none;font-weight:600}.client-profile-hero{background:#123b5b;box-shadow:none}.client-profile-hero .panel-body{padding:28px}.client-section-accent .panel-body{padding:24px}.client-fact{padding:18px}.panel-body{overflow-wrap:anywhere}@media(max-width:600px){.client-profile-hero .panel-body,.client-section-accent .panel-body{padding:18px}.client-section-nav a{flex:1;text-align:center}}</style>
 
 <section class="panel client-section-accent" style="margin-bottom:16px;">
     <div class="panel-header">

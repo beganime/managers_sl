@@ -1,4 +1,9 @@
 from django.urls import path
+from .content_views import ClientContentView, CatalogRemoveView, ClientNewsView, NewsEditView, NewsDeleteView
+from .survey_views import ClientFormsView as ClientPollsView
+from .client_insights import MotivationEditView, ClientTrackSummaryView
+from .client_workspace import ClientWorkspaceView, ClientAvatarView
+from .engagement import StaffMetricsView, SuggestionsAdminView, SuggestionView, MoodSupportView
 from .mail_views import ClientMailboxBindView
 from .workspace_views import AdminAttendanceCatchupView, AdminTelegramMessageView, ClientQuestionnaireStartView, MoodView, ClientChatView
 
@@ -106,6 +111,17 @@ from .views import (
 app_name = 'portal'
 
 urlpatterns = [
+    path('mood/<int:pk>/support/', MoodSupportView.as_view(), name='mood_support'),
+    path('staff-metrics/', StaffMetricsView.as_view(), name='staff_metrics'),
+    path('staff-suggestions/', SuggestionsAdminView.as_view(), name='staff_suggestions'),
+    path('suggestion/', SuggestionView.as_view(), name='suggestion'),
+    path('client-content/', ClientContentView.as_view(), name='client_content'),
+    path('client-content/<str:kind>/<int:pk>/remove/', CatalogRemoveView.as_view(), name='catalog_remove'),
+    path('client-news/', ClientNewsView.as_view(), name='client_news'),
+    path('client-polls/', ClientPollsView.as_view(), name='client_polls'),
+    path('client-news/create/', NewsEditView.as_view(), name='news_create'),
+    path('client-news/<int:pk>/edit/', NewsEditView.as_view(), name='news_edit'),
+    path('client-news/<int:pk>/delete/', NewsDeleteView.as_view(), name='news_delete'),
     path('mood/', MoodView.as_view(), name='mood'),
     path('clients/<int:pk>/chat/', ClientChatView.as_view(), name='client_chat'),
     path('clients/<int:pk>/questionnaire/start/', ClientQuestionnaireStartView.as_view(), name='client_questionnaire_start'),
@@ -131,6 +147,10 @@ urlpatterns = [
     path('client-chats/', ClientChatsView.as_view(), name='client_chats'),
     path('clients/create/', ClientFormView.as_view(), name='client_create'),
     path('clients/<int:pk>/', ClientDetailView.as_view(), name='client_detail'),
+    path('clients/<int:pk>/motivation/', MotivationEditView.as_view(), name='client_motivation'),
+    path('clients/<int:pk>/workspace/', ClientWorkspaceView.as_view(), name='client_workspace'),
+    path('clients/<int:pk>/avatar/', ClientAvatarView.as_view(), name='client_avatar'),
+    path('dashboard/client-tracks/', ClientTrackSummaryView.as_view(), name='client_tracks'),
     path('clients/<int:pk>/archive/', ClientArchiveView.as_view(), name='client_archive'),
     path('clients/<int:pk>/notes/create/', ClientNoteCreatePortalView.as_view(), name='client_note_create'),
     path(

@@ -125,7 +125,7 @@ def execute_service_step(submission, step_name):
                 {
                     'event_id': step.event_id,
                     'sl_id': client.sl_id,
-                    'password': data['mobile_password'],
+                    'password': data.get('mobile_password', ''),
                     'activation_mode': data.get(
                         'activation_mode',
                         'onboarding_token' if not data.get('mobile_password') else 'legacy_password',
@@ -204,7 +204,7 @@ def provision_client_services(client_id, event_id=''):
     # credential push. If no device received it, enqueue a retry only after the
     # mobile account exists, avoiding the former provisioning/notification race.
     mobile_response = mobile_step.response_data or {}
-    if 'push_sent' in mobile_response and not int(mobile_response.get('push_sent') or 0):
+    if mobile_step.status == ClientProvisioningStep.STATUS_SUCCESS and 'push_sent' in mobile_response and not int(mobile_response.get('push_sent') or 0):
         notify_onboarding_status.run(submission.pk)
     return data['service_provisioning']
 
@@ -215,18 +215,13 @@ def notify_onboarding_status(self, submission_id):
 
     if submission.status == OnboardingSubmission.STATUS_APPROVED:
         if submission.client_id:
-            title = 'Аккаунт одобрен'
-            try:
-                identity = submission.service_identity
-            except Exception:
-                identity = None
-            login = getattr(identity, 'mobile_login', '') or submission.client.sl_id
-            password = getattr(identity, 'shared_password', '') or (submission.client.custom_data or {}).get('mobile_password', '')
-            body = f'Ваш логин: {login}'
-            if password and not getattr(settings, 'SECURE_CLIENT_ACTIVATION_ENABLED', False):
-                body += f'\nВаш пароль: {password}'
-            else:
-                body = 'Аккаунт одобрен. Откройте приложение и подтвердите вход.'
+            if not submission.provisioning_steps.filter(
+                step=ClientProvisioningStep.STEP_MOBILE_ACCOUNT,
+                status=ClientProvisioningStep.STATUS_SUCCESS,
+            ).exists():
+                return {'status': 'skipped', 'reason': 'account_not_ready'}
+            title = 'Личный кабинет готов'
+            body = 'Откройте свою экспресс-заявку в приложении и войдите в личный кабинет. Затем заполните полную анкету и загрузите документы.'
         else:
             title = 'Экспресс-заявка одобрена'
             body = 'Теперь можно заполнить полную анкету абитуриента.'

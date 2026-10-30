@@ -307,7 +307,18 @@ class ClientAdmissionStatusServiceView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        client = Client.objects.filter(mobile_app_user_id=int(raw_mobile_user_id)).first()
+        from django.db.models import Q
+        mobile_id = int(raw_mobile_user_id)
+        # Old portal provisioning stored the same identity in custom_data.
+        # Never choose an arbitrary student if conflicting links exist.
+        candidates = list(Client.objects.filter(
+            Q(mobile_app_user_id=mobile_id) |
+            Q(custom_data__mobile_user_id=mobile_id) |
+            Q(custom_data__mobile_user_id=str(mobile_id))
+        ).distinct()[:2])
+        if len(candidates) > 1:
+            return Response({'detail': 'Требуется проверка привязки аккаунта менеджером.'}, status=409)
+        client = candidates[0] if candidates else None
         if client is None:
             # An empty result is safer than revealing whether another identity
             # exists and lets a newly approved account render a useful state.
@@ -355,6 +366,9 @@ class ClientAdmissionStatusServiceView(APIView):
             'client': {
                 'sl_id': client.sl_id,
                 'full_name': client.full_name,
+                'status': client.status,
+                'status_label': client.get_status_display(),
+                'updated_at': client.updated_at,
             },
             'results': rows,
         })

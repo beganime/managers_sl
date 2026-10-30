@@ -345,6 +345,15 @@ class ClientProgramShortSerializer(serializers.ModelSerializer):
 
 
 class ClientUniversitySerializer(serializers.ModelSerializer):
+    languages = serializers.SerializerMethodField()
+    education_levels = serializers.SerializerMethodField()
+
+    def get_languages(self, obj):
+        return (obj.custom_data or {}).get('languages', '')
+
+    def get_education_levels(self, obj):
+        return (obj.custom_data or {}).get('education_levels', '')
+
     country = serializers.IntegerField(source='country_id', read_only=True)
     country_name = serializers.SerializerMethodField()
     city = serializers.IntegerField(source='city_id', read_only=True)
@@ -384,6 +393,8 @@ class ClientUniversitySerializer(serializers.ModelSerializer):
             'admission_requirements',
             'invitation_info',
             'dormitory_info',
+            'languages',
+            'education_levels',
             'expenses_info',
             'age_limit',
             'public_contacts',
