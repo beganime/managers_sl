@@ -18,6 +18,35 @@
         </div>
     </div>
     <div class="panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Telegram-бот рабочего дня</h2>
+            {% if telegram_account %}<span class="pill ok">Подключено</span>{% endif %}
+        </div>
+        <div class="panel-body">
+            {% if telegram_account %}
+                <p class="muted" style="margin:0 0 12px;">Личные напоминания и кнопки рабочего дня активны{% if telegram_account.username %} для @{{ telegram_account.username }}{% endif %}. В боте: начало дня, отчёт, закрытие дня и статистика.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="telegram_unlink">
+                    <button class="btn danger" type="submit"><i data-lucide="unlink"></i>Отключить Telegram</button>
+                </form>
+            {% else %}
+                <p class="muted" style="margin:0 0 12px;">Привяжите Telegram, чтобы отмечать начало и конец рабочего дня, писать отчёты и получать напоминания — даже если сайт недоступен. Логин и пароль в бот вводить не нужно.</p>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="telegram_link">
+                    <button class="btn primary" type="submit"><i data-lucide="send"></i>Подключить Telegram</button>
+                </form>
+            {% endif %}
+            {% if telegram_link %}
+                <div class="empty" style="margin-top:12px; text-align:left;">
+                    Одноразовая ссылка действует 10 минут — откройте её в личном чате с ботом:<br>
+                    <a class="strong" href="{{ telegram_link }}" target="_blank" rel="noopener">{{ telegram_link }}</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="panel">
         <div class="panel-header"><h2 class="panel-title">Системные ссылки</h2></div>
         <div class="panel-body">
             <div class="list">

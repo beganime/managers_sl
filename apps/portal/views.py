@@ -1990,6 +1990,17 @@ class SettingsView(PortalContextMixin, TemplateView):
     page_title = 'Настройки'
 
     def post(self, request, *args, **kwargs):
+        action = request.POST.get('action', '')
+        if action == 'telegram_link':
+            from apps.attendance.telegram import create_employee_link
+            request.session['attendance_telegram_link'] = create_employee_link(request.user)
+            messages.success(request, 'Одноразовая ссылка создана на 10 минут. Откройте её в личном чате с ботом.')
+            return redirect('portal:settings')
+        if action == 'telegram_unlink':
+            from apps.attendance.models import EmployeeTelegramAccount
+            EmployeeTelegramAccount.objects.filter(employee=request.user).update(is_active=False)
+            messages.success(request, 'Telegram отключён от личных уведомлений.')
+            return redirect('portal:settings')
         if not (request.user.is_staff or request.user.is_superuser):
             raise PermissionDenied('Менять сервер Student’s Life может только администратор.')
 
@@ -2018,8 +2029,11 @@ class SettingsView(PortalContextMixin, TemplateView):
         proxy_url = getattr(settings, 'STUDENTS_LIFE_DEFAULT_API_BASE_URL', 'https://students-life.ru/api2/api/v1/')
         original_url = getattr(settings, 'STUDENTS_LIFE_ORIGINAL_API_BASE_URL', 'https://stud-life.com/api/v1/')
         current_students_life_api_url = get_students_life_api_base_url().rstrip('/') + '/'
+        from apps.attendance.models import EmployeeTelegramAccount
         context.update({
             'access': getattr(employee, 'access', None) if employee else None,
+            'telegram_account': EmployeeTelegramAccount.objects.filter(employee=self.request.user, is_active=True).first(),
+            'telegram_link': self.request.session.pop('attendance_telegram_link', ''),
             'students_life_proxy_url': proxy_url,
             'students_life_original_url': original_url,
             'current_students_life_api_url': current_students_life_api_url,
