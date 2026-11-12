@@ -1,23 +1,47 @@
+<style>
+    .client-card { position:relative; display:flex; flex-direction:column; gap:12px; padding:18px; border:1px solid #dce2e9; border-radius:16px; background:var(--panel,#fff); box-shadow:var(--shadow); transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease; }
+    .client-card:hover { transform:translateY(-3px); border-color:#b8c5d2; box-shadow:0 16px 34px rgba(15,23,42,.11); }
+    .client-card-top { display:flex; align-items:center; gap:13px; }
+    .client-card-top img { width:52px; height:52px; border-radius:50%; object-fit:cover; flex-shrink:0; border:2px solid #eef2f6; }
+    .client-card-name { min-width:0; }
+    .client-card-name a { display:block; color:#172033; font-weight:700; font-size:15px; text-decoration:none; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .client-card-name a:hover { color:#0d416d; }
+    .client-card-slid { display:inline-flex; margin-top:4px; padding:2px 9px; border-radius:999px; background:#eef3f8; color:#40566d; font-size:11px; font-weight:700; letter-spacing:.03em; }
+    .client-card-status { flex-shrink:0; margin-left:auto; padding:4px 11px; border-radius:999px; font-size:11.5px; font-weight:700; border:1px solid transparent; }
+    .client-card-status.st-new { background:#eef3f8; color:#0d416d; border-color:#d4e2ee; }
+    .client-card-status.st-consultation { background:#fdf3e2; color:#96520a; border-color:#f5e0bd; }
+    .client-card-status.st-documents { background:#f0ecfd; color:#5b3fb8; border-color:#ded6f7; }
+    .client-card-status.st-application { background:#e3f3ec; color:#166b4a; border-color:#c4e6d6; }
+    .client-card-status.st-invitation, .client-card-status.st-visa { background:#e7f0fb; color:#1d5fa8; border-color:#cfe2f5; }
+    .client-card-status.st-arrived, .client-card-status.st-success { background:#e3f3e6; color:#1e7a35; border-color:#c9e9cf; }
+    .client-card-status.st-rejected { background:#fdeaea; color:#b02424; border-color:#f5cdcd; }
+    .client-card-status.st-archive { background:#f1f3f5; color:#6b7684; border-color:#e1e5e9; }
+    .client-card-meta { display:grid; gap:5px; color:#687386; font-size:12.5px; }
+    .client-card-meta span { display:flex; align-items:center; gap:7px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .client-card-meta svg { flex-shrink:0; color:#98a4b3; }
+    .client-card-actions { display:flex; gap:8px; margin-top:auto; padding-top:12px; border-top:1px solid #eef1f5; }
+    .client-card-actions .pill { text-decoration:none; }
+</style>
 <div class="card-grid">
     {% for item in items %}
-        <div class="item-card">
-            <div class="item-card-top">
-                <img src="{% url 'portal:client_avatar' item.pk %}" width="48" height="48" loading="lazy" alt="" style="border-radius:50%;object-fit:cover;flex-shrink:0">
-                <div>
-                    <a class="item-card-title" href="{% url 'portal:client_detail' item.id %}">{{ item.full_name }}</a>
-                    <div class="muted small">{{ item.get_status_display }}</div>
+        <div class="client-card">
+            <div class="client-card-top">
+                <img src="{% url 'portal:client_avatar' item.pk %}" width="52" height="52" loading="lazy" alt="">
+                <div class="client-card-name">
+                    <a href="{% url 'portal:client_detail' item.id %}">{{ item.full_name }}</a>
+                    {% if item.sl_id %}<span class="client-card-slid">{{ item.sl_id }}</span>{% endif %}
                 </div>
-                {% if item.is_priority %}<span class="pill warn">Priority</span>{% endif %}
+                <span class="client-card-status st-{{ item.status }}">{{ item.get_status_display }}</span>
             </div>
-            <div class="item-card-meta">
-                <span>{{ item.phone|default:"Телефон не указан" }}</span>
-                <span>{{ item.email|default:"Email не указан" }}</span>
-                <span>{{ item.get_direction_display|default:item.interested_country|default:"Интерес не указан" }}</span>
-                <span>Менеджер: {% if item.manager %}{{ item.manager.get_full_name|default:item.manager.email }}{% else %}Не указан{% endif %}</span>
+            <div class="client-card-meta">
+                <span><i data-lucide="phone" width="14" height="14"></i>{{ item.phone|default:"Телефон не указан" }}</span>
+                <span><i data-lucide="graduation-cap" width="14" height="14"></i>{{ item.get_direction_display|default:item.interested_country|default:"Интерес не указан" }}</span>
+                <span><i data-lucide="user-round" width="14" height="14"></i>{% if item.manager %}{{ item.manager.get_full_name|default:item.manager.email }}{% else %}Менеджер не указан{% endif %}</span>
             </div>
-            <div class="filters">
+            <div class="client-card-actions">
                 <a class="pill" href="{% url 'portal:client_edit' item.id %}">Редактировать</a>
                 <a class="pill ok" href="{% url 'portal:client_document_create' item.id %}">Документ</a>
+                {% if item.is_priority %}<span class="pill warn" style="margin-left:auto;">Priority</span>{% endif %}
             </div>
         </div>
     {% empty %}

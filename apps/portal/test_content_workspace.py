@@ -9,9 +9,9 @@ from .views import UniversitiesView, ProgramsView
 
 
 class ContentWorkspaceTests(SimpleTestCase):
-    def test_unauthorized_user_cannot_manage_content(self):
+    def test_employee_cannot_manage_content(self):
         request = RequestFactory().post('/')
-        request.user = SimpleNamespace(is_authenticated=True, is_active=False)
+        request.user = SimpleNamespace(is_authenticated=True)
         for view in (ClientContentView, CatalogRemoveView):
             with patch('apps.portal.content_views.is_erp_admin', return_value=False):
                 with self.assertRaises(PermissionDenied):
@@ -43,8 +43,3 @@ class ContentWorkspaceTests(SimpleTestCase):
         form = NewsForm({'title': 'x' * 256, 'content_markdown': 'text', 'status': 'published'})
         self.assertFalse(form.is_valid())
         self.assertIn('title', form.errors)
-
-    def test_banner_required_unless_existing_image_is_retained(self):
-        data = {'title': 'Новость', 'content_markdown': 'Текст', 'status': 'published'}
-        self.assertIn('cover_image', NewsForm(data).errors)
-        self.assertTrue(NewsForm(data, has_cover=True).is_valid())

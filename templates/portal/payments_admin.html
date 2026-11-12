@@ -1,0 +1,32 @@
+{% extends 'portal/base.html' %}{% block content %}
+<section class="panel"><div class="panel-header"><div><h2>Оплаты на проверке</h2></div></div>
+<div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Дата</th><th>Менеджер</th><th>Клиент</th><th>Сумма</th><th>Фото</th><th>Действия</th></tr></thead><tbody>
+{% for p in pending %}<tr>
+<td>{{ p.created_at|date:'d.m.Y H:i' }}</td>
+<td>{{ p.manager.get_full_name|default:p.manager.email }}</td>
+<td>{{ p.client.full_name }}</td>
+<td><strong>{{ p.amount }}</strong></td>
+<td>{% if p.photo %}<a class="pill" href="{{ p.photo.url }}" target="_blank">Чек</a>{% endif %}{% if p.note %}<div class="muted small">{{ p.note }}</div>{% endif %}</td>
+<td><form method="post" style="display:flex;gap:8px;align-items:center">{% csrf_token %}<input type="hidden" name="payment_id" value="{{ p.pk }}"><input type="text" name="note" placeholder="Примечание" style="max-width:140px"><button class="btn" name="action" value="confirm">Подтвердить</button><button class="btn" name="action" value="reject">Отклонить</button></form></td>
+</tr>{% empty %}<tr><td colspan="6" class="muted">Новых оплат нет.</td></tr>{% endfor %}
+</tbody></table></div></div></section>
+
+<section class="panel" style="margin-top:24px"><div class="panel-header"><h2>Сколько собрал каждый менеджер (подтвержденные)</h2></div>
+<div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Менеджер</th><th>За месяц (с {{ month_start|date:'d.m.Y' }})</th><th>Всего</th></tr></thead><tbody>
+{% for row in totals %}<tr><td>{{ row.manager__first_name }} {{ row.manager__last_name }}<div class="muted small">{{ row.manager__email }}</div></td><td>{{ row.month_total|default:"0" }}</td><td><strong>{{ row.total }}</strong></td></tr>
+{% empty %}<tr><td colspan="3" class="muted">Подтверждённых оплат пока нет.</td></tr>{% endfor %}
+</tbody></table></div></div></section>
+
+<section class="panel" style="margin-top:24px"><div class="panel-header"><div><h2>Кому уведомлять о новых оплатах</h2><p class="muted">Отмеченные получат сообщение в Telegram (нужен привязанный Telegram в разделе учёта).</p></div></div>
+<div class="panel-body"><form method="post">{% csrf_token %}<input type="hidden" name="action" value="recipients">
+{% for account in candidate_recipients %}<label style="display:flex;gap:8px;align-items:center;padding:6px 0"><input type="checkbox" name="recipient" value="{{ account.employee_id }}" {% if account.employee_id in selected_recipients %}checked{% endif %}> {{ account.employee.get_full_name|default:account.employee.email }} <span class="muted small">@{{ account.username|default:"" }}</span></label>
+{% empty %}<p class="muted">Ни у кого нет привязанного Telegram-аккаунта.</p>{% endfor %}
+<button class="btn" type="submit" style="margin-top:10px">Сохранить получателей</button>
+</form></div></section>
+
+<section class="panel" style="margin-top:24px"><div class="panel-header"><h2>Недавно проверенные</h2></div>
+<div class="panel-body"><div class="table-wrap"><table><thead><tr><th>Дата</th><th>Менеджер</th><th>Клиент</th><th>Сумма</th><th>Статус</th><th>Проверил</th></tr></thead><tbody>
+{% for p in recent %}<tr><td>{{ p.created_at|date:'d.m.Y H:i' }}</td><td>{{ p.manager.get_full_name|default:p.manager.email }}</td><td>{{ p.client.full_name }}</td><td>{{ p.amount }}</td><td>{{ p.get_status_display }}{% if p.review_note %}<div class="muted small">{{ p.review_note }}</div>{% endif %}</td><td>{{ p.reviewed_by.get_full_name|default:p.reviewed_by.email|default:"—" }}</td></tr>
+{% empty %}<tr><td colspan="6" class="muted">Пусто.</td></tr>{% endfor %}
+</tbody></table></div></div></section>
+{% endblock %}

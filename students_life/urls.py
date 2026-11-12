@@ -13,6 +13,7 @@ from apps.attendance.telegram_views import attendance_telegram_webhook
 from users.auth_views import LoginView, LogoutView
 from users.disk_auth import disk_authenticate
 from users.service_auth import exam_authenticate
+from users.employee_directory import employee_directory, employee_directory_detail
 from apps.crm.views import ApplicationExamSeenServiceView, ApplicationExamServiceView, ClientAdmissionStatusServiceView, EmailRecordServiceView, TranslationServiceView
 from students_life.api_views import ClientExamAPIView, HealthCheckView, AppConfigView, DashboardSummaryView
 from students_life.mobile_api import (
@@ -68,6 +69,8 @@ urlpatterns = [
     path('api/auth/logout/', LogoutView.as_view(), name='api_logout'),
     path('api/auth/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
     path('api/internal/disk/auth/', disk_authenticate, name='disk_authenticate'),
+    path('api/internal/v1/employees/', employee_directory, name='employee_directory'),
+    path('api/internal/v1/employees/<int:user_id>/', employee_directory_detail, name='employee_directory_detail'),
     path('api/internal/exam/auth/', exam_authenticate, name='exam_authenticate'),
     path('api/internal/exam/records/', ApplicationExamServiceView.as_view(), name='exam_records'),
     path('api/internal/translation/records/', TranslationServiceView.as_view(), name='translation_records'),

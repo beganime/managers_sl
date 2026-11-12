@@ -86,10 +86,12 @@ class NotificationTemplate(TimeStampedModel, ActiveModel):
     CHANNEL_IN_APP = 'in_app'
     CHANNEL_PUSH = 'push'
     CHANNEL_EMAIL = 'email'
+    CHANNEL_TELEGRAM = 'telegram'
     CHANNEL_CHOICES = (
         (CHANNEL_IN_APP, 'In-app'),
         (CHANNEL_PUSH, 'Push'),
         (CHANNEL_EMAIL, 'Email'),
+        (CHANNEL_TELEGRAM, 'Telegram'),
     )
 
     company = models.ForeignKey(

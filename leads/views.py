@@ -637,6 +637,9 @@ class LeadCreateAPIView(APIView):
         )
         lead.log_action('created_from_website', note='Создано через /api/leads/create/', save=True)
 
+        from apps.crm.lead_bridge import enqueue_lead_to_elite_task
+        transaction.on_commit(lambda: enqueue_lead_to_elite_task(lead.pk))
+
         try:
             from notifications.firebase import notify_admins_about_new_lead
             notify_admins_about_new_lead(lead)

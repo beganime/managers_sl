@@ -1,6 +1,63 @@
-{% load tz %}{% if support_moods %}<section class="panel" style="margin-bottom:24px"><div class="panel-header"><div><h2>Поддержим друг друга</h2><p class="muted">Коллегам сейчас непросто. Можно оставить тёплые слова или поставить лайк поддержки.</p></div></div><div class="panel-body">
-{% for item in support_moods %}<article style="padding:20px 0;border-bottom:1px solid var(--line)"><strong>{{ item.mood.user.get_full_name|default:item.mood.user.email }}</strong> · {{ item.mood.get_score_display }}<small class="muted"> · {% timezone 'Asia/Ashgabat' %}{{ item.mood.updated_at|date:'d.m H:i' }} UTC+5{% endtimezone %}</small>
-<form method="post" action="{% url 'portal:mood_support' item.mood.pk %}" style="margin:12px 0">{% csrf_token %}<input type="hidden" name="action" value="like"><input type="hidden" name="liked" value="{% if item.liked %}0{% else %}1{% endif %}"><button class="btn" type="submit" aria-pressed="{{ item.liked|yesno:'true,false' }}">{% if item.liked %}♥ Вы поддержали{% else %}♡ Поддержать{% endif %} · {{ item.likes }}</button></form>
-{% for reaction in item.comments %}<p style="overflow-wrap:anywhere"><strong>{{ reaction.user.get_full_name|default:reaction.user.email }}:</strong> {{ reaction.comment }}</p>{% endfor %}
-<details><summary>Написать слова поддержки</summary><form method="post" action="{% url 'portal:mood_support' item.mood.pk %}" style="margin-top:12px">{% csrf_token %}<input type="hidden" name="action" value="comment"><label>Ваш комментарий<textarea class="textarea" name="comment" maxlength="500" rows="2" style="width:100%">{{ item.own_comment }}</textarea></label><p class="muted small">До 500 символов. Видно коллегам вашей компании и администратору. Пустой текст удалит ваш комментарий.</p><button class="btn" type="submit">Сохранить комментарий</button></form></details></article>{% endfor %}
-</div></section>{% endif %}
+{% load tz %}
+{% if support_moods %}
+<style>
+    .support-hero { position:relative; overflow:hidden; margin-bottom:18px; padding:clamp(20px,3vw,28px); border-radius:16px; background:linear-gradient(125deg,#751d25 0%,#b71d17 55%,#d97a2b 100%); color:#fff; }
+    .support-hero::after { content:""; position:absolute; width:190px; height:190px; right:-60px; bottom:-80px; border-radius:50%; background:rgba(255,255,255,.08); }
+    .support-kicker { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:11.5px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#ffd9d4; }
+    .support-hero h2 { margin:0; font-size:clamp(19px,2.4vw,24px); letter-spacing:-.02em; }
+    .support-hero p { margin:8px 0 0; max-width:560px; color:rgba(255,255,255,.82); font-size:13px; line-height:1.55; }
+    .support-card { display:grid; grid-template-columns:auto 1fr; gap:14px; padding:18px; border:1px solid #ece7e2; border-radius:16px; background:linear-gradient(180deg,#fffdf9,#fff); box-shadow:var(--shadow); }
+    .support-card + .support-card { margin-top:12px; }
+    .support-face { width:48px; height:48px; display:grid; place-items:center; border-radius:50%; font-size:24px; background:#fdf0e4; border:1px solid #f3ddc4; }
+    .support-head { display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+    .support-head strong { color:#172033; }
+    .support-mood-score { padding:3px 11px; border-radius:999px; font-size:12px; font-weight:700; background:#fdf0e4; color:#9a4b12; border:1px solid #f3ddc4; }
+    .support-head time { color:#8a94a4; font-size:11.5px; }
+    .support-like { display:inline-flex; align-items:center; gap:7px; margin-top:12px; padding:8px 14px; border:1px solid #f0c9c5; border-radius:999px; background:#fff; color:#b71d17; font-weight:700; font-size:13px; cursor:pointer; transition:background .15s ease, transform .15s ease; }
+    .support-like:hover { background:#fdf1f0; transform:translateY(-1px); }
+    .support-like[aria-pressed="true"] { background:#b71d17; color:#fff; border-color:#b71d17; }
+    .support-comment { margin:12px 0 0; padding:10px 13px; border-left:3px solid #f0c9c5; border-radius:0 10px 10px 0; background:#fdf7f6; overflow-wrap:anywhere; }
+    .support-comment + .support-comment { margin-top:8px; }
+    .support-comment strong { color:#7c2a24; }
+    .support-add { margin-top:12px; }
+    .support-add summary { cursor:pointer; color:#0d416d; font-weight:600; font-size:13px; }
+    .support-add textarea { width:100%; margin-top:10px; padding:11px 13px; border:1px solid var(--line,#dce3eb); border-radius:11px; font:inherit; resize:vertical; background:var(--soft,#f8fafc); }
+    @media(max-width:560px){ .support-card{grid-template-columns:1fr} }
+</style>
+<section class="panel" style="margin-bottom:24px">
+    <div class="support-hero">
+        <div class="support-kicker"><i data-lucide="heart-handshake"></i>Поддержка команды</div>
+        <h2>Поддержим друг друга</h2>
+        <p>Коллегам сейчас непросто. Можно оставить тёплые слова или поставить лайк поддержки — человек получит уведомление в Telegram.</p>
+    </div>
+    <div class="panel-body">
+    {% for item in support_moods %}
+        <article class="support-card">
+            <div class="support-face" aria-hidden="true">{% if item.mood.score <= 1 %}🌧️{% elif item.mood.score == 2 %}🌥️{% elif item.mood.score == 4 %}🌤️{% elif item.mood.score >= 5 %}☀️{% else %}😐{% endif %}</div>
+            <div>
+                <div class="support-head">
+                    <strong>{{ item.mood.user.get_full_name|default:item.mood.user.email }}</strong>
+                    <span class="support-mood-score">{{ item.mood.get_score_display }}</span>
+                    <time>{% timezone 'Asia/Ashgabat' %}{{ item.mood.updated_at|date:'d.m H:i' }} UTC+5{% endtimezone %}</time>
+                </div>
+                <form method="post" action="{% url 'portal:mood_support' item.mood.pk %}">{% csrf_token %}
+                    <input type="hidden" name="action" value="like"><input type="hidden" name="liked" value="{% if item.liked %}0{% else %}1{% endif %}">
+                    <button class="support-like" type="submit" aria-pressed="{{ item.liked|yesno:'true,false' }}"><i data-lucide="{% if item.liked %}heart{% else %}heart-handshake{% endif %}"></i>{% if item.liked %}Вы поддержали{% else %}Поддержать{% endif %} · {{ item.likes }}</button>
+                </form>
+                {% for reaction in item.comments %}
+                    <p class="support-comment"><strong>{{ reaction.user.get_full_name|default:reaction.user.email }}:</strong> {{ reaction.comment }}</p>
+                {% endfor %}
+                <details class="support-add"><summary>Написать слова поддержки</summary>
+                    <form method="post" action="{% url 'portal:mood_support' item.mood.pk %}">{% csrf_token %}
+                        <input type="hidden" name="action" value="comment">
+                        <textarea name="comment" maxlength="500" rows="2">{{ item.own_comment }}</textarea>
+                        <p class="muted small">До 500 символов. Видно коллегам вашей компании и администратору. Пустой текст удалит ваш комментарий.</p>
+                        <button class="btn" type="submit">Сохранить комментарий</button>
+                    </form>
+                </details>
+            </div>
+        </article>
+    {% endfor %}
+    </div>
+</section>
+{% endif %}

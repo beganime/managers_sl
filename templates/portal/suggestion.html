@@ -1,1 +1,52 @@
-{% extends 'portal/base.html' %}{% block content %}<section class="panel"><div class="panel-header"><h2>Что сделать удобнее?</h2></div><div class="panel-body"><p>Ваше пожелание увидит только администратор. Можно отправить одно пожелание в день.</p><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn primary">Отправить пожелание</button><a class="btn" href="{% url 'portal:dashboard' %}">Вернуться</a></form></div></section>{% endblock %}
+{% extends 'portal/base.html' %}
+{% block content %}
+<style>
+    .suggest-shell { max-width:720px; margin:0 auto; display:grid; gap:16px; }
+    .suggest-hero { position:relative; overflow:hidden; padding:clamp(24px,4vw,40px); border:1px solid #dce2e9; border-radius:18px; background:linear-gradient(125deg,#0d416d 0%,#12385b 60%,#751d25 100%); color:#fff; box-shadow:0 18px 44px rgba(13,65,109,.18); }
+    .suggest-hero::after { content:""; position:absolute; width:220px; height:220px; right:-70px; top:-70px; border-radius:50%; background:rgba(255,255,255,.07); }
+    .suggest-kicker { display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:12px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:#f3b8b3; }
+    .suggest-hero h1 { margin:0; font-size:clamp(22px,3vw,30px); letter-spacing:-.02em; }
+    .suggest-hero p { margin:12px 0 0; max-width:520px; color:rgba(255,255,255,.78); line-height:1.6; font-size:14px; }
+    .suggest-card { padding:clamp(20px,3vw,28px); border:1px solid #dce2e9; border-radius:18px; background:var(--panel,#fff); box-shadow:var(--shadow); }
+    .suggest-card textarea { width:100%; min-height:140px; padding:14px 16px; border:1px solid var(--line,#dce3eb); border-radius:12px; font:inherit; line-height:1.55; resize:vertical; background:var(--soft,#f8fafc); }
+    .suggest-card textarea:focus { outline:none; border-color:#0d416d; box-shadow:0 0 0 3px rgba(13,65,109,.14); background:#fff; }
+    .suggest-hints { display:flex; flex-wrap:wrap; gap:8px; margin:14px 0 18px; }
+    .suggest-hint { padding:7px 13px; border:1px solid var(--line,#dce3eb); border-radius:999px; background:var(--soft,#f3f5f7); color:#526176; font-size:12.5px; cursor:pointer; transition:border-color .15s ease, color .15s ease; }
+    .suggest-hint:hover { border-color:#b71d17; color:#b71d17; }
+    .suggest-footnote { display:flex; align-items:center; gap:8px; margin-top:14px; color:#7a8595; font-size:12.5px; }
+    @media(max-width:640px){ .suggest-hero{border-radius:14px} }
+</style>
+<div class="suggest-shell">
+    <section class="suggest-hero">
+        <div class="suggest-kicker"><i data-lucide="lightbulb"></i>Идеи по системе</div>
+        <h1>Что сделать удобнее?</h1>
+        <p>Расскажите, что в ManagerSL мешает или чего не хватает. Ваше пожелание увидит только администратор. Можно отправить одно пожелание в день.</p>
+    </section>
+    <section class="suggest-card">
+        <form method="post">
+            {% csrf_token %}
+            {% if form.text.errors %}<div class="form-errors">{{ form.text.errors }}</div>{% endif %}
+            <label class="muted small" for="id_text" style="display:block;margin-bottom:8px;">Ваше пожелание</label>
+            {{ form.text }}
+            <div class="suggest-hints" aria-label="Подсказки">
+                <button type="button" class="suggest-hint">Хочу фильтр по…</button>
+                <button type="button" class="suggest-hint">Неудобно, что…</button>
+                <button type="button" class="suggest-hint">Добавьте кнопку…</button>
+                <button type="button" class="suggest-hint">Сделайте заметнее…</button>
+            </div>
+            <div class="filters">
+                <button class="btn primary" type="submit"><i data-lucide="send"></i>Отправить пожелание</button>
+                <a class="btn" href="{% url 'portal:dashboard' %}">Вернуться</a>
+            </div>
+            <div class="suggest-footnote"><i data-lucide="lock"></i>Видит только администратор. Анонимно для коллег.</div>
+        </form>
+    </section>
+</div>
+<script>
+document.querySelectorAll('.suggest-hint').forEach(btn=>btn.addEventListener('click',()=>{
+    const ta=document.getElementById('id_text'); if(!ta)return;
+    const hint=btn.textContent.replace('…','').trim();
+    ta.value=hint+' '; ta.focus();
+}));
+</script>
+{% endblock %}

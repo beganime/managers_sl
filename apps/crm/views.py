@@ -544,6 +544,10 @@ class LeadViewSet(viewsets.ModelViewSet):
             defaults['office'] = employee.office
         lead = serializer.save(**defaults)
         lead.log_action('created_api', user, save=True)
+        from .lead_bridge import enqueue_lead_to_elite_task
+        from .lead_telegram import queue_lead_buttons_notification
+        enqueue_lead_to_elite_task(lead.pk)
+        queue_lead_buttons_notification(lead)
 
     def ensure_can_manage_lead(self, lead):
         user = self.request.user

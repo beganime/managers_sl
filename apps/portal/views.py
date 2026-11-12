@@ -441,7 +441,8 @@ NAV_GROUPS = (
             {'name': 'workday', 'label': 'Рабочий день', 'icon': 'timer'},
             {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
             {'name': 'contracts', 'label': 'Договоры', 'icon': 'file-signature'},
-            {'name': 'finance', 'label': 'Финансы', 'icon': 'wallet-cards'},
+            {'name': 'payments', 'label': 'Оплаты', 'icon': 'banknote'},
+            {'name': 'payments_admin', 'label': 'Проверка оплат', 'icon': 'shield-check', 'administrator_only': True},
         ),
     },
     {
@@ -486,10 +487,9 @@ NAV_GROUPS = (
         'label': 'Сервисы',
         'icon': 'blocks',
         'items': (
-            {'name': 'exam_sl', 'label': 'Экзамены', 'icon': 'calendar-check-2', 'url': settings.EXAM_SL_WEB_URL, 'external': True},
             {'name': 'translate_sl', 'label': 'Переводы', 'icon': 'languages', 'external': True, 'disk_access_only': True},
             {'name': 'disk_sl', 'label': 'Диск', 'icon': 'hard-drive', 'disk_access_only': True},
-            {'name': 'task_manager', 'label': 'Задачи', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL, 'external': True},
+            {'name': 'task_manager', 'label': 'Elite Task', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL, 'external': True},
             {'name': 'webmail', 'label': 'Вебмайл', 'icon': 'mail', 'url': settings.WEBMAIL_WEB_URL, 'external': True},
             {'name': 'smtp_mailboxes', 'label': 'SMTP ящики', 'icon': 'mail-check', 'url': settings.SMTP_MAILBOXES_WEB_URL, 'external': True},
         ),
@@ -521,11 +521,8 @@ ADMIN_QUICK_ACTIONS = (
     {'label': 'Добавить ВУЗ', 'url_name': 'admin:education_university_add', 'icon': 'graduation-cap'},
     {'label': 'Добавить программу', 'url_name': 'admin:education_program_add', 'icon': 'library-big'},
     {'label': 'Добавить услугу', 'url_name': 'admin:erp_services_service_add', 'icon': 'briefcase-business'},
-    {'label': 'Добавить доход', 'url_name': 'portal:finance_income', 'icon': 'plus'},
-    {'label': 'Добавить расход', 'url_name': 'portal:finance_expense', 'icon': 'minus'},
+    {'label': 'Добавить оплату', 'url_name': 'portal:payments', 'icon': 'banknote'},
     {'label': 'Добавить уведомление', 'url_name': 'portal:notification_create', 'icon': 'bell-plus'},
-    {'label': 'Создать задачу', 'url_name': 'portal:tasks', 'icon': 'check-square'},
-    {'label': 'Создать проект', 'url_name': 'admin:projects_v2_project_add', 'icon': 'folder-plus'},
     {'label': 'Перейти в админку', 'url': '/admin/', 'icon': 'shield-check'},
     {'label': 'Проверить документы', 'url_name': 'admin:erp_documents_generateddocument_changelist', 'icon': 'file-check-2'},
     {'label': 'Посмотреть отчёты', 'url_name': 'portal:reports', 'icon': 'bar-chart-3'},
@@ -1907,13 +1904,13 @@ class DashboardView(PortalContextMixin, TemplateView):
             'recent_express': express[:6],
             'my_clients': clients.filter(manager=user).order_by('-updated_at')[:6],
             'dashboard_services': [
-                {'label': 'Задачи', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL, 'description': 'Личные и общие задачи команды', 'tone': 'red'},
+                {'label': 'Elite Task', 'icon': 'list-checks', 'url': settings.TASK_MANAGER_WEB_URL, 'description': 'Личные и общие задачи команды', 'tone': 'red'},
                 {'label': 'Переводчик', 'icon': 'languages', 'url': reverse('portal:translate_sl'), 'description': 'Перевод по шаблону с привязкой к клиенту', 'tone': 'blue'},
                 {'label': 'Диск', 'icon': 'folder-open', 'url': reverse('portal:disk_sl'), 'description': 'Документы и папки клиентов', 'tone': 'navy'},
-                {'label': 'Экзамены', 'icon': 'calendar-check', 'url': settings.EXAM_SL_WEB_URL, 'description': 'Просмотр расписания экзаменов', 'tone': 'slate'},
-                {'label': 'Включить push', 'icon': 'bell-ring', 'url': f'{settings.TASK_MANAGER_WEB_URL}/push/', 'description': 'Подключить этот браузер к уведомлениям', 'tone': 'blue'},
             ],
             'can_access_disk': can_access_disk(user),
+            'task_manager_url': settings.TASK_MANAGER_WEB_URL,
+            'disk_url': reverse('portal:disk_sl'),
         })
         return context
 
@@ -2832,6 +2829,7 @@ class ClientDetailView(PortalContextMixin, TemplateView):
             'disk_url': disk_url,
             'disk_ready': disk_ready,
             'disk_upload_folders': DISK_UPLOAD_FOLDERS,
+            'task_manager_url': settings.TASK_MANAGER_WEB_URL,
             'can_access_disk': can_access_disk(self.request.user),
             'translate_url': f'{reverse("portal:translate_sl")}?{urlencode({"next": translate_next})}',
             'application_stage_choices': Application.STAGE_CHOICES,
@@ -6115,6 +6113,7 @@ class NotificationsView(PortalContextMixin, TemplateView):
             'read_count': read_count,
             'can_create_notifications': can_create,
             'can_notify_clients': can_review_onboarding(self.request.user),
+            'task_manager_url': settings.TASK_MANAGER_WEB_URL,
         })
         return context
 
