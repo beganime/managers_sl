@@ -25,7 +25,7 @@ CALLBACK_REPORT = 'att:report'
 CALLBACK_CLOSE = 'att:close'
 CALLBACK_STATS = 'att:stats'
 
-REPORT_AWAIT_KEY = 'attendance:bot:await-report:{telegram_user_id}'
+REPORT_AWAIT_KEY = 'attendance:bot:await-report:{employee_id}'
 REPORT_AWAIT_TTL = 30 * 60  # seconds
 
 HELP_TEXT = (
@@ -116,23 +116,23 @@ def action_report(user):
         return 'Не найден профиль сотрудника. Обратитесь к администратору.', None
     if not workday_is_open(workday):
         return 'Сначала начните рабочий день — кнопка «Написать отчёт» станет доступна.', build_keyboard(workday)
-    cache.set(REPORT_AWAIT_KEY.format(telegram_user_id=user.pk), workday.pk, REPORT_AWAIT_TTL)
+    cache.set(REPORT_AWAIT_KEY.format(employee_id=user.pk), workday.pk, REPORT_AWAIT_TTL)
     return 'Напишите отчёт одним следующим сообщением: итоги дня, планы или проблемы. Отправлю его как ежедневный отчёт.', build_keyboard(workday)
 
 
-def _submit_report_text(user, telegram_user_id, text):
-    workday_id = cache.get(REPORT_AWAIT_KEY.format(telegram_user_id=telegram_user_id))
+def _submit_report_text(user, text):
+    workday_id = cache.get(REPORT_AWAIT_KEY.format(employee_id=user.pk))
     if not workday_id:
         return None
     workday = WorkDay.objects.filter(pk=workday_id, employee=user).first()
     if not workday:
-        cache.delete(REPORT_AWAIT_KEY.format(telegram_user_id=telegram_user_id))
+        cache.delete(REPORT_AWAIT_KEY.format(employee_id=user.pk))
         return 'Не удалось найти сегодняшний рабочий день. Попробуйте ещё раз.'
     content = ' '.join(str(text).split()).strip()
     if len(content) < 3:
         return 'Отчёт слишком короткий — напишите хотя бы пару слов.'
     workday.submit_report(content)
-    cache.delete(REPORT_AWAIT_KEY.format(telegram_user_id=telegram_user_id))
+    cache.delete(REPORT_AWAIT_KEY.format(employee_id=user.pk))
     return 'Отчёт отправлен. Спасибо!'
 
 
@@ -204,7 +204,7 @@ TEXT_ACTIONS = {
 def handle_private_text(account, text):
     """Route a private-chat text message for a linked employee."""
     user = account.employee
-    report_result = _submit_report_text(user, account.telegram_user_id, text)
+    report_result = _submit_report_text(user, text)
     if report_result is not None:
         workday = get_today_workday(user)
         return report_result, build_keyboard(workday)
