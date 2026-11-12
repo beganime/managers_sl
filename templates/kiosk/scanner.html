@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0f172a">
+<link rel="manifest" href="/kiosk/manifest.webmanifest">
+<title>SL Киоск — отметка рабочего дня</title>
+<script src="/static/kiosk/jsQR.js"></script>
+<style>
+:root{color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f172a;color:#e2e8f0;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;height:100vh;display:flex;flex-direction:column;overflow:hidden}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:#1e293b;font-size:20px}
+#clock{font-variant-numeric:tabular-nums;font-weight:700;font-size:26px}
+.status{display:flex;align-items:center;gap:8px;font-size:15px}
+.dot{width:12px;height:12px;border-radius:50%;background:#ef4444}
+.dot.ok{background:#22c55e}
+main{flex:1;position:relative;display:flex;align-items:center;justify-content:center}
+#video{width:100%;height:100%;object-fit:cover}
+#frame{position:absolute;inset:0;display:none}
+#scanline{position:absolute;left:10%;right:10%;top:50%;height:2px;background:rgba(34,197,94,.8);box-shadow:0 0 14px rgba(34,197,94,.9)}
+#banner{position:absolute;left:16px;right:16px;top:16px;padding:18px 20px;border-radius:14px;font-size:22px;font-weight:600;text-align:center;opacity:0;transition:opacity .25s;pointer-events:none}
+#banner.show{opacity:1}
+#banner.ok{background:rgba(21,128,61,.95);color:#fff}
+#banner.err{background:rgba(185,28,28,.95);color:#fff}
+#banner.info{background:rgba(30,64,175,.95);color:#fff}
+#hint{position:absolute;bottom:24px;left:0;right:0;text-align:center;font-size:18px;color:#cbd5e1;text-shadow:0 1px 4px #000}
+#settings{position:absolute;inset:0;background:rgba(2,6,23,.96);display:none;flex-direction:column;justify-content:center;padding:32px;gap:14px}
+#settings.open{display:flex}
+#settings h2{font-size:24px;margin-bottom:6px}
+#settings p{color:#94a3b8;font-size:15px}
+input{background:#0f172a;border:1px solid #475569;border-radius:10px;color:#e2e8f0;font-size:20px;padding:14px;width:100%}
+button{background:#2563eb;border:0;border-radius:10px;color:#fff;font-size:19px;padding:14px 22px;cursor:pointer}
+button.ghost{background:#334155}
+.row{display:flex;gap:12px}
+#gear{position:absolute;top:14px;right:14px;background:rgba(30,41,59,.85);border-radius:10px;padding:10px 14px;font-size:16px;z-index:5}
+#queueinfo{position:absolute;top:14px;left:14px;background:rgba(30,41,59,.85);border-radius:10px;padding:10px 14px;font-size:16px;z-index:5}
+</style>
+</head>
+<body>
+<header>
+  <div id="clock">--:--:--</div>
+  <div class="status"><span class="dot" id="dot"></span><span id="statusText">Настройка</span></div>
+</header>
+<main>
+  <video id="video" playsinline muted autoplay></video>
+  <canvas id="frame"></canvas>
+  <div id="scanline"></div>
+  <div id="banner"></div>
+  <div id="queueinfo">В очереди: <b id="pending">0</b></div>
+  <button id="gear">⚙ Токен</button>
+  <div id="hint">Покажите бейдж камере планшета</div>
+  <div id="settings">
+    <h2>Настройка планшета</h2>
+    <p>Введите токен устройства (выдаёт администратор в разделе «Киоск-планшеты»). Токен сохранится только на этом планшете.</p>
+    <input id="token" type="password" placeholder="Токен устройства" autocomplete="off">
+    <div class="row"><button id="saveToken">Сохранить и проверить</button><button class="ghost" id="closeSettings">Закрыть</button></div>
+    <p id="tokenMsg"></p>
+  </div>
+</main>
+<script>
+(function () {
+  'use strict';
+  var API = '/api/v1/attendance/kiosk/checkin/';
+  var LS_TOKEN = 'kiosk.token';
+  var LS_QUEUE = 'kiosk.queue.v1';
+  var RETRY_STEPS = [30000, 60000, 300000, 900000, 1800000];
+  var DEDUPE_MS = 5000;
+
+  var video = document.getElementById('video');
+  var canvas = document.getElementById('frame');
+  var banner = document.getElementById('banner');
+  var dot = document.getElementById('dot');
+  var statusText = document.getElementById('statusText');
+  var pendingEl = document.getElementById('pending');
+  var lastScan = {code: '', at: 0};
+  var detector = null;
+  var bannerTimer = null;
+
+  function getToken() { return (localStorage.getItem(LS_TOKEN) || '').trim(); }
+  function queue() { try { return JSON.parse(localStorage.getItem(LS_QUEUE) || '[]'); } catch (e) { return []; } }
+  function saveQueue(q) { localStorage.setItem(LS_QUEUE, JSON.stringify(q.slice(-500))); renderQueue(); }
+  function renderQueue() { pendingEl.textContent = String(queue().length); }
+
+  function showBanner(kind, text, sticky) {
+    banner.className = 'show ' + kind;
+    banner.textContent = text;
+    clearTimeout(bannerTimer);
+    if (!sticky) {
+      bannerTimer = setTimeout(function () { banner.className = ''; }, 4000);
+    }
+  }
+
+  function beep() {
+    try {
+      var ctx = new (window.AudioContext || window.webkitAudioContext)();
+      var osc = ctx.createOscillator();
+      var gain = ctx.createGain();
+      osc.frequency.value = 880;
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.25);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(); osc.stop(ctx.currentTime + 0.25);
+    } catch (e) {}
+  }
+
+  function apiFetch(body) {
+    return fetch(API, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-Kiosk-Token': getToken()},
+      body: JSON.stringify(body)
+    }).then(function (resp) {
+      return resp.json().then(function (data) {
+        if (!resp.ok) { var err = new Error((data && (data.detail || JSON.stringify(data))) || ('HTTP ' + resp.status)); err.status = resp.status; throw err; }
+        return data;
+      });
+    });
+  }
+
+  function checkStatus() {
+    if (!getToken()) { setOffline('Нет токена'); return Promise.resolve(false); }
+    return fetch(API, {headers: {'X-Kiosk-Token': getToken()}})
+      .then(function (r) {
+        if (!r.ok) { setOffline('Токен не принят'); return false; }
+        setOnline();
+        return true;
+      })
+      .catch(function () { setOffline('Нет сети'); return false; });
+  }
+
+  function setOnline() { dot.className = 'dot ok'; statusText.textContent = 'Онлайн'; }
+  function setOffline(reason) { dot.className = 'dot'; statusText.textContent = reason || 'Офлайн'; }
+
+  function flushQueue() {
+    var q = queue();
+    if (!q.length || !getToken()) { renderQueue(); return; }
+    var item = q[0];
+    if (item.nextRetry && Date.now() < item.nextRetry) { renderQueue(); return; }
+    apiFetch({event_id: item.event_id, code: item.code, device_time: item.device_time})
+      .then(function (data) {
+        q.shift();
+        saveQueue(q);
+        showBanner(data.result === 'started' || data.result === 'closed' ? 'ok' : 'info', data.message || 'Отмечено');
+        setOnline();
+        setTimeout(flushQueue, 150);
+      })
+      .catch(function (err) {
+        if (err.status === 400 || err.status === 401 || err.status === 403) {
+          q.shift(); saveQueue(q);
+          showBanner('err', 'Событие отклонено сервером: ' + err.message);
+          return;
+        }
+        item.attempts = (item.attempts || 0) + 1;
+        item.nextRetry = Date.now() + (RETRY_STEPS[Math.min(item.attempts - 1, RETRY_STEPS.length - 1)]);
+        saveQueue(q);
+        setOffline('Нет сети');
+        setTimeout(flushQueue, 35000);
+      });
+  }
+
+  function onScan(code) {
+    var now = Date.now();
+    if (!code || code === lastScan.code && now - lastScan.at < DEDUPE_MS) return;
+    lastScan = {code: code, at: now};
+    beep();
+    var q = queue();
+    q.push({event_id: (crypto.randomUUID ? crypto.randomUUID() : String(now) + Math.random()), code: code, device_time: new Date().toISOString(), attempts: 0});
+    saveQueue(q);
+    showBanner('info', 'Сканировано, отправляю…');
+    flushQueue();
+  }
+
+  function tick() {
+    var d = new Date();
+    document.getElementById('clock').textContent =
+      ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2) + ':' + ('0' + d.getSeconds()).slice(-2);
+  }
+  setInterval(tick, 1000); tick();
+
+  function startCamera() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      showBanner('err', 'Камера недоступна в этом браузере', true); return;
+    }
+    navigator.mediaDevices.getUserMedia({video: {facingMode: 'environment'}, audio: false})
+      .then(function (stream) {
+        video.srcObject = stream;
+        if ('BarcodeDetector' in window) {
+          try { detector = new BarcodeDetector({formats: ['qr_code']}); } catch (e) { detector = null; }
+        }
+        scanLoop();
+      })
+      .catch(function () { showBanner('err', 'Нет доступа к камере. Разрешите доступ и перезагрузите.', true); });
+  }
+
+  function scanLoop() {
+    if (detector) {
+      detector.detect(video)
+        .then(function (codes) { if (codes && codes.length) onScan(codes[0].rawValue); })
+        .catch(function () {})
+        .then(function () { setTimeout(scanLoop, 400); });
+    } else {
+      var ctx = canvas.getContext('2d', {willReadFrequently: true});
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 480;
+      if (canvas.width) {
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        var img = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        var found = window.jsQR && window.jsQR(img.data, img.width, img.height, {inversionAttempts: 'dontInvert'});
+        if (found && found.data) onScan(found.data);
+      }
+      setTimeout(scanLoop, 500);
+    }
+  }
+
+  function keepAwake() {
+    if ('wakeLock' in navigator) {
+      navigator.wakeLock.request('screen').catch(function () {});
+    }
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.visibilityState === 'visible') { keepAwake(); checkStatus(); flushQueue(); }
+  });
+
+  var settings = document.getElementById('settings');
+  document.getElementById('gear').addEventListener('click', function () {
+    document.getElementById('token').value = getToken();
+    settings.classList.add('open');
+  });
+  document.getElementById('closeSettings').addEventListener('click', function () { settings.classList.remove('open'); });
+  document.getElementById('saveToken').addEventListener('click', function () {
+    var value = document.getElementById('token').value.trim();
+    var msg = document.getElementById('tokenMsg');
+    if (!value) { msg.textContent = 'Введите токен.'; return; }
+    localStorage.setItem(LS_TOKEN, value);
+    checkStatus().then(function (ok) {
+      msg.textContent = ok ? 'Токен принят. Планшет готов к работе.' : 'Сервер не принял токен. Проверьте ввод.';
+      if (ok) { settings.classList.remove('open'); flushQueue(); }
+    });
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/kiosk/sw.js').catch(function () {});
+  }
+
+  renderQueue();
+  keepAwake();
+  startCamera();
+  checkStatus().then(flushQueue);
+  setInterval(function () { checkStatus(); flushQueue(); }, 60000);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,25 @@
+{% extends 'portal/base.html' %}{% block extra_head %}
+<style>
+.badge-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+.badge-card{border:1px solid var(--border,#d8dee6);border-radius:12px;padding:16px;text-align:center;page-break-inside:avoid}
+.badge-card svg{width:180px;height:180px;max-width:100%}
+.badge-code{font-family:monospace;font-size:10px;word-break:break-all;color:#64748b;margin-top:8px}
+@media print{header,aside,.no-print{display:none!important}.badge-card{border:1px dashed #94a3b8}}
+</style>
+{% endblock %}{% block content %}
+<section class="panel no-print"><div class="panel-header"><div><h2>QR-бейджи для планшета-сканера</h2>
+<p class="muted">Каждый бейдж — статический код: сотрудник показывает его планшету у входа, планшет открывает или закрывает рабочий день. Не публикуйте коды в открытом доступе. При утере или компрометации перевыпустите бейдж — старый код перестанет работать.</p></div>
+<button class="btn" onclick="window.print()">Печать</button></div>
+<div class="panel-body"><p class="muted">Сотрудников в учёте посещаемости: {{ cards|length }}. Бейджи создаются автоматически при первом открытии этой страницы.</p></div></section>
+<div class="badge-grid">{% for card in cards %}
+<div class="badge-card">
+{{ card.qr_svg|safe }}
+<h3>{{ card.person.user.get_full_name|default:card.person.user.email }}</h3>
+<p class="muted">{{ card.person.office.name|default:'Офис не указан' }}</p>
+<form class="no-print" method="post" style="margin:8px 0">{% csrf_token %}<input type="hidden" name="user_id" value="{{ card.person.user_id }}"><button class="btn" type="submit" onclick="return confirm('Перевыпустить бейдж? Старый код перестанет работать.')">Перевыпустить</button></form>
+<div class="badge-code">{{ card.code }}</div>
+<p class="muted" style="font-size:11px">Выпущен: {{ card.issued_at|date:'d.m.Y H:i' }}</p>
+</div>
+{% empty %}<p>Нет сотрудников в учёте посещаемости.</p>{% endfor %}
+</div>
+{% endblock %}

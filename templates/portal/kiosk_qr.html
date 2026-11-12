@@ -1,0 +1,27 @@
+{% extends 'portal/base.html' %}{% block extra_head %}
+<style>
+.qr-stage{display:flex;flex-direction:column;align-items:center;gap:16px;padding:24px}
+.qr-stage svg{width:340px;height:340px;max-width:90vw}
+@media print{header,aside,.no-print{display:none!important}}
+</style>
+{% endblock %}{% block content %}
+<section class="panel no-print"><div class="panel-header"><div><h2>Генератор QR-бейджа</h2>
+<p class="muted">Выберите сотрудника — код создаётся автоматически и действует до перевыпуска бейджа. Распечатайте и наклейте на бейджик.</p></div>
+{% if result %}<button class="btn" onclick="window.print()">Печать</button>{% endif %}</div>
+<div class="panel-body"><form method="get" class="row" style="display:flex;gap:12px;align-items:center">
+<select name="user_id" style="background:#0f172a;border:1px solid #475569;border-radius:10px;color:#e2e8f0;font-size:16px;padding:12px;min-width:280px">
+<option value="">— выберите сотрудника —</option>
+{% for person in people %}<option value="{{ person.user_id }}" {% if result and result.person.user_id == person.user_id %}selected{% endif %}>{{ person.user.get_full_name|default:person.user.email }}{% if person.office %} · {{ person.office.name }}{% endif %}</option>{% endfor %}
+</select>
+<button type="submit">Показать QR</button>
+</form></div></section>
+{% if result %}
+<div class="qr-stage">
+<div>{{ result.qr_svg|safe }}</div>
+<h2>{{ result.person.user.get_full_name|default:result.person.user.email }}</h2>
+<p class="muted">{{ result.person.office.name|default:'Офис не указан' }} · код: <span style="font-family:monospace;font-size:12px">{{ result.code }}</span></p>
+</div>
+{% elif request.GET.user_id %}
+<section class="panel"><div class="panel-body"><p>Сотрудник не найден или не входит в учёт посещаемости.</p></div></section>
+{% endif %}
+{% endblock %}
