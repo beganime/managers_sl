@@ -209,6 +209,8 @@ def team_overview_text(company, day=None):
     employee = None
     for profile in company.employees.filter(is_active=True, user__is_active=True).select_related('user', 'role', 'office'):
         role = getattr(profile.role, 'code', '')
+        if getattr(profile, 'attendance_exempt', False):
+            continue
         if str(role) == '00003' and not getattr(profile, 'attendance_required', False):
             continue
         tracked.append(profile)

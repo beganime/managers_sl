@@ -1704,6 +1704,7 @@ class DashboardView(PortalContextMixin, TemplateView):
             ).filter(
                 (Q(user__employee_profile__attendance_required=True)
                  | (~Q(user__is_superuser=True) & ~Q(user__role='admin')))
+                & Q(user__employee_profile__attendance_exempt=False)
             )
             weekday_labels = ('Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье')
             for entry in employee_moods.select_related('user', 'user__employee_profile__office').order_by('-updated_at')[:24]:

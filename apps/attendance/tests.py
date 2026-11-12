@@ -307,6 +307,28 @@ class AttendanceTelegramTests(TestCase):
         self.assertEqual(workday.status, WorkDay.STATUS_STARTED)
         self.assertIn('Старший менеджер', daily_message)
 
+    @patch('apps.attendance.services.is_after_workday_close', return_value=False)
+    def test_exempt_employee_is_not_tracked(self, _after_close):
+        exempt = get_user_model().objects.create_user(
+            email='smm@example.com', password='test-password', first_name='СММ Специалист',
+        )
+        EmployeeProfile.objects.create(
+            user=exempt, company=self.company, role=self.role, attendance_exempt=True,
+        )
+
+        workday, started = auto_start_workday_for_login(exempt)
+        daily_message = '\n'.join(daily_summary_messages(self.company, timezone.localdate()))
+        weekly_message = '\n'.join(weekly_summary_messages(
+            self.company,
+            timezone.localdate() - timedelta(days=timezone.localdate().weekday()),
+            timezone.localdate(),
+        ))
+
+        self.assertFalse(started)
+        self.assertIsNone(workday)
+        self.assertNotIn('СММ Специалист', daily_message)
+        self.assertNotIn('СММ Специалист', weekly_message)
+
     def test_manual_and_automatic_close_have_distinct_events(self):
         workday, _ = auto_start_workday_for_login(self.user)
         workday.close(comment='Завершил работу.')

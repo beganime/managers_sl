@@ -175,8 +175,9 @@ def auto_close_workdays():
         date__lte=today,
         status__in=[WorkDay.STATUS_NOT_STARTED, WorkDay.STATUS_STARTED, WorkDay.STATUS_REPORT_SUBMITTED],
     ).filter(
-        Q(employee__employee_profile__attendance_required=True)
-        | (~Q(employee__is_superuser=True) & ~Q(employee__role='admin'))
+        (Q(employee__employee_profile__attendance_required=True)
+         | (~Q(employee__is_superuser=True) & ~Q(employee__role='admin')))
+        & Q(employee__employee_profile__attendance_exempt=False)
     )
     closed = 0
     missed = 0

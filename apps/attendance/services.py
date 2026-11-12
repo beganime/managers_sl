@@ -17,13 +17,18 @@ def should_track_employee(user):
     if not user or not user.is_authenticated or not user.is_active:
         return False
     employee = get_employee_profile(user)
-    return bool(employee and employee.is_active and (not is_attendance_admin(user) or employee.attendance_required))
+    return bool(
+        employee
+        and employee.is_active
+        and not employee.attendance_exempt
+        and (not is_attendance_admin(user) or employee.attendance_required)
+    )
 
 
 def attendance_profile_q():
     """Active employee roster; an administrator needs an explicit opt-in."""
     return (
-        Q(is_active=True, user__is_active=True)
+        Q(is_active=True, user__is_active=True, attendance_exempt=False)
         & ((~Q(user__is_superuser=True) & ~Q(user__role='admin')) | Q(attendance_required=True))
     )
 
