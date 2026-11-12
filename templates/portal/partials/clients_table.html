@@ -4,7 +4,7 @@
         <tbody>
         {% for item in items %}
             <tr>
-                <td><a class="strong" href="{% url 'portal:client_detail' item.id %}">{{ item.full_name }}</a>{% if item.is_priority %}<div class="small"><span class="pill warn">Priority</span></div>{% endif %}</td>
+                <td><a class="strong" href="{% url 'portal:client_detail' item.id %}" style="display:flex;gap:12px;align-items:center"><img src="{% url 'portal:client_avatar' item.pk %}" width="40" height="40" loading="lazy" alt="" style="border-radius:50%;object-fit:cover;flex-shrink:0">{{ item.full_name }}</a>{% if item.is_priority %}<div class="small"><span class="pill warn">Priority</span></div>{% endif %}</td>
                 <td>{{ item.phone }}<div class="muted small">{{ item.email|default:"" }}</div></td>
                 <td>{{ item.get_direction_display|default:item.interested_country|default:"-" }}<div class="muted small">{{ item.interested_university|default:item.interested_program|default:item.city }}</div></td>
                 <td>{{ item.manager.get_full_name|default:item.manager.email }}</td>

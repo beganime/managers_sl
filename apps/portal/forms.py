@@ -66,6 +66,8 @@ class WeeklyReportForm(PortalFormMixin, forms.ModelForm):
 
 
 class PortalUniversityForm(PortalFormMixin, forms.ModelForm):
+    languages = forms.CharField(label='Языки обучения', max_length=500, required=False, help_text='Например: русский, английский')
+    education_levels = forms.CharField(label='Уровни образования', max_length=500, required=False, help_text='Например: бакалавриат, специалитет, магистратура')
     class Meta:
         model = University
         fields = [
@@ -74,12 +76,18 @@ class PortalUniversityForm(PortalFormMixin, forms.ModelForm):
             'local_currency',
             'name',
             'legal_name',
+            'abbreviation',
+            'logo',
+            'cover_image',
             'website',
             'email',
             'phone',
             'address',
             'description',
             'admission_requirements',
+            'dormitory_info',
+            'languages',
+            'education_levels',
             'is_active',
         ]
         widgets = {
@@ -89,6 +97,8 @@ class PortalUniversityForm(PortalFormMixin, forms.ModelForm):
 
     def __init__(self, *args, countries=None, cities=None, currencies=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.initial['languages'] = (self.instance.custom_data or {}).get('languages', '')
+        self.initial['education_levels'] = (self.instance.custom_data or {}).get('education_levels', '')
         self.fields['country'].queryset = countries if countries is not None else Country.objects.all()
         self.fields['city'].queryset = cities if cities is not None else City.objects.all()
         self.fields['local_currency'].queryset = currencies if currencies is not None else Currency.objects.all()
@@ -100,6 +110,26 @@ class PortalUniversityForm(PortalFormMixin, forms.ModelForm):
         self.fields['phone'].required = False
         self.fields['address'].required = False
         self.style_fields()
+
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        instance.custom_data = {**(instance.custom_data or {}), 'languages': self.cleaned_data['languages'], 'education_levels': self.cleaned_data['education_levels']}
+        if commit:
+            instance.save()
+            self.save_m2m()
+        return instance
+
+    def clean(self):
+        data = super().clean()
+        city, country = data.get('city'), data.get('country')
+        if city and country and city.country_id != country.pk:
+            self.add_error('city', 'Выберите город в указанной стране.')
+        for field in ('logo', 'cover_image'):
+            image = data.get(field)
+            if image and image.size > 5 * 1024 * 1024:
+                self.add_error(field, 'Максимальный размер изображения — 5 МБ.')
+        return data
 
 
 class PortalProgramForm(PortalFormMixin, forms.ModelForm):

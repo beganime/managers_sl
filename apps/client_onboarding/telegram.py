@@ -104,3 +104,10 @@ def enqueue_new_application(submission_id):
         notify_new_application.delay(submission_id)
     except Exception:
         logger.warning('Could not enqueue Telegram onboarding notification %s', submission_id)
+    # Дублируем короткое уведомление с кнопками через бота табеля
+    # (у него есть webhook для приёма нажатий в ManagerSL).
+    try:
+        from apps.crm.lead_telegram import notify_new_submission_buttons
+        notify_new_submission_buttons.delay(submission_id)
+    except Exception:
+        logger.warning('Could not enqueue Telegram buttons notification %s', submission_id)

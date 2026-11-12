@@ -143,6 +143,50 @@ def create_notifications(recipients, **kwargs):
     return notifications
 
 
+def _send_telegram_notification(notification) -> bool:
+    """Доставка через бота табеля на личный Telegram сотрудника.
+
+    Если у сотрудника нет привязанного Telegram — уведомление не теряется:
+    оно остаётся доступным в портале (in-app) и помечается доставленным.
+    """
+    from apps.attendance.models import EmployeeTelegramAccount
+    from apps.attendance.telegram import send_telegram_message
+
+    account = EmployeeTelegramAccount.objects.filter(
+        employee=notification.recipient, is_active=True,
+    ).first()
+    if not account:
+        NotificationLog.objects.create(
+            notification=notification,
+            channel=NotificationTemplate.CHANNEL_TELEGRAM,
+            status=NotificationLog.STATUS_SKIPPED,
+            provider='telegram',
+            recipient=str(notification.recipient_id),
+            error_message='Telegram account is not linked.',
+        )
+        NotificationLog.objects.create(
+            notification=notification,
+            channel=NotificationTemplate.CHANNEL_IN_APP,
+            status=NotificationLog.STATUS_SUCCESS,
+            provider='database',
+            recipient=str(notification.recipient_id),
+            sent_at=timezone.now(),
+        )
+        return True
+    text = f"🔔 {notification.title}\n\n{notification.body}"
+    ok, error = send_telegram_message(text, account.chat_id)
+    NotificationLog.objects.create(
+        notification=notification,
+        channel=NotificationTemplate.CHANNEL_TELEGRAM,
+        status=NotificationLog.STATUS_SUCCESS if ok else NotificationLog.STATUS_FAILED,
+        provider='telegram',
+        recipient=str(account.chat_id),
+        sent_at=timezone.now() if ok else None,
+        error_message='' if ok else str(error),
+    )
+    return ok
+
+
 def send_notification(notification):
     if notification.status == Notification.STATUS_CANCELLED:
         return False
@@ -150,7 +194,9 @@ def send_notification(notification):
     try:
         sent_any = False
 
-        if notification.channel == NotificationTemplate.CHANNEL_PUSH:
+        if notification.channel == NotificationTemplate.CHANNEL_TELEGRAM:
+            sent_any = _send_telegram_notification(notification)
+        elif notification.channel == NotificationTemplate.CHANNEL_PUSH:
             sent_any = send_push(notification) > 0
         elif notification.channel == NotificationTemplate.CHANNEL_EMAIL:
             if not notification.recipient.email:

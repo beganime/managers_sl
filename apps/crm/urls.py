@@ -14,6 +14,7 @@ from .views import (
     LeadViewSet,
     Student360View,
 )
+from .lead_bridge import claim_lead, process_lead
 
 router = DefaultRouter()
 router.register('lead-sources', LeadSourceViewSet, basename='crm-lead-source')
@@ -28,6 +29,8 @@ router.register('notes', ClientNoteViewSet, basename='crm-note')
 router.register('files', ClientFileViewSet, basename='crm-file')
 
 urlpatterns = [
+    path('integrations/elite-task/leads/<int:lead_id>/claim/', claim_lead, name='elite-task-lead-claim'),
+    path('integrations/elite-task/leads/<int:lead_id>/processed/', process_lead, name='elite-task-lead-processed'),
     path('students/<uuid:public_id>/360/', Student360View.as_view(), name='student-360'),
     path('', include(router.urls)),
 ]

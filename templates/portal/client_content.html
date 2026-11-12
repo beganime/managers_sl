@@ -1,0 +1,10 @@
+{% extends "portal/base.html" %}
+{% block content %}
+<div class="grid cols-3">
+{% if content_admin %}<section class="panel"><div class="panel-header"><h2>Анкеты и формы</h2></div><div class="panel-body"><p>Публикуйте Google Forms для клиентов приложения.</p><a class="btn primary" href="{% url 'portal:client_polls' %}">Управлять формами</a></div></section>{% endif %}
+<section class="panel"><div class="panel-header"><h2>Вузы</h2><span class="pill">{{ university_count }}</span></div><div class="panel-body"><p>Каталог вузов, фотографии и условия поступления.</p><div class="filters"><a class="btn primary" href="{% url 'portal:university_create' %}">Добавить вуз</a><a class="btn" href="{% url 'portal:universities' %}">Просмотр и редактирование</a></div></div></section>
+<section class="panel"><div class="panel-header"><h2>Программы</h2><span class="pill">{{ program_count }}</span></div><div class="panel-body"><p>Направления, язык и продолжительность обучения.</p><div class="filters"><a class="btn primary" href="{% url 'portal:program_create' %}">Добавить программу</a><a class="btn" href="{% url 'portal:programs' %}">Просмотр и редактирование</a></div></div></section>
+{% if content_admin %}<section class="panel"><div class="panel-header"><h2>Новости</h2></div><div class="panel-body"><p>Объявления и новости для студентов. Черновики видны только здесь.</p><div class="filters"><a class="btn primary" href="{% url 'portal:news_create' %}">Написать новость</a><a class="btn" href="{% url 'portal:client_news' %}">Все новости</a></div></div></section>{% endif %}
+</div>
+<section class="panel" style="margin-top:24px"><div class="panel-body"><p>Опубликованные изменения появляются при обновлении данных в приложении. Офлайн остаётся последняя сохранённая версия.</p><p>Удаление вуза или программы скрывает запись из приложения, сохраняя историю заявок. Вернуть её можно через редактирование, включив «Активен» и сняв «Архив» у программы.</p></div></section>
+{% endblock %}

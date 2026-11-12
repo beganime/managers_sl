@@ -26,6 +26,10 @@
             <div style="margin-top:12px;"><a class="btn primary" href="{% url 'portal:client_notification_create' %}"><i data-lucide="send"></i>Отправить в приложение</a></div>
         </div>
     {% endif %}
+    <div class="metric">
+        <div class="metric-top"><span>Elite Task</span><i data-lucide="list-checks"></i></div>
+        <div style="margin-top:12px;"><a class="btn" href="{{ task_manager_url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть задачи</a></div>
+    </div>
 </section>
 
 <section class="panel">
@@ -122,6 +126,16 @@
                             <span class="pill {% if item.is_read %}ok{% else %}warn{% endif %}">{% if item.is_read %}Прочитано{% else %}Новое{% endif %}</span>
                         </div>
                         <div>{{ item.body|linebreaksbr }}</div>
+                        <div class="muted small" style="margin-top:6px;">Канал: {{ item.get_channel_display }}</div>
+                        {% if item.target_url %}
+                            <div style="margin-top:8px;">
+                                {% if item.target_url|slice:":4" == "http" %}
+                                    <a class="btn" href="{{ item.target_url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть</a>
+                                {% else %}
+                                    <a class="btn" href="{{ item.target_url }}"><i data-lucide="external-link"></i>Открыть</a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
                         {% if not item.is_read %}
                             <form method="post" action="{% url 'portal:notification_read' item.pk %}">
                                 {% csrf_token %}

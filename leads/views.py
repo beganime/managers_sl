@@ -251,7 +251,7 @@ class MobileClientDocumentUploadAPIView(APIView):
     """Store a mobile document in the approved client's private DiskSL folder."""
 
     permission_classes = []
-    allowed_extensions = {'.pdf', '.docx', '.jpg', '.jpeg', '.png'}
+    allowed_extensions = {'.pdf', '.docx', '.jpg', '.jpeg', '.png', '.webp'}
     max_size = 50 * 1024 * 1024
 
     def post(self, request, *args, **kwargs):
@@ -291,7 +291,7 @@ class MobileClientDocumentUploadAPIView(APIView):
             client = CrmClient.objects.filter(sl_id__iexact=sl_id).first()
         if not client:
             return Response({'detail': 'Approved client was not found.'}, status=status.HTTP_404_NOT_FOUND)
-        if not client.sl_id or not client.academic_year:
+        if not client.sl_id:
             return Response({'detail': 'Client does not have an SL-ID or academic year.'}, status=status.HTTP_409_CONFLICT)
 
         submission = getattr(client, 'onboarding_submission', None)
@@ -299,11 +299,11 @@ class MobileClientDocumentUploadAPIView(APIView):
             step=ClientProvisioningStep.STEP_DISK,
             status=ClientProvisioningStep.STATUS_SUCCESS,
         ).order_by('-finished_at', '-id').first()
-        if not submission or not disk_step:
-            return Response(
-                {'detail': 'The client DiskSL folder is not ready yet.'},
-                status=status.HTTP_409_CONFLICT,
-            )
+        # Manually created clients have no onboarding submission/provisioning
+        # step. The authenticated DiskSL upload creates the object hierarchy.
+        if not submission:
+            from types import SimpleNamespace
+            submission = SimpleNamespace(payload={}, client=client)
 
         try:
             raw_file = request.stream.read(self.max_size + 1)
@@ -324,7 +324,7 @@ class MobileClientDocumentUploadAPIView(APIView):
             'Authorization': f'Bearer {settings.DISK_PROVISION_SERVICE_TOKEN}',
             'Content-Type': content_type,
             'Content-Length': str(len(raw_file)),
-            'X-Academic-Year': str(client.academic_year),
+            'X-Academic-Year': str(client.academic_year or timezone.localdate().year),
             'X-SL-ID': quote(client.sl_id, safe=''),
             'X-Client-Name': quote(client.full_name, safe=''),
             'X-Disk-Category': quote(disk_category_for_submission(submission), safe=''),
@@ -636,6 +636,9 @@ class LeadCreateAPIView(APIView):
             **data,
         )
         lead.log_action('created_from_website', note='Создано через /api/leads/create/', save=True)
+
+        from apps.crm.lead_bridge import enqueue_lead_to_elite_task
+        transaction.on_commit(lambda: enqueue_lead_to_elite_task(lead.pk))
 
         try:
             from notifications.firebase import notify_admins_about_new_lead

@@ -30,6 +30,14 @@ app.conf.beat_schedule = {
         'task': 'attendance.retry_telegram_deliveries',
         'schedule': crontab(minute='*/2'),
     },
+    'attendance-check-disk-health': {
+        'task': 'attendance.check_disk_health',
+        'schedule': crontab(minute='*/5'),
+    },
+    'attendance-disk-daily-summary': {
+        'task': 'attendance.send_disk_daily_summary',
+        'schedule': crontab(minute=15, hour=9),
+    },
     'attendance-weekly-office-summary': {
         'task': 'attendance.send_weekly_summary',
         'schedule': crontab(minute=30, hour=18, day_of_week='saturday'),
@@ -94,5 +102,9 @@ app.conf.beat_schedule = {
     'sheets-import-public-client-statuses': {
         'task': 'sheets_sync.import_public_client_statuses',
         'schedule': crontab(minute='*/5'),
+    },
+    'crm-weekly-lead-report': {
+        'task': 'crm.send_weekly_lead_report',
+        'schedule': crontab(minute=30, hour=18, day_of_week='saturday'),
     },
 }

@@ -1,0 +1,6 @@
+{% extends "portal/base.html" %}
+{% block content %}<section class="panel"><div class="panel-header"><h2>Новостная лента</h2><a class="btn primary" href="{% url 'portal:news_create' %}">Добавить новость</a></div><div class="panel-body">
+<form method="get" class="filters"><input class="input" name="search" value="{{ search }}" maxlength="255" placeholder="Поиск по заголовку"><button class="btn">Найти</button></form>
+{% for item in items %}<article style="padding:24px 0;border-bottom:1px solid var(--border,#ddd)"><h3>{{ item.title }}</h3><p>{{ item.short_description }}</p><p class="muted">{% if item.status == 'published' %}Опубликовано{% elif item.status == 'draft' %}Черновик{% else %}Скрыто{% endif %}</p><div class="filters"><a class="btn" href="{% url 'portal:news_edit' item.id %}">Просмотр и редактирование</a><a class="btn" href="{% url 'portal:news_delete' item.id %}">Удалить</a></div></article>{% empty %}<p>Новостей пока нет или сервис недоступен.</p>{% endfor %}
+<div class="filters" style="margin-top:24px">{% if previous_page %}<a class="btn" href="?page={{ previous_page }}&search={{ search|urlencode }}">Назад</a>{% endif %}{% if next_page %}<a class="btn" href="?page={{ next_page }}&search={{ search|urlencode }}">Далее</a>{% endif %}</div>
+</div></section>{% endblock %}

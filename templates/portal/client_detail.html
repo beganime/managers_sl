@@ -34,8 +34,17 @@
     .file-picker-name { min-width:0; color:var(--muted,#667085); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .client-section-accent { position:relative; }
     .client-section-accent::before { content:""; position:absolute; left:0; top:18px; bottom:18px; width:3px; border-radius:0 4px 4px 0; background:linear-gradient(#0d416d,#b71d17); }
+    .client-section-nav { display:flex; gap:10px; flex-wrap:wrap; margin:0; }
+    .client-section-nav a { display:inline-flex; align-items:center; gap:7px; padding:10px 16px; border:1px solid var(--line,#dce3eb); border-radius:999px; background:var(--panel,#fff); color:var(--text,#172033); text-decoration:none; font-weight:600; font-size:13px; transition:border-color .15s ease, background .15s ease, transform .15s ease; }
+    .client-section-nav a:hover { border-color:#b71d17; color:#b71d17; transform:translateY(-1px); }
+    .client-profile-hero{background:#123b5b;box-shadow:none}
+    .client-profile-hero .panel-body{padding:28px}
+    .client-section-accent .panel-body{padding:24px}
+    .client-fact{padding:18px}
+    .panel-body{overflow-wrap:anywhere}
     @media(max-width:1180px){.client-facts{grid-template-columns:repeat(2,minmax(0,1fr));}}
     @media(max-width:700px){.client-facts{grid-template-columns:1fr}.client-profile-hero .panel-header{display:grid}.client-profile-hero .filters{margin-top:8px}}
+    @media(max-width:600px){.client-profile-hero .panel-body,.client-section-accent .panel-body{padding:18px}.client-section-nav a{flex:1;justify-content:center}}
 </style>
 {% endblock %}
 
@@ -43,7 +52,7 @@
 <section class="panel client-summary client-profile-hero" style="margin-bottom:28px;">
     <div class="panel-header">
         <div>
-            <h2 class="panel-title">{{ client.full_name }}</h2>
+            <h2 class="panel-title" style="display:flex;gap:16px;align-items:center"><img src="{% url 'portal:client_avatar' client.pk %}" width="64" height="64" alt="" style="border-radius:50%;object-fit:cover;flex-shrink:0">{{ client.full_name }}</h2>
             <div class="client-subtitle">{{ client.sl_id|default:"SL-ID ещё не присвоен" }} · {% if client.is_public %}доступен сотрудникам компании{% else %}личный клиент менеджера{% endif %}</div>
         </div>
         <div class="filters client-actions">
@@ -79,7 +88,31 @@
         </div>
     </div>
 </section>
-{% include "portal/partials/client_chat_inline.html" %}
+
+<section class="panel" style="margin-bottom:16px;">
+    <div class="panel-header">
+        <h2 class="panel-title">Разделы клиента</h2>
+        <nav class="client-section-nav" aria-label="Разделы клиента">
+            <a href="#motivation"><i data-lucide="target"></i>Знакомство и цели</a>
+            <a href="#client-chat-section"><i data-lucide="message-circle"></i>Чат с клиентом</a>
+            <a href="#client-workspace-rest"><i data-lucide="mail"></i>Почта и документы</a>
+        </nav>
+    </div>
+    <div class="panel-body">
+        <section id="motivation" style="scroll-margin-top:100px">
+            <div class="muted small" style="margin-bottom:10px;">Анкета знакомства и целей клиента — основа для мотивационного письма.</div>
+            <div hx-get="{% url 'portal:client_motivation' client.pk %}" hx-trigger="load" hx-swap="innerHTML">
+                <a class="btn secondary" href="{% url 'portal:client_motivation' client.pk %}"><i data-lucide="target"></i>Открыть анкету для мотивационного письма</a>
+            </div>
+        </section>
+        <div hx-get="{% url 'portal:client_workspace' client.pk %}" hx-trigger="load" hx-swap="innerHTML" style="margin-top:14px;">
+            <a class="btn secondary" href="{% url 'portal:client_workspace' client.pk %}"><i data-lucide="folder-open"></i>Аккаунт, фото и документы</a>
+        </div>
+    </div>
+</section>
+
+<div id="client-chat-section" style="scroll-margin-top:100px">{% include "portal/partials/client_chat_inline.html" %}</div>
+<div id="client-workspace-rest" style="scroll-margin-top:100px"></div>
 
 <section class="panel client-section-accent" style="margin-bottom:16px;">
     <div class="panel-header">
@@ -253,46 +286,6 @@
         {% else %}
             <div class="empty">Клиент пока не заполнил анкету в мобильном приложении.</div>
         {% endif %}
-    </div>
-</section>
-
-<section class="panel" style="margin-bottom:16px;">
-    <div class="panel-header">
-        <h2 class="panel-title">Экзамены клиента</h2>
-        {% if mobile_user_id %}
-            <span class="pill">Приложение подключено</span>
-        {% else %}
-            <span class="pill warn">Приложение не подключено</span>
-        {% endif %}
-    </div>
-    <div class="panel-body">
-        {% if mobile_user_id and applications %}
-        <form class="toolbar" method="post" action="{% url 'portal:client_exam_create' client.id %}">
-            {% csrf_token %}
-            <div class="filters">
-                <select class="input" name="application_public_id" required>
-                    <option value="">Заявка в университет</option>
-                    {% for application in applications %}
-                        <option value="{{ application.public_id }}">
-                            {{ application.university.abbreviation|default:application.university_name|default:"ВУЗ" }} / {{ application.program.name|default:application.program_name|default:"Программа" }}
-                        </option>
-                    {% endfor %}
-                </select>
-                <input class="input" name="subject" placeholder="Предмет экзамена" required>
-                <input class="input" name="exam_date" type="date" required>
-                <input class="input" name="exam_time" type="time" required>
-                <input class="input" name="timezone" value="Europe/Moscow" placeholder="Timezone">
-                <input class="input" name="comment" placeholder="Комментарий менеджера">
-                <label class="pill"><input type="checkbox" name="repeat_until_acknowledged" checked> повторять до подтверждения</label>
-                <button class="btn primary" type="submit"><i data-lucide="calendar-plus"></i>Назначить экзамен</button>
-            </div>
-        </form>
-        {% else %}
-        <p class="muted">Для отправки экзамена подключите аккаунт клиента в приложении и добавьте заявку в университет.</p>
-        {% endif %}
-        <div data-client-exams-url="{% url 'portal:client_exams_list' client.id %}" aria-live="polite">
-            <div class="empty" style="margin-top:12px;">Загружаем экзамены…</div>
-        </div>
     </div>
 </section>
 

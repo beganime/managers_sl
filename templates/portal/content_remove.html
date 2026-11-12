@@ -1,0 +1,5 @@
+{% extends "portal/base.html" %}
+{% block content %}<section class="panel"><div class="panel-body">
+<h2>Убрать «{{ item.name }}» из приложения?</h2><p>История заявок сохранится. Для вуза также перестанут отображаться его программы. Запись можно вернуть через редактирование.</p>
+<form method="post">{% csrf_token %}<div class="filters"><button class="btn primary" type="submit">Удалить из приложения</button><a class="btn" href="{% url 'portal:client_content' %}">Отмена</a></div></form>
+</div></section>{% endblock %}

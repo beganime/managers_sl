@@ -214,7 +214,7 @@ def auto_close_workdays():
                     else 'Начало рабочего дня сегодня не отмечено. В учёте день записан как отсутствие.'
                 ),
                 notification_type=NotificationTemplate.TYPE_ATTENDANCE,
-                channel=NotificationTemplate.CHANNEL_PUSH,
+                channel=NotificationTemplate.CHANNEL_TELEGRAM,
                 priority=Notification.PRIORITY_NORMAL,
                 data={'workday_id': workday.id, 'status': workday.status},
                 related_object=workday,
@@ -264,7 +264,7 @@ def send_attendance_reminders(reminder_type, *, force=False):
                 title=reminder_titles.get(reminder_type, 'Рабочий день'),
                 body=reminder.message or reminder.get_reminder_type_display(),
                 notification_type=NotificationTemplate.TYPE_ATTENDANCE,
-                channel=NotificationTemplate.CHANNEL_PUSH,
+                channel=NotificationTemplate.CHANNEL_TELEGRAM,
                 priority=Notification.PRIORITY_NORMAL,
                 data={
                     'reminder_id': reminder.id,
@@ -318,12 +318,12 @@ def task_reminders(hours_ahead=24):
             continue
         create_notification(
             task.assigned_to,
-            title='Task deadline is close',
-            body=f'{task.title} is due at {timezone.localtime(task.deadline).strftime("%Y-%m-%d %H:%M")}.',
+            title='Скоро дедлайн задачи',
+            body=f'«{task.title}» — дедлайн {timezone.localtime(task.deadline).strftime("%d.%m.%Y %H:%M")}. Откройте Elite Task.',
             notification_type=NotificationTemplate.TYPE_TASK,
             priority=Notification.PRIORITY_HIGH,
-            data={'task_id': task.id, 'project_id': task.project_id, 'screen': 'projects'},
-            target_url=f'/portal/projects/tasks/{task.id}/',
+            data={'task_id': task.id, 'project_id': task.project_id, 'screen': 'task_manager'},
+            target_url=settings.TASK_MANAGER_WEB_URL,
             related_object=task,
             company=task.project.company,
             office=task.project.office,
@@ -352,6 +352,7 @@ def document_approval_notification():
                 title='Document waiting for approval',
                 body=f'{document.title or document.template.name} is waiting for approval.',
                 notification_type=NotificationTemplate.TYPE_DOCUMENT,
+                channel=NotificationTemplate.CHANNEL_TELEGRAM,
                 priority=Notification.PRIORITY_HIGH,
                 data={'document_id': document.id, 'approval_id': approval.id, 'screen': 'documents'},
                 target_url=f'/portal/documents/{document.id}/',

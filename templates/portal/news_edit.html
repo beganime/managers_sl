@@ -1,0 +1,6 @@
+{% extends "portal/base.html" %}
+{% block content %}<section class="panel"><div class="panel-header"><h2>Новость</h2><a class="btn" href="{% url 'portal:client_news' %}">К списку</a></div><div class="panel-body">
+{% if not load_failed %}<form method="post" enctype="multipart/form-data" class="grid" data-disable-on-submit>{% csrf_token %}{{ form.non_field_errors }}
+{% for field in form %}<label style="display:block;margin-bottom:16px"><span style="display:block;margin-bottom:8px">{{ field.label }}{% if field.field.required %} *{% endif %}</span>{{ field }}{{ field.errors }}{% if field.help_text %}<small class="muted">{{ field.help_text }}</small>{% endif %}</label>{% endfor %}
+<p class="muted">Чтобы новость появилась у студентов, выберите «Опубликовать». Push-рассылка автоматически не отправляется.</p><button class="btn primary" type="submit">Сохранить новость</button></form>{% endif %}
+</div></section>{% endblock %}

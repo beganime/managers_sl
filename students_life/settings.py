@@ -137,6 +137,7 @@ INSTALLED_APPS = [
     'apps.education.apps.EducationConfig',
     'apps.erp_services.apps.ErpServicesConfig',
     'apps.finance.apps.FinanceConfig',
+    'apps.payments.apps.PaymentsConfig',
     'apps.erp_documents.apps.ErpDocumentsConfig',
     'apps.attendance.apps.AttendanceConfig',
     'apps.projects_v2.apps.ProjectsV2Config',
@@ -242,6 +243,7 @@ SERVICE_REQUEST_TIMEOUT = int(os.environ.get('SERVICE_REQUEST_TIMEOUT', '20'))
 AKYLCHAT_API_BASE_URL = os.environ.get('AKYLCHAT_API_BASE_URL', '').rstrip('/')
 AKYLCHAT_SERVICE_TOKEN = os.environ.get('AKYLCHAT_SERVICE_TOKEN', '')
 DISK_AUTH_SERVICE_TOKEN = os.environ.get('DISK_AUTH_SERVICE_TOKEN', '')
+EMPLOYEE_DIRECTORY_SERVICE_TOKEN = os.environ.get('EMPLOYEE_DIRECTORY_SERVICE_TOKEN', '')
 EXAM_SL_AUTH_SERVICE_TOKEN = os.environ.get('EXAM_SL_AUTH_SERVICE_TOKEN', '')
 TRANSLATE_SL_AUTH_SERVICE_TOKEN = os.environ.get('TRANSLATE_SL_AUTH_SERVICE_TOKEN', '')
 DISK_WEB_URL = os.environ.get('DISK_WEB_URL', 'https://disk.manager-sl.ru/web/client/login')
@@ -258,10 +260,21 @@ DISK_REPORTS_API_URL = os.environ.get(
     DISK_PROVISION_API_URL.rsplit('/folders', 1)[0] + '/staff-reports' if DISK_PROVISION_API_URL else '',
 )
 DISK_PROVISION_SERVICE_TOKEN = os.environ.get('DISK_PROVISION_SERVICE_TOKEN', '')
+DISK_MONITOR_API_URL = os.environ.get(
+    'DISK_MONITOR_API_URL',
+    DISK_USAGE_API_URL.rsplit('/usage', 1)[0] + '/monitor' if DISK_USAGE_API_URL else '',
+)
+DISK_MONITOR_RECIPIENT_EMAIL = os.environ.get('DISK_MONITOR_RECIPIENT_EMAIL', '').strip().lower()
 TRANSLATE_SL_URL = os.environ.get('TRANSLATE_SL_URL', 'https://translate.manager-sl.ru').rstrip('/')
 TRANSLATE_SL_PATH_URL = os.environ.get('TRANSLATE_SL_PATH_URL', TRANSLATE_SL_URL).rstrip('/')
 EXAM_SL_WEB_URL = os.environ.get('EXAM_SL_WEB_URL', 'https://exam.stud-life.com').rstrip('/')
 TASK_MANAGER_WEB_URL = os.environ.get('TASK_MANAGER_WEB_URL', 'https://task.manager-sl.ru').rstrip('/')
+# Elite Task (task.manager-sl.ru): двусторонняя интеграция лидов (apps/crm/lead_bridge.py).
+# OUT: X-API-Key на /integrations/v1/crm/*; IN: Bearer ELITE_TASK_SERVICE_TOKEN на наши вебхуки.
+ELITE_TASK_API_URL = os.environ.get('ELITE_TASK_API_URL', 'https://task.manager-sl.ru').rstrip('/')
+ELITE_TASK_INTEGRATION_KEY = os.environ.get('ELITE_TASK_INTEGRATION_KEY', '')
+ELITE_TASK_SERVICE_TOKEN = os.environ.get('ELITE_TASK_SERVICE_TOKEN', '')
+PORTAL_BASE_URL = os.environ.get('PORTAL_BASE_URL', 'https://manager-sl.ru').rstrip('/')
 WEBMAIL_WEB_URL = os.environ.get('WEBMAIL_WEB_URL', 'https://mail.tmmail.ru').rstrip('/')
 SMTP_MAILBOXES_WEB_URL = os.environ.get('SMTP_MAILBOXES_WEB_URL', 'https://tmmail.ru').rstrip('/')
 TRANSLATE_SL_SSO_SECRET = os.environ.get('TRANSLATE_SL_SSO_SECRET', '')

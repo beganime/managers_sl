@@ -10,10 +10,18 @@
     .workspace-role{display:flex;align-items:center;gap:8px;margin:10px 0 0;color:#435064;font-size:14px;font-weight:650}
     .workspace-role svg{width:16px;height:16px;color:#9f201b}
     .workspace-day{background:linear-gradient(120deg,#fff 0%,#f7fafc 62%,#edf3f8 100%)}
-    .workspace-services a{position:relative;overflow:hidden;background:linear-gradient(145deg,#fff,#f7f9fc);box-shadow:0 8px 24px rgba(15,23,42,.055)}
-    .workspace-services a::after{content:"";position:absolute;width:78px;height:78px;right:-34px;bottom:-42px;border-radius:50%;background:rgba(13,65,109,.09)}
-    .workspace-services a:nth-child(2)::after,.workspace-services a:nth-child(4)::after{background:rgba(183,29,23,.09)}
-    .workspace-services a>*{position:relative;z-index:1}
+    .workspace-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-top:18px}
+    .tool-card{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:230px;border-radius:16px;border:1px solid #dce2e9;background:#fff;box-shadow:0 8px 24px rgba(15,23,42,.06);transition:transform .18s ease,box-shadow .18s ease}
+    .tool-card:hover{transform:translateY(-3px);box-shadow:0 18px 38px rgba(13,65,109,.14)}
+    .tool-card-media{position:relative;height:160px;overflow:hidden}
+    .tool-card-media img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s ease}
+    .tool-card:hover .tool-card-media img{transform:scale(1.045)}
+    .tool-card-media::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(13,65,109,0) 40%,rgba(13,65,109,.42) 100%)}
+    .tool-card-badge{position:absolute;z-index:2;top:12px;left:12px;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;border-radius:999px;color:#fff;background:rgba(13,65,109,.82);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;backdrop-filter:blur(4px)}
+    .tool-card-body{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:16px 18px;flex:1}
+    .tool-card-body h3{margin:0;color:#172033;font-size:17px;letter-spacing:-.01em}
+    .tool-card-body p{margin:5px 0 0;color:#687386;font-size:12.5px;line-height:1.5}
+    .tool-card-body .btn{flex-shrink:0}
     .mood-history{display:flex;align-items:center;gap:10px;overflow-x:auto;padding:14px 0 2px;scrollbar-width:thin}
     .mood-day{flex:0 0 auto;min-width:116px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--panel,#fff)}
     .mood-day time,.mood-day small{display:block;color:var(--muted,#667085);font-size:11px}.mood-day strong{display:block;margin:5px 0 3px;font-size:14px}.mood-day .emoji{font-size:23px;float:right;margin-left:10px}
@@ -31,11 +39,16 @@
     .telegram-console{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(250px,.75fr);gap:18px;align-items:start}.telegram-console textarea{min-height:104px;resize:vertical}.telegram-console-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:10px}.telegram-history{display:grid;gap:9px}.telegram-history-item{padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:var(--panel,#fff)}.telegram-history-item strong,.telegram-history-item small{display:block}.telegram-history-item small{margin-top:4px;color:var(--muted)}.telegram-topics{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:16px}.telegram-topic{padding:6px 10px;border-radius:999px;background:#fff1ed;color:#a83224;font-size:12px;font-weight:700}.telegram-topic.ready{background:#e8f5ed;color:#176b3a}.telegram-catchup{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:0 0 18px;padding:13px 15px;border:1px solid var(--line);border-radius:13px;background:var(--panel,#fff)}.telegram-catchup p{margin:4px 0 0;color:var(--muted);font-size:12px}.telegram-catchup form{flex:none}
     @media(max-width:900px){.client-pulse-layout{grid-template-columns:1fr}.client-pulse-lead{min-height:150px;border-right:0;border-bottom:1px solid rgba(255,255,255,.12)}.client-pulse-featured{grid-template-columns:1fr 1fr}}
     @media(max-width:1100px){.team-mood-grid{grid-template-columns:1fr 1fr}.team-mood-summary{grid-column:1/-1;min-height:190px}.team-mood-column:nth-child(2){border-right:1px solid rgba(19,40,61,.11)}}
-    @media(max-width:760px){.workspace-hero{min-height:325px;align-items:flex-end;padding:22px;background-position:68% center}.workspace-hero::after{background:linear-gradient(180deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.92) 48%,#fff 76%)}.workspace-hero .workspace-heading{align-items:flex-start}.workspace-hero .filters{width:100%}.workspace-hero h2{font-size:32px}.client-pulse-lead,.client-pulse-body{padding:22px}.client-pulse-featured{grid-template-columns:1fr}.client-pulse-total strong{font-size:46px}.team-mood-grid,.telegram-console{grid-template-columns:1fr}.telegram-catchup{align-items:flex-start;flex-direction:column}.team-mood-summary{grid-column:auto;min-height:220px}.team-mood-column{padding:22px;border-right:0;border-bottom:1px solid rgba(19,40,61,.11)}.team-mood-column:last-child{border-bottom:0}}
+    @media(max-width:760px){.workspace-hero{min-height:325px;align-items:flex-end;padding:22px;background-position:68% center}.workspace-tools{grid-template-columns:1fr}.tool-card-body{flex-wrap:wrap}.workspace-hero::after{background:linear-gradient(180deg,rgba(255,255,255,.04) 0%,rgba(255,255,255,.92) 48%,#fff 76%)}.workspace-hero .workspace-heading{align-items:flex-start}.workspace-hero .filters{width:100%}.workspace-hero h2{font-size:32px}.client-pulse-lead,.client-pulse-body{padding:22px}.client-pulse-featured{grid-template-columns:1fr}.client-pulse-total strong{font-size:46px}.team-mood-grid,.telegram-console{grid-template-columns:1fr}.telegram-catchup{align-items:flex-start;flex-direction:column}.team-mood-summary{grid-column:auto;min-height:220px}.team-mood-column{padding:22px;border-right:0;border-bottom:1px solid rgba(19,40,61,.11)}.team-mood-column:last-child{border-bottom:0}}
     .disk-overview{display:flex;align-items:center;justify-content:space-between;gap:24px;padding:20px 24px}.disk-overview h2{margin:0 0 7px;font-size:19px}.disk-overview p{margin:0;color:var(--muted)}.disk-overview-content{flex:1;min-width:0}.disk-meter{height:8px;margin-top:13px;border-radius:999px;background:#e4eaf0;overflow:hidden}.disk-meter span{display:block;width:0;height:100%;border-radius:inherit;background:var(--accent);transition:width .3s ease}.disk-overview-actions{display:flex;gap:8px;flex-wrap:wrap}.disk-overview [data-disk-retry]{display:none}.disk-overview.is-error [data-disk-retry]{display:inline-flex}@media(max-width:680px){.disk-overview{align-items:stretch;flex-direction:column}}
 </style>
 {% endblock %}
 {% block content %}
+{% include 'portal/partials/engagement.html' %}
+{% if not telegram_connected %}
+<section class="telegram-connect-banner" aria-label="Подключение уведомлений"><div><strong>Будьте на связи в Telegram</strong><p>Подключите бота, чтобы получать личные напоминания о рабочем дне. Нажмите кнопку, затем откройте одноразовую ссылку в профиле и нажмите «Старт» в боте. Пароль боту не нужен.</p></div><form method="post" action="{% url 'portal:profile' %}">{% csrf_token %}<input type="hidden" name="action" value="telegram_link"><button class="btn primary" type="submit">Подключить Telegram</button></form></section>
+{% endif %}
+<style>.telegram-connect-banner{display:flex;align-items:center;justify-content:space-between;gap:24px;background:#eaf5fa;border:1px solid #b6d9e7;border-left:5px solid #2587ab;border-radius:16px;padding:24px;margin-bottom:24px;color:#163f55}.telegram-connect-banner strong{font-size:23px}.telegram-connect-banner p{margin:8px 0 0;line-height:1.5;max-width:750px}.telegram-connect-banner form{flex-shrink:0}@media(max-width:650px){.telegram-connect-banner{flex-direction:column;align-items:stretch;padding:20px}.telegram-connect-banner button{width:100%}}</style>
 <div class="workspace">
     <section class="workspace-hero">
         <header class="workspace-heading">
@@ -96,23 +109,6 @@
         </tbody></table></div>
     </section>
     {% endif %}
-    {% if is_attendance_admin %}
-    <section class="panel">
-        <div class="panel-header"><div><h2 class="panel-title">Telegram команды</h2><div class="muted small">Сообщения и учёт рабочего дня по темам группы</div></div></div>
-        <div class="panel-body">
-            <div class="telegram-topics" aria-label="Привязанные темы">{% for topic in telegram_topics %}<span class="telegram-topic{% if topic.ready %} ready{% endif %}">{{ topic.name }} · {% if topic.ready %}готово{% else %}не привязано{% endif %}</span>{% endfor %}</div>
-            <div class="telegram-catchup"><div><strong>Сводка за вчера и сегодня</strong><p>Отправляется только в тему «Итоги дня». Повторное нажатие не создаёт дубли.</p></div><form method="post" action="{% url 'portal:admin_attendance_catchup' %}">{% csrf_token %}<button class="btn" type="submit"><i data-lucide="calendar-check"></i>Передать боту</button></form></div>
-            <div class="telegram-console">
-            <form method="post" action="{% url 'portal:admin_telegram_message' %}">{% csrf_token %}
-                <label for="telegram-message"><strong>Сообщение руководителя</strong></label>
-                <textarea class="textarea" id="telegram-message" name="message" maxlength="500" placeholder="Например: кто сейчас свободен — ответьте в группе"></textarea>
-                <div class="telegram-console-actions"><button class="btn primary" type="submit" name="action" value="send"><i data-lucide="send"></i>Отправить в группу</button><button class="btn" type="submit" name="action" value="test"><i data-lucide="radio"></i>Тест бота</button></div>
-            </form>
-            <div><strong>Последние отправки</strong><div class="telegram-history">{% for item in telegram_recent %}<div class="telegram-history-item"><strong>{{ item.get_event_type_display }} · {{ item.get_status_display }}</strong><small>{{ item.created_at|date:"d.m.Y H:i" }}{% if item.employee %} · {{ item.employee.get_full_name|default:item.employee.email }}{% endif %}{% if item.last_error %} · {{ item.last_error }}{% endif %}</small></div>{% empty %}<p class="muted small">Отправок пока не было.</p>{% endfor %}</div></div>
-            </div>
-        </div>
-    </section>
-    {% endif %}
     {% if client_pulse %}
     <section class="client-pulse panel" aria-labelledby="client-pulse-title">
         <div class="client-pulse-layout">
@@ -146,10 +142,31 @@
             <div class="panel-body list">{% for item in my_clients %}<a class="list-row" href="{% url 'portal:client_detail' item.pk %}"><div><strong>{{ item.full_name }}</strong><div class="muted small">{{ item.sl_id|default:"Без SL-ID" }} · {{ item.get_status_display }}</div></div><i data-lucide="arrow-up-right"></i></a>{% empty %}<p class="empty">Клиентов пока нет.</p>{% endfor %}</div>
         </section>
     </div>
-    <section class="workspace-services" aria-label="Сервисы">
-        {% for service in dashboard_services %}<a href="{{ service.url }}" target="_blank" rel="noopener"><i data-lucide="{{ service.icon }}"></i><strong>{{ service.label }}</strong><i data-lucide="arrow-up-right"></i></a>{% endfor %}
+    <section class="workspace-tools" aria-label="Рабочие инструменты">
+        <article class="tool-card">
+            <div class="tool-card-media">
+                <span class="tool-card-badge"><i data-lucide="list-checks"></i>Задачи</span>
+                <img src="{% static 'tool-task-manager.jpg' %}" alt="Elite Task — задачи команды" loading="lazy">
+            </div>
+            <div class="tool-card-body">
+                <div><h3>Elite Task</h3><p>Личные и общие задачи команды, заявки из лидов — в одном месте.</p></div>
+                <a class="btn primary" href="{{ task_manager_url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть</a>
+            </div>
+        </article>
+        <article class="tool-card">
+            <div class="tool-card-media">
+                <span class="tool-card-badge"><i data-lucide="folder-open"></i>Файлы</span>
+                <img src="{% static 'tool-disk-sl.jpg' %}" alt="DiskSL — документы и папки" loading="lazy">
+            </div>
+            <div class="tool-card-body">
+                <div><h3>DiskSL</h3><p>Облачное хранилище: документы, сканы и папки клиентов.</p></div>
+                <a class="btn secondary" href="{{ disk_url }}" target="_blank" rel="noopener"><i data-lucide="external-link"></i>Открыть</a>
+            </div>
+        </article>
     </section>
 </div>
+<section class="panel" style="margin-top:24px" hx-get="{% url 'portal:client_tracks' %}" hx-trigger="load" hx-swap="innerHTML"><div class="panel-body"><a class="btn" href="{% url 'portal:client_tracks' %}">Посмотреть направления клиентов</a></div></section>
+{% include 'portal/partials/mood_support.html' %}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const panel = document.querySelector('[data-disk-usage-url]');

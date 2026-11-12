@@ -3,12 +3,13 @@
 <html lang="ru">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>{{ page_title }} | ManagerSL</title>
     <script src="{% static 'vendor/htmx-1.9.12.min.js' %}" defer></script>
     <script src="{% static 'vendor/alpine-3.14.1.min.js' %}" defer></script>
     <script src="{% static 'vendor/lucide-0.468.0.min.js' %}" defer></script>
     <style>
+        @font-face { font-family: Manrope; src: url("{% static 'fonts/manrope-variable.ttf' %}") format('truetype'); font-weight: 200 800; font-display: swap; }
         :root {
             --bg: #f4f6f8;
             --panel: #ffffff;
@@ -29,7 +30,8 @@
         html { color-scheme: light; }
         body {
             margin: 0;
-            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            font-family: Manrope, Arial, sans-serif;
+            line-height: 1.55;
             background: var(--bg);
             color: var(--text);
             font-size: 14px;
@@ -429,12 +431,24 @@
             .dashboard-workday-time { font-size: 18px; }
         }
         .page-load-status{position:fixed;right:18px;bottom:18px;z-index:1200;display:flex;align-items:center;gap:10px;max-width:min(340px,calc(100vw - 32px));padding:11px 15px;border-radius:12px;background:#17283d;color:#fff;box-shadow:0 7px 22px rgba(16,30,49,.2);font-size:13px;font-weight:650;opacity:0;transform:translateY(12px);pointer-events:none;transition:opacity .18s,transform .18s}.page-load-status.is-visible{opacity:1;transform:translateY(0)}.page-load-status-spinner{width:15px;height:15px;flex:none;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:page-load-spin .8s linear infinite}@keyframes page-load-spin{to{transform:rotate(360deg)}}@media(max-width:760px){.page-load-status{bottom:78px;right:12px}}
+        button,input,textarea,select { font-family: Manrope, Arial, sans-serif; }
+        .bottom-nav { grid-auto-flow:column;grid-template-columns:none;grid-auto-columns:minmax(0,1fr);gap:4px;background:var(--panel,#fff); }
+        .bottom-nav a { min-width:0;padding:6px 2px;font-size:12px;line-height:1.15;text-align:center;align-content:center; }
+        .bottom-nav a span { overflow-wrap:anywhere; }
+        .bottom-nav svg { width:22px;height:22px;flex-shrink:0; }
+        @media(max-width:860px){
+            .main{padding-bottom:calc(100px + env(safe-area-inset-bottom,0px));}
+            .bottom-nav{padding-bottom:calc(8px + env(safe-area-inset-bottom,0px));}
+            .page-load-status{bottom:calc(84px + env(safe-area-inset-bottom,0px));}
+            body.mobile-keyboard-open .bottom-nav{display:none;}
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body x-data="{ mobilePanelOpen: false, profileOpen: false, notificationsOpen: false }" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
     <div class="shell">
-        <aside class="sidebar">
+        <aside class="sidebar" id="main-sidebar" aria-label="Основная навигация">
+            <button class="btn sidebar-close" type="button" aria-label="Закрыть меню">✕</button>
             <div class="brand">
                 <div class="brand-mark"><img src="/static/logo.ico" alt="SL"></div>
                 <div>
@@ -465,7 +479,7 @@
         <div class="content">
             <header class="topbar">
                 <div style="display:flex; align-items:center; gap:12px; min-width:0;">
-                    <button type="button" class="btn mobile-menu" @click="mobilePanelOpen = !mobilePanelOpen" aria-label="Открыть меню">
+                    <button type="button" class="btn sidebar-toggle" aria-controls="main-sidebar" aria-expanded="true" aria-label="Свернуть меню">
                         <i data-lucide="menu"></i>
                     </button>
                     <h1>{{ page_title }}</h1>
@@ -552,7 +566,7 @@
 
     <nav class="bottom-nav" aria-label="Мобильная навигация">
         {% for item in mobile_nav_items %}
-            <a href="{{ item.url }}" class="{% if item.is_active %}active{% endif %}">
+            <a href="{{ item.url }}" class="{% if item.is_active %}active{% endif %}" {% if item.is_active %}aria-current="page"{% endif %}>
                 <i data-lucide="{{ item.icon }}"></i>
                 <span>{{ item.label }}</span>
             </a>
@@ -562,6 +576,12 @@
     <div class="page-load-status" id="page-load-status" role="status" aria-live="polite" aria-hidden="true"><span class="page-load-status-spinner" aria-hidden="true"></span><span>Загружаем, подождите…</span></div>
 
     <script>
+        if (window.visualViewport) {
+            const updateKeyboard = () => document.body.classList.toggle('mobile-keyboard-open',
+                /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName || '') && window.innerHeight - window.visualViewport.height > 150);
+            window.visualViewport.addEventListener('resize', updateKeyboard);
+            document.addEventListener('focusout', () => setTimeout(updateKeyboard, 100));
+        }
         (function () {
             const notice = document.getElementById('page-load-status');
             let pending;
@@ -634,5 +654,26 @@
         }, true);
     </script>
     {% include "portal/partials/workspace_ui.html" %}
+<button class="sidebar-backdrop" type="button" aria-label="Закрыть меню" hidden></button>
+<style>
+ .shell{transition:grid-template-columns .24s ease}.sidebar{width:272px;transition:transform .24s ease,visibility .24s;z-index:1001}.content{min-width:0}
+ .shell.sidebar-collapsed{grid-template-columns:0 minmax(0,1fr)}.sidebar-collapsed .sidebar{transform:translateX(-100%);visibility:hidden}
+ .sidebar-toggle{display:inline-flex}.sidebar-close{display:none}.sidebar-backdrop{position:fixed;inset:0;background:rgba(15,23,42,.45);border:0;z-index:1000}
+ @media(max-width:860px){.shell,.shell.sidebar-collapsed{grid-template-columns:minmax(0,1fr)}.sidebar{display:block;position:fixed;left:0;top:0;width:min(300px,85vw);height:100dvh;transform:translateX(-100%);visibility:hidden}.shell.drawer-open .sidebar{transform:translateX(0);visibility:visible}.sidebar-close{display:flex;margin:0 0 12px auto}.sidebar-backdrop:not([hidden]){display:block}}
+ @media(prefers-reduced-motion:reduce){.shell,.sidebar{transition:none}}
+</style>
+<script>
+(() => {
+ const shell=document.querySelector('.shell'), sidebar=document.getElementById('main-sidebar'), toggle=document.querySelector('.sidebar-toggle'), shade=document.querySelector('.sidebar-backdrop'), media=matchMedia('(max-width:860px)');
+ let desktopOpen=true, mobileOpen=false;
+ try{desktopOpen=localStorage.getItem('sl-sidebar-collapsed')!=='1';}catch(e){}
+ function render(){const open=media.matches?mobileOpen:desktopOpen;shell.classList.toggle('sidebar-collapsed',!media.matches&&!open);shell.classList.toggle('drawer-open',media.matches&&open);sidebar.inert=!open;toggle.setAttribute('aria-expanded',String(open));toggle.setAttribute('aria-label',open?'Свернуть меню':'Открыть меню');shade.hidden=!(media.matches&&open);}
+ function close(){if(media.matches)mobileOpen=false;else desktopOpen=false;render();toggle.focus();}
+ toggle.addEventListener('click',()=>{if(media.matches)mobileOpen=!mobileOpen;else{desktopOpen=!desktopOpen;try{localStorage.setItem('sl-sidebar-collapsed',desktopOpen?'0':'1');}catch(e){}}render();if(media.matches&&mobileOpen)sidebar.querySelector('button').focus();});
+ shade.addEventListener('click',close);sidebar.querySelector('.sidebar-close').addEventListener('click',close);
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&mobileOpen)close();});
+ media.addEventListener('change',()=>{mobileOpen=false;render();});render();
+})();
+</script>
 </body>
 </html>

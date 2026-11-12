@@ -45,6 +45,10 @@ def attendance_telegram_webhook(request):
         update = json.loads(request.body.decode('utf-8'))
     except (UnicodeDecodeError, json.JSONDecodeError):
         return HttpResponseBadRequest()
+    if update.get('callback_query'):
+        from apps.crm.lead_telegram import handle_callback_query
+        handle_callback_query(update)
+        return JsonResponse({'ok': True})
     message = update.get('message') or {}
     chat = message.get('chat') or {}
     sender = message.get('from') or {}

@@ -1,0 +1,55 @@
+{% extends 'portal/base.html' %}
+{% load tz %}
+{% block content %}
+<style>
+    .ideas-shell { max-width:820px; margin:0 auto; display:grid; gap:16px; }
+    .ideas-hero { display:flex; align-items:center; justify-content:space-between; gap:16px; padding:clamp(22px,3vw,32px); border:1px solid #dce2e9; border-radius:18px; background:linear-gradient(125deg,#0d416d 0%,#12385b 60%,#751d25 100%); color:#fff; box-shadow:0 18px 44px rgba(13,65,109,.18); }
+    .ideas-hero h1 { margin:0; font-size:clamp(20px,2.6vw,28px); letter-spacing:-.02em; }
+    .ideas-hero p { margin:8px 0 0; color:rgba(255,255,255,.75); font-size:13px; }
+    .ideas-count { flex-shrink:0; min-width:86px; padding:14px 18px; border-radius:14px; background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.18); text-align:center; }
+    .ideas-count strong { display:block; font-size:26px; }
+    .ideas-count span { font-size:11px; letter-spacing:.06em; text-transform:uppercase; color:rgba(255,255,255,.7); }
+    .idea-card { position:relative; display:grid; grid-template-columns:auto 1fr; gap:16px; padding:20px 22px; border:1px solid #dce2e9; border-radius:16px; background:var(--panel,#fff); box-shadow:var(--shadow); transition:transform .15s ease, box-shadow .15s ease; }
+    .idea-card:hover { transform:translateY(-2px); box-shadow:0 14px 30px rgba(15,23,42,.1); }
+    .idea-avatar { width:46px; height:46px; display:grid; place-items:center; border-radius:50%; color:#fff; font-weight:800; font-size:17px; background:linear-gradient(135deg,#0d416d,#1f6398); }
+    .idea-card:nth-child(3n) .idea-avatar { background:linear-gradient(135deg,#b71d17,#d1423b); }
+    .idea-card:nth-child(3n+1) .idea-avatar { background:linear-gradient(135deg,#12385b,#0d416d); }
+    .idea-head { display:flex; align-items:baseline; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .idea-head strong { color:#172033; font-size:15px; }
+    .idea-head time { color:#8a94a4; font-size:12px; white-space:nowrap; }
+    .idea-text { margin:8px 0 0; color:#3d4757; line-height:1.65; white-space:pre-wrap; overflow-wrap:anywhere; }
+    .idea-quote { position:absolute; right:18px; bottom:10px; color:#e4e9ef; }
+    @media(max-width:600px){ .ideas-hero{flex-wrap:wrap} }
+</style>
+{% timezone 'Asia/Ashgabat' %}
+<div class="ideas-shell">
+    <section class="ideas-hero">
+        <div>
+            <h1>Идеи команды</h1>
+            <p>Пожелания сотрудников по системе. Каждая идея — повод сделать ManagerSL удобнее.</p>
+        </div>
+        <div class="ideas-count"><strong>{{ entries.paginator.count }}</strong><span>идей</span></div>
+    </section>
+    {% for item in entries %}
+        <article class="idea-card">
+            <div class="idea-avatar">{{ item.user.first_name|default:item.user.email|slice:":1"|upper }}</div>
+            <div>
+                <div class="idea-head">
+                    <strong>{{ item.user.get_full_name|default:item.user.email }}</strong>
+                    <time>{{ item.submitted_at|date:'d.m.Y H:i' }} UTC+5</time>
+                </div>
+                <p class="idea-text">{{ item.text }}</p>
+            </div>
+            <i data-lucide="quote" class="idea-quote" width="30" height="30"></i>
+        </article>
+    {% empty %}
+        <div class="empty">Пожеланий пока нет.</div>
+    {% endfor %}
+    <div class="filters" style="justify-content:center;">
+        {% if entries.has_previous %}<a class="btn" href="?page={{ entries.previous_page_number }}">Назад</a>{% endif %}
+        <span class="muted small">{{ entries.number }} / {{ entries.paginator.num_pages }}</span>
+        {% if entries.has_next %}<a class="btn" href="?page={{ entries.next_page_number }}">Далее</a>{% endif %}
+    </div>
+</div>
+{% endtimezone %}
+{% endblock %}

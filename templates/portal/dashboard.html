@@ -95,7 +95,7 @@
             <p>Проверяйте новые анкеты, документы и обращения клиентов, затем переходите в нужный сервис без поиска по вкладкам.</p>
             <div class="dashboard-hero-actions">
                 <a class="btn primary" href="{% url 'portal:onboarding_submissions' %}"><i data-lucide="inbox"></i>Открыть заявки</a>
-                <a class="btn secondary" href="{{ dashboard_services.0.url }}" target="_blank" rel="noopener"><i data-lucide="smile-plus"></i>Указать настроение</a>
+                <a class="btn secondary" href="{% url 'portal:mood' %}"><i data-lucide="smile-plus"></i>Указать настроение</a>
             </div>
         </div>
     </section>

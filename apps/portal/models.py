@@ -5,6 +5,58 @@ from apps.core.models import ActiveModel, TimeStampedModel
 from apps.organizations.models import Company, Office
 
 
+class ClientMotivationProfile(models.Model):
+    TRACKS = [('medical', 'Медицина'), ('economics', 'Экономика и бизнес'), ('it', 'IT и программирование'),
+              ('engineering', 'Инженерия'), ('humanities', 'Гуманитарные науки'), ('creative', 'Творчество и дизайн'),
+              ('other', 'Другое')]
+    client = models.OneToOneField('crm.Client', on_delete=models.CASCADE, related_name='motivation_profile')
+    track = models.CharField('Основное направление', max_length=32, choices=TRACKS, blank=True, db_index=True)
+    talents = models.TextField('Таланты и сильные стороны', max_length=1000, blank=True)
+    hobbies = models.TextField('Хобби и любимые занятия', max_length=1000, blank=True)
+    achievements = models.TextField('Достижения и опыт', max_length=1000, blank=True)
+    motivation = models.TextField('Почему выбрал эту профессию?', max_length=1000, blank=True)
+    goals = models.TextField('Какие планы после обучения?', max_length=1000, blank=True)
+    next_question = models.CharField('Что важно уточнить при следующем разговоре?', max_length=255, blank=True)
+    updated_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class ClientWorkspaceProfile(models.Model):
+    client = models.OneToOneField('crm.Client', on_delete=models.CASCADE, related_name='workspace_profile')
+    avatar = models.BinaryField(blank=True, default=bytes)
+    password_encrypted = models.TextField(blank=True)
+    account_status = models.CharField(max_length=32, blank=True)
+    disk_root = models.CharField(max_length=1000, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+
+class PortalPresence(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    seen_at = models.DateTimeField(auto_now=True)
+    section = models.CharField(max_length=100)
+
+
+class StaffSuggestion(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    date = models.DateField()
+    text = models.CharField(max_length=1000, blank=True)
+    submitted_at = models.DateTimeField(null=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['user', 'date'], name='unique_staff_suggestion_day')]
+
+
+class MoodSupport(models.Model):
+    mood = models.ForeignKey('EmployeeMood', on_delete=models.CASCADE, related_name='support')
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    liked = models.BooleanField(default=False)
+    comment = models.CharField(max_length=500, blank=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=['mood', 'user'], name='unique_mood_support_user')]
+
+
 class EmployeeMood(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='daily_moods')
     date = models.DateField()

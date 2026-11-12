@@ -1,0 +1,20 @@
+<section class="panel" id="motivation" style="scroll-margin-top:100px;margin:24px 0">
+<div class="panel-header" style="flex-wrap:wrap;gap:12px"><div><div class="muted small">ЗНАКОМСТВО С КЛИЕНТОМ</div><h2 class="panel-title">Для мотивационного письма</h2></div><span class="pill">Заполнено {{ motivation_completed }} из 5</span></div>
+<div class="panel-body">
+<div class="motivation-essentials">
+<div><span class="muted small">Направление</span><strong>{{ motivation_profile.get_track_display|default:'Не уточнено' }}</strong></div>
+<div><span class="muted small">Страна поступления</span><strong>{{ client.interested_country|default:'Не уточнено' }}</strong></div>
+<div><span class="muted small">Программа</span><strong>{{ client.interested_program|default:'Не уточнено' }}</strong></div>
+</div>
+{% if motivation_profile.next_question %}<div class="motivation-next"><span class="muted small">К СЛЕДУЮЩЕМУ РАЗГОВОРУ</span><p>{{ motivation_profile.next_question }}</p></div>{% endif %}
+<div class="motivation-grid">{% for answer in motivation_answers %}<article><h3>{{ answer.label }}</h3><p>{{ answer.value|default:'Пока не обсудили'|linebreaksbr }}</p></article>{% endfor %}</div>
+{% if motivation_profile.updated_at %}<p class="muted small">Обновлено {{ motivation_profile.updated_at|date:'d.m.Y H:i' }}{% if motivation_profile.updated_by %} · {{ motivation_profile.updated_by.get_full_name|default:motivation_profile.updated_by.email }}{% endif %}</p>{% endif %}
+{% if can_edit_motivation %}<details {% if motivation_form.errors %}open{% endif %} class="motivation-editor"><summary class="btn primary">{% if motivation_profile %}Редактировать ответы{% else %}Заполнить краткую анкету{% endif %}</summary>
+<p class="muted">Коротко, со слов клиента. Для достижений полезны конкретные примеры и даты. Поля можно заполнять постепенно.</p>
+<form method="post" action="{% url 'portal:client_motivation' client.pk %}" data-disable-on-submit>{% csrf_token %}{{ motivation_form.non_field_errors }}{{ motivation_form.revision }}
+<div class="motivation-grid">{% for field in motivation_form.visible_fields %}<label><span>{{ field.label }}</span>{{ field }}{{ field.errors }}</label>{% endfor %}</div>
+<button class="btn primary" type="submit" style="margin-top:20px">Сохранить анкету</button></form></details>{% endif %}
+</div></section>
+<style>
+.motivation-essentials{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:24px}.motivation-essentials>div{background:var(--soft,#f3f6f9);padding:18px;border-radius:14px;min-width:0}.motivation-essentials strong{display:block;margin-top:8px;overflow-wrap:anywhere}.motivation-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.motivation-grid article{padding:20px;border:1px solid var(--line,#dce3eb);border-radius:14px;min-width:0}.motivation-grid h3{font-size:14px;color:var(--muted,#64748b);margin:0 0 12px}.motivation-grid p{margin:0;line-height:1.65;overflow-wrap:anywhere}.motivation-grid label{display:grid;gap:10px;min-width:0}.motivation-grid input,.motivation-grid textarea,.motivation-grid select{width:100%;box-sizing:border-box}.motivation-next{border-left:3px solid #b8201a;padding:16px 20px;margin-bottom:20px;background:var(--soft,#faf5f3);border-radius:0 12px 12px 0;overflow-wrap:anywhere}.motivation-next p{margin:8px 0 0;line-height:1.6}.motivation-editor{margin-top:20px}.motivation-editor summary{display:inline-flex;cursor:pointer}.motivation-editor>p{margin:20px 0}@media(max-width:700px){.motivation-grid,.motivation-essentials{grid-template-columns:1fr}}
+</style>

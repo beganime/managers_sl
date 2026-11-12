@@ -122,6 +122,22 @@ def send_push(notification):
 def send_push_to_token(token, title, body='', data=None):
     """Send a Firebase notification before an app account exists."""
     token = str(token or '').strip()
+    if token.startswith(('ExponentPushToken[', 'ExpoPushToken[')) and token.endswith(']'):
+        import requests
+        headers = {'Accept': 'application/json'}
+        if os.environ.get('EXPO_ACCESS_TOKEN'):
+            headers['Authorization'] = 'Bearer ' + os.environ['EXPO_ACCESS_TOKEN']
+        response = requests.post('https://exp.host/--/api/v2/push/send',
+            json={'to': token, 'title': title, 'body': body, 'sound': 'default', 'data': data or {}},
+            headers=headers, timeout=(5, 15))
+        response.raise_for_status()
+        ticket = response.json().get('data', {})
+        if isinstance(ticket, list):
+            ticket = ticket[0] if ticket else {}
+        if ticket.get('status') != 'ok':
+            raise RuntimeError('Expo rejected notification')
+        logger.info('Expo accepted onboarding push ticket %s', ticket.get('id', ''))
+        return True
     if not token or not init_firebase():
         return False
 

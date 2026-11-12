@@ -10,3 +10,4 @@ class ErpDocumentsConfig(AppConfig):
         from .runtime_patches import apply_document_generation_patches
 
         apply_document_generation_patches()
+        from . import signals  # noqa: F401  (post_save → уведомления админам о новых документах)

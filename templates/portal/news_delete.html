@@ -1,0 +1,2 @@
+{% extends "portal/base.html" %}
+{% block content %}<section class="panel"><div class="panel-body">{% if news %}<h2>Удалить новость «{{ news.title }}»?</h2><p>Она перестанет отображаться при обновлении ленты. Это действие нельзя отменить.</p><form method="post">{% csrf_token %}<button class="btn primary">Удалить</button> <a class="btn" href="{% url 'portal:client_news' %}">Отмена</a></form>{% endif %}</div></section>{% endblock %}

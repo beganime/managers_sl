@@ -73,6 +73,15 @@ class Lead(TimeStampedModel):
     api_source = models.CharField('API source', max_length=100, blank=True, default='')
     taken_at = models.DateTimeField('Дата взятия ответственности', null=True, blank=True)
     converted_at = models.DateTimeField('Дата конвертации', null=True, blank=True)
+    processed_at = models.DateTimeField('Дата обработки', null=True, blank=True, db_index=True)
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Кто отметил обработанной',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='processed_crm_leads',
+    )
     is_archived = models.BooleanField('В архиве', default=False, db_index=True)
     archived_at = models.DateTimeField('Дата архивации', null=True, blank=True)
     archived_by = models.ForeignKey(
@@ -159,6 +168,32 @@ class Lead(TimeStampedModel):
         self.converted_at = timezone.now()
         self.log_action('convert_to_client', user)
         self.save(update_fields=['manager', 'company', 'office', 'status', 'converted_at', 'custom_data', 'updated_at'])
+
+
+class LeadEliteTaskState(TimeStampedModel):
+    STATUS_PENDING = 'pending'
+    STATUS_SENT = 'sent'
+    STATUS_FAILED = 'failed'
+    STATUS_CHOICES = (
+        (STATUS_PENDING, 'Ожидает отправки'),
+        (STATUS_SENT, 'Отправлено'),
+        (STATUS_FAILED, 'Ошибка'),
+    )
+
+    lead = models.OneToOneField(
+        Lead,
+        on_delete=models.CASCADE,
+        related_name='elite_task_state',
+    )
+    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default=STATUS_PENDING, db_index=True)
+    attempts = models.PositiveIntegerField(default=0)
+    elite_task_lead_id = models.CharField(max_length=80, blank=True)
+    last_error = models.CharField(max_length=500, blank=True)
+    sent_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Синхронизация лида с Elite Task'
+        verbose_name_plural = 'Синхронизация лидов с Elite Task'
 
 
 class Client(TimeStampedModel):

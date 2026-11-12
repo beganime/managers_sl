@@ -1,4 +1,10 @@
 from django.urls import path
+from .content_views import ClientContentView, CatalogRemoveView, ClientNewsView, NewsEditView, NewsDeleteView
+from .survey_views import ClientFormsView as ClientPollsView
+from .client_insights import MotivationEditView, ClientTrackSummaryView
+from .client_workspace import ClientWorkspaceView, ClientAvatarView
+from .engagement import StaffMetricsView, SuggestionsAdminView, SuggestionView, MoodSupportView
+from apps.payments.views import PaymentAdminView, PaymentCreateView
 from .mail_views import ClientMailboxBindView
 from .workspace_views import AdminAttendanceCatchupView, AdminTelegramMessageView, ClientQuestionnaireStartView, MoodView, ClientChatView
 
@@ -103,9 +109,40 @@ from .views import (
     WeeklyReportSubmitView,
 )
 
+
+from django.contrib import messages as _messages
+from django.shortcuts import redirect as _redirect
+
+
+def section_disabled(view_cls):
+    """Отключённые разделы портала: редирект на дашборд с уведомлением.
+
+    URL-имена сохраняются, чтобы существующие reverse()/redirect() в коде
+    продолжали работать; сами страницы недоступны (код и данные не удалены).
+    """
+    def _disabled(request, *args, **kwargs):
+        _messages.info(request, 'Этот раздел отключён.')
+        return _redirect('portal:dashboard')
+    _disabled.__name__ = getattr(view_cls, '__name__', 'view') + 'Disabled'
+    return _disabled
+
+
 app_name = 'portal'
 
 urlpatterns = [
+    path('mood/<int:pk>/support/', MoodSupportView.as_view(), name='mood_support'),
+    path('staff-metrics/', StaffMetricsView.as_view(), name='staff_metrics'),
+    path('staff-suggestions/', SuggestionsAdminView.as_view(), name='staff_suggestions'),
+    path('payments/', PaymentCreateView.as_view(), name='payments'),
+    path('payments/admin/', PaymentAdminView.as_view(), name='payments_admin'),
+    path('suggestion/', SuggestionView.as_view(), name='suggestion'),
+    path('client-content/', ClientContentView.as_view(), name='client_content'),
+    path('client-content/<str:kind>/<int:pk>/remove/', CatalogRemoveView.as_view(), name='catalog_remove'),
+    path('client-news/', ClientNewsView.as_view(), name='client_news'),
+    path('client-polls/', ClientPollsView.as_view(), name='client_polls'),
+    path('client-news/create/', NewsEditView.as_view(), name='news_create'),
+    path('client-news/<int:pk>/edit/', NewsEditView.as_view(), name='news_edit'),
+    path('client-news/<int:pk>/delete/', NewsDeleteView.as_view(), name='news_delete'),
     path('mood/', MoodView.as_view(), name='mood'),
     path('clients/<int:pk>/chat/', ClientChatView.as_view(), name='client_chat'),
     path('clients/<int:pk>/questionnaire/start/', ClientQuestionnaireStartView.as_view(), name='client_questionnaire_start'),
@@ -127,10 +164,14 @@ urlpatterns = [
     path('leads/<int:pk>/', LeadDetailView.as_view(), name='lead_detail'),
     path('incoming-leads/', IncomingLeadsView.as_view(), name='incoming_leads'),
     path('clients/', ClientsView.as_view(), name='clients'),
-    path('sheets-search/', SheetsSearchView.as_view(), name='sheets_search'),
+    path('sheets-search/', section_disabled(SheetsSearchView), name='sheets_search'),
     path('client-chats/', ClientChatsView.as_view(), name='client_chats'),
     path('clients/create/', ClientFormView.as_view(), name='client_create'),
     path('clients/<int:pk>/', ClientDetailView.as_view(), name='client_detail'),
+    path('clients/<int:pk>/motivation/', MotivationEditView.as_view(), name='client_motivation'),
+    path('clients/<int:pk>/workspace/', ClientWorkspaceView.as_view(), name='client_workspace'),
+    path('clients/<int:pk>/avatar/', ClientAvatarView.as_view(), name='client_avatar'),
+    path('dashboard/client-tracks/', ClientTrackSummaryView.as_view(), name='client_tracks'),
     path('clients/<int:pk>/archive/', ClientArchiveView.as_view(), name='client_archive'),
     path('clients/<int:pk>/notes/create/', ClientNoteCreatePortalView.as_view(), name='client_note_create'),
     path(
@@ -164,7 +205,7 @@ urlpatterns = [
     path('client-questionnaires/<int:pk>/download/', ClientQuestionnaireDownloadView.as_view(), name='client_questionnaire_download'),
     path('client-questionnaires/<int:pk>/regenerate/', ClientQuestionnaireRegenerateView.as_view(), name='client_questionnaire_regenerate'),
     path('client-questionnaires/<int:pk>/review/', ClientQuestionnaireReviewView.as_view(), name='client_questionnaire_review'),
-    path('applications/', ApplicationsView.as_view(), name='applications'),
+    path('applications/', section_disabled(ApplicationsView), name='applications'),
     path('countries/', CountriesView.as_view(), name='countries'),
     path('cities/', CitiesView.as_view(), name='cities'),
     path('universities/', UniversitiesView.as_view(), name='universities'),
@@ -178,17 +219,17 @@ urlpatterns = [
     path('services/', ServicesView.as_view(), name='services'),
     path('services/create/', ServiceFormView.as_view(), name='service_create'),
     path('services/<int:pk>/edit/', ServiceFormView.as_view(), name='service_edit'),
-    path('tasks/', TasksView.as_view(), name='tasks'),
-    path('tasks/create/', TaskFormView.as_view(), name='task_create'),
-    path('tasks/<int:pk>/edit/', TaskFormView.as_view(), name='task_edit'),
-    path('projects/', ProjectsView.as_view(), name='projects'),
-    path('projects/create/', ProjectCreateView.as_view(), name='project_create'),
-    path('projects/<int:pk>/', ProjectDetailView.as_view(), name='project_detail'),
-    path('projects/<int:pk>/edit/', ProjectCreateView.as_view(), name='project_edit'),
-    path('projects/<int:pk>/tasks/create/', ProjectTaskCreateView.as_view(), name='project_task_create'),
-    path('projects/<int:pk>/tasks/<int:task_id>/edit/', ProjectTaskCreateView.as_view(), name='project_task_edit'),
-    path('projects/<int:pk>/tasks/<int:task_id>/action/', ProjectTaskActionView.as_view(), name='project_task_action'),
-    path('calendar/', CalendarView.as_view(), name='calendar'),
+    path('tasks/', section_disabled(TasksView), name='tasks'),
+    path('tasks/create/', section_disabled(TaskFormView), name='task_create'),
+    path('tasks/<int:pk>/edit/', section_disabled(TaskFormView), name='task_edit'),
+    path('projects/', section_disabled(ProjectsView), name='projects'),
+    path('projects/create/', section_disabled(ProjectCreateView), name='project_create'),
+    path('projects/<int:pk>/', section_disabled(ProjectDetailView), name='project_detail'),
+    path('projects/<int:pk>/edit/', section_disabled(ProjectCreateView), name='project_edit'),
+    path('projects/<int:pk>/tasks/create/', section_disabled(ProjectTaskCreateView), name='project_task_create'),
+    path('projects/<int:pk>/tasks/<int:task_id>/edit/', section_disabled(ProjectTaskCreateView), name='project_task_edit'),
+    path('projects/<int:pk>/tasks/<int:task_id>/action/', section_disabled(ProjectTaskActionView), name='project_task_action'),
+    path('calendar/', section_disabled(CalendarView), name='calendar'),
     path('finance/', FinanceView.as_view(), name='finance'),
     path('contracts/', ContractDocumentsView.as_view(), name='contracts'),
     path('clients/lookup/', ClientLookupView.as_view(), name='client_lookup'),
@@ -206,19 +247,19 @@ urlpatterns = [
     path('documents/<int:pk>/review/', DocumentReviewView.as_view(), name='document_review'),
     path('documents/<int:pk>/regenerate/', DocumentRegenerateView.as_view(), name='document_regenerate'),
     path('documents/<int:pk>/<slug:action>/', DocumentActionView.as_view(), name='document_action'),
-    path('knowledge/', KnowledgeView.as_view(), name='knowledge'),
-    path('knowledge/folder/<int:pk>/', KnowledgeView.as_view(), name='knowledge_folder'),
-    path('knowledge/create-folder/', KnowledgeFolderCreateView.as_view(), name='knowledge_create_folder'),
-    path('knowledge/folder/<int:pk>/edit/', KnowledgeFolderCreateView.as_view(), name='knowledge_edit_folder'),
-    path('knowledge/create-article/', KnowledgeArticleCreateView.as_view(), name='knowledge_create_article'),
-    path('knowledge/article/<int:pk>/', KnowledgeArticleView.as_view(), name='knowledge_article'),
-    path('knowledge/article/<int:pk>/edit/', KnowledgeArticleCreateView.as_view(), name='knowledge_edit_article'),
+    path('knowledge/', section_disabled(KnowledgeView), name='knowledge'),
+    path('knowledge/folder/<int:pk>/', section_disabled(KnowledgeView), name='knowledge_folder'),
+    path('knowledge/create-folder/', section_disabled(KnowledgeFolderCreateView), name='knowledge_create_folder'),
+    path('knowledge/folder/<int:pk>/edit/', section_disabled(KnowledgeFolderCreateView), name='knowledge_edit_folder'),
+    path('knowledge/create-article/', section_disabled(KnowledgeArticleCreateView), name='knowledge_create_article'),
+    path('knowledge/article/<int:pk>/', section_disabled(KnowledgeArticleView), name='knowledge_article'),
+    path('knowledge/article/<int:pk>/edit/', section_disabled(KnowledgeArticleCreateView), name='knowledge_edit_article'),
     path('workday/', WorkdayView.as_view(), name='workday'),
     path('workday/reports/', WorkdayReportsView.as_view(), name='workday_reports'),
     path('workday/start/', WorkdayStartView.as_view(), name='workday_start'),
     path('workday/report/', WorkdayReportView.as_view(), name='workday_report'),
     path('workday/close/', WorkdayCloseView.as_view(), name='workday_close'),
-    path('rating/', RatingView.as_view(), name='rating'),
+    path('rating/', section_disabled(RatingView), name='rating'),
     path('employee-reports/', EmployeeReportsView.as_view(), name='employee_reports'),
     path('reports/weekly/submit/', WeeklyReportSubmitView.as_view(), name='weekly_report_submit'),
     path('reports/weekly/<int:pk>/download/', WeeklyReportDownloadView.as_view(), name='weekly_report_download'),
