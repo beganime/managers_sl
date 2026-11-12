@@ -541,3 +541,113 @@ class TelegramLinkCode(TimeStampedModel):
 
     def __str__(self):
         return f'{self.employee} — {self.expires_at}'
+
+
+class KioskDevice(TimeStampedModel, ActiveModel):
+    """Планшет-терминал у входа: сканирует QR-бейджи и отмечает рабочий день."""
+
+    name = models.CharField('Название', max_length=128)
+    office = models.ForeignKey(
+        Office,
+        verbose_name='Офис',
+        on_delete=models.SET_NULL,
+        related_name='kiosk_devices',
+        null=True,
+        blank=True,
+    )
+    token = models.CharField('Токен устройства', max_length=64, unique=True)
+    last_seen_at = models.DateTimeField('Последняя активность', null=True, blank=True)
+
+    class Meta:
+        verbose_name = 'Киоск-планшет'
+        verbose_name_plural = 'Киоск-планшеты'
+        ordering = ['name']
+
+    def __str__(self):
+        return self.name
+
+
+class KioskBadge(TimeStampedModel, ActiveModel):
+    """QR-бейдж сотрудника для отметки на киоске. Токен хранится открытым,
+    чтобы бейдж можно было перепечатать без перевыпуска; компрометация лечится
+    перевыпуском (сменой токена)."""
+
+    employee = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Сотрудник',
+        on_delete=models.CASCADE,
+        related_name='kiosk_badge',
+    )
+    token = models.CharField('Токен бейджа', max_length=64, unique=True)
+    issued_at = models.DateTimeField('Выпущен', default=timezone.now)
+
+    class Meta:
+        verbose_name = 'Бейдж киоска'
+        verbose_name_plural = 'Бейджи киоска'
+
+    def __str__(self):
+        return f'{self.employee}'
+
+
+class CheckinEvent(TimeStampedModel):
+    """Одно сканирование на киоске. event_uuid задаёт планшет при создании
+    события и обеспечивает идемпотентность при повторной отправке из офлайн-очереди."""
+
+    RESULT_STARTED = 'started'
+    RESULT_CLOSED = 'closed'
+    RESULT_ALREADY_OPEN = 'already_open'
+    RESULT_ALREADY_CLOSED = 'already_closed'
+    RESULT_UNTRACKED = 'untracked'
+    RESULT_INVALID_CODE = 'invalid_code'
+    RESULT_CHOICES = (
+        (RESULT_STARTED, 'День начат'),
+        (RESULT_CLOSED, 'День закрыт'),
+        (RESULT_ALREADY_OPEN, 'День уже идёт'),
+        (RESULT_ALREADY_CLOSED, 'День уже завершён'),
+        (RESULT_UNTRACKED, 'Учёт не включён'),
+        (RESULT_INVALID_CODE, 'Недействительный код'),
+    )
+
+    event_uuid = models.UUIDField('UUID события', unique=True)
+    device = models.ForeignKey(
+        KioskDevice,
+        verbose_name='Киоск',
+        on_delete=models.SET_NULL,
+        related_name='checkin_events',
+        null=True,
+        blank=True,
+    )
+    employee = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        verbose_name='Сотрудник',
+        on_delete=models.SET_NULL,
+        related_name='kiosk_checkin_events',
+        null=True,
+        blank=True,
+    )
+    code = models.CharField('Сканированный код', max_length=128, blank=True)
+    result = models.CharField('Результат', max_length=32, choices=RESULT_CHOICES, db_index=True)
+    message = models.CharField('Сообщение', max_length=255, blank=True)
+    device_time = models.DateTimeField('Время на устройстве', null=True, blank=True)
+    sync_delay_seconds = models.IntegerField('Задержка синхронизации, сек', default=0)
+    workday = models.ForeignKey(
+        WorkDay,
+        verbose_name='Рабочий день',
+        on_delete=models.SET_NULL,
+        related_name='kiosk_events',
+        null=True,
+        blank=True,
+    )
+    payload = models.JSONField('Дополнительно', default=dict, blank=True)
+
+    class Meta:
+        verbose_name = 'Отметка киоска'
+        verbose_name_plural = 'Отметки киоска'
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['employee', 'device_time']),
+            models.Index(fields=['device', 'created_at']),
+        ]
+
+    def __str__(self):
+        return f'{self.event_uuid} — {self.get_result_display()}'

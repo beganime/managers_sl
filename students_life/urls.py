@@ -9,6 +9,7 @@ from django.views.generic import RedirectView, TemplateView
 from rest_framework_simplejwt.views import TokenRefreshView
 
 from apps.portal.views import PortalHomeView
+from apps.attendance.kiosk_views import KioskManifestView, KioskScannerView, KioskServiceWorkerView
 from apps.attendance.telegram_views import attendance_telegram_webhook
 from users.auth_views import LoginView, LogoutView
 from users.disk_auth import disk_authenticate
@@ -105,6 +106,9 @@ urlpatterns = [
     path('api/client/v1/', include('apps.client_api.urls')),
     path('api/client/v1/onboarding/', include('apps.client_onboarding.public_urls')),
     path('api/v1/onboarding/', include('apps.client_onboarding.manager_urls')),
+    path('kiosk/', KioskScannerView.as_view(), name='kiosk-scanner'),
+    path('kiosk/manifest.webmanifest', KioskManifestView.as_view(), name='kiosk-manifest'),
+    path('kiosk/sw.js', KioskServiceWorkerView.as_view(), name='kiosk-sw'),
 ]
 
 if settings.DEBUG:

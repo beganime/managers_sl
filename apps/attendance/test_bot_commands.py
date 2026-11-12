@@ -28,7 +28,7 @@ class BotCommandsTests(TestCase):
 
     def test_keyboard_shows_only_start_when_day_not_started(self):
         workday = bot_commands.get_today_workday(self.user)
-        keyboard = bot_commands.build_keyboard(workday)
+        keyboard = bot_commands.build_keyboard(workday, self.user)
         texts = [btn['text'] for row in keyboard['inline_keyboard'] for btn in row]
         self.assertIn(bot_commands.BUTTON_START, texts)
         self.assertNotIn(bot_commands.BUTTON_CLOSE, texts)

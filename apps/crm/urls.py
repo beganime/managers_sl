@@ -1,6 +1,8 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
+from .lead_bridge import claim_lead, process_lead
+
 from .views import (
     ApplicationViewSet,
     ApplicationExamViewSet,

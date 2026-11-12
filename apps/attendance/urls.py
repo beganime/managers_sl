@@ -1,7 +1,7 @@
 from django.urls import include, path
 from rest_framework.routers import DefaultRouter
 
-from .views import AttendanceReminderViewSet, AutoCloseLogViewSet, DailyReportViewSet, WorkDayViewSet
+from .views import AttendanceReminderViewSet, AutoCloseLogViewSet, DailyReportViewSet, KioskCheckinView, WorkDayViewSet
 
 router = DefaultRouter()
 router.register('workdays', WorkDayViewSet, basename='attendance-workday')
@@ -11,4 +11,5 @@ router.register('auto-close-logs', AutoCloseLogViewSet, basename='attendance-aut
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('kiosk/checkin/', KioskCheckinView.as_view(), name='attendance-kiosk-checkin'),
 ]

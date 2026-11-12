@@ -4,6 +4,7 @@ from .survey_views import ClientFormsView as ClientPollsView
 from .client_insights import MotivationEditView, ClientTrackSummaryView
 from .client_workspace import ClientWorkspaceView, ClientAvatarView
 from .engagement import StaffMetricsView, SuggestionsAdminView, SuggestionView, MoodSupportView
+from .kiosk import KioskBadgesView, KioskQrGeneratorView
 from apps.payments.views import PaymentAdminView, PaymentCreateView
 from .mail_views import ClientMailboxBindView
 from .workspace_views import AdminAttendanceCatchupView, AdminTelegramMessageView, ClientQuestionnaireStartView, MoodView, ClientChatView
@@ -133,6 +134,8 @@ urlpatterns = [
     path('mood/<int:pk>/support/', MoodSupportView.as_view(), name='mood_support'),
     path('staff-metrics/', StaffMetricsView.as_view(), name='staff_metrics'),
     path('staff-suggestions/', SuggestionsAdminView.as_view(), name='staff_suggestions'),
+    path('kiosk-badges/', KioskBadgesView.as_view(), name='kiosk_badges'),
+    path('kiosk-qr/', KioskQrGeneratorView.as_view(), name='kiosk_qr'),
     path('payments/', PaymentCreateView.as_view(), name='payments'),
     path('payments/admin/', PaymentAdminView.as_view(), name='payments_admin'),
     path('suggestion/', SuggestionView.as_view(), name='suggestion'),

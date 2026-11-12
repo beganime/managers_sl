@@ -47,3 +47,4 @@ djangorestframework-simplejwt==5.5.1
 PyJWT==2.11.0
 firebase-admin==6.7.0
 PyMuPDF==1.27.2
+qrcode>=7.4

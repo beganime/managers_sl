@@ -6,8 +6,11 @@ from .models import (
     AttendanceTelegramDelivery,
     AttendanceTelegramTopic,
     AutoCloseLog,
+    CheckinEvent,
     DailyReport,
     EmployeeTelegramAccount,
+    KioskBadge,
+    KioskDevice,
     TelegramLinkCode,
     WeeklyReport,
     WorkDay,
@@ -121,3 +124,31 @@ class TelegramLinkCodeAdmin(ModelAdmin):
     list_display = ('employee', 'expires_at', 'used_at', 'created_at')
     search_fields = ('employee__email', 'employee__first_name', 'employee__last_name')
     readonly_fields = ('code_hash', 'expires_at', 'used_at', 'created_at', 'updated_at')
+
+
+@admin.register(KioskDevice)
+class KioskDeviceAdmin(ModelAdmin):
+    list_display = ('name', 'office', 'is_active', 'last_seen_at', 'updated_at')
+    list_filter = ('is_active', 'office')
+    search_fields = ('name',)
+    readonly_fields = ('token', 'last_seen_at', 'created_at', 'updated_at')
+
+
+@admin.register(KioskBadge)
+class KioskBadgeAdmin(ModelAdmin):
+    list_display = ('employee', 'is_active', 'issued_at', 'updated_at')
+    list_filter = ('is_active',)
+    search_fields = ('employee__email', 'employee__first_name', 'employee__last_name')
+    readonly_fields = ('token', 'issued_at', 'created_at', 'updated_at')
+
+
+@admin.register(CheckinEvent)
+class CheckinEventAdmin(ModelAdmin):
+    list_display = ('created_at', 'device', 'employee', 'result', 'device_time', 'sync_delay_seconds')
+    list_filter = ('result', 'device')
+    search_fields = ('employee__email', 'employee__first_name', 'employee__last_name', 'code', 'message')
+    readonly_fields = (
+        'event_uuid', 'device', 'employee', 'code', 'result', 'message',
+        'device_time', 'sync_delay_seconds', 'workday', 'payload', 'created_at', 'updated_at',
+    )
+    date_hierarchy = 'created_at'

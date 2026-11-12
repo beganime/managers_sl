@@ -1,11 +1,15 @@
+from uuid import UUID
+
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError
+from rest_framework.exceptions import AuthenticationFailed, PermissionDenied, ValidationError
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.core.permissions import get_employee_profile, is_attendance_admin, is_erp_admin
+from .kiosk import authenticate_kiosk_device, parse_device_time, process_checkin, touch_device
 from .services import should_track_employee
 from apps.organizations.models import Company, Office
 
@@ -278,3 +282,59 @@ class AutoCloseLogViewSet(viewsets.ReadOnlyModelViewSet):
         qs = AutoCloseLog.objects.select_related('workday', 'company', 'office', 'employee')
         qs = qs.filter(employee_scope_filters(self.request.user))
         return apply_common_filters(qs, self.request, date_field='created_at', search_fields=('reason', 'error_message', 'employee__email')).order_by('-created_at')
+
+
+class KioskDeviceAPIView(APIView):
+    """Базовый класс публичных API киоска: аутентификация токеном устройства
+    вместо пользовательской сессии. Токен высокоэнтропийный, поэтому
+    дросселирование сознательно отключено — иначе повторы офлайн-очереди
+    блокировали бы планшет."""
+
+    authentication_classes = ()
+    permission_classes = ()
+    throttle_classes = ()
+
+    def get_kiosk_device(self, request):
+        device = authenticate_kiosk_device(request)
+        if device is None:
+            raise AuthenticationFailed('Недействительный или отключённый токен киоска.')
+        touch_device(device)
+        return device
+
+
+class KioskCheckinView(KioskDeviceAPIView):
+    def get(self, request):
+        device = self.get_kiosk_device(request)
+        return Response({
+            'device': {'id': device.pk, 'name': device.name, 'office': device.office.name if device.office_id else None},
+            'server_time': timezone.now().isoformat(),
+        })
+
+    def post(self, request):
+        device = self.get_kiosk_device(request)
+        code = str(request.data.get('code') or '').strip()
+        if not code:
+            raise ValidationError({'code': 'QR-код обязателен.'})
+        raw_event_id = str(request.data.get('event_id') or '').strip()
+        try:
+            event_uuid = UUID(raw_event_id)
+        except (ValueError, AttributeError):
+            raise ValidationError({'event_id': 'Некорректный UUID события.'})
+        device_time = parse_device_time(request.data.get('device_time'))
+
+        event, created = process_checkin(
+            device=device,
+            code=code,
+            event_uuid=event_uuid,
+            device_time=device_time,
+        )
+        return Response({
+            'event_id': str(event.event_uuid),
+            'created': created,
+            'result': event.result,
+            'message': event.message,
+            'employee_name': event.employee.get_full_name() if event.employee_id else '',
+            'workday_status': event.workday.status if event.workday_id else None,
+            'sync_delay_seconds': event.sync_delay_seconds,
+            'server_time': timezone.now().isoformat(),
+        })

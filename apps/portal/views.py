@@ -439,6 +439,8 @@ NAV_GROUPS = (
             {'name': 'dashboard', 'label': 'Дашборд', 'icon': 'layout-dashboard'},
             {'name': 'clients', 'label': 'Клиенты', 'icon': 'users'},
             {'name': 'workday', 'label': 'Рабочий день', 'icon': 'timer'},
+            {'name': 'kiosk_badges', 'label': 'Бейджи киоска', 'icon': 'qr-code', 'administrator_only': True},
+            {'name': 'kiosk_qr', 'label': 'Генератор QR', 'icon': 'scan-line', 'administrator_only': True},
             {'name': 'reports', 'label': 'Отчёты', 'icon': 'bar-chart-3'},
             {'name': 'contracts', 'label': 'Договоры', 'icon': 'file-signature'},
             {'name': 'payments', 'label': 'Оплаты', 'icon': 'banknote'},

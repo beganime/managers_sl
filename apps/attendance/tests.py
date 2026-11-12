@@ -185,7 +185,7 @@ class WorkdayClosingPolicyTests(TestCase):
         self.assertEqual(created, 2)
         self.assertEqual({call.args[0] for call in create_notification.call_args_list}, {first, second})
         self.assertTrue(
-            all(call.kwargs['channel'] == NotificationTemplate.CHANNEL_PUSH for call in create_notification.call_args_list)
+            all(call.kwargs['channel'] == NotificationTemplate.CHANNEL_TELEGRAM for call in create_notification.call_args_list)
         )
 
     @patch('apps.erp_notifications.tasks.ensure_default_attendance_reminders')
