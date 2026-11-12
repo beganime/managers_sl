@@ -19,11 +19,21 @@ BUTTON_START = '▶️ Начать рабочий день'
 BUTTON_REPORT = '📝 Написать отчёт'
 BUTTON_CLOSE = '⏹ Закрыть рабочий день'
 BUTTON_STATS = '📊 Статистика'
+BUTTON_TEAM = '👥 Кто на работе'
 
 CALLBACK_START = 'att:start'
 CALLBACK_REPORT = 'att:report'
 CALLBACK_CLOSE = 'att:close'
 CALLBACK_STATS = 'att:stats'
+CALLBACK_TEAM = 'att:team'
+
+
+def is_admin_user(user):
+    if user.is_superuser or user.is_staff:
+        return True
+    profile = get_employee_profile(user)
+    role = getattr(profile, 'role', None)
+    return bool(role and str(getattr(role, 'code', '')) == '00003')
 
 REPORT_AWAIT_KEY = 'attendance:bot:await-report:{employee_id}'
 REPORT_AWAIT_TTL = 30 * 60  # seconds
@@ -69,15 +79,19 @@ def workday_is_open(workday):
     return workday.status in {WorkDay.STATUS_STARTED, WorkDay.STATUS_REPORT_SUBMITTED}
 
 
-def build_keyboard(workday):
+def build_keyboard(workday, user=None):
     rows = []
+    admin = bool(user is not None and is_admin_user(user))
+    tracked = user is not None and should_track_employee(user)
     if workday is not None and workday_is_open(workday):
         rows.append([
             {'text': BUTTON_REPORT, 'callback_data': CALLBACK_REPORT},
             {'text': BUTTON_CLOSE, 'callback_data': CALLBACK_CLOSE},
         ])
-    else:
+    elif tracked:
         rows.append([{'text': BUTTON_START, 'callback_data': CALLBACK_START}])
+    if admin:
+        rows.append([{'text': BUTTON_TEAM, 'callback_data': CALLBACK_TEAM}])
     rows.append([{'text': BUTTON_STATS, 'callback_data': CALLBACK_STATS}])
     return {'inline_keyboard': rows}
 
@@ -99,12 +113,12 @@ def action_start(user):
         return 'Не найден профиль сотрудника. Обратитесь к администратору.', None
     if workday_is_open(workday):
         started = timezone.localtime(workday.started_at).strftime('%H:%M') if workday.started_at else '—'
-        return f'Рабочий день уже идёт (начат в {started}).', build_keyboard(workday)
+        return f'Рабочий день уже идёт (начат в {started}).', build_keyboard(workday, user)
     if workday.status in WorkDay.FINAL_STATUSES:
-        return 'Сегодняшний рабочий день уже завершён. Новый день откроется завтра.', build_keyboard(workday)
+        return 'Сегодняшний рабочий день уже завершён. Новый день откроется завтра.', build_keyboard(workday, user)
     workday.start(note='Через Telegram-бота.')
     started = timezone.localtime(workday.started_at).strftime('%H:%M')
-    return f'Рабочий день начат в {started}. Хорошей работы!', build_keyboard(workday)
+    return f'Рабочий день начат в {started}. Хорошей работы!', build_keyboard(workday, user)
 
 
 def action_report(user):
@@ -115,9 +129,9 @@ def action_report(user):
     if workday is None:
         return 'Не найден профиль сотрудника. Обратитесь к администратору.', None
     if not workday_is_open(workday):
-        return 'Сначала начните рабочий день — кнопка «Написать отчёт» станет доступна.', build_keyboard(workday)
+        return 'Сначала начните рабочий день — кнопка «Написать отчёт» станет доступна.', build_keyboard(workday, user)
     cache.set(REPORT_AWAIT_KEY.format(employee_id=user.pk), workday.pk, REPORT_AWAIT_TTL)
-    return 'Напишите отчёт одним следующим сообщением: итоги дня, планы или проблемы. Отправлю его как ежедневный отчёт.', build_keyboard(workday)
+    return 'Напишите отчёт одним следующим сообщением: итоги дня, планы или проблемы. Отправлю его как ежедневный отчёт.', build_keyboard(workday, user)
 
 
 def _submit_report_text(user, text):
@@ -144,14 +158,14 @@ def action_close(user):
     if workday is None:
         return 'Не найден профиль сотрудника. Обратитесь к администратору.', None
     if not workday_is_open(workday):
-        return 'Рабочий день ещё не начат — кнопка «Закрыть рабочий день» станет доступна после начала дня.', build_keyboard(workday)
+        return 'Рабочий день ещё не начат — кнопка «Закрыть рабочий день» станет доступна после начала дня.', build_keyboard(workday, user)
     workday.close(user=user, comment='Через Telegram-бота.')
     workday.refresh_from_db()
     hours = workday.total_work_hours
     return (
         f'Рабочий день закрыт. Отработано {hours:.2f} ч.'
         + (' Отчёт за сегодня уже отправлен.' if workday.has_report else ' Не забудьте отправить отчёт до конца дня.')
-    ), build_keyboard(workday)
+    ), build_keyboard(workday, user)
 
 
 def action_stats(user):
@@ -182,11 +196,57 @@ def action_stats(user):
     return '\n'.join(lines), None
 
 
+def team_overview_text(company, day=None):
+    """Today's roster for an administrator: who started, who did not."""
+    from .models import WorkDay
+
+    day = day or timezone.localdate()
+    workdays = {
+        wd.employee_id: wd
+        for wd in WorkDay.objects.filter(company=company, date=day).select_related('employee')
+    }
+    tracked = []
+    employee = None
+    for profile in company.employees.filter(is_active=True, user__is_active=True).select_related('user', 'role', 'office'):
+        role = getattr(profile.role, 'code', '')
+        if str(role) == '00003' and not getattr(profile, 'attendance_required', False):
+            continue
+        tracked.append(profile)
+    status_labels = dict(WorkDay.STATUS_CHOICES)
+    lines = [f'Кто на работе — {day.strftime("%d.%m.%Y")}:']
+    for profile in sorted(tracked, key=lambda p: (p.user.get_full_name() or p.user.email)):
+        wd = workdays.get(profile.user_id)
+        name = profile.user.get_full_name() or profile.user.email
+        if wd is None:
+            lines.append(f'⚪ {name} — день не начат')
+            continue
+        label = status_labels.get(wd.status, wd.status)
+        if wd.started_at:
+            started = timezone.localtime(wd.started_at).strftime('%H:%M')
+            label = f'{label} (с {started})'
+        report = ' ✅ отчёт' if wd.has_report else ''
+        lines.append(f'{"🟢" if wd.status in {WorkDay.STATUS_STARTED, WorkDay.STATUS_REPORT_SUBMITTED} else "🔵"} {name} — {label}{report}')
+    if len(lines) == 1:
+        lines.append('Сотрудников в учёте пока нет.')
+    return '\n'.join(lines)
+
+
+def action_team(user):
+    if not is_admin_user(user):
+        return 'Эта команда доступна только администраторам.', None
+    employee = get_employee_profile(user)
+    company = employee.company if employee and employee.company_id else None
+    if company is None:
+        return 'Не найдена компания сотрудника.', None
+    return team_overview_text(company), build_keyboard(get_today_workday(user), user)
+
+
 ACTIONS = {
     CALLBACK_START: action_start,
     CALLBACK_REPORT: action_report,
     CALLBACK_CLOSE: action_close,
     CALLBACK_STATS: action_stats,
+    CALLBACK_TEAM: action_team,
 }
 
 TEXT_ACTIONS = {
@@ -207,13 +267,13 @@ def handle_private_text(account, text):
     report_result = _submit_report_text(user, text)
     if report_result is not None:
         workday = get_today_workday(user)
-        return report_result, build_keyboard(workday)
+        return report_result, build_keyboard(workday, user)
     stripped = str(text or '').strip()
     action = TEXT_ACTIONS.get(stripped)
     if action:
         return action(user)
     workday = get_today_workday(user)
-    return HELP_TEXT, build_keyboard(workday)
+    return HELP_TEXT, build_keyboard(workday, user)
 
 
 def handle_callback(account, callback_data):

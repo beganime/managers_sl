@@ -56,7 +56,15 @@ def attendance_telegram_webhook(request):
             account = bot_commands.resolve_account(callback_sender.get('id'))
             if account:
                 text, keyboard = bot_commands.handle_callback(account, callback_data)
-                return telegram_reply(account.chat_id, text, reply_markup=keyboard)
+                # Answer the callback immediately so the button stops its spinner,
+                # then deliver the message through the relay (outbound works).
+                from .telegram import send_telegram_message
+                send_telegram_message(text, account.chat_id, reply_markup=keyboard)
+                return JsonResponse({
+                    'method': 'answerCallbackQuery',
+                    'callback_query_id': callback.get('id'),
+                    'text': 'Готово',
+                })
             return JsonResponse({'ok': True})
         from apps.crm.lead_telegram import handle_callback_query
         handle_callback_query(update)

@@ -106,3 +106,39 @@ class BotCommandsTests(TestCase):
         text, keyboard = bot_commands.binding_success_reply(self.user)
         self.assertIn('подключён', text)
         self.assertTrue(keyboard['inline_keyboard'])
+
+    def test_admin_sees_team_button_and_roster(self):
+        admin_role = EmployeeRole.objects.create(code='00003', name='Администрация', role_type='admin')
+        admin_user = get_user_model().objects.create_user(email='boss@example.com', password='x', is_staff=True)
+        EmployeeProfile.objects.create(user=admin_user, company=self.company, role=admin_role)
+        admin_account = EmployeeTelegramAccount.objects.create(employee=admin_user, telegram_user_id=777, chat_id=777)
+
+        text, keyboard = bot_commands.handle_callback(admin_account, bot_commands.CALLBACK_TEAM)
+        self.assertIn('Кто на работе', text)
+        texts = [btn['text'] for row in keyboard['inline_keyboard'] for btn in row]
+        self.assertIn(bot_commands.BUTTON_TEAM, texts)
+
+        # Non-admin is rejected.
+        text, _ = bot_commands.handle_callback(self.account, bot_commands.CALLBACK_TEAM)
+        self.assertIn('только администраторам', text)
+
+    def test_team_roster_marks_started_employee(self):
+        bot_commands.action_start(self.user)
+        admin_role = EmployeeRole.objects.create(code='00003', name='Администрация', role_type='admin')
+        admin_user = get_user_model().objects.create_user(email='boss2@example.com', password='x', is_staff=True)
+        EmployeeProfile.objects.create(user=admin_user, company=self.company, role=admin_role)
+        text = bot_commands.team_overview_text(self.company)
+        self.assertIn('Кто на работе', text)
+        self.assertIn('🟢', text)
+
+    def test_admin_daily_digest_creates_delivery(self):
+        from .telegram import register_admin_daily_digest
+
+        admin_role = EmployeeRole.objects.create(code='00003', name='Администрация', role_type='admin')
+        admin_user = get_user_model().objects.create_user(email='boss3@example.com', password='x', is_staff=True)
+        EmployeeProfile.objects.create(user=admin_user, company=self.company, role=admin_role)
+        EmployeeTelegramAccount.objects.create(employee=admin_user, telegram_user_id=778, chat_id=778)
+
+        created = register_admin_daily_digest()
+        self.assertEqual(created, 1)
+        self.assertEqual(register_admin_daily_digest(), 0)  # deduplicated per day

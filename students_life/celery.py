@@ -30,6 +30,14 @@ app.conf.beat_schedule = {
         'task': 'attendance.retry_telegram_deliveries',
         'schedule': crontab(minute='*/2'),
     },
+    'attendance-check-disk-health': {
+        'task': 'attendance.check_disk_health',
+        'schedule': crontab(minute='*/5'),
+    },
+    'attendance-disk-daily-summary': {
+        'task': 'attendance.send_disk_daily_summary',
+        'schedule': crontab(minute=15, hour=9),
+    },
     'attendance-weekly-office-summary': {
         'task': 'attendance.send_weekly_summary',
         'schedule': crontab(minute=30, hour=18, day_of_week='saturday'),
@@ -57,6 +65,14 @@ app.conf.beat_schedule = {
     'erp-daily-report-reminders': {
         'task': 'erp_notifications.daily_report_reminder',
         'schedule': crontab(minute=30, hour=17),
+    },
+    'erp-daily-close-reminders': {
+        'task': 'erp_notifications.close_workday_reminder',
+        'schedule': crontab(minute=45, hour=17),
+    },
+    'attendance-admin-daily-digest': {
+        'task': 'attendance.admin_daily_digest',
+        'schedule': crontab(minute=35, hour=9),
     },
     'erp-task-deadline-reminders': {
         'task': 'erp_notifications.task_reminders',
@@ -94,5 +110,9 @@ app.conf.beat_schedule = {
     'sheets-import-public-client-statuses': {
         'task': 'sheets_sync.import_public_client_statuses',
         'schedule': crontab(minute='*/5'),
+    },
+    'crm-weekly-lead-report': {
+        'task': 'crm.send_weekly_lead_report',
+        'schedule': crontab(minute=30, hour=18, day_of_week='saturday'),
     },
 }

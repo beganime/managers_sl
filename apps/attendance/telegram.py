@@ -162,7 +162,7 @@ def resolve_group_topic(event_type, chat_id=None):
     return candidates[0] if len(candidates) == 1 else None
 
 
-def send_telegram_message(message, chat_id=None, message_thread_id=None):
+def send_telegram_message(message, chat_id=None, message_thread_id=None, reply_markup=None):
     token = settings.ATTENDANCE_TELEGRAM_BOT_TOKEN
     chat_id = chat_id or settings.ATTENDANCE_TELEGRAM_CHAT_ID
     if not settings.ATTENDANCE_TELEGRAM_ENABLED or not token or not chat_id:
@@ -172,6 +172,8 @@ def send_telegram_message(message, chat_id=None, message_thread_id=None):
         payload = {'chat_id': chat_id, 'text': message, 'disable_web_page_preview': True}
         if message_thread_id:
             payload['message_thread_id'] = int(message_thread_id)
+        if reply_markup:
+            payload['reply_markup'] = reply_markup
         response = requests.post(
             f'{base}/bot{token}/sendMessage',
             json=payload,
@@ -274,6 +276,36 @@ def register_personal_reminder(user, reminder_type, day):
     if created:
         _enqueue(delivery)
     return delivery
+
+
+def register_admin_daily_digest(day=None):
+    """Personal morning roster for administrator accounts with a linked Telegram."""
+    from .bot_commands import is_admin_user, team_overview_text
+
+    day = day or timezone.localdate()
+    created_count = 0
+    for account in EmployeeTelegramAccount.objects.filter(is_active=True).select_related('employee'):
+        user = account.employee
+        if not is_admin_user(user):
+            continue
+        profile = getattr(user, 'employee_profile', None)
+        company = profile.company if profile and profile.company_id else None
+        if not company:
+            continue
+        delivery, was_created = AttendanceTelegramDelivery.objects.get_or_create(
+            event_key=f'admin-digest:{user.pk}:{day}',
+            defaults={
+                'event_type': AttendanceTelegramDelivery.EVENT_ADMIN_MESSAGE,
+                'company': company,
+                'employee': user,
+                'target_chat_id': account.chat_id,
+                'message': team_overview_text(company, day),
+            },
+        )
+        if was_created:
+            _enqueue(delivery)
+            created_count += 1
+    return created_count
 
 
 def register_group_reminder(company, reminder_type, day):
