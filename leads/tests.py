@@ -97,6 +97,10 @@ class MobileDocumentUploadTests(TestCase):
         )
         self.assertEqual(response.status_code, 403)
 
+    def test_manual_client_can_upload_without_onboarding(self):
+        self.submission.delete()
+        self.test_upload_forwards_file_to_disk_and_creates_review_record()
+
     @patch('leads.views.requests.post')
     def test_chat_attachment_is_forwarded_to_separate_disk_folder(self, post_mock):
         disk_response = Mock()

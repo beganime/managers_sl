@@ -26,11 +26,13 @@ TOPIC_ALIASES = {
 }
 
 
-def telegram_reply(chat_id, text, message_thread_id=None):
+def telegram_reply(chat_id, text, message_thread_id=None, reply_markup=None):
     # Telegram executes this method from the webhook response; no outbound API call is needed.
     payload = {'method': 'sendMessage', 'chat_id': chat_id, 'text': text}
     if message_thread_id:
         payload['message_thread_id'] = message_thread_id
+    if reply_markup:
+        payload['reply_markup'] = reply_markup
     return JsonResponse(payload)
 
 
@@ -46,6 +48,16 @@ def attendance_telegram_webhook(request):
     except (UnicodeDecodeError, json.JSONDecodeError):
         return HttpResponseBadRequest()
     if update.get('callback_query'):
+        callback = update['callback_query']
+        callback_data = (callback.get('data') or '')
+        callback_sender = (callback.get('from') or {})
+        if str(callback_data).startswith('att:'):
+            from . import bot_commands
+            account = bot_commands.resolve_account(callback_sender.get('id'))
+            if account:
+                text, keyboard = bot_commands.handle_callback(account, callback_data)
+                return telegram_reply(account.chat_id, text, reply_markup=keyboard)
+            return JsonResponse({'ok': True})
         from apps.crm.lead_telegram import handle_callback_query
         handle_callback_query(update)
         return JsonResponse({'ok': True})
@@ -124,13 +136,22 @@ def attendance_telegram_webhook(request):
         )
     if chat.get('type') != 'private':
         return JsonResponse({'ok': True})
+    from . import bot_commands
     if text == '/start':
+        account = bot_commands.resolve_account(telegram_user_id)
+        if account:
+            reply_text, keyboard = bot_commands.handle_private_text(account, '/menu')
+            return telegram_reply(chat_id, reply_text, reply_markup=keyboard)
         return telegram_reply(
             chat_id,
-            'Откройте «Профиль» в ManagerSL, нажмите «Подключить Telegram» и перейдите по одноразовой ссылке.',
+            'Откройте «Настройки» в ManagerSL, нажмите «Подключить Telegram» и перейдите по одноразовой ссылке.',
         )
     if not text.startswith('/start '):
-        return telegram_reply(chat_id, 'Для подключения используйте одноразовую ссылку из профиля ManagerSL.')
+        account = bot_commands.resolve_account(telegram_user_id)
+        if account:
+            reply_text, keyboard = bot_commands.handle_private_text(account, text)
+            return telegram_reply(chat_id, reply_text, reply_markup=keyboard)
+        return telegram_reply(chat_id, 'Для подключения используйте одноразовую ссылку из настроек ManagerSL.')
 
     raw_code = text.split(maxsplit=1)[1].strip()
     code_hash = hashlib.sha256(raw_code.encode()).hexdigest()
@@ -159,5 +180,5 @@ def attendance_telegram_webhook(request):
         )
         link.used_at = timezone.now()
         link.save(update_fields=['used_at', 'updated_at'])
-    name = link.employee.get_full_name() or link.employee.email
-    return telegram_reply(chat_id, f'Telegram подключён к ManagerSL: {name}. Вы будете получать личные напоминания о рабочем дне.')
+    reply_text, keyboard = bot_commands.binding_success_reply(link.employee)
+    return telegram_reply(chat_id, reply_text, reply_markup=keyboard)
